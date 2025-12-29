@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('password');
             $table->enum('role',['admin','vendor'])->default('admin');
 
-             $table->unsignedBigInteger('id_bank_tujuan')->nullable()->after('role');
+             $table->unsignedBigInteger('id_bank_tujuan')->nullable();
 
         $table->foreign('id_bank_tujuan')
               ->references('id_bank_tujuan')

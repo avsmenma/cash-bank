@@ -92,9 +92,9 @@
                     </div>
 
                      <div class="mt-3">
-                            <label>Uraian</label>
-                            <input type="text" name="uraian" class="form-control">
-                        </div>
+                        <label>Uraian</label>
+                        <textarea name="uraian" class="form-control"></textarea>
+                    </div>
 
                     {{-- KETERANGAN --}}
                     <div class="mt-3">
@@ -106,12 +106,12 @@
                     <div class="row mt-3">
                         <div class="col-md-4">
                             <label>Nilai Rupiah</label>
-                            <input type="number" name="nilai_rupiah" class="form-control" id="nilai_rupiah">
+                            <input type="number" name="nilai_rupiah" class="form-control" id="nilai_rupiah" readonly disabled>
                         </div>
 
                         <div class="col-md-4">
                             <label>Kredit</label>
-                            <input type="number" name="kredit" class="form-control" id="kredit">
+                            <input type="number" name="kredit" class="form-control" id="kredit" readonly disabled>
                         </div>
 
                         <div class="col-md-4">

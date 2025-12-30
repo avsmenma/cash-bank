@@ -183,7 +183,7 @@
 $(document).ready(function() {
 
     // format rupiah
-    document.querySelectorAll('.rupiah').forEach(function(input){
+    document.querySelectorAll('.rupiah-input').forEach(function(input){
         input.addEventListener('keyup', function(){
             let angka = this.value.replace(/[^0-9]/g, '');
             this.value = angka.replace(/\B(?=(\d{3})+(?!\d))/g, ".");

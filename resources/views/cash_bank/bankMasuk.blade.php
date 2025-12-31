@@ -17,7 +17,7 @@
             <div class="card rounded-3 border-0 shadow-sm" >
                 <div class="card-body">
                     <div class="justify-content-start align-items-center mb-3">
-                        <div class="col-12 col-lg-6">
+                        <div class="col-md-12">
                             <div class="d-flex flex-wrap gap-2 justify-content-lg-start">
                                 <button class="btn bg-danger btn-sm d-flex align-items-center gap-1" id="deleteAllSelectedRecord" style="background-color:#dc3545; color: white;">
                                     <i class="bi bi-trash"></i>
@@ -216,8 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
-
-$(function(e){
+    $(function(e){
         $("#select_all_ids").click(function(){
             $('.checkbox_ids').prop('checked',$(this).prop('checked'));
         });
@@ -257,6 +256,8 @@ $(function(e){
             });
         });
     });
+
+
 </script>
 <style>
     /* Enhanced Styles */
@@ -284,10 +285,7 @@ th{
 }
 /* Table Wrapper dengan Sticky Columns */
 .table-wrapper {
-    max-height: 600px;
-    overflow: auto;
-    margin: 20px;
-    position: relative;
+    overflow-x: auto;
 }
 
 /* Reset table untuk menghilangkan gap */

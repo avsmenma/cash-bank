@@ -192,7 +192,7 @@
                                         'bulan' => request('bulan'),
                                         'tanggal' => request('tanggal'),
                                         'rekapanVA' => request('rekapanVA')
-                                    ]) }}" class="btn btn-outline-success"><i class="bi bi-printer"></i>
+                                    ]) }}" class="btn btn-outline-success"><i class="bi bi-file-excel-fill"></i>
                                         Download Excel
                                     </a>
                                 <a href="{{ route('bank-keluar.reportKeluarPdf', [

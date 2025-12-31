@@ -33,7 +33,7 @@
                 <th>Penerima</th>
                 <th>Uraian</th>
                 <th>Jenis</th>
-                <th>Kredit (Rp)</th>
+                <th>Debet (Rp)</th>
                 <th>Keterangan</th>
                 <th style="width: 100px;">Aksi</th>
             </tr>
@@ -95,6 +95,8 @@
     </table>
     <script>
         new DataTable('#example');
+
+        
     </script>
                         
 </body>

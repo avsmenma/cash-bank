@@ -92,7 +92,8 @@ class BankKeluarController extends Controller
             'uraian_spp as uraian',
             'nilai_rupiah',
             'dibayar_kepada as penerima',
-            'jenis_pembayaran'
+            'jenis_pembayaran',
+            'kategori','jenis_dokumen as sub_kriteria','jenis_sub_pekerjaan as item_sub_kriteria'
         )
         ->where('status_pembayaran', 'belum_dibayar')
         ->get();
@@ -106,11 +107,11 @@ class BankKeluarController extends Controller
         3600,
         fn () => KategoriKriteria::where('tipe', 'Keluar')->get()
     );
-    $subKriteria = Cache::remember('sub_kriteria', 3600, fn () => SubKriteria::all());
-    $itemSubKriteria = Cache::remember('item_sub_kriteria', 3600, fn () => ItemSubKriteria::all());
     $jenisPembayaran = Cache::remember('jenis_pembayaran', 3600, fn () => JenisPembayaran::all());
 
-    
+    $subKriteria = SubKriteria::all();
+    $itemSubKriteria = ItemSubKriteria::all(); // pastikan model ini ada
+ 
     return view('cash_bank.bankKeluar', compact(
         'data',
         'agenda',
@@ -121,6 +122,7 @@ class BankKeluarController extends Controller
         'itemSubKriteria',
         'jenisPembayaran'
     ));
+
     }
 
 
@@ -157,6 +159,9 @@ class BankKeluarController extends Controller
     $dokumen_id   = null;
     $no_agenda    = null;
     $agenda_tahun = $input;
+    $kategoriKriteria = $request->kategori;
+    $subKriteria = $request->sub_kriteria;
+    $itemSubKriteria = $request->item_sub_kriteria;
 
     if (is_numeric($input)) {
         $dokumen = DB::connection('mysql_agenda_online')
@@ -166,7 +171,11 @@ class BankKeluarController extends Controller
         if ($dokumen) {
             $dokumen_id   = $dokumen->id;
             $no_agenda    = $dokumen->nomor_agenda;
-            $agenda_tahun = $dokumen->nomor_agenda . '_' . $dokumen->tahun;
+            $agenda_tahun = $dokumen->nomor_agenda;
+            $kategoriKriteria = $request->kategori;
+            $subKriteria = $request->sub_kriteria;
+            $itemSubKriteria = $request->item_sub_kriteria;
+
 
             DB::connection('mysql_agenda_online')
                 ->table('dokumens')
@@ -174,15 +183,18 @@ class BankKeluarController extends Controller
                 ->update([
                     'uraian_spp'        => $request->uraian,
                     'nilai_rupiah'      => $request->nilai_rupiah,
-                    'dibayar'           => $request->nilai_rupiah,
+                    'DIBAYAR'           => $request->nilai_rupiah,
                     'dibayar_kepada'    => $request->penerima,
-                    'status_pembayaran' => 'SUDAH DIBAYAR',
+                    'status_pembayaran' => 'sudah_dibayar',
                     'tanggal_dibayar'   => $request->tanggal,
+                    'kategori'          => $request->kategori,
+                    'jenis_dokumen'     => $request->sub_kriteria,
+                    'jenis_sub_pekerjaan' => $request->item_sub_kriteria,
                 ]);
         }
     }
     $pakaiSplit  = $request->filled('split.kredit');
-$kreditUtama = $pakaiSplit ? 0 : ($validated['kredit'] ?? 0);
+    $kreditUtama = $pakaiSplit ? 0 : ($validated['kredit'] ?? 0);
     BankKeluar::create([
         'dokumen_id'            => $dokumen_id,
         'no_agenda'             => $no_agenda,
@@ -213,7 +225,7 @@ $kreditUtama = $pakaiSplit ? 0 : ($validated['kredit'] ?? 0);
             'id_bank_tujuan'       => $request->id_bank_tujuan,
            'id_kategori_kriteria' => $request->split['kategori'][$i] ?? null,
             'id_sub_kriteria'      => $request->split['sub_kriteria'][$i] ?? null,
-            'id_item_sub_kriteria' => $request->split['item'][$i] ?? null,
+            'id_item_sub_kriteria' => $request->split['item_sub_kriteria'][$i] ?? null,
             'uraian'               => $request->uraian,
             'penerima'             => $request->penerima,
             'tanggal'              => $request->tanggal,

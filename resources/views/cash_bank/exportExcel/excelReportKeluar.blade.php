@@ -418,7 +418,7 @@
                                 <tfoot class="table-secondary">
                                     @php
                                         // Hitung jumlah kolom dinamis
-                                        $baseColumns = 5; // No, Tanggal, Penerima, Uraian
+                                        $baseColumns = 4; // No, Tanggal, Penerima, Uraian
                                         $dynamicColumns = 0;
                                         
                                         if($bankTujuanId) $dynamicColumns++;
@@ -433,15 +433,18 @@
                                     {{-- Total Saldo Akhir (hanya untuk mode 0-1 filter) --}}
                                     @if($showSaldoAkhir)
                                         <tr>
-                                            <th colspan="{{ $totalColspan }}" class="text-end">TOTAL SALDO AKHIR:</th>
+                                            <th colspan="{{ $totalColspan }}" class="text-end">TOTAL :</th>
+                                            <th class="text-end">@currency($data->sum('debet'))</th>
+                                            <th class="text-end">@currency($data->sum('kredit'))</th>
                                             <th class="text-end">@currency($data->last()->saldo_akhir)</th>
+                                            <!-- <th class="text-end">@currency($data->last()->saldo_akhir)</th> -->
                                             @if($showSAP)
                                                 <th></th>
                                             @endif
                                         </tr>
                                     @endif
                                     
-                                    {{-- Total Kredit --}}
+                                    <!-- {{-- Total Kredit --}}
                                     <tr>
                                         <th colspan="{{ $totalColspan }}" class="text-end">TOTAL KREDIT:</th>
                                         <th class="text-end">@currency($data->sum('kredit'))</th>
@@ -464,8 +467,8 @@
                                             @if($showSAP)
                                                 <th></th>
                                             @endif
-                                        </tr>
-                                    @endif
+                                        </tr> -->
+                                    <!-- @endif -->
                                 </tfoot>
                             @endif
                         </table>

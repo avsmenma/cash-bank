@@ -67,7 +67,7 @@
 
                     <div class="mt-2">
                        <label class="form-label" for="uraian">Uraian</label>
-                        <textarea name="uraian" id="uraian" class="form-control" placeholder="Uraian"></textarea>
+                        <textarea rows="4"name="uraian" id="uraian" class="form-control" placeholder="Uraian"></textarea>
                     </div>
 
                     <div class="row mt-2">
@@ -110,14 +110,14 @@
 
                     <div class="mt-2">
                         <label class="form-label" for="keterangan">Keterangan</label>
-                        <textarea name="keterangan" class="form-control" id="keterangan"></textarea>
+                        <textarea rows="4"name="keterangan" class="form-control" id="keterangan"></textarea>
                     </div>
 
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn ">Simpan</button>
+                    <button type="button" class="btn bg-danger text-white" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn bg-primary text-white">Simpan</button>
                 </div>
 
             </form>
@@ -210,65 +210,65 @@ $(document).ready(function() {
     });
 
     // Load sub-kriteria berdasarkan kategori yang dipilih
-    $('#kategori').on('change', function () {
-        let id = $(this).val();
+    // $('#kategori').on('change', function () {
+    //     let id = $(this).val();
         
-        // Reset sub kriteria dan item sub kriteria
-        $('#sub_kriteria').html('<option value="" disabled selected>Pilih Sub Kriteria</option>');
-        $('#item_sub_kriteria').html('<option value="" disabled selected>Pilih Item Sub Kriteria</option>');
+    //     // Reset sub kriteria dan item sub kriteria
+    //     $('#sub_kriteria').html('<option value="" disabled selected>Pilih Sub Kriteria</option>');
+    //     $('#item_sub_kriteria').html('<option value="" disabled selected>Pilih Item Sub Kriteria</option>');
         
-        if(id){
-            $.ajax({
-                url: '/sub-kriteria/' + id,
-                type: 'GET',
-                success: function (data) {
-                    if(data.length > 0) {
-                        data.forEach(function (item) {
-                            $('#sub_kriteria').append(
-                                '<option value="' + item.id_sub_kriteria + '">' + item.nama_sub_kriteria + '</option>'
-                            );
-                        });
-                    } else {
-                        $('#sub_kriteria').append('<option value="" disabled>Tidak ada data</option>');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error loading sub kriteria:', error);
-                    alert('Gagal memuat data sub kriteria');
-                }
-            });
-        }
-    });
+    //     if(id){
+    //         $.ajax({
+    //             url: '/sub-kriteria/' + id,
+    //             type: 'GET',
+    //             success: function (data) {
+    //                 if(data.length > 0) {
+    //                     data.forEach(function (item) {
+    //                         $('#sub_kriteria').append(
+    //                             '<option value="' + item.id_sub_kriteria + '">' + item.nama_sub_kriteria + '</option>'
+    //                         );
+    //                     });
+    //                 } else {
+    //                     $('#sub_kriteria').append('<option value="" disabled>Tidak ada data</option>');
+    //                 }
+    //             },
+    //             error: function(xhr, status, error) {
+    //                 console.error('Error loading sub kriteria:', error);
+    //                 alert('Gagal memuat data sub kriteria');
+    //             }
+    //         });
+    //     }
+    // });
 
     // Load item sub-kriteria berdasarkan sub kriteria yang dipilih
-    $('#sub_kriteria').on('change', function () {
-        let id = $(this).val();
+    // $('#sub_kriteria').on('change', function () {
+    //     let id = $(this).val();
         
-        // Reset item sub kriteria
-        $('#item_sub_kriteria').html('<option value="" disabled selected>Pilih Item Sub Kriteria</option>');
+    //     // Reset item sub kriteria
+    //     $('#item_sub_kriteria').html('<option value="" disabled selected>Pilih Item Sub Kriteria</option>');
         
-        if(id){
-            $.ajax({
-                url: '/item-sub-kriteria/' + id,
-                type: 'GET',
-                success: function (data) {
-                    if(data.length > 0) {
-                        data.forEach(function (item) {
-                            $('#item_sub_kriteria').append(
-                                '<option value="' + item.id_item_sub_kriteria + '">' + item.nama_item_sub_kriteria + '</option>'
-                            );
-                        });
-                    } else {
-                        $('#item_sub_kriteria').append('<option value="" disabled>Tidak ada data</option>');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error loading item sub kriteria:', error);
-                    alert('Gagal memuat data item sub kriteria');
-                }
-            });
-        }
-    });
+    //     if(id){
+    //         $.ajax({
+    //             url: '/item-sub-kriteria/' + id,
+    //             type: 'GET',
+    //             success: function (data) {
+    //                 if(data.length > 0) {
+    //                     data.forEach(function (item) {
+    //                         $('#item_sub_kriteria').append(
+    //                             '<option value="' + item.id_item_sub_kriteria + '">' + item.nama_item_sub_kriteria + '</option>'
+    //                         );
+    //                     });
+    //                 } else {
+    //                     $('#item_sub_kriteria').append('<option value="" disabled>Tidak ada data</option>');
+    //                 }
+    //             },
+    //             error: function(xhr, status, error) {
+    //                 console.error('Error loading item sub kriteria:', error);
+    //                 alert('Gagal memuat data item sub kriteria');
+    //             }
+    //         });
+    //     }
+    // });
 
     $('form').on('submit', function() {
         $('.rupiah-input').each(function() {

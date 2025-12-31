@@ -65,11 +65,7 @@
                     <div class="mt-3">
                         <label>Sub Kategori</label>
                         <select name="id_sub_kriteria" class="form-select" id="sub_kriteria">
-                            @foreach($subKriteria as $sk)
-                                <option value="{{ $sk->id_sub_kriteria }}">
-                                    {{ $sk->nama_sub_kriteria }}
-                                </option>
-                            @endforeach
+                            
                         </select>
                     </div>
 
@@ -77,11 +73,7 @@
                     <div class="mt-3">
                         <label>Item Sub Kriteria</label>
                         <select name="id_item_sub_kriteria" class="form-select" id="item_sub_kriteria">
-                            @foreach($itemSubKriteria as $ik)
-                                <option value="{{ $ik->id_item_sub_kriteria }}">
-                                    {{ $ik->nama_item_sub_kriteria }}
-                                </option>
-                            @endforeach
+                            
                         </select>
                     </div>
 
@@ -106,12 +98,12 @@
                     <div class="row mt-3">
                         <div class="col-md-4">
                             <label>Nilai Rupiah</label>
-                            <input type="number" name="nilai_rupiah" class="form-control" id="nilai_rupiah" readonly disabled>
+                            <input type="text" name="nilai_rupiah" class="form-control" id="nilai_rupiah" readonly disabled>
                         </div>
 
                         <div class="col-md-4">
                             <label>Kredit</label>
-                            <input type="number" name="kredit" class="form-control" id="kredit" readonly disabled>
+                            <input type="text" name="kredit" class="form-control" id="kredit" readonly disabled>
                         </div>
 
                         <div class="col-md-4">

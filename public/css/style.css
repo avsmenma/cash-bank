@@ -197,13 +197,13 @@ a.sidebar-link:hover{
     transition: 0.2s;
 }
 
-.btn:hover {
+/* .btn:hover { */
     /* box-shadow: 0 4px 12px rgba(0,0,0,0.15); */
     /* box-shadow: 0 2px 4px #0f1e5e; */
     /* background-color: primary; */
-    border: none;
-    color: #ffffff;
-}
+    /* border: none; */
+    /* color: #ffffff; */
+/* } */
 .card-body i{
     font-size: 1.5rem;
     /* background-color: #011C40; */
@@ -222,6 +222,9 @@ a.sidebar-link:hover{
 
 .btn-cancel{
     background-color: red;
+}
+.btn-cancel:hover{
+    background-color: none;
 }
 .btn-submit{
     background-color: green;

@@ -18,7 +18,6 @@
             <div class="card rounded-3 border-0 shadow-sm" id="printArea">
                 <div class="card-body">
                     <div class="justify-content-start align-items-center mb-3">
-                        <!-- <h5 class="mb-0 fw-semibold">Daftar Bank Keluar</h5> -->
                             <div class="d-flex flex-wrap gap-2">
                                 <button class="btn bg-danger btn-sm d-flex align-items-center gap-1" id="deleteAllSelectedRecord" style="background-color:#dc3545; color: white;">
                                     <i class="bi bi-trash"></i>
@@ -243,7 +242,7 @@ $(document).on('click', '[data-bs-target="#editKeluar"]', function () {
     modal.modal('show');
 });
 
- $(function(e){
+$(function(e){
         $("#select_all_ids").click(function(){
             $('.checkbox_ids').prop('checked',$(this).prop('checked'));
         });

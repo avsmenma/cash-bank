@@ -69,8 +69,7 @@ class BankMasukController extends Controller
         })
        ->orderBy('tanggal', 'asc')
        ->orderBy('id_bank_masuk')
-       ->paginate(25)
-       ->withQueryString();
+       ->get();
 
         return view('cash_bank.bankMasuk', [
             'data' => $data,

@@ -62,7 +62,7 @@
                                         <input class="form-check-input checkbox_ids" type="checkbox" 
                                             value="{{ $row->id_bank_masuk }}" name="ids">
                                         <label class="form-check-label fw-bold">
-                                            #{{ $data->firstItem() + $index }} - {{ $row->agenda_tahun }}
+                                            #{{ $index + 1 }} - {{ $row->agenda_tahun }}
                                         </label>
                                     </div>
                                     <span class="badge bg-primary">{{ $row->tanggal }}</span>
@@ -216,48 +216,80 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
-    $(function(e){
-        $("#select_all_ids").click(function(){
-            $('.checkbox_ids').prop('checked',$(this).prop('checked'));
-        });
-
-        $('#deleteAllSelectedRecord').click(function(e){
-            e.preventDefault();
-
-            let all_ids = [];
-            $('input[name="ids"]:checked').each(function(){
-                all_ids.push($(this).val());
-            });
-
-            if(all_ids.length === 0){
-                alert('Pilih data terlebih dahulu!');
-                return;
-            }
-
-            if(!confirm('Yakin ingin menghapus data terpilih?')) return;
-
-            $.ajax({
-                url: "{{ route('bank-masuk.delete') }}",
-                type: "DELETE",
-                data: {
-                    ids: all_ids,
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(res){
-                    all_ids.forEach(id => {
-                        $('#employee_ids'+id).remove();
-                    });
-                    alert(res.success);
-                    location.reload();
-                },
-                error: function(xhr){
-                    alert('Terjadi kesalahan saat menghapus data');
-                }
-            });
-        });
+$(document).ready(function(){
+    // Select All Checkbox
+    $("#select_all_ids").on('click', function(){
+        $('.checkbox_ids').prop('checked', $(this).prop('checked'));
     });
 
+    // Delete All Selected Records
+    $('#deleteAllSelectedRecord').on('click', function(e){
+        e.preventDefault();
 
+        let all_ids = [];
+        $('input[name="ids"]:checked').each(function(){
+            all_ids.push($(this).val());
+        });
+
+        console.log('=== DELETE ALL DEBUG ===');
+        console.log('Selected IDs:', all_ids);
+        console.log('CSRF Token:', $('meta[name="csrf-token"]').attr('content'));
+        console.log('Route URL:', '/bank-masuk/delete-selected');
+
+        if(all_ids.length === 0){
+            alert('Pilih data terlebih dahulu!');
+            return;
+        }
+
+        if(!confirm('Yakin ingin menghapus ' + all_ids.length + ' data terpilih?')) {
+            return;
+        }
+
+        $.ajax({
+            url: '/bank-masuk/delete-selected',
+            type: 'POST', // Ganti ke POST
+            data: {
+                _method: 'DELETE', // Method spoofing
+                ids: all_ids,
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            dataType: 'json',
+            beforeSend: function() {
+                console.log('Sending request...');
+                $('#deleteAllSelectedRecord').prop('disabled', true)
+                    .html('<span class="spinner-border spinner-border-sm"></span> Menghapus...');
+            },
+            success: function(response){
+                console.log('=== SUCCESS ===');
+                console.log('Response:', response);
+                alert(response.success || 'Data berhasil dihapus!');
+                location.reload();
+            },
+            error: function(xhr, status, error){
+                console.log('=== ERROR ===');
+                console.log('XHR Status:', xhr.status);
+                console.log('XHR Response:', xhr.responseText);
+                console.log('Status:', status);
+                console.log('Error:', error);
+                
+                let errorMessage = 'Terjadi kesalahan saat menghapus data';
+                
+                try {
+                    if(xhr.responseJSON) {
+                        console.log('Response JSON:', xhr.responseJSON);
+                        errorMessage = xhr.responseJSON.message || xhr.responseJSON.error || errorMessage;
+                    }
+                } catch(e) {
+                    console.log('Failed to parse JSON:', e);
+                }
+                
+                alert(errorMessage + '\n\nCek Console (F12) untuk detail error.');
+                $('#deleteAllSelectedRecord').prop('disabled', false)
+                    .html('<i class="bi bi-trash"></i> <span class="d-none d-sm-inline">Delete All</span>');
+            }
+        });
+    });
+});
 </script>
 <style>
     /* Enhanced Styles */

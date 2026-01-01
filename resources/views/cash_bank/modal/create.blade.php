@@ -74,7 +74,9 @@
                             <select name="id_kategori_kriteria" id="kategori" class="form-select">
                                 <option disabled selected>Pilih Kriteria CF</option>
                                 @foreach($kategoriKriteria as $kk)
-                                    <option value="{{ $kk->id_kategori_kriteria }}">{{ $kk->nama_kriteria }}</option>
+                                    <option value="{{ $kk->id_kategori_kriteria }}">
+                                        {{ $kk->nama_kriteria }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
@@ -90,15 +92,15 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Item Sub Kriteria</label>
-                            <select name="id_item_sub_kriteria" id="item_sub_kriteria" class="form-select">
-                                <option value="">Pilih Item Sub Kriteria</option>
-                            </select>
+                            <select name="id_item_sub_kriteria" id="item_sub_kriteria" class="form-select" >
+                    <option value="">Pilih Item Sub Kriteria</option>
+                </select>
                         </div>
                     </div>
 
                     <div class="mt-2">
                         <label class="form-label">Uraian</label>
-                        <textarea name="uraian" id="uraian" class="form-control" placeholder="Uraian"></textarea>
+                        <textarea rows="3"name="uraian" id="uraian" class="form-control" placeholder="Uraian"></textarea>
                     </div>
 
                     <div class="row mt-2">
@@ -139,7 +141,7 @@
 
                     <div class="mt-2">
                         <label class="form-label">Keterangan</label>
-                        <textarea name="keterangan" class="form-control"></textarea>
+                        <textarea rows="4"name="keterangan" class="form-control"></textarea>
                     </div>
 
                 </div>
@@ -177,185 +179,125 @@
 $(document).ready(function() {
 
     // format rupiah
-   document.querySelectorAll('.rupiah').forEach(function(input){
+    document.querySelectorAll('.rupiah').forEach(function(input){
         input.addEventListener('keyup', function(){
             let angka = this.value.replace(/[^0-9]/g, '');
             this.value = angka.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         });
     });
-    // Inisialisasi Select2 saat modal dibuka
-    $('#ModalCreate').on('shown.bs.modal', function () {
-        console.log(' Modal opened');
-        
-        if (!$('#dokumen_id').hasClass('select2-hidden-accessible')) {
-            $('#dokumen_id').select2({
-                 tags: true, 
-                dropdownParent: $('#ModalCreate'),
-                placeholder: 'Pilih Agenda atau ketik baru',
-                allowClear: true
-            });
-            console.log('Select2 initialized');
-        }
-    });
-    // Inisialisasi Select2 saat modal dibuka
-    // $('#ModalCreate').on('shown.bs.modal', function () {
-    //     console.log(' Modal opened');
-        
-    //     if (!$('#id_sumber_dana').hasClass('select2-hidden-accessible')) {
-    //         $('#id_sumber_dana').select2({
-    //              tags: true, 
-    //             dropdownParent: $('#ModalCreate'),
-    //             placeholder: 'Pilih Sumber Dana',
-    //             allowClear: true
-    //         });
-    //         console.log('Select2 initialized');
-    //     }
-    // });
-    // Inisialisasi Select2 saat modal dibuka
-    $('#ModalCreate').on('shown.bs.modal', function () {
-        console.log(' Modal opened');
-        
-        if (!$('#id_sumber_dana').hasClass('select2-hidden-accessible')) {
-            $('#id_sumber_dana').select2({
-                 tags: true, 
-                dropdownParent: $('#ModalCreate'),
-                placeholder: 'Pilih Sumber Dana',
-                allowClear: true
-            });
-            console.log('Select2 initialized');
-        }
-    });
-    // Inisialisasi Select2 saat modal dibuka
-    $('#ModalCreate').on('shown.bs.modal', function () {
-        console.log(' Modal opened');
-        
-        if (!$('#kategori').hasClass('select2-hidden-accessible')) {
-            $('#kategori').select2({
-                 tags: true, 
-                dropdownParent: $('#ModalCreate'),
-                placeholder: 'Pilih Kategori',
-                allowClear: true
-            });
-            console.log('Select2 initialized');
-        }
-    });
-    // Inisialisasi Select2 saat modal dibuka
-    $('#ModalCreate').on('shown.bs.modal', function () {
-        console.log(' Modal opened');
-        
-        if (!$('#id_bank_tujuan').hasClass('select2-hidden-accessible')) {
-            $('#id_bank_tujuan').select2({
-                 tags: true, 
-                dropdownParent: $('#ModalCreate'),
-                placeholder: 'Pilih Bank Tujuan',
-                allowClear: true
-            });
-            console.log('Select2 initialized');
-        }
-    });
-    $('#ModalCreate').on('shown.bs.modal', function () {
-        console.log(' Modal opened');
-        
-        if (!$('#kategori').hasClass('select2-hidden-accessible')) {
-            $('#kategori').select2({
-                 tags: true, 
-                dropdownParent: $('#ModalCreate'),
-                placeholder: 'Pilih Kategori',
-                allowClear: true
-            });
-            console.log('Select2 initialized');
-        }
-    });
-    $('#kategori').on('change', function () {
-        let id = $(this).val();
-        
-        // Reset sub kriteria dan item sub kriteria
-        $('#sub_kriteria').html('<option value="" disabled selected>Pilih Sub Kriteria</option>');
-        $('#item_sub_kriteria').html('<option value="" disabled selected>Pilih Item Sub Kriteria</option>');
-        
-        if(id){
-            $.ajax({
-                url: '/get-sub-kriteria/' + id,
-                type: 'GET',
-                success: function (data) {
-                    $('#sub_kriteria').html('<option value="">Pilih Sub Kriteria</option>');
+    // ===============================
+    // INIT SELECT2
+    // ===============================
+    function initSelect2(modal) {
+        modal.find('select').each(function () {
+            if (!$(this).hasClass('select2-hidden-accessible')) {
+                $(this).select2({
+                    dropdownParent: modal,
+                    width: '100%',
+                    allowClear: true
+                });
+            }
+        });
+    }
 
-                    if (data.length > 0) {
-                        data.forEach(function (item) {
-                            $('#sub_kriteria').append(
-                                `<option value="${item.id_sub_kriteria}">
-                                    ${item.nama_sub_kriteria}
-                                </option>`
-                            );
-                        });
-                    }
+    // ===============================
+    // SAAT MODAL DIBUKA
+    // ===============================
+    $('#ModalCreate').on('shown.bs.modal', function () {
+        initSelect2($(this));
+    });
 
-                    $('#sub_kriteria').trigger('change');
+    // ===============================
+    // KATEGORI → SUB KRITERIA
+    // ===============================
+    $(document).on('change', '#kategori', function () {
+
+        let modal = $('#ModalCreate');
+        let kategoriId = $(this).val();
+
+        let sub = modal.find('#sub_kriteria');
+        let item = modal.find('#item_sub_kriteria');
+
+        // destroy select2
+        // if (sub.hasClass('select2-hidden-accessible')) sub.select2('destroy');
+        // if (item.hasClass('select2-hidden-accessible')) item.select2('destroy');
+
+        // reset option
+        sub.html('<option value="">Pilih Sub Kriteria</option>');
+        item.html('<option value="">Pilih Item Sub Kriteria</option>');
+
+        if (!kategoriId) {
+            initSelect2(modal);
+            return;
+        }
+
+        $.ajax({
+            url: '/get-sub-kriteria/' + kategoriId,
+            type: 'GET',
+            success: function (res) {
+                if (res.length > 0) {
+                    res.forEach(function (e) {
+                        sub.append(
+                            '<option value="'+e.id_sub_kriteria+'">'+e.nama_sub_kriteria+'</option>'
+                        );
+                    });
                 }
-            });
-
-        }
+                initSelect2(modal);
+            }
+        });
     });
 
-    // Load item sub-kriteria berdasarkan sub kriteria yang dipilih
-    $('#sub_kriteria').on('change', function () {
-        let id = $(this).val();
-        
-        // Reset item sub kriteria
-        $('#item_sub_kriteria').html('<option value="" disabled selected>Pilih Item Sub Kriteria</option>');
-        
-        if(id){
-            $.ajax({
-                url: '/get-item-sub-kriteria/' + id,
-                type: 'GET',
-                success: function (data) {
-                    $('#item_sub_kriteria').html('<option value="">Pilih Item Sub Kriteria</option>');
+    // ===============================
+    // SUB KRITERIA → ITEM SUB KRITERIA
+    // ===============================
+    $(document).on('change', '#sub_kriteria', function () {
 
-                    if (data.length > 0) {
-                        data.forEach(function (item) {
-                            $('#item_sub_kriteria').append(
-                                `<option value="${item.id_item_sub_kriteria}">
-                                    ${item.nama_item_sub_kriteria}
-                                </option>`
-                            );
-                        });
-                    }
+        let modal = $('#ModalCreate');
+        let subId = $(this).val();
 
-                    $('#item_sub_kriteria').trigger('change');
+        let item = modal.find('#item_sub_kriteria');
+
+        // if (item.hasClass('select2-hidden-accessible')) {
+        //     item.select2('destroy');
+        // }
+
+        item.html('<option value="" disable selected>Pilih Item Sub Kriteria</option>');
+
+        if (!subId) {
+            initSelect2(modal);
+            return;
+        }
+
+        $.ajax({
+            url: '/get-item-sub-kriteria/' + subId,
+            type: 'GET',
+            success: function (res) {
+                if (res.length > 0) {
+                    res.forEach(function (e) {
+                        item.append(
+                            '<option value="'+e.id_item_sub_kriteria+'">'+e.nama_item_sub_kriteria+'</option>'
+                        );
+                    });
                 }
-            });
-        }
+                initSelect2(modal);
+            }
+        });
     });
-    // Inisialisasi Select2 saat modal dibuka
-    // $('#ModalCreate').on('shown.bs.modal', function () {
-    //     console.log(' Modal opened');
-        
-    //     if (!$('#sub_kriteria').hasClass('select2-hidden-accessible')) {
-    //         $('#sub_kriteria').select2({
-    //              tags: true, 
-    //             dropdownParent: $('#ModalCreate'),
-    //             placeholder: 'Pilih Sub Kriteria',
-    //             allowClear: true
-    //         });
-    //         console.log('Select2 initialized');
-    //     }
-    // });
-    // // Inisialisasi Select2 saat modal dibuka
-    // $('#ModalCreate').on('shown.bs.modal', function () {
-    //     console.log(' Modal opened');
-        
-    //     if (!$('#item_sub_kriteria').hasClass('select2-hidden-accessible')) {
-    //         $('#item_sub_kriteria').select2({
-    //              tags: true, 
-    //             dropdownParent: $('#ModalCreate'),
-    //             placeholder: 'Pilih Item Sub Kriteria',
-    //             allowClear: true
-    //         });
-    //         console.log('Select2 initialized');
-    //     }
-    // });
 
-    // Destroy Select2 saat modal ditutup (cleanup)
+    // ===============================
+    // RESET SAAT MODAL DITUTUP
+    // ===============================
+    $('#ModalCreate').on('hidden.bs.modal', function () {
+        let modal = $(this);
+
+        modal.find('select').each(function () {
+            if ($(this).hasClass('select2-hidden-accessible')) {
+                $(this).select2('destroy');
+            }
+            this.selectedIndex = 0;
+        });
+    });
+
     $('#ModalCreate').on('hidden.bs.modal', function () {
         if ($('#dokumen_id').hasClass('select2-hidden-accessible')) {
             $('#dokumen_id').select2('destroy');
@@ -484,6 +426,8 @@ $(document).ready(function() {
         $('#penerima').val('');
         $('#pembayaran').val('');
     }
+
+
 });
 let splitIndex = 0;
 

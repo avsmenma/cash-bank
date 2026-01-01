@@ -17,7 +17,6 @@ use App\Models\JenisPembayaran;
 use App\Exports\excelBankKeluar;
 use App\Models\KategoriKriteria;
 use App\Exports\reportKeluarExcel;
-use App\Imports\importSheetKeluar;
 use Illuminate\Support\Facades\DB;
 use App\Models\GabunganMasukKeluar;
 use Maatwebsite\Excel\Facades\Excel;
@@ -44,7 +43,7 @@ class BankKeluarController extends Controller
             'id_jenis_pembayaran',
             'nilai_rupiah',
             'kredit',
-            'keterangan','no_sap'
+            'keterangan'
         )
         ->with([
             'sumberDana:id_sumber_dana,nama_sumber_dana',
@@ -61,7 +60,6 @@ class BankKeluarController extends Controller
                   ->orWhere('kredit','like',"%$search%")
                   ->orWhere('tanggal','like',"%$search%")
                   ->orWhere('nilai_rupiah','like',"%$search%")
-                  ->orWhere('no_sap','like',"%$search%")
                   ->orWhereHas('sumberDana', function($q2) use ($search){
                       $q2->where('nama_sumber_dana','like',"%$search%");
                   })
@@ -78,9 +76,8 @@ class BankKeluarController extends Controller
         })
         ->orderBy('tanggal', 'asc')
         ->orderBy('id_bank_keluar')
-        ->get();
-        // ->paginate(25)
-        // ->withQueryString();
+        ->paginate(25)
+        ->withQueryString();
             // DB::raw("CONCAT(nomor_agenda,'_',tahun) as agenda_tahun"),
 
     /* ================= DATA AGENDA================= */
@@ -92,9 +89,9 @@ class BankKeluarController extends Controller
             'uraian_spp as uraian',
             'nilai_rupiah',
             'dibayar_kepada as penerima',
-            'jenis_pembayaran',
-            'kategori','jenis_dokumen as sub_kriteria','jenis_sub_pekerjaan as item_sub_kriteria'
+            'jenis_pembayaran'
         )
+        ->where('current_handler', 'pembayaran')
         ->where('status_pembayaran', 'belum_dibayar')
         ->get();
         
@@ -107,11 +104,11 @@ class BankKeluarController extends Controller
         3600,
         fn () => KategoriKriteria::where('tipe', 'Keluar')->get()
     );
+    $subKriteria = Cache::remember('sub_kriteria', 3600, fn () => SubKriteria::all());
+    $itemSubKriteria = Cache::remember('item_sub_kriteria', 3600, fn () => ItemSubKriteria::all());
     $jenisPembayaran = Cache::remember('jenis_pembayaran', 3600, fn () => JenisPembayaran::all());
 
-    $subKriteria = SubKriteria::all();
-    $itemSubKriteria = ItemSubKriteria::all(); // pastikan model ini ada
- 
+    
     return view('cash_bank.bankKeluar', compact(
         'data',
         'agenda',
@@ -122,7 +119,6 @@ class BankKeluarController extends Controller
         'itemSubKriteria',
         'jenisPembayaran'
     ));
-
     }
 
 
@@ -159,9 +155,6 @@ class BankKeluarController extends Controller
     $dokumen_id   = null;
     $no_agenda    = null;
     $agenda_tahun = $input;
-    $kategoriKriteria = $request->kategori;
-    $subKriteria = $request->sub_kriteria;
-    $itemSubKriteria = $request->item_sub_kriteria;
 
     if (is_numeric($input)) {
         $dokumen = DB::connection('mysql_agenda_online')
@@ -170,12 +163,8 @@ class BankKeluarController extends Controller
 
         if ($dokumen) {
             $dokumen_id   = $dokumen->id;
-            $no_agenda    = $dokumen->nomor_agenda;
-            $agenda_tahun = $dokumen->nomor_agenda;
-            $kategoriKriteria = $request->kategori;
-            $subKriteria = $request->sub_kriteria;
-            $itemSubKriteria = $request->item_sub_kriteria;
-
+            $agenda_tahun    = $dokumen->nomor_agenda;
+            // $agenda_tahun = $dokumen->nomor_agenda . '_' . $dokumen->tahun;
 
             DB::connection('mysql_agenda_online')
                 ->table('dokumens')
@@ -183,18 +172,15 @@ class BankKeluarController extends Controller
                 ->update([
                     'uraian_spp'        => $request->uraian,
                     'nilai_rupiah'      => $request->nilai_rupiah,
-                    'DIBAYAR'           => $request->nilai_rupiah,
+                    'dibayar'           => $request->nilai_rupiah,
                     'dibayar_kepada'    => $request->penerima,
                     'status_pembayaran' => 'sudah_dibayar',
                     'tanggal_dibayar'   => $request->tanggal,
-                    'kategori'          => $request->kategori,
-                    'jenis_dokumen'     => $request->sub_kriteria,
-                    'jenis_sub_pekerjaan' => $request->item_sub_kriteria,
                 ]);
         }
     }
     $pakaiSplit  = $request->filled('split.kredit');
-    $kreditUtama = $pakaiSplit ? 0 : ($validated['kredit'] ?? 0);
+$kreditUtama = $pakaiSplit ? 0 : ($validated['kredit'] ?? 0);
     BankKeluar::create([
         'dokumen_id'            => $dokumen_id,
         'no_agenda'             => $no_agenda,
@@ -247,6 +233,7 @@ class BankKeluarController extends Controller
 }
 
 
+
    public function getSub($id)
     {
         return SubKriteria::where('id_kategori_kriteria', $id)->get();
@@ -258,32 +245,92 @@ class BankKeluarController extends Controller
     }
 
    
-    public function getDokumenDetail($id)
-    {
-        try {
-            $dokumen = DB::connection('mysql_agenda_online')
+      public function getDokumenDetail($id)
+{
+    try {
+        $dokumen = DB::connection('mysql_agenda_online')
             ->table('dokumens')
             ->select(
                 'id as dokumen_id',
                 'uraian_spp as uraian',
                 'nilai_rupiah',
                 'dibayar_kepada as penerima',
-                'jenis_pembayaran as pembayaran'
+                'jenis_pembayaran as pembayaran',
+                'kategori',
+                'jenis_dokumen',
+                'jenis_sub_pekerjaan'
             )
             ->where('id', $id)
             ->first();
 
-            return response()->json([
-                'success' => true,
-                'data' => $dokumen
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data tidak ditemukan'
-            ], 404);
+        if ($dokumen) {
+            $kategori = null;
+            $subKriteria = null;
+            $itemSubKriteria = null;
+            
+            
+            $itemSubKriteria = ItemSubKriteria::where('nama_item_sub_kriteria', $dokumen->jenis_sub_pekerjaan)->first();
+            
+          
+            if (!$itemSubKriteria) {
+                $itemSubKriteria = ItemSubKriteria::where('nama_item_sub_kriteria', $dokumen->jenis_dokumen)->first();
+            }
+            
+           
+            if ($itemSubKriteria) {
+                $subKriteria = SubKriteria::find($itemSubKriteria->id_sub_kriteria);
+                
+                
+                if ($subKriteria) {
+                    $kategori = KategoriKriteria::find($subKriteria->id_kategori_kriteria);
+                }
+            }
+            
+            
+            if (!$subKriteria) {
+                $subKriteria = SubKriteria::where('nama_sub_kriteria', $dokumen->jenis_dokumen)->first();
+                if ($subKriteria) {
+                    $kategori = KategoriKriteria::find($subKriteria->id_kategori_kriteria);
+                }
+            }
+            
+            if (!$kategori) {
+                $kategori = KategoriKriteria::where('nama_kriteria', $dokumen->kategori)->first();
+            }
+            
+            
+            $dokumen->kategori_id = $kategori->id_kategori_kriteria ?? null;
+            $dokumen->kategori_nama = $kategori->nama_kriteria ?? $dokumen->kategori;
+            
+            $dokumen->sub_kriteria_id = $subKriteria->id_sub_kriteria ?? null;
+            $dokumen->sub_kriteria_nama = $subKriteria->nama_sub_kriteria ?? $dokumen->jenis_dokumen;
+            
+            $dokumen->item_sub_kriteria_id = $itemSubKriteria->id_item_sub_kriteria ?? null;
+            $dokumen->item_sub_kriteria_nama = $itemSubKriteria->nama_item_sub_kriteria ?? $dokumen->jenis_sub_pekerjaan;
+            
+            // Debug info
+            $dokumen->debug_info = [
+                'original_kategori' => $dokumen->kategori,
+                'original_jenis_dokumen' => $dokumen->jenis_dokumen,
+                'original_jenis_sub_pekerjaan' => $dokumen->jenis_sub_pekerjaan,
+                'item_found' => $itemSubKriteria ? true : false,
+                'sub_found' => $subKriteria ? true : false,
+                'kategori_found' => $kategori ? true : false,
+            ];
         }
-    } 
+
+        return response()->json([
+            'success' => true,
+            'data' => $dokumen
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Data tidak ditemukan: ' . $e->getMessage()
+        ], 404);
+    }
+
+}
 
     // public function dashboard()
     // {

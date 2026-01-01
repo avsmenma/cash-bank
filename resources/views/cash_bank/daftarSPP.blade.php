@@ -1,5 +1,6 @@
 @extends('layouts/index')
 @section('content')
+
 <div class="container-fluid mt-3">
 
     <!-- Title -->

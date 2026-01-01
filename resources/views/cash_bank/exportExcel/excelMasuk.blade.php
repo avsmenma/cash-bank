@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-        
-        <!-- style css -->
+  
         <link rel="stylesheet" href="https://cdn.datatables.net/2.3.6/css/dataTables.dataTables.css">
         <link rel="stylesheet"  href="{{ asset('css/style.css') }}" class="css">
         <link rel="stylesheet" href="https://unpkg.com/virtual-select-plugin@1.0.37/dist/virtual-select.min.css">
@@ -16,7 +15,7 @@
 
         <link rel="stylesheet" href="https://unpkg.com/virtual-select-plugin@1.0.37/dist/virtual-select.min.css">
         <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-        <script src="https://cdn.datatables.net/2.3.6/js/dataTables.js"></script>
+        <script src="https://cdn.datatables.net/2.3.6/js/dataTables.js"></script> -->
     </head>
     <body>
     <table class="table table-hover table-bordered align-middle display" id="example">
@@ -94,7 +93,9 @@
         </tbody>
     </table>
     <script>
-        new DataTable('#example');
+        new DataTable('#example',{
+            ordering: false
+        });
 
         
     </script>

@@ -123,13 +123,24 @@ a.sidebar-link:hover{
     border-left: 4px solid #ffffff;
     font-weight: 600;
 }
+/* ICON ikut berubah */
+a.sidebar-link.active i {
+    color: #ffffff !important;
+}
 
+/* hover tidak menimpa active */
+a.sidebar-link:hover:not(.active) {
+    background-color: rgba(255, 117, 24, 0.25);
+    color: #000;
+}
 .sidebar-item{
     position: relative;
     padding: 10px 0;
 }
 
-
+.sidebar-item .sidebar-dropdown .sidebar-link.active {
+    background-color: rgba(255, 117, 24, 0.9);
+}
 #sidebar:not(.expand) .sidebar-item .sidebar-dropdown{
     position: absolute;
     top: 0;

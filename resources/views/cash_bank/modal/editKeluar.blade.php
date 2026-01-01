@@ -85,13 +85,13 @@
 
                      <div class="mt-3">
                         <label>Uraian</label>
-                        <textarea name="uraian" class="form-control"></textarea>
+                        <textarea rows="4" name="uraian" class="form-control"></textarea>
                     </div>
 
                     {{-- KETERANGAN --}}
                     <div class="mt-3">
                         <label>Keterangan</label>
-                        <textarea name="keterangan" class="form-control"></textarea>
+                        <textarea rows="4" name="keterangan" class="form-control"></textarea>
                     </div>
 
                     {{-- NILAI --}}

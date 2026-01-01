@@ -1,23 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
+    <!DOCTYPE html>
+    <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        <!-- Bootstrap CSS -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
         
         <!-- style css -->
-        <link rel="stylesheet" href="https://cdn.datatables.net/2.3.6/css/dataTables.dataTables.css">
         <link rel="stylesheet"  href="{{ asset('css/style.css') }}" class="css">
-        <link rel="stylesheet" href="https://unpkg.com/virtual-select-plugin@1.0.37/dist/virtual-select.min.css">
+        <link rel="stylesheet" href="https://cdn.datatables.net/2.3.6/css/dataTables.dataTables.css">
+       <link rel="stylesheet" href="https://unpkg.com/virtual-select-plugin@1.0.37/dist/virtual-select.min.css">
         <script src="https://unpkg.com/virtual-select-plugin@1.0.37/dist/virtual-select.min.js"></script>
 
-        <title>Bank Keluar</title>
+        <title>Dashboard</title>
 
         <link rel="stylesheet" href="https://unpkg.com/virtual-select-plugin@1.0.37/dist/virtual-select.min.css">
         <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
         <script src="https://cdn.datatables.net/2.3.6/js/dataTables.js"></script>
+        <!-- <script src="https://unpkg.com/virtual-select-plugin@1.0.37/dist/virtual-select.min.js"></script> -->
     </head>
     <body>
         <!-- SIDEBAR -->
@@ -41,26 +44,26 @@
                         </a>
                     </li>
                     <li class="sidebar-item">
-                        <a href="{{ route('daftar-spp.index') }}" class="sidebar-link {{ request()->routeIs('daftarSPP')? 'active' : '' }}">
+                        <a href="{{ route('daftar-spp.index') }}" class="sidebar-link {{ request()->routeIs('daftar-spp.*')? 'active' : '' }}">
                             <i class="bi bi-file-earmark-medical-fill"></i>
                             <span class="deskripsi">Daftar SPP</span>
                         </a>
                     </li>
                     <li class="sidebar-item">
-                        <a href="" class="sidebar-link has-dropdown collapsed {{ request()->routeIs('bankMasuk','bankKeluar') ? 'active' : '' }}"  data-bs-toggle="collapse" data-bs-target="#bank" aria-expanded="{{ request()->routeIs('bankMasuk','bankKeluar') ? 'true' : 'false' }}" aria-controls="bank">
+                        <a href="" class="sidebar-link has-dropdown collapsed {{ request()->routeIs('bank-masuk.index','bank-keluar.index') ? 'active' : '' }}"  data-bs-toggle="collapse" data-bs-target="#bank" aria-expanded="{{ request()->routeIs('bank-masuk.*','bank-keluar.*') ? 'true' : 'false' }}" aria-controls="bank">
                     <i class="bi bi-bank"></i>
                         <span class="deskripsi">Daftar Bank </span>
                         </a>
 
-                        <ul id="bank" class="sidebar-dropdown list-item collapse {{ request()->routeIs('bankMasuk','bankKeluar') ? 'show' : '' }}"  data-bs-parent="#sidebar">
+                        <ul id="bank" class="sidebar-dropdown list-item collapse {{ request()->routeIs('bank-masuk.index','bank-keluar.index') ? 'active' : '' }}"  data-bs-parent="#sidebar">
                             <li class="sidebar-item">
-                                <a href="{{ route('bank-masuk.index')}} " class="sidebar-link {{ request()->routeIs('bankMasuk') ? 'active' : '' }}">
+                                <a href="{{ route('bank-masuk.index')}} " class="sidebar-link {{ request()->routeIs('bank-masuk.index') ? 'active' : '' }}">
                                     <i class="bi bi-wallet-fill"></i>
                                     Bank Masuk
                                 </a>
                             </li>
                             <li class="sidebar-item">
-                                <a href="{{ route('bank-keluar.index') }}" class="sidebar-link {{ request()->routeIs('bankKeluar')? 'active' : '' }}">
+                                <a href="{{ route('bank-keluar.index') }}" class="sidebar-link {{ request()->routeIs('bank-keluar.index')? 'active' : '' }}">
                                     <i class="bi bi-wallet2"></i>
                                 Bank Keluar
                                 </a>
@@ -68,47 +71,18 @@
                         </ul>
                     </li>
                     <li class="sidebar-item">
-                        <a href="{{ route('daftarBank.index') }}" class="sidebar-link {{ request()->routeIs('daftarBank')? 'active' : '' }}">
+                        <a href="{{ route('daftarBank.index') }}" class="sidebar-link {{ request()->routeIs('daftarBank.*')? 'active' : '' }}">
                            <i class="bi bi-cash-coin"></i>
                             <span class="deskripsi">Daftar Bank Tujuan</span>
                         </a>
                     </li>
-                    <!-- <li class="sidebar-item">
-                        <a href="#" class="sidebar-link has-dropdown collapsed {{ request()->routeIs('daftarBank','daftarRekening','saldoAwal') ? 'active' : '' }}"  data-bs-toggle="collapse" data-bs-target="#saldo" aria-expanded="{{ request()->routeIs('daftarBank','daftarRekening','saldoAwal') ? 'true' : 'false' }}" aria-controls="saldo">
-
-                            <i class="bi bi-cash-coin"></i>
-                            <span class="deskripsi">Daftar Saldo & Bank</span>
-                            </a>
-
-                            <ul id="saldo" class="sidebar-dropdown list-item collapse {{ request()->routeIs('daftarBank','daftarRekening','saldoAwal') ? 'show' : '' }}"  data-bs-parent="#saldo">
-                                <li class="sidebar-item">
-                                    <a href="{{ route('daftarBank.index')}} " class="sidebar-link {{ request()->routeIs('daftarBank') ? 'active' : '' }}">
-                                      <i class="bi bi-bank"></i>
-                                        Daftar VA (Virtual Account)
-                                    </a>
-                                </li>
-                                <li class="sidebar-item">
-                                    <a href="{{ route('daftarRekening.index') }}" class="sidebar-link {{ request()->routeIs('daftarRekening')? 'active' : '' }}">
-                                        <i class="bi bi-journal-bookmark-fill"></i>
-                                    Daftar Rekening
-                                    </a>
-                                </li>
-                                <li class="sidebar-item">
-                                    <a href="{{ route('saldoAwal.index')}}" class="sidebar-link {{ request()->routeIs('saldoAwal')? 'active' : '' }}">
-                                        <i class="bi bi-cash-coin"></i>
-                                    Saldo Awal Bank
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    </li> -->
                     <li class="sidebar-item">
                         <a href="#" 
                         class="sidebar-link has-dropdown collapsed 
-                        {{ request()->routeIs('bank-masuk','bank-keluar.report') ? 'active' : '' }}"  
+                        {{ request()->routeIs('bank-masuk.report','bank-keluar.report') ? 'active' : '' }}"  
                         data-bs-toggle="collapse" 
                         data-bs-target="#report" 
-                        aria-expanded="{{ request()->routeIs('bank-masuk','bank-keluar.report') ? 'true' : 'false' }}" 
+                        aria-expanded="{{ request()->routeIs('bank-masuk.report','bank-keluar.report') ? 'true' : 'false' }}" 
                         aria-controls="report">
 
                             <i class="bi bi-file-bar-graph"></i>
@@ -122,7 +96,7 @@
 
                             <li class="sidebar-item">
                                 <a href="{{ route('bank-masuk.report') }}"
-                                class="sidebar-link {{ request()->routeIs('bank-masuk') ? 'active' : '' }}">
+                                class="sidebar-link {{ request()->routeIs('bank-masuk.report') ? 'active' : '' }}">
                                     <i class="bi bi-file-bar-graph"></i>
                                     Report Bank Masuk
                                 </a>
@@ -171,7 +145,6 @@
                 <script src="https://unpkg.com/virtual-select-plugin@1.0.37/dist/virtual-select.min.js"></script>
 
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0/dist/js/bootstrap-select.min.js"></script>
-
             </div>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
@@ -185,4 +158,4 @@
 
         </script>
     </body>
-</html>
+    </html>

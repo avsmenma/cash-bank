@@ -51,7 +51,7 @@
                                     </td>
                                     <td class="sticky-col sticky-no text-center">{{  $index + 1 }}</td>
                                     <td class="sticky-col sticky-agenda">{{ $row->agenda_tahun }}</td>
-                                    <td class="text-center">{{ $row->id_bank_keluar }}</td>
+                                    <td class="text-center">{{ $index + 1 }}</td>
                                     <td class="text-center">{{ $row->tanggal }}</td>
                                     <td >{{ $row->sumberDana->nama_sumber_dana ?? '-' }}</td>
                                     <td >{{ $row->bankTujuan->nama_tujuan ?? '-' }}</td>

@@ -2,12 +2,12 @@
 <div class="modal fade" id="ModalImportFileExcel" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header bg-success">
+      <div class="modal-header bg-primary">
         <h5 class="modal-title text-white" id="exampleModalLabel"><i class="fas fa-search"></i>Filter Tanggal </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-       <form action="{{ route('bank-keluar.importExcel') }}" method="POST" enctype="multipart/form-data" id="importExcel">
+       <form action="{{ route('bank-keluar.importExcel') }}" method="POST" enctype="multipart/form-data" id="importExcelKeluar">
             @csrf
             <div class="form-group">
                 <label for="fileExcel">File</label>
@@ -21,12 +21,13 @@
       </div>
     </div>
   </div>
-  <script>
-  $(document).on('submit', '#importExcel', function () {
+</div>
+<script>
+  $(document).on('submit', '#importExcelKeluar', function () {
         console.log('SUBMIT TERPANGGIL');
 
         $('#btnSubmit')
             .prop('disabled', true)
             .html('<span class="spinner-border spinner-border-sm"></span> Sedang Upload...');
         });
-</div>
+</script>

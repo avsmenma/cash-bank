@@ -47,7 +47,7 @@
                     ? $data->firstItem() + $index 
                     : $index + 1 }}</td>
                 <td class="text-center">{{ $row->agenda_tahun }}</td>
-                <td class="text-center">{{ $row->id_bank_masuk }}</td>
+                <td class="text-center">{{ $index + 1 }}</td>
                 <td class="text-center">{{ $row->tanggal }}</td>
                 <td class="text-center">{{ $row->sumberDana->nama_sumber_dana ?? '-' }}</td>
                 <td class="text-center">{{ $row->bankTujuan->nama_tujuan ?? '-' }}</td>

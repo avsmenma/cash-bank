@@ -234,7 +234,9 @@ $(function(e){
                 return;
             }
 
-            if(!confirm('Yakin ingin menghapus data terpilih?')) return;
+            if(!confirm('Yakin ingin menghapus ' + all_ids.length + ' data terpilih?')) {
+                return;
+            }
 
             $.ajax({
                 url: "{{ route('bank-masuk.delete') }}",

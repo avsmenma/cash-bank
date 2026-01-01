@@ -7,18 +7,26 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-       <form action="{{ route('bank-keluar.importExcel') }}" method="POST" enctype="multipart/form-data">
+       <form action="{{ route('bank-keluar.importExcel') }}" method="POST" enctype="multipart/form-data" id="importExcel">
             @csrf
             <div class="form-group">
                 <label for="fileExcel">File</label>
                 <input type="file" name="fileExcel" id="fileExcel" class="form-control" required>
             </div>
             <div class="mt-4 text-end">
-                <button type="submit" class="btn bg-primary btn-sm">Terapkan</button>
+                <button type="submit" class="btn bg-primary btn-sm text-white" id="btnSubmit">Terapkan</button>
             </div>
         </form>
 
       </div>
     </div>
   </div>
+  <script>
+  $(document).on('submit', '#importExcel', function () {
+        console.log('SUBMIT TERPANGGIL');
+
+        $('#btnSubmit')
+            .prop('disabled', true)
+            .html('<span class="spinner-border spinner-border-sm"></span> Sedang Upload...');
+        });
 </div>

@@ -1614,11 +1614,11 @@ $kreditUtama = $pakaiSplit ? 0 : ($validated['kredit'] ?? 0);
             $request->file('fileExcel')
         );
 
-        // return redirect()
-        //     ->route('bank-keluar.index')
-        //     ->with('success', 'Data berhasil diimport');
-        //     }
-        return response()->json(['redirect' => route('bank-keluar.index'),'success'  => 'Data berhasil diimport!']);
+        return redirect()
+            ->route('bank-keluar.index')
+            ->with('success', 'Data berhasil diimport');
+            // }
+        // return response()->json(['redirect' => route('bank-keluar.index'),'success'  => 'Data berhasil diimport!']);
     }
 
     public function edit(string $id)

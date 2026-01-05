@@ -29,7 +29,7 @@
                 <div class="d-flex">
                     <button id="toggle-btn" type="button">
                         <!-- <i class="bi bi-columns-gap"></i> -->
-                        <img src="{{ asset('images/Logo PTPN IV.png') }}" alt="logo PTP" width="50" height="50" >
+                        <img src="{{ asset('images/logoPTPNNew.png') }}" alt="logo PTP" width="50" height="50" >
                     </button>
                     <div class="sidebar-logo">
                         <a href="#">Cash Bank</a>

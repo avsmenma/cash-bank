@@ -19,7 +19,7 @@
   <!-- /.login-logo -->
   <div class="card card-outline card-primary">
     <div class="card-header text-center">
-        <img src="{{ asset('images/Logo PTPN IV.png') }}" alt="logo PTP" width="100" height="100" >
+        <img src="{{ asset('images/logoPTPNNew.png') }}" alt="logo PTP" width="100" height="100" >
         <!-- <h1 class="tittle"><b>CASH-<span> BANK</span></b></h1> -->
          <h1 class="tittle mb-2 fs-3 fs-md-2 fw-bold"><b>Cash<span style="color: #FF7518"> Bank</span></b></h1>
     </div>

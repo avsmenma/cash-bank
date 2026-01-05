@@ -165,7 +165,8 @@ a {
 }
 
 a:hover {
-  color: #0056b3;
+  /* color: #0056b3; */
+  color: rgba(255, 117, 24, 0.9);
   text-decoration: none;
 }
 

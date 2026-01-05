@@ -412,10 +412,10 @@ $(document).on('change', '#kategori', function () {
     sub.html('<option value="">Pilih Sub Kriteria</option>');
     item.html('<option value="">Pilih Item Sub Kriteria</option>');
 
-    if (!kategoriId) {
-        initSelect2(modal);
-        return;
-    }
+    // if (!kategoriId) {
+    //     initSelect2(modal);
+    //     return;
+    // }
 
     console.log('⏳ Loading sub kriteria untuk kategori:', kategoriId);
 
@@ -434,7 +434,7 @@ $(document).on('change', '#kategori', function () {
             }
             
             // Re-init select2 SEBELUM set value
-            initSelect2(modal);
+            // initSelect2(modal);
             
             // Set sub kriteria jika ada pending data
             if (pendingDataToSet && pendingDataToSet.sub_kriteria_id) {
@@ -481,11 +481,6 @@ $(document).on('change', '#sub_kriteria', function () {
     console.log('🔄 Sub kriteria changed to:', subId);
 
     item.html('<option value="">Pilih Item Sub Kriteria</option>');
-
-    if (!subId) {
-        initSelect2(modal);
-        return;
-    }
 
     console.log('⏳ Loading item sub kriteria untuk sub:', subId);
 

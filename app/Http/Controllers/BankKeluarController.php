@@ -93,9 +93,11 @@ class BankKeluarController extends Controller
             'dibayar_kepada as penerima',
             'jenis_pembayaran'
         )
-        ->where('current_handler', 'pembayaran')
-        ->where('status_pembayaran', 'siap_dibayar')
+        // ->where('current_handler', 'pembayaran')
+        ->where('status_pembayaran', '!=','sudah_dibayar')
+        ->orderBy('tanggal_masuk', 'asc')
         ->get();
+
         
         // ->where('status_pembayaran', 'SIAP DIBAYAR')
     /* ================= CACHE DATA MASTER ================= */
@@ -236,20 +238,162 @@ class BankKeluarController extends Controller
 
 
 
-   public function getSub($id)
-    {
-        return SubKriteria::where('id_kategori_kriteria', $id)->get();
-    }
+//    public function getSub($id)
+//     {
+//         return SubKriteria::where('id_kategori_kriteria', $id)->get();
+//     }
 
-    public function getItem($id)
-    {
-        return ItemSubKriteria::where('id_sub_kriteria', $id)->get();
-    }
+//     public function getItem($id)
+//     {
+//         return ItemSubKriteria::where('id_sub_kriteria', $id)->get();
+//     }
 
    
-    public function getDokumenDetail($id)
-    {
+//     public function getDokumenDetail($id)
+//     {
+//     try {
+//         $dokumen = DB::connection('mysql_agenda_online')
+//             ->table('dokumens')
+//             ->select(
+//                 'id as dokumen_id',
+//                 'uraian_spp as uraian',
+//                 'nilai_rupiah',
+//                 'dibayar_kepada as penerima',
+//                 'jenis_pembayaran as pembayaran',
+//                 'kategori',
+//                 'jenis_dokumen',
+//                 'jenis_sub_pekerjaan'
+//             )
+//             ->where('id', $id)
+//             ->first();
+
+//         if ($dokumen) {
+//             $kategori = null;
+//             $subKriteria = null;
+//             $itemSubKriteria = null;
+            
+            
+//             $itemSubKriteria = ItemSubKriteria::where('nama_item_sub_kriteria', $dokumen->jenis_sub_pekerjaan)->first();
+            
+          
+//             if (!$itemSubKriteria) {
+//                 $itemSubKriteria = ItemSubKriteria::where('nama_item_sub_kriteria', $dokumen->jenis_dokumen)->first();
+//             }
+            
+           
+//             if ($itemSubKriteria) {
+//                 $subKriteria = SubKriteria::find($itemSubKriteria->id_sub_kriteria);
+                
+                
+//                 if ($subKriteria) {
+//                     $kategori = KategoriKriteria::find($subKriteria->id_kategori_kriteria);
+//                 }
+//             }
+            
+            
+//             if (!$subKriteria) {
+//                 $subKriteria = SubKriteria::where('nama_sub_kriteria', $dokumen->jenis_dokumen)->first();
+//                 if ($subKriteria) {
+//                     $kategori = KategoriKriteria::find($subKriteria->id_kategori_kriteria);
+//                 }
+//             }
+            
+//             if (!$kategori) {
+//                 $kategori = KategoriKriteria::where('nama_kriteria', $dokumen->kategori)->first();
+//             }
+            
+            
+//             $dokumen->kategori_id = $kategori->id_kategori_kriteria ?? null;
+//             $dokumen->kategori_nama = $kategori->nama_kriteria ?? $dokumen->kategori;
+            
+//             $dokumen->sub_kriteria_id = $subKriteria->id_sub_kriteria ?? null;
+//             $dokumen->sub_kriteria_nama = $subKriteria->nama_sub_kriteria ?? $dokumen->jenis_dokumen;
+            
+//             $dokumen->item_sub_kriteria_id = $itemSubKriteria->id_item_sub_kriteria ?? null;
+//             $dokumen->item_sub_kriteria_nama = $itemSubKriteria->nama_item_sub_kriteria ?? $dokumen->jenis_sub_pekerjaan;
+            
+//             // Debug info
+//             $dokumen->debug_info = [
+//                 'original_kategori' => $dokumen->kategori,
+//                 'original_jenis_dokumen' => $dokumen->jenis_dokumen,
+//                 'original_jenis_sub_pekerjaan' => $dokumen->jenis_sub_pekerjaan,
+//                 'item_found' => $itemSubKriteria ? true : false,
+//                 'sub_found' => $subKriteria ? true : false,
+//                 'kategori_found' => $kategori ? true : false,
+//             ];
+//         }
+
+//         return response()->json([
+//             'success' => true,
+//             'data' => $dokumen
+//         ]);
+//     } catch (\Exception $e) {
+//         return response()->json([
+//             'success' => false,
+//             'message' => 'Data tidak ditemukan: ' . $e->getMessage()
+//         ], 404);
+//     }
+
+// }
+public function getSub($id)
+{
     try {
+        \Log::info('getSub called with id: ' . $id);
+        
+        // Gunakan Query Builder langsung
+        $subKriteria = DB::table('sub_kriteria')
+            ->select('id_sub_kriteria', 'nama_sub_kriteria', 'id_kategori_kriteria')
+            ->where('id_kategori_kriteria', $id)
+            ->get();
+        
+        \Log::info('getSub result:', ['count' => $subKriteria->count(), 'data' => $subKriteria->toArray()]);
+        
+        return response()->json($subKriteria);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error getSub: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'error' => $e->getMessage(),
+            'line' => $e->getLine()
+        ], 500);
+    }
+}
+
+public function getItem($id)
+{
+    try {
+        \Log::info('getItem called with id: ' . $id);
+        
+        // Gunakan Query Builder langsung
+        $itemSubKriteria = DB::table('item_sub_kriteria')
+            ->select('id_item_sub_kriteria', 'nama_item_sub_kriteria', 'id_sub_kriteria')
+            ->where('id_sub_kriteria', $id)
+            ->get();
+        
+        \Log::info('getItem result:', ['count' => $itemSubKriteria->count(), 'data' => $itemSubKriteria->toArray()]);
+        
+        return response()->json($itemSubKriteria);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error getItem: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'error' => $e->getMessage(),
+            'line' => $e->getLine()
+        ], 500);
+    }
+}
+  public function getDokumenDetail($id)
+{
+    try {
+        // ========================================
+        // STEP 1: AMBIL DATA DARI DATABASE AGENDA
+        // ========================================
         $dokumen = DB::connection('mysql_agenda_online')
             ->table('dokumens')
             ->select(
@@ -257,7 +401,7 @@ class BankKeluarController extends Controller
                 'uraian_spp as uraian',
                 'nilai_rupiah',
                 'dibayar_kepada as penerima',
-                'jenis_pembayaran as pembayaran',
+                'jenis_pembayaran',
                 'kategori',
                 'jenis_dokumen',
                 'jenis_sub_pekerjaan'
@@ -265,73 +409,199 @@ class BankKeluarController extends Controller
             ->where('id', $id)
             ->first();
 
-        if ($dokumen) {
-            $kategori = null;
-            $subKriteria = null;
-            $itemSubKriteria = null;
+        if (!$dokumen) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dokumen tidak ditemukan'
+            ], 404);
+        }
+
+        // Bersihkan spasi/newline
+        $dokumen->kategori = trim($dokumen->kategori ?? '');
+        $dokumen->jenis_dokumen = trim($dokumen->jenis_dokumen ?? '');
+        $dokumen->jenis_sub_pekerjaan = trim($dokumen->jenis_sub_pekerjaan ?? '');
+        $dokumen->jenis_pembayaran = trim($dokumen->jenis_pembayaran ?? '');
+
+        \Log::info('=== DATA DARI AGENDA ===', [
+            'kategori' => $dokumen->kategori,
+            'jenis_dokumen' => $dokumen->jenis_dokumen,
+            'jenis_sub_pekerjaan' => $dokumen->jenis_sub_pekerjaan,
+            'jenis_pembayaran' => $dokumen->jenis_pembayaran,
+        ]);
+
+        // ========================================
+        // STEP 2: CARI JENIS PEMBAYARAN
+        // ========================================
+        $jenisPembayaran = null;
+        $jenisPembayaranId = null;
+        
+        if (!empty($dokumen->jenis_pembayaran)) {
+            $jenisPembayaran = DB::table('jenis_pembayarans')
+                ->where('nama_jenis_pembayaran', $dokumen->jenis_pembayaran)
+                ->first();
             
+            if (!$jenisPembayaran) {
+                $jenisPembayaran = DB::table('jenis_pembayarans')
+                    ->whereRaw('LOWER(TRIM(nama_jenis_pembayaran)) = ?', [strtolower($dokumen->jenis_pembayaran)])
+                    ->first();
+            }
             
-            $itemSubKriteria = ItemSubKriteria::where('nama_item_sub_kriteria', $dokumen->jenis_sub_pekerjaan)->first();
+            $jenisPembayaranId = $jenisPembayaran->id_jenis_pembayaran ?? null;
             
-          
+            \Log::info('Jenis Pembayaran:', [
+                'search' => $dokumen->jenis_pembayaran,
+                'found' => $jenisPembayaran ? true : false,
+                'id' => $jenisPembayaranId
+            ]);
+        }
+
+        // ========================================
+        // STEP 3: CARI ITEM SUB KRITERIA
+        // ========================================
+        $itemSubKriteria = null;
+        $itemSubKriteriaId = null;
+        $subKriteriaIdFromItem = null;
+        
+        if (!empty($dokumen->jenis_sub_pekerjaan)) {
+            $itemSubKriteria = DB::table('item_sub_kriteria')
+                ->where('nama_item_sub_kriteria', $dokumen->jenis_sub_pekerjaan)
+                ->first();
+            
             if (!$itemSubKriteria) {
-                $itemSubKriteria = ItemSubKriteria::where('nama_item_sub_kriteria', $dokumen->jenis_dokumen)->first();
+                $itemSubKriteria = DB::table('item_sub_kriteria')
+                    ->whereRaw('LOWER(TRIM(nama_item_sub_kriteria)) = ?', [strtolower($dokumen->jenis_sub_pekerjaan)])
+                    ->first();
             }
             
-           
-            if ($itemSubKriteria) {
-                $subKriteria = SubKriteria::find($itemSubKriteria->id_sub_kriteria);
-                
-                
-                if ($subKriteria) {
-                    $kategori = KategoriKriteria::find($subKriteria->id_kategori_kriteria);
-                }
-            }
+            $itemSubKriteriaId = $itemSubKriteria->id_item_sub_kriteria ?? null;
+            $subKriteriaIdFromItem = $itemSubKriteria->id_sub_kriteria ?? null;
             
+            \Log::info('Item Sub Kriteria:', [
+                'search' => $dokumen->jenis_sub_pekerjaan,
+                'found' => $itemSubKriteria ? true : false,
+                'id' => $itemSubKriteriaId,
+                'id_sub_kriteria' => $subKriteriaIdFromItem
+            ]);
+        }
+
+        // ========================================
+        // STEP 4: CARI SUB KRITERIA
+        // ========================================
+        $subKriteria = null;
+        $subKriteriaId = null;
+        $kategoriIdFromSub = null;
+        
+        // Prioritas 1: Dari relasi item_sub_kriteria
+        if ($subKriteriaIdFromItem) {
+            $subKriteria = DB::table('sub_kriteria')
+                ->where('id_sub_kriteria', $subKriteriaIdFromItem)
+                ->first();
+        }
+        
+        // Prioritas 2: Cari langsung dengan jenis_dokumen
+        if (!$subKriteria && !empty($dokumen->jenis_dokumen)) {
+            $subKriteria = DB::table('sub_kriteria')
+                ->where('nama_sub_kriteria', $dokumen->jenis_dokumen)
+                ->first();
             
             if (!$subKriteria) {
-                $subKriteria = SubKriteria::where('nama_sub_kriteria', $dokumen->jenis_dokumen)->first();
-                if ($subKriteria) {
-                    $kategori = KategoriKriteria::find($subKriteria->id_kategori_kriteria);
-                }
+                $subKriteria = DB::table('sub_kriteria')
+                    ->whereRaw('LOWER(TRIM(nama_sub_kriteria)) = ?', [strtolower($dokumen->jenis_dokumen)])
+                    ->first();
             }
+        }
+        
+        $subKriteriaId = $subKriteria->id_sub_kriteria ?? null;
+        $kategoriIdFromSub = $subKriteria->id_kategori_kriteria ?? null;
+        
+        \Log::info('Sub Kriteria:', [
+            'search' => $dokumen->jenis_dokumen,
+            'found' => $subKriteria ? true : false,
+            'id' => $subKriteriaId,
+            'id_kategori_kriteria' => $kategoriIdFromSub
+        ]);
+
+        // ========================================
+        // STEP 5: CARI KATEGORI
+        // ========================================
+        $kategori = null;
+        $kategoriId = null;
+        
+        // Prioritas 1: Dari relasi sub_kriteria
+        if ($kategoriIdFromSub) {
+            $kategori = DB::table('kategori_kriteria')
+                ->where('id_kategori_kriteria', $kategoriIdFromSub)
+                ->where('tipe', 'Keluar')
+                ->first();
+                
+            \Log::info('Kategori dari relasi:', [
+                'id' => $kategoriIdFromSub,
+                'found' => $kategori ? true : false
+            ]);
+        }
+        
+        // Prioritas 2: Cari langsung dengan field kategori
+        if (!$kategori && !empty($dokumen->kategori)) {
+            $kategori = DB::table('kategori_kriteria')
+                ->where('nama_kriteria', $dokumen->kategori)
+                ->where('tipe', 'Keluar')
+                ->first();
             
             if (!$kategori) {
-                $kategori = KategoriKriteria::where('nama_kriteria', $dokumen->kategori)->first();
+                $kategori = DB::table('kategori_kriteria')
+                    ->whereRaw('LOWER(TRIM(nama_kriteria)) = ?', [strtolower($dokumen->kategori)])
+                    ->where('tipe', 'Keluar')
+                    ->first();
             }
             
-            
-            $dokumen->kategori_id = $kategori->id_kategori_kriteria ?? null;
-            $dokumen->kategori_nama = $kategori->nama_kriteria ?? $dokumen->kategori;
-            
-            $dokumen->sub_kriteria_id = $subKriteria->id_sub_kriteria ?? null;
-            $dokumen->sub_kriteria_nama = $subKriteria->nama_sub_kriteria ?? $dokumen->jenis_dokumen;
-            
-            $dokumen->item_sub_kriteria_id = $itemSubKriteria->id_item_sub_kriteria ?? null;
-            $dokumen->item_sub_kriteria_nama = $itemSubKriteria->nama_item_sub_kriteria ?? $dokumen->jenis_sub_pekerjaan;
-            
-            // Debug info
-            $dokumen->debug_info = [
-                'original_kategori' => $dokumen->kategori,
-                'original_jenis_dokumen' => $dokumen->jenis_dokumen,
-                'original_jenis_sub_pekerjaan' => $dokumen->jenis_sub_pekerjaan,
-                'item_found' => $itemSubKriteria ? true : false,
-                'sub_found' => $subKriteria ? true : false,
-                'kategori_found' => $kategori ? true : false,
-            ];
+            \Log::info('Kategori dari nama:', [
+                'search' => $dokumen->kategori,
+                'found' => $kategori ? true : false
+            ]);
         }
+        
+        $kategoriId = $kategori->id_kategori_kriteria ?? null;
+
+        // ========================================
+        // STEP 6: SIAPKAN RESPONSE
+        // ========================================
+        $response = [
+            'uraian' => $dokumen->uraian,
+            'nilai_rupiah' => $dokumen->nilai_rupiah,
+            'penerima' => $dokumen->penerima,
+            'pembayaran' => $dokumen->jenis_pembayaran,
+            
+            // ID untuk dropdown
+            'kategori_id' => $kategoriId,
+            'sub_kriteria_id' => $subKriteriaId,
+            'item_sub_kriteria_id' => $itemSubKriteriaId,
+            'jenis_pembayaran_id' => $jenisPembayaranId,
+            
+            // Nama untuk display
+            'kategori_nama' => $kategori->nama_kriteria ?? $dokumen->kategori,
+            'sub_kriteria_nama' => $subKriteria->nama_sub_kriteria ?? $dokumen->jenis_dokumen,
+            'item_sub_kriteria_nama' => $itemSubKriteria->nama_item_sub_kriteria ?? $dokumen->jenis_sub_pekerjaan,
+            'jenis_pembayaran_nama' => $jenisPembayaran->nama_jenis_pembayaran ?? $dokumen->jenis_pembayaran,
+        ];
+
+        \Log::info('=== RESPONSE FINAL ===', $response);
 
         return response()->json([
             'success' => true,
-            'data' => $dokumen
+            'data' => $response
         ]);
+
     } catch (\Exception $e) {
+        \Log::error('Error getDokumenDetail: ' . $e->getMessage(), [
+            'line' => $e->getLine(),
+            'file' => $e->getFile()
+        ]);
+        
         return response()->json([
             'success' => false,
-            'message' => 'Data tidak ditemukan: ' . $e->getMessage()
-        ], 404);
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+        ], 500);
     }
-
 }
 
     // public function dashboard()

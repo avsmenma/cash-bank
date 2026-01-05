@@ -217,6 +217,9 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('saldoAwal', SaldoAwalController::class);
 
 });
+Route::get('/penerima',fn()=> view('cash_bank.pembayaran.penerima'))->name('penerima');
+Route::get('/dropping',fn()=> view('cash_bank.pembayaran.dropping'))->name('dropping');
+
 
 // DAFTAR BANK
 // Route::resource('daftarRekening', daftarRekeningController::class);

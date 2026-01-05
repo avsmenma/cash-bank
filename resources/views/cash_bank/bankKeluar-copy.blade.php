@@ -53,7 +53,7 @@
                     
                     <!-- Desktop Table -->
                     <div class="table-wrapper d-none d-xl-block">
-                        @include('cash_bank.exportExcel.excelKeluar')
+                        @include('cash_bank.exportExcel.excelKeluar', ['data' => $data])
                     </div>
 
                     <!-- Mobile/Tablet Card View -->

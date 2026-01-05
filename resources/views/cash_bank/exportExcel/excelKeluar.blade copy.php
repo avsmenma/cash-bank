@@ -43,7 +43,7 @@
                                     <th style="width: 100px;">Aksi</th>
                                 </tr>
                             </thead>
-                            <!-- <tbody>
+                            <tbody>
                                 @foreach ($data as $index => $row)
                                 <tr id="employee_ids{{ $row->id_bank_keluar}}">
                                     <td class="sticky-col sticky-check text-center">
@@ -102,7 +102,7 @@
                                     </td>
                                 </tr>
                                 @endforeach
-                            </tbody> -->
+                            </tbody>
                         </table>
 
 

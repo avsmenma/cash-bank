@@ -26,13 +26,12 @@ class daftarSPPController extends Controller
         // );
         $query = DB::connection('mysql_agenda_online')
         ->table('dokumens')
-        ->select(
-            '*')
+        ->select('*')
         ->orderBy('tanggal_masuk', 'asc');
 
         // search
         if ($search) {
-            $query->where(DB::raw("CONCAT(nomor_agenda,'_',tahun)"), 'like', "%{$search}%")
+            $query
                 ->orWhere('nomor_spp', 'like', "%{$search}%")
                 ->orWhere('dibayar_kepada', 'like', "%{$search}%")
                 ->orWhere('nilai_rupiah', 'like', "%{$search}%")
@@ -43,11 +42,17 @@ class daftarSPPController extends Controller
 
         // filter status
         if ($filterStatus == "belum") {
-            $query->where('status_pembayaran', 'belum_siap_dibayar');
+            $query
+            ->whereNotIn('status_pembayaran', [
+                'siap_dibayar',
+                'sudah_dibayar'
+            ])->orderBy('tanggal_masuk', 'asc');
         } elseif ($filterStatus == "siap") {
-            $query->where('status_pembayaran', 'belum_dibayar');
+            $query->where('status_pembayaran', 'siap_dibayar')
+            ->orderBy('tanggal_masuk','asc');
         } elseif ($filterStatus == "sudah") {
-            $query->where('status_pembayaran', 'sudah_dibayar');
+            $query->where('status_pembayaran', 'sudah_dibayar')
+            ->orderBy('tanggal_masuk','asc');
         }
 
         $data = $query->get();

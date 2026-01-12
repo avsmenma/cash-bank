@@ -1,9 +1,13 @@
 <?php
 
 
+use App\Models\ItemSubKriteria;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\pdfController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserSAPController;
+use App\Http\Controllers\DroppingController;
+use App\Http\Controllers\PenerimaController;
 use App\Http\Controllers\BankMasukController;
 use App\Http\Controllers\daftarSPPController;
 use App\Http\Controllers\dashboardController;
@@ -11,9 +15,11 @@ use App\Http\Controllers\saldoAwalController;
 use App\Http\Controllers\BankKeluarController;
 use App\Http\Controllers\daftarBankController;
 use App\Http\Controllers\DetailItemController;
+use App\Http\Controllers\PermintaanController;
 use App\Http\Controllers\daftarRekeningController;
 use App\Http\Controllers\DetailSubKategoriController;
-use App\Http\Controllers\UserSAPController;
+use App\Http\Controllers\DashboardPembayaranController;
+use App\Http\Controllers\DetaiControllerCashFlowController;
 
 // Route::post('/logout',[AuthController::class, 'logout']);
 // Route::get('/login',fn()=> view('auth.login'))->name('login');
@@ -29,8 +35,21 @@ Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth');
 Route::group(['middleware' => ['auth','check_role:admin']], function(){
     Route::get('/dashboard-cash-bank', [dashboardController::class, 'index'])
-        ->name('dashboard');
+        ->name('dashboard.index');
+    Route::get('/dashboard-cash-bank/data2', [dashboardController::class, 'data2'])
+        ->name('dashboard.data2');
+    Route::get('/dashboard-cash-bank/export_excel', [dashboardController::class, 'export_excel'])
+    ->name('dashboard.excel');
+    Route::get('/dashboard-cash-bank/export_excelPvd', [dashboardController::class, 'export_excelPvd'])
+    ->name('dashboard.excelPvd');
+    Route::get('/dashboard-cash-bank/view_pdf', [dashboardController::class, 'view_pdf'])
+    ->name('dashboard.pdf');
+    
 });
+// Route::group(['middleware' => ['auth','check_role:admin']], function(){
+//     Route::get('/dashboard-pembayaran', [DashboardPembayaranController::class, 'index'])
+//         ->name('dashboard-pembayaran');
+// });
 Route::group(['middleware' => ['auth','check_role:vendor']], function(){
     Route::get('/userVendor', [UserSAPController::class, 'index'])
     ->name('userVendor.index');
@@ -38,9 +57,9 @@ Route::group(['middleware' => ['auth','check_role:vendor']], function(){
 
 
 // menu
-Route::get('/dashboard-cash-bank', [dashboardController::class, 'index'])
-->name('dashboard')->middleware('auth');
+
 Route::get('/daftar-spp', [daftarSPPController::class, 'index'])->name('daftar-spp.index');
+Route::get('/daftar-spp/data', [daftarSPPController::class, 'datatable'])->name('daftar-spp.data');
 Route::get('/user-sap/export_excel', [UserSAPController::class, 'export_excel']);
 Route::get('/user-sap/view/pdf', [UserSAPController::class,'view_pdf']);
 Route::put('/user-sap/{id}', [UserSAPController::class, 'update']);
@@ -109,10 +128,9 @@ Route::middleware(['auth'])->group(function () {
 
         Route::delete('/selected-employee', [BankKeluarController::class, 'deleteAll'])
             ->name('delete');
-
             
         });
-    Route::get('/bank-keluar/data', [BankKeluarController::class, 'data'])
+    Route::get('/bank-keluar/data', [BankKeluarController::class, 'datatable'])
         ->name('bank-keluar.data');
         
     Route::get('/detail-transaksi', [BankKeluarController::class, 'getDetailTransaksi'])
@@ -170,8 +188,11 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/bank-masuk/ajax', [BankMasukController::class, 'ajax'])
             ->name('bank-masuk.ajax');
-
-    });
+        
+            
+        });
+    Route::get('/bank-masuk/data', [BankMasukController::class, 'datatable'])
+        ->name('bank-masuk.data');
 
     Route::resource('bank-masuk', BankMasukController::class);
 
@@ -211,16 +232,103 @@ Route::middleware(['auth'])->group(function () {
 });
 Route::middleware(['auth'])->group(function () {
     Route::resource('daftarRekening', DaftarRekeningController::class);
-
+    Route::get('/daftarBank/data', [DaftarBankController::class, 'datatable'])->name('daftarBank.data');
     Route::resource('daftarBank', DaftarBankController::class);
 
     Route::resource('saldoAwal', SaldoAwalController::class);
 
 });
-Route::get('/penerima',fn()=> view('cash_bank.pembayaran.penerima'))->name('penerima');
-Route::get('/dropping',fn()=> view('cash_bank.pembayaran.dropping'))->name('dropping');
 
+Route::middleware(['auth'])->group(function () {
+    Route::prefix('penerima')->name('penerima.')->group(function () {
 
+        // delete multiple
+        Route::delete('/selected-employee', [PenerimaController::class, 'deleteAll'])
+            ->name('delete');
+
+        Route::get('/bank-masuk/ajax', [PenerimaController::class, 'ajax'])
+            ->name('bank-masuk.ajax');
+        
+        });
+        
+        Route::get('/penerima/cashflow', [PenerimaController::class, 'cashFlow'])
+            ->name('penerima.cashflow');
+        Route::get('/penerima/rencana', [PenerimaController::class, 'rencana'])
+            ->name('penerima.rencana');
+        Route::get('/penerima/gabungan', [PenerimaController::class, 'gabungan'])
+            ->name('penerima.gabungan');
+        Route::post('/penerima/save', [PenerimaController::class, 'save'])
+            ->name('penerima.rencana.save');
+
+    Route::get('/penerima/data', [PenerimaController::class, 'datatable'])
+        ->name('penerima.data');
+
+    Route::resource('penerima', PenerimaController::class);
+
+});
+Route::middleware(['auth'])->group(function () {
+    Route::prefix('permintaan')->name('permintaan.')->group(function () {
+
+        // delete multiple
+        Route::delete('/selected-employee', [PermintaanController::class, 'deleteAll'])
+            ->name('delete');
+        
+        });
+        Route::get('/permintaan/cashflow', [PermintaanController::class, 'cashFlow'])->name('permintaan.cashflow');
+        Route::get('/permintaan/table', [PermintaanController::class,'getTable']);
+        Route::get('/permintaan/table', [PermintaanController::class, 'getTable'])->name('permintaan.table');
+        Route::post('/permintaan/save', [PermintaanController::class, 'saveData'])->name('permintaan.save');
+        Route::delete('/permintaan/delete', [PermintaanController::class, 'deleteData'])->name('permintaan.delete');
+        Route::get('/permintaan/sub-kriteria/{id}', [PermintaanController::class, 'getSub']);
+        Route::resource('permintaan', PermintaanController::class);
+        Route::get('/dropping/gabungan', [DroppingController::class, 'gabungan'])
+            ->name('dropping.gabungan');
+
+});
+Route::middleware(['auth'])->group(function () {
+    Route::prefix('dropping')->name('dropping.')->group(function () {
+
+        // delete multiple
+        Route::delete('/selected-employee', [DroppingController::class, 'deleteAll'])
+            ->name('delete');
+        
+        });
+        Route::get('/dropping/sub-kriteria/{id}', [DroppingController::class, 'getSub']);
+        Route::get('/dropping/cashflow', [DroppingController::class, 'cashFlow'])->name('dropping.cashflow');
+        Route::get('/dropping/rencana', [DroppingController::class, 'rencana'])
+            ->name('dropping.rencana');
+        Route::get('/dropping/table', [DroppingController::class, 'getTable'])->name('dropping.table');
+        Route::post('/dropping/save', [DroppingController::class, 'saveData'])->name('dropping.save');
+        Route::post('/dropping/saveRencana', [DroppingController::class, 'saveRencana'])
+            ->name('dropping.rencana.saveRencana');
+        Route::delete('/dropping/delete', [DroppingController::class, 'deleteData'])->name('dropping.delete');
+        Route::resource('dropping', DroppingController::class);
+
+});
+// routes/web.php
+
+// Dashboard Pembayaran
+Route::prefix('dashboard-pembayaran')->name('dashboard.pembayaran.')->group(function () {
+    // Halaman utama (sudah include data)
+    Route::get('/', [DashboardPembayaranController::class, 'index'])->name('index');
+    
+    // AJAX: Load data tabel (untuk refresh tanpa reload halaman)
+    Route::get('/data', [DashboardPembayaranController::class, 'data'])->name('data');
+     Route::get('/data2', [DashboardPembayaranController::class, 'data2'])->name('data2');
+    
+    // Export PDF
+    Route::get('/export-pdf', [DashboardPembayaranController::class, 'exportPdf'])->name('pdf');
+    
+    // Export Excel
+    Route::get('/export-excel', [DashboardPembayaranController::class, 'exportExcel'])->name('excel');
+
+   
+});
+// Route::get('/dashboard-detail-pd',fn()=> view('cash_bank.detailPd_detailPvD.detailPvd'))->name('dashboard-detail-pd');
+// Route::get('/penerima',fn()=> view('cash_bank.pembayaran.penerima'))->name('penerima');
+
+Route::get('/cashflow', [DetaiControllerCashFlowController::class, 'index'])->name('cashflow.index');
+Route::get('/cashflow/detail', [DetaiControllerCashFlowController::class, 'detail'])->name('cashflow.detail');
 // DAFTAR BANK
 // Route::resource('daftarRekening', daftarRekeningController::class);
 // Route::resource('daftarBank', daftarBankController::class);

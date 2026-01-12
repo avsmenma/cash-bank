@@ -1,132 +1,522 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Exports\ExcelPd;
+use App\Models\Dropping;
+use App\Models\Penerima;
+use App\Exports\ExcelPvd;
 use App\Models\BankMasuk;
 use App\Models\BankKeluar;
+use App\Models\Permintaan;
 use Illuminate\Http\Request;
 use App\Models\KategoriKriteria;
 use Illuminate\Support\Facades\DB;
 use App\Models\GabunganMasukKeluar;
+use Maatwebsite\Excel\Facades\Excel;
 
 class dashboardController extends Controller
 {
-    public function index()
-    {
-        // Ambil tahun saat ini atau dari request
-        $tahun = request('tahun', date('Y'));
+    public function index(Request $request)
+{
+    $bulanList = [
+        1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April',
+        5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus',
+        9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'
+    ];
+    
+    $tahun = $request->tahun ?? date('Y');
+    $bulanDari = $request->bulan_dari ?? 1;
+    $bulanSampai = $request->bulan_sampai ?? 12;
 
-        // Nama bulan dalam bahasa Indonesia
-        $bulan = [
-            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-        ];
-
-        
-        // Inisialisasi array untuk 12 bulan dengan nilai 0
-        $total_pengeluaran = array_fill(0, 12, 0);
-        $total_pemasukkan = array_fill(0, 12, 0);
-
-        // Ambil data pengeluaran per bulan untuk tahun tertentu
-        $data_pengeluaran = BankKeluar::select(
-            DB::raw("MONTH(tanggal) as bulan_angka"),
-            DB::raw("SUM(kredit) as total")
+    // ========== PENERIMA ==========
+    $penerima = Penerima::with('kategori')
+        ->select(
+            'id_kategori_kriteria',
+            DB::raw('MONTH(tanggal) as bulan'),
+            DB::raw('SUM(nilai + ppn - potppn) as total')
         )
         ->whereYear('tanggal', $tahun)
-        ->groupBy(DB::raw("MONTH(tanggal)"))
-        ->orderBy(DB::raw("MONTH(tanggal)"))
+        ->whereBetween(DB::raw('MONTH(tanggal)'), [$bulanDari, $bulanSampai])
+        ->groupBy('id_kategori_kriteria', DB::raw('MONTH(tanggal)'))
         ->get();
 
-        // Ambil data pemasukkan per bulan untuk tahun tertentu
-        $data_pemasukkan = BankMasuk::select(
-            DB::raw("MONTH(tanggal) as bulan_angka"),
-            DB::raw("SUM(debet) as total")
+    // ========== DROPPING ==========
+    $dropping = Dropping::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+        ->where('tahun', $tahun)
+        ->whereBetween('bulan', [$bulanDari, $bulanSampai])
+        ->get();
+
+    // ========== PEMBAYARAN (BANK KELUAR) ==========
+    $pembayaran = BankKeluar::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+        ->select(
+            'id_kategori_kriteria',
+            'id_sub_kriteria',
+            'id_item_sub_kriteria',
+            DB::raw('MONTH(tanggal) as bulan'),
+            DB::raw('SUM(CAST(kredit AS DECIMAL(15,2))) as total')
         )
         ->whereYear('tanggal', $tahun)
-        ->groupBy(DB::raw("MONTH(tanggal)"))
-        ->orderBy(DB::raw("MONTH(tanggal)"))
+        ->whereBetween(DB::raw('MONTH(tanggal)'), [$bulanDari, $bulanSampai])
+        ->whereNotNull('kredit')
+        ->where('kredit', '!=', '')
+        ->where('kredit', '!=', '0')
+        ->whereNotNull('id_kategori_kriteria')
+        ->whereNotNull('id_sub_kriteria')
+        ->whereNotNull('id_item_sub_kriteria')
+        ->groupBy('id_kategori_kriteria', 'id_sub_kriteria', 'id_item_sub_kriteria', DB::raw('MONTH(tanggal)'))
         ->get();
 
-        // Isi data pengeluaran yang ada ke array
-        foreach ($data_pengeluaran as $data) {
-            $total_pengeluaran[$data->bulan_angka - 1] = (int) $data->total;
-        }
+    // Struktur data hasil
+    $result = [
+        'penerima' => [],
+        'dropping' => [],
+        'pembayaran' => []
+    ];
+    
+    $bulanAktif = [];
 
-        // Isi data pemasukkan yang ada ke array
-        foreach ($data_pemasukkan as $data) {
-            $total_pemasukkan[$data->bulan_angka - 1] = (int) $data->total;
-        }
+    // ========== PROSES PENERIMA ==========
+    foreach ($penerima as $p) {
+        $kategori = $p->kategori->nama_kriteria ?? '-';
+        $bulan = $p->bulan;
 
-        // Statistik untuk card
-        $total_pengeluaran_card = BankKeluar::whereYear('tanggal', $tahun)
-            ->sum('kredit');
-        
-        $total_pemasukkan_card = BankMasuk::whereYear('tanggal', $tahun)
-            ->sum('debet');
-
-        // grafik berdasarkan kategori kriteria
-        $grafikKategori = BankKeluar::select(
-        DB::raw("MONTH(tanggal) as bulan"),
-        DB::raw("SUM(kredit) as total"),
-            'id_kategori_kriteria'
-        )
-        ->whereYear('tanggal', $tahun)
-        ->groupBy('bulan', 'id_kategori_kriteria')
-        ->with('kategori')
-        ->get();
-        // Ambil nama kategori
-        $kategoriList = KategoriKriteria::pluck('nama_kriteria', 'id_kategori_kriteria');
-
-        // Siapkan array kosong untuk 12 bulan
-        $kategori_total = [];
-        foreach ($kategoriList as $id => $nama) {
-            $kategori_total[$id] = array_fill(0, 12, 0);
-        }
-
-        // Isi data hasil query
-        foreach ($grafikKategori as $item) {
-            $index_bulan = $item->bulan - 1;
-            $kategori_total[$item->id_kategori_kriteria][$index_bulan] = (int) $item->total;
-        }
-
-          /* ================= DATA AGENDA (TETAP) ================= */
-        $agendaBelumSiapBayar = DB::connection('mysql_agenda_online')
-        ->table('dokumens')
-        ->whereYear('tanggal_masuk', $tahun)
-        // ->where('status_pembayaran', 'belum_siap_dibayar')
-        ->where('status', '!=','sent_to_pembayaran')
-        ->where('current_handler', '!=','pembayaran')
-        ->where('status_pembayaran', null)
-        ->value(DB::raw('SUM(dokumens.nilai_rupiah)'));
-        $agendaBelumSiapBayar = DB::connection('mysql_agenda_online')
-        ->table('dokumens')
-        ->whereYear('tanggal_masuk', $tahun)
-        ->where('status', '!=', 'sent_to_pembayaran')
-        ->where('current_handler', '!=', 'pembayaran')
-        ->whereNull('status_pembayaran')
-        ->value(DB::raw('SUM(dokumens.nilai_rupiah)'));
-
-        $agendaSiapBayar = DB::connection('mysql_agenda_online')
-        ->table('dokumens')
-        ->whereYear('tanggal_masuk', $tahun)
-        ->where('current_handler', 'pembayaran')
-        ->where('status_pembayaran', 'siap_dibayar')
-        ->value(DB::raw('SUM(dokumens.nilai_rupiah)'));
-
-
-        // Ubah array associative ke indexed array
-        $kategori_nama = array_values($kategoriList->toArray());
-        $kategori_total = array_values($kategori_total);
-                return view('cash_bank.dashboard', compact(
-                    'total_pengeluaran', 
-                    'total_pemasukkan', 
-                    'bulan',
-                    'total_pengeluaran_card',
-                    'total_pemasukkan_card',
-                    'tahun', 'grafikKategori','kategori_nama',
-                    'kategori_total',
-                    'agendaBelumSiapBayar',
-                    'agendaSiapBayar',
-                ));
+        if (!isset($result['penerima'][$kategori])) {
+            $result['penerima'][$kategori] = [];
+            for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+                $result['penerima'][$kategori][$b] = 0;
             }
+        }
+
+        $result['penerima'][$kategori][$bulan] += $p->total / 1000;
+        $bulanAktif[$bulan] = true;
+    }
+
+    // ========== PROSES DROPPING ==========
+    foreach ($dropping as $d) {
+        $kategori = $d->kategori->nama_kriteria ?? '-';
+        $subKriteria = $d->subKriteria->nama_sub_kriteria ?? '-';
+        $itemKriteria = $d->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+        $bulan = $d->bulan;
+        
+        $key = $kategori . '|' . $subKriteria . '|' . $itemKriteria;
+        
+        if (!isset($result['dropping'][$key])) {
+            $result['dropping'][$key] = [
+                'kategori' => $kategori,
+                'sub_kriteria' => $subKriteria,
+                'item_kriteria' => $itemKriteria,
+                'data' => []
+            ];
+            for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+                $result['dropping'][$key]['data'][$b] = 0;
+            }
+        }
+
+        $total = $d->M1 + $d->M2 + $d->M3 + $d->M4;
+        $result['dropping'][$key]['data'][$bulan] += $total;
+        $bulanAktif[$bulan] = true;
+    }
+
+    // ========== PROSES PEMBAYARAN ==========
+    foreach ($pembayaran as $p) {
+        $kategori = $p->kategori->nama_kriteria ?? '-';
+        $subKriteria = $p->subKriteria->nama_sub_kriteria ?? '-';
+        $itemKriteria = $p->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+        $bulan = $p->bulan;
+        
+        $key = $kategori . '|' . $subKriteria . '|' . $itemKriteria;
+        
+        if (!isset($result['pembayaran'][$key])) {
+            $result['pembayaran'][$key] = [
+                'kategori' => $kategori,
+                'sub_kriteria' => $subKriteria,
+                'item_kriteria' => $itemKriteria,
+                'data' => []
+            ];
+            for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+                $result['pembayaran'][$key]['data'][$b] = 0;
+            }
+        }
+
+        $result['pembayaran'][$key]['data'][$bulan] += $p->total;
+        $bulanAktif[$bulan] = true;
+    }
+
+    // Filter bulan
+    $bulanListFiltered = [];
+    if (!empty($bulanAktif)) {
+        foreach ($bulanList as $noBulan => $namaBulan) {
+            if ($noBulan >= $bulanDari && $noBulan <= $bulanSampai && isset($bulanAktif[$noBulan])) {
+                $bulanListFiltered[$noBulan] = $namaBulan;
+            }
+        }
+    }
+
+    // Jika request AJAX, return hanya content
+    if ($request->ajax || $request->has('ajax')) {
+        return view('cash_bank.dashbordPertama', compact('result', 'bulanListFiltered', 'tahun'));
+    }
+
+    // Jika bukan AJAX, return full page
+    return view('cash_bank.dashboard', compact('result', 'bulanListFiltered', 'tahun', 'bulanDari', 'bulanSampai'));
+}
+
+
+    public function data2(Request $request)
+    {
+        $bulanList = [
+            1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April',
+            5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus',
+            9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'
+        ];
+        
+        $tahun = $request->tahunPvd ?? date('Y');
+        $bulanDari = $request->bulan_dariPvd ?? 1;
+        $bulanSampai = $request->bulan_sampaiPvd ?? 12;
+
+        // ========== PERMINTAAN ==========
+        $permintaan = Permintaan::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+            ->where('tahun', $tahun)
+            ->whereBetween('bulan', [$bulanDari, $bulanSampai])
+            ->get();
+
+        // ========== DROPPING ==========
+        $dropping = Dropping::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+            ->where('tahun', $tahun)
+            ->whereBetween('bulan', [$bulanDari, $bulanSampai])
+            ->get();
+
+        // ========== PEMBAYARAN (BANK KELUAR) ==========
+        $pembayaran = BankKeluar::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+            ->select(
+                'id_kategori_kriteria',
+                'id_sub_kriteria',
+                'id_item_sub_kriteria',
+                DB::raw('MONTH(tanggal) as bulan'),
+                DB::raw('SUM(CAST(kredit AS DECIMAL(15,2))) as total')
+            )
+            ->whereYear('tanggal', $tahun)
+            ->whereBetween(DB::raw('MONTH(tanggal)'), [$bulanDari, $bulanSampai])
+            ->whereNotNull('kredit')
+            ->where('kredit', '!=', '')
+            ->where('kredit', '!=', '0')
+            ->whereNotNull('id_kategori_kriteria')
+            ->whereNotNull('id_sub_kriteria')
+            ->whereNotNull('id_item_sub_kriteria')
+            ->groupBy('id_kategori_kriteria', 'id_sub_kriteria', 'id_item_sub_kriteria', DB::raw('MONTH(tanggal)'))
+            ->get();
+
+        // Struktur data hasil
+        $result = [
+            'permintaan' => [],
+            'dropping' => [],
+            'pembayaran' => []
+        ];
+        
+        $bulanAktif = [];
+
+        // ========== PROSES PERMINTAAN ==========
+        foreach ($permintaan as $p) {
+            $kategori = $p->kategori->nama_kriteria ?? '-';
+            $subKriteria = $p->subKriteria->nama_sub_kriteria ?? '-';
+            $itemKriteria = $p->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+            $bulan = $p->bulan;
+            
+            $key = $kategori . '|' . $subKriteria . '|' . $itemKriteria;
+            
+            if (!isset($result['permintaan'][$key])) {
+                $result['permintaan'][$key] = [
+                    'kategori' => $kategori,
+                    'sub_kriteria' => $subKriteria,
+                    'item_kriteria' => $itemKriteria,
+                    'data' => []
+                ];
+                for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+                    $result['permintaan'][$key]['data'][$b] = 0;
+                }
+            }
+
+            $total = $p->M1 + $p->M2 + $p->M3 + $p->M4;
+            $result['permintaan'][$key]['data'][$bulan] += $total;
+            $bulanAktif[$bulan] = true;
+        }
+
+        // ========== PROSES DROPPING ==========
+        foreach ($dropping as $d) {
+            $kategori = $d->kategori->nama_kriteria ?? '-';
+            $subKriteria = $d->subKriteria->nama_sub_kriteria ?? '-';
+            $itemKriteria = $d->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+            $bulan = $d->bulan;
+            
+            $key = $kategori . '|' . $subKriteria . '|' . $itemKriteria;
+            
+            if (!isset($result['dropping'][$key])) {
+                $result['dropping'][$key] = [
+                    'kategori' => $kategori,
+                    'sub_kriteria' => $subKriteria,
+                    'item_kriteria' => $itemKriteria,
+                    'data' => []
+                ];
+                for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+                    $result['dropping'][$key]['data'][$b] = 0;
+                }
+            }
+
+            $total = $d->M1 + $d->M2 + $d->M3 + $d->M4;
+            $result['dropping'][$key]['data'][$bulan] += $total;
+            $bulanAktif[$bulan] = true;
+        }
+
+        // ========== PROSES PEMBAYARAN ==========
+        foreach ($pembayaran as $p) {
+            $kategori = $p->kategori->nama_kriteria ?? '-';
+            $subKriteria = $p->subKriteria->nama_sub_kriteria ?? '-';
+            $itemKriteria = $p->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+            $bulan = $p->bulan;
+            
+            $key = $kategori . '|' . $subKriteria . '|' . $itemKriteria;
+            
+            if (!isset($result['pembayaran'][$key])) {
+                $result['pembayaran'][$key] = [
+                    'kategori' => $kategori,
+                    'sub_kriteria' => $subKriteria,
+                    'item_kriteria' => $itemKriteria,
+                    'data' => []
+                ];
+                for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+                    $result['pembayaran'][$key]['data'][$b] = 0;
+                }
+            }
+
+            $result['pembayaran'][$key]['data'][$bulan] += $p->total;
+            $bulanAktif[$bulan] = true;
+        }
+
+        // Filter bulan
+        $bulanListFiltered = [];
+        if (!empty($bulanAktif)) {
+            foreach ($bulanList as $noBulan => $namaBulan) {
+                if ($noBulan >= $bulanDari && $noBulan <= $bulanSampai && isset($bulanAktif[$noBulan])) {
+                    $bulanListFiltered[$noBulan] = $namaBulan;
+                }
+            }
+        }
+
+        // Jika request AJAX, return hanya content
+        if ($request->ajax || $request->has('ajax')) {
+            return view('cash_bank.dashbordKedua', compact('result', 'bulanListFiltered', 'tahun'));
+        }
+
+
+        return view('cash_bank.dashboard');
+    }
+
+    public function detailPvd(){
+        // permintaan  
+        $bulanList = [
+            1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April',
+            5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus',
+            9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'
+        ];
+        
+        $tahun = $request->tahunPvd ?? date('Y');
+        // ========== PERMINTAAN ==========
+        $permintaan = Permintaan::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+            ->select('M1','M2','M3','M4')
+            ->where('tahun', $tahun)
+            ->where('bulan', $bulanList)
+            ->get();
+
+        // ========== DROPPING ==========
+        $dropping = Dropping::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+            ->select('M1','M2','M3','M4')
+            ->where('tahun', $tahun)
+            ->where('bulan', $bulanList)
+            ->get();
+
+        // ========== PEMBAYARAN (BANK KELUAR) ==========
+        $pembayaran = BankKeluar::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+            ->select(
+                'id_kategori_kriteria',
+                'id_sub_kriteria',
+                'id_item_sub_kriteria',
+                DB::raw('MONTH(tanggal) as bulan'),
+                DB::raw('SUM(CAST(kredit AS DECIMAL(15,2))) as total')
+            )
+            ->whereYear('tanggal', $tahun)
+            ->whereBetween(DB::raw('MONTH(tanggal)'), [$bulanDari, $bulanSampai])
+            ->whereNotNull('kredit')
+            ->where('kredit', '!=', '')
+            ->where('kredit', '!=', '0')
+            ->whereNotNull('id_kategori_kriteria')
+            ->whereNotNull('id_sub_kriteria')
+            ->whereNotNull('id_item_sub_kriteria')
+            ->groupBy('id_kategori_kriteria', 'id_sub_kriteria', 'id_item_sub_kriteria', DB::raw('MONTH(tanggal)'))
+            ->get();
+    }
+
+    public function export_excel(){
+        return Excel::download(new ExcelPd, 'Rekapan-PD .xlsx');
+    }
+   public function export_excelPvd(Request $request)
+    {
+        return Excel::download(
+            new ExcelPvd(
+                $request->tahunPvd,
+                $request->bulan_dariPvd,
+                $request->bulan_sampaiPvd
+            ),
+            'Rekapan-PVD.xlsx'
+        );
+    }
+
+    public function view_pdf(Request $request)
+    {
+     $bulanList = [
+            1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April',
+            5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus',
+            9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'
+        ];
+        
+        $tahun = $request->tahunPvd ?? date('Y');
+        $bulanDari = $request->bulan_dariPvd ?? 1;
+        $bulanSampai = $request->bulan_sampaiPvd ?? 12;
+
+        // ========== PERMINTAAN ==========
+        $permintaan = Permintaan::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+            ->where('tahun', $tahun)
+            ->whereBetween('bulan', [$bulanDari, $bulanSampai])
+            ->get();
+
+        // ========== DROPPING ==========
+        $dropping = Dropping::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+            ->where('tahun', $tahun)
+            ->whereBetween('bulan', [$bulanDari, $bulanSampai])
+            ->get();
+
+        // ========== PEMBAYARAN (BANK KELUAR) ==========
+        $pembayaran = BankKeluar::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+            ->select(
+                'id_kategori_kriteria',
+                'id_sub_kriteria',
+                'id_item_sub_kriteria',
+                DB::raw('MONTH(tanggal) as bulan'),
+                DB::raw('SUM(CAST(kredit AS DECIMAL(15,2))) as total')
+            )
+            ->whereYear('tanggal', $tahun)
+            ->whereBetween(DB::raw('MONTH(tanggal)'), [$bulanDari, $bulanSampai])
+            ->whereNotNull('kredit')
+            ->where('kredit', '!=', '')
+            ->where('kredit', '!=', '0')
+            ->whereNotNull('id_kategori_kriteria')
+            ->whereNotNull('id_sub_kriteria')
+            ->whereNotNull('id_item_sub_kriteria')
+            ->groupBy('id_kategori_kriteria', 'id_sub_kriteria', 'id_item_sub_kriteria', DB::raw('MONTH(tanggal)'))
+            ->get();
+
+        // Struktur data hasil
+        $result = [
+            'permintaan' => [],
+            'dropping' => [],
+            'pembayaran' => []
+        ];
+        
+        $bulanAktif = [];
+
+        // ========== PROSES PERMINTAAN ==========
+        foreach ($permintaan as $p) {
+            $kategori = $p->kategori->nama_kriteria ?? '-';
+            $subKriteria = $p->subKriteria->nama_sub_kriteria ?? '-';
+            $itemKriteria = $p->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+            $bulan = $p->bulan;
+            
+            $key = $kategori . '|' . $subKriteria . '|' . $itemKriteria;
+            
+            if (!isset($result['permintaan'][$key])) {
+                $result['permintaan'][$key] = [
+                    'kategori' => $kategori,
+                    'sub_kriteria' => $subKriteria,
+                    'item_kriteria' => $itemKriteria,
+                    'data' => []
+                ];
+                for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+                    $result['permintaan'][$key]['data'][$b] = 0;
+                }
+            }
+
+            $total = $p->M1 + $p->M2 + $p->M3 + $p->M4;
+            $result['permintaan'][$key]['data'][$bulan] += $total;
+            $bulanAktif[$bulan] = true;
+        }
+
+        // ========== PROSES DROPPING ==========
+        foreach ($dropping as $d) {
+            $kategori = $d->kategori->nama_kriteria ?? '-';
+            $subKriteria = $d->subKriteria->nama_sub_kriteria ?? '-';
+            $itemKriteria = $d->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+            $bulan = $d->bulan;
+            
+            $key = $kategori . '|' . $subKriteria . '|' . $itemKriteria;
+            
+            if (!isset($result['dropping'][$key])) {
+                $result['dropping'][$key] = [
+                    'kategori' => $kategori,
+                    'sub_kriteria' => $subKriteria,
+                    'item_kriteria' => $itemKriteria,
+                    'data' => []
+                ];
+                for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+                    $result['dropping'][$key]['data'][$b] = 0;
+                }
+            }
+
+            $total = $d->M1 + $d->M2 + $d->M3 + $d->M4;
+            $result['dropping'][$key]['data'][$bulan] += $total;
+            $bulanAktif[$bulan] = true;
+        }
+
+        // ========== PROSES PEMBAYARAN ==========
+        foreach ($pembayaran as $p) {
+            $kategori = $p->kategori->nama_kriteria ?? '-';
+            $subKriteria = $p->subKriteria->nama_sub_kriteria ?? '-';
+            $itemKriteria = $p->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+            $bulan = $p->bulan;
+            
+            $key = $kategori . '|' . $subKriteria . '|' . $itemKriteria;
+            
+            if (!isset($result['pembayaran'][$key])) {
+                $result['pembayaran'][$key] = [
+                    'kategori' => $kategori,
+                    'sub_kriteria' => $subKriteria,
+                    'item_kriteria' => $itemKriteria,
+                    'data' => []
+                ];
+                for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+                    $result['pembayaran'][$key]['data'][$b] = 0;
+                }
+            }
+
+            $result['pembayaran'][$key]['data'][$bulan] += $p->total;
+            $bulanAktif[$bulan] = true;
+        }
+
+        // Filter bulan
+        $bulanListFiltered = [];
+        if (!empty($bulanAktif)) {
+            foreach ($bulanList as $noBulan => $namaBulan) {
+                if ($noBulan >= $bulanDari && $noBulan <= $bulanSampai && isset($bulanAktif[$noBulan])) {
+                    $bulanListFiltered[$noBulan] = $namaBulan;
+                }
+            }
+        }
+
+        // Jika request AJAX, return hanya content
+        if ($request->ajax || $request->has('ajax')) {
+            return view('cash_bank.dashbordKedua', compact('result', 'bulanListFiltered', 'tahun'));
+        }
+
+
+        return view('cash_bank.dashboard');
+    }
+
 }

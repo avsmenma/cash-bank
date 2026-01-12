@@ -1,0 +1,329 @@
+@extends('layouts/index')
+@section('content')
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-body">
+        <p>sendal</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-12">
+            <div class="card">
+                <div class="card-header p-2">
+                  <ul class="nav nav-pills">
+                    <li class="nav-item"><a class="nav-link active" href="#activity" data-toggle="tab">Daftar Realisasi</a></li>
+                    <li class="nav-item"> <a class="nav-link" id="cashflow-tab" data-toggle="tab" href="#timeline">CashFlow</a></li>
+                    <li class="nav-item"><a class="nav-link" id="rencana-tab" href="#rencana" data-toggle="tab">Daftar Rencana</a></li>
+                  </ul>
+                </div>
+                <div class="card-body">
+                  <div class="tab-content">
+                      <div class="active tab-pane" id="activity">
+                        <div class="row no-print">
+                          <div class="col-12 gap-4">
+                            <a href="#" rel="noopener"  class="btn btn-danger" id="deleteAllSelectedRecord"><i class="fas fa-trash"></i> Delete All</a>
+                            <a href="#" class="btn btn-warning text-white" data-toggle="modal" data-target="#ModalImportFileExcelMasuk"><i class="fas fa-file-import "></i> Import Excel</a>
+                            <a href="javascript:void(0)" class="btn btn-success" data-toggle="modal" data-target="#ModalCreatePenerima"><i class="fas fa-plus"></i> Tambah Data</a>
+                            <a href="{{ url('/bank-masuk/view/pdf')}}" target="_blank" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download PDF</a>
+                            <a href="{{ url('/bank-masuk/export_excel')}}" class="btn btn-outline-danger " ><i class=" nav-icon fas fa-file-excel"></i></i> Download Excel</a>
+                            <button class="btn btn-primary" 
+                                    type="button"
+                                    data-toggle="collapse"
+                                    data-target="#filterCollapse"><i class=" nav-icon fas fa-filter "></i></i> Filter
+                            </button>
+                          </div>
+                        </div>
+                        <div class="collapse mt-3" id="filterCollapse" >
+                          <div class="d-flex gap-2">
+                              <div class="form-group mb-0">
+                                  <select class="select2" id="filterTahunRealisasi">
+                                    @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
+                                        <option value="{{ $t }}" {{ request('tahun', date('Y')) == $t ? 'selected' : '' }}>
+                                            {{ $t }}
+                                        </option>
+                                    @endfor
+                                </select>
+                              </div>
+                              <div class="form-group mb-0">
+                                  <select class="select2" id="filterBulanRealisasi">
+                                <option value="">Semua Bulan</option>
+                                <option value="01">Januari</option>
+                                <option value="02">Februari</option>
+                                <option value="03">Maret</option>
+                                <option value="04">April</option>
+                                <option value="05">Mei</option>
+                                <option value="06">Juni</option>
+                                <option value="07">Juli</option>
+                                <option value="08">Agustus</option>
+                                <option value="09">September</option>
+                                <option value="10">Oktober</option>
+                                <option value="11">November</option>
+                                <option value="12">Desember</option>
+                              </select>
+
+                              </div>
+                              <div class="form-group mb-0">
+                                  <select class="select2" id="filterKategoriRealisasi">
+                                    <option value="">Semua Kategori</option>
+                                    @foreach($kategoriKriteria as $k)
+                                        <option value="{{ $k->id_kategori_kriteria }}">
+                                            {{ $k->nama_kriteria }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                              </div>
+                              <a href="3" class="btn btn-danger " ><i class=" nav-icon fas fa-user-secret"></i></i> Reset Filter</a>
+
+                          </div>
+                        </div>
+                      
+                        @include('cash_bank.pembayaran.dataPenerima')
+                      
+                      </div>
+                    </div>
+                    <!-- /.tab-pane -->
+                    <div class="tab-pane" id="timeline">
+                      <div class="row no-print">
+                        <div class="d-flex gap-4 no-print">
+                            <a href="{{ url('/bank-masuk/view/pdf')}}" target="_blank" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download PDF</a>
+                            <a href="{{ url('/bank-masuk/export_excel')}}" class="btn btn-outline-danger " ><i class=" nav-icon fas fa-file-excel"></i></i> Download Excel</a>
+                            <div class="col-md-3">
+                                 <select class="select2" id="tahunCashflow">
+                                  @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
+                                    <option value="{{ $t }}">{{ $t }}</option>
+                                  @endfor
+                                </select>
+                            </div>
+                        </div>
+                      </div>
+                      <div id="rencana-content" class="p-3 text-center">
+                              <span class="text-muted">Memuat data...</span>
+                          </div>
+                    </div>
+                    <div class="tab-pane" id="rencana">
+                      <div class="row no-print">
+                        <div class="d-flex gap-4 no-print">
+                          <a href="#" class="btn btn-outline-primary">Download PDF</a>
+                          <a href="#" class="btn btn-outline-danger">Download Excel</a>
+                          <div class="form-group mb-0">
+                                  <select class="select2" id="filterKategoriRealisasi">
+                                    <option value="">Semua Kategori</option>
+                                    @foreach($kategoriKriteria as $k)
+                                        <option value="{{ $k->id_kategori_kriteria }}">
+                                            {{ $k->nama_kriteria }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                              </div>
+
+                          <div class="col-md-3">
+
+                            <select class="select2" id="tahunRencana">
+                              @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
+                                <option value="{{ $t }}">{{ $t }}</option>
+                              @endfor
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div id="rencana-table">Memuat Data</div>
+                    </div>
+                  </div>
+                  <!-- /.tab-content -->
+                </div><!-- /.card-body -->
+            </div>
+            <!-- /.card -->
+          </div>
+</div>
+</div>
+@push('scripts')
+<script>
+$(document).ready(function () {
+  
+    console.log('JS HIDUP');
+
+    // INIT SELECT2
+     if ($.fn.select2) {
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            width: '100%'
+        });
+    }
+
+    // ===== MODAL CREATE =====
+    function hitungNilaiCreate() {
+        console.log('HITUNG NILAI CREATE');
+        
+        let volume = parseFloat($('#create_volume').val()) || 0;
+        let harga  = parseFloat($('#create_harga').val()) || 0;
+
+        let nilai = volume * harga;
+        $('#create_nilai').val(nilai.toFixed(2));
+
+        let ppn = Math.round(nilai * 0.11);
+        $('#create_ppn').val(ppn);
+
+        let potppn = parseFloat($('#create_potppn').val()) || 0;
+        let nilaiInc = nilai + ppn - potppn;
+
+        $('#create_nilai_inc_ppn').val(nilaiInc.toFixed(2));
+        
+        console.log('CREATE - Nilai:', nilai, 'PPN:', ppn, 'Nilai Inc:', nilaiInc);
+    }
+
+    $(document).on('input change', '#create_volume, #create_harga, #create_potppn', function () {
+        console.log('CREATE INPUT BERUBAH:', $(this).attr('id'));
+        hitungNilaiCreate();
+    });
+
+    $('#ModalCreatePenerima').on('shown.bs.modal', function () {
+        console.log('MODAL CREATE DIBUKA');
+        $('#importExcel')[0].reset();
+        
+        if (!$('#create_reservationdate').data('datetimepicker')) {
+            $('#create_reservationdate').datetimepicker({
+                format: 'YYYY-MM-DD',
+            });
+        }
+
+        $(this).find('.select2').select2({
+            theme: 'bootstrap4',
+            dropdownParent: $('#ModalCreatePenerima'),
+            width: '100%'
+        });
+    });
+
+    $('#ModalCreatePenerima').on('hidden.bs.modal', function () {
+        $('#importExcel')[0].reset();
+    });
+
+    // ===== MODAL EDIT =====
+    function hitungNilaiEdit() {
+        console.log('HITUNG NILAI EDIT');
+        
+        let volume = parseFloat($('#edit_volume').val()) || 0;
+        let harga  = parseFloat($('#edit_harga').val()) || 0;
+
+        let nilai = volume * harga;
+        $('#edit_nilai').val(nilai.toFixed(2));
+
+        let ppn = Math.round(nilai * 0.11);
+        $('#edit_ppn').val(ppn);
+
+        let potppn = parseFloat($('#edit_potppn').val()) || 0;
+        let nilaiInc = nilai + ppn - potppn;
+
+        $('#edit_nilai_inc_ppn').val(nilaiInc.toFixed(2));
+        
+        console.log('EDIT - Nilai:', nilai, 'PPN:', ppn, 'Nilai Inc:', nilaiInc);
+    }
+
+    $(document).on('input change', '#edit_volume, #edit_harga, #edit_potppn', function () {
+        console.log('EDIT INPUT BERUBAH:', $(this).attr('id'));
+        hitungNilaiEdit();
+    });
+
+    $('#editPenerima').on('shown.bs.modal', function (event) {
+        console.log('MODAL EDIT DIBUKA');
+        
+        let button = $(event.relatedTarget);
+        let id       = button.data('id');
+        let kategori   = button.data('kategori');
+        let pembeli = button.data('pembeli');
+        let tanggal  = button.data('tanggal');
+        let no_reg  = button.data('no_reg');
+        let kontrak = button.data('kontrak');
+        let volume    = button.data('volume');
+        let harga   = button.data('harga');
+        let nilai    = button.data('nilai');
+        let ppn    = button.data('ppn');
+        let potppn    = button.data('potppn');
+
+        // set form action
+        $('#formEditPenerima').attr('action', '/penerima/' + id);
+
+        // Gunakan ID dengan prefix edit_
+        $('#edit_pembeli').val(pembeli);
+        $('#edit_ppn').val(ppn);
+        $('#edit_potppn').val(potppn);
+        $('#edit_no_reg').val(no_reg);
+        $('#edit_kontrak').val(kontrak);
+        $('#edit_volume').val(volume);
+        $('#edit_nilai').val(nilai);
+        $('#edit_harga').val(harga);
+
+        // Hitung nilai inc ppn
+        let nilaiInc = (parseFloat(nilai) || 0) + (parseFloat(ppn) || 0) - (parseFloat(potppn) || 0);
+        $('#edit_nilai_inc_ppn').val(nilaiInc.toFixed(2));
+
+        // datepicker - gunakan ID edit_reservationdate
+        if (!$('#edit_reservationdate').data('datetimepicker')) {
+            $('#edit_reservationdate').datetimepicker({
+                format: 'YYYY-MM-DD',
+            });
+        }
+        $('#edit_reservationdate').datetimepicker('date', tanggal);
+        
+        // INIT SELECT2
+        $(this).find('.select2').select2({
+            theme: 'bootstrap4',
+            dropdownParent: $('#editPenerima'),
+            width: '100%'
+        });
+
+        // SET VALUE SELECT2
+        $('#edit_kategori').val(kategori).trigger('change');
+    });
+
+    // CASHFLOW TAB
+    $('#cashflow-tab').on('shown.bs.tab', function () {
+        loadCashflow();
+    });
+
+    $('#tahunCashflow').on('change', function () {
+          loadCashflow();
+    });
+
+    function loadCashflow() {
+          $.get("{{ route('penerima.cashflow') }}", {
+              tahun: $('#tahunCashflow').val()
+          }, function (res) {
+              $('#cashflow-content').html(res);
+          });
+    }
+    // tab rencana
+    // LOAD RENCANA PERTAMA KALI
+      $('#rencana-tab').on('shown.bs.tab', function () {
+        if (!$('#rencana').data('loaded')) {
+            $.get("{{ route('penerima.rencana') }}", function (res) {
+                $('#rencana-content').html(res);
+                $('#rencana').data('loaded', true);
+            });
+        }
+    });
+
+    $(document).on('blur', '.cell', function () {
+      const cell = $(this);
+
+      $.post("{{ route('penerima.rencana.save') }}",  {
+          _token: $('meta[name="csrf-token"]').attr('content'),
+          id: cell.data('id'),
+          kategori: cell.data('kategori'),
+          bulan: cell.data('bulan'),
+          tahun: cell.data('tahun'),
+          nilai: cell.text().replace(/\D/g, '')
+      });
+  });
+});
+
+   
+</script>
+@endpush
+
+
+{{-- MODAL CREATE & EDIT --}}
+@include('cash_bank.modal.modalPenerima.createPenerima')
+@endsection

@@ -13,65 +13,129 @@
   <link rel="stylesheet" href="{{ asset('adminLTE/plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}">
   <!-- Theme style -->
   <link rel="stylesheet" href="{{ asset('adminLTE/dist/css/adminlte.min.css') }}">
-</head>
-<body class="hold-transition login-page" style="background-image: url('{{ asset('images/Logo PTPN IV.png') }}')">
+
+<style>
+  .bubbles img{
+    width: 50px;
+    animation: bubble 7s linear infinite;
+  }
+
+  .bubbles{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    position: absolute;
+    bottom:0;
+  }
+
+  @keyframes bubble{
+    0%{
+      transform: translateY(0);
+      opacity:0;
+    }
+    50%{
+      opacity:1;
+    }
+    70%{
+      
+      opacity:1;
+    }
+    100%{
+      transform: translateY(-50vh);
+      opacity:0;
+    }
+  }
+
+  .bubbles img:nth-child(1){
+    animation-delay: 2s;
+  }
+  .bubbles img:nth-child(2){
+    animation-delay: 1s;
+  }
+  .bubbles img:nth-child(3){
+    animation-delay: 3s;
+  }
+  .bubbles img:nth-child(4){
+    animation-delay: 4.5s;
+  }
+  .bubbles img:nth-child(5){
+    animation-delay: 3s;
+  }
+  .bubbles img:nth-child(6){
+    animation-delay: 6s;
+  }
+  .bubbles img:nth-child(7){
+    animation-delay: 7s;
+  }
+  
+</style>
+
+<body class="hold-transition login-page" style="background-image: url('{{ asset('images/background.png') }}')">
+<div class="bubbles">
+            <img src="{{ asset('images/bubble.png') }}">
+            <img src="{{ asset('images/bubble.png') }}">
+            <img src="{{ asset('images/bubble.png') }}">
+            <img src="{{ asset('images/bubble.png') }}">
+            <img src="{{ asset('images/bubble.png') }}">
+            <img src="{{ asset('images/bubble.png') }}">
+            <img src="{{ asset('images/bubble.png') }}">
+          </div>
 <div class="login-box">
-  <!-- /.login-logo -->
-  <div class="card card-outline card-primary">
+  <div class="card card-outline card-success">
     <div class="card-header text-center">
         <img src="{{ asset('images/logoPTPNNew.png') }}" alt="logo PTP" width="100" height="100" >
-        <!-- <h1 class="tittle"><b>CASH-<span> BANK</span></b></h1> -->
-         <h1 class="tittle mb-2 fs-3 fs-md-2 fw-bold"><b>Cash<span style="color: #FF7518"> Bank</span></b></h1>
+        <h1 class="tittle mb-2 fs-3 fs-md-2 fw-bold mt-4"><b>Cash<span class="text-success"> Bank</span></b></h1>
     </div>
     <div class="card-body">
+        @if(session('failed'))
+        <div class="alert alert-danger">{{  session('failed') }}</div>
+        @endif
+          <p class="login-box-msg">Sign in to start your session</p>
 
-    @if(session('failed'))
-    <div class="alert alert-danger">{{  session('failed') }}</div>
-    @endif
-      <p class="login-box-msg">Sign in to start your session</p>
-
-      <form action="/login" method="post">
-        @csrf
-        @error('username')
-        <small class="text-danger">(( $message ))</small>
-        @enderror
-        <div class="input-group mb-3">
-          <input type="text" name="username" class="form-control" placeholder="Username">
-          <div class="input-group-append">
-            <div class="input-group-text">
-              <span class="fas fa-envelope"></span>
-            </div>
-          </div>
-            @error('password')
+          <form action="/login" method="post">
+            @csrf
+            @error('username')
             <small class="text-danger">(( $message ))</small>
             @enderror
-          <!-- <div class="invalid-feedback">
-            Please choose a username
-          </div> -->
-        </div>
-        <div class="input-group mb-3 has-validation">
-          <input type="password" name="password" class="form-control" placeholder="Password" id="password">
-          <div class="input-group-append show-password">
-            <div class="input-group-text">
-              <span class="fas fa-lock" id="password-lock"></span>
+            <div class="input-group mb-3">
+              <input type="text" name="username" class="form-control" placeholder="Username">
+              <div class="input-group-append">
+                <div class="input-group-text">
+                  <span class="fas fa-envelope"></span>
+                </div>
+              </div>
+                @error('password')
+                <small class="text-danger">(( $message ))</small>
+                @enderror
+              <!-- <div class="invalid-feedback">
+                Please choose a username
+              </div> -->
             </div>
-          </div>
-            <!-- <div class="invalid-feedback">
-            Please choose a password
-          </div> -->
-        </div>
-        <div class="row mt-2 mb-2">
-          <div class="col-8">
-            <div class="icheck-primary">
-              <input type="checkbox" id="remember" name="remember">
-              <label for="remember">
-                Remember Me
-              </label>
+            <div class="input-group mb-3 has-validation">
+              <input type="password" name="password" class="form-control" placeholder="Password" id="password">
+              <div class="input-group-append show-password">
+                <div class="input-group-text">
+                  <span class="fas fa-lock" id="password-lock"></span>
+                </div>
+              </div>
+                <!-- <div class="invalid-feedback">
+                Please choose a password
+              </div> -->
             </div>
-          </div>
-        </div>
-        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
-      </form>
+            <div class="row mt-2 mb-2">
+              <div class="col-8">
+                <div class="icheck-primary">
+                  <input type="checkbox" id="remember" name="remember">
+                  <label for="remember">
+                    Remember Me
+                  </label>
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-success btn-block">Sign In</button>
+          </form>
+         
 
       <!-- <div class="social-auth-links text-center mt-2 mb-3">
         <a href="#" class="btn btn-block btn-primary">
@@ -92,8 +156,10 @@
     </div> -->
     <!-- /.card-body -->
   </div>
+   
   <!-- /.card -->
 </div>
+
 <!-- /.login-box -->
 
 <!-- jQuery -->

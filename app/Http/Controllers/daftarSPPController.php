@@ -6,6 +6,7 @@ use App\Models\daftarSPP;
 use Illuminate\Http\Request;
 use App\Models\DokumenAgenda;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\Facades\DataTables;
 
 class daftarSPPController extends Controller
 {
@@ -14,51 +15,34 @@ class daftarSPPController extends Controller
      */
    public function index(Request $request)
     {
-        // ambil keyword
-       $search = $request->query('search');
+        return view('cash_bank.daftarSPP');
+    }
+    public function datatable(Request $request)
+    {
+        $filterStatus = $request->status;
 
-        // ambil filter status (opsional)
-        $filterStatus = $request->status; // siap_bayar, belum_siap, sudah_dibayar
-
-        // query dasar
-        // $query = DokumenAgenda::select('*',
-        //     DB::raw("CONCAT(nomor_agenda,'_',tahun) as agenda_tahun")
-        // );
         $query = DB::connection('mysql_agenda_online')
-        ->table('dokumens')
-        ->select('*')
-        ->orderBy('tanggal_masuk', 'asc');
+            ->table('dokumens')
+            ->select('*')
+            ->orderBY('tanggal_masuk');
 
-        // search
-        if ($search) {
-            $query
-                ->orWhere('nomor_spp', 'like', "%{$search}%")
-                ->orWhere('dibayar_kepada', 'like', "%{$search}%")
-                ->orWhere('nilai_rupiah', 'like', "%{$search}%")
-                ->orWhere('tanggal_masuk', 'like', "%{$search}%")
-                ->orWhere('tanggal_spk', 'like', "%{$search}%")
-                ->orWhere('uraian_spp', 'like', "%{$search}%");
-        }
-
-        // filter status
-        if ($filterStatus == "belum") {
-            $query
-            ->whereNotIn('status_pembayaran', [
+        if ($filterStatus === 'belum') {
+            $query->whereNotIn('status_pembayaran', [
                 'siap_dibayar',
                 'sudah_dibayar'
-            ])->orderBy('tanggal_masuk', 'asc');
-        } elseif ($filterStatus == "siap") {
-            $query->where('status_pembayaran', 'siap_dibayar')
-            ->orderBy('tanggal_masuk','asc');
-        } elseif ($filterStatus == "sudah") {
-            $query->where('status_pembayaran', 'sudah_dibayar')
-            ->orderBy('tanggal_masuk','asc');
+            ]);
+        } 
+        elseif ($filterStatus === 'siap') {
+            $query->where('status_pembayaran', 'siap_dibayar');
+        } 
+        elseif ($filterStatus === 'sudah') {
+            $query->where('status_pembayaran', 'sudah_dibayar');
         }
 
-        $data = $query->get();
-        return view('cash_bank.daftarSPP', compact('data'));
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->make(true);
     }
-
 
 
     /**

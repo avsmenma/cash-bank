@@ -1,55 +1,41 @@
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<!-- Notifikasi Success/Error -->
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <strong>Berhasil!</strong> {{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
 
-@if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <strong>Error!</strong> {{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-
-@if($errors->any())
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <strong>Validasi Gagal!</strong>
-        <ul class="mb-0">
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-<div class="modal fade" id="ModalTambahBank" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+<div class="modal fade" id="ModalTambahBank">
+        <div class="modal-dialog">
+          <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Tambah Data <span style="color:#FF7518">Bank Tujuan</span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              <h4 class="modal-title">Input Akun VA Baru</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
-            <form action="{{route('daftarBank.store')}}" method="post" enctype="multipart/form-data">
-                @csrf
-                <div class="modal-body">
-
-                    <div class="row">
-                        <div class="col-md-12">
-                            <label class="form-label">Nama Bank</label>
-                            <input type="text" name="nama_tujuan" id="namaTujuan" class="form-control border-bottom-0" placeholder="Nama Bank Tujuan" step="0.01">
-                        </div>
-                    </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn">Simpan</button>
+            <div class="modal-body">
+            <form action="{{route('daftarBank.store')}}" method="POST" enctype="multipart/form-data" id="importExcel">
+                @csrf    
+                <div class="card-body">
+                  <div class="input-group input-group-sm">
+                  <input type="text" name="nama_tujuan" id="namaTujuan" class="form-control" placeholder="Nama Bank Tujuan" step="0.01">
+                  <span class="input-group-append">
+                    <button type="submit" class="btn btn-info btn-flat">Go!</button>
+                  </span>
                 </div>
-
-            </form>
-
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
-    </div>
+
 </div>
+@push('scripts')
+<script>
+  $(document).on('submit', '#importExcel', function () {
+        console.log('SUBMIT TERPANGGIL');
+
+        $('#btnSubmit')
+            .prop('disabled', true)
+            .html('<span class="spinner-border spinner-border-sm"></span> Sedang Upload...');
+        });
+  $(document).ready(function () {
+    bsCustomFileInput.init();
+});
+</script>
+@endpush

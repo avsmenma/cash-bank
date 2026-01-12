@@ -228,222 +228,68 @@ $(document).ready(function() {
     });
 }
 
-// Dan pastikan saat modal dibuka, kategori juga ke-init
-$('#ModalCreate').on('shown.bs.modal', function () {
-    const modal = $(this);
+$(document).ready(function () {
+    // Inisialisasi datetimepicker
+    $('#reservationdate_tambah').datetimepicker({
+        format: 'YYYY-MM-DD',
+        icons: {
+            time: 'far fa-clock',
+            date: 'far fa-calendar',
+            up: 'fas fa-chevron-up',
+            down: 'fas fa-chevron-down',
+            previous: 'fas fa-chevron-left',
+            next: 'fas fa-chevron-right',
+            today: 'far fa-calendar-check',
+            clear: 'far fa-trash-alt',
+            close: 'far fa-times-circle'
+        }
+    });
 
-    console.log('Modal opened, initializing Select2 (ONCE)');
+    $('[name="tanggal"]').val(moment().format('YYYY-MM-DD'));
+});
 
+// ===============================
+// HELPER FUNCTION: Init Select2
+// ===============================
+function initSelect2(modal) {
     modal.find('select').each(function () {
         if (!$(this).hasClass('select2-hidden-accessible')) {
             $(this).select2({
                 dropdownParent: modal,
                 width: '100%',
+                theme: 'bootstrap4',
                 allowClear: true
             });
         }
     });
+}
+
+// ===============================
+// MODAL CREATE: INIT SEKALI SAJA
+// ===============================
+$('#ModalCreateKeluar').on('shown.bs.modal', function () {
+    const modal = $(this);
+
+    console.log('Modal opened, initializing Select2 (ONCE)');
+
+    // Init Select2 SEKALI SAJA (tidak destroy)
+    initSelect2(modal);
+
+    // Reset form
+    $('#formBankKeluar')[0].reset();
+    
+    // Reset dropdown dependent
+    $('#sub_kriteria').html('<option value="">-- Pilih Sub Kriteria --</option>');
+    $('#item_sub_kriteria').html('<option value="">-- Pilih Item Sub Kriteria --</option>');
 
     console.log('✅ Select2 initialized once');
-});
-
-
-    
-    // ===============================
-    // KATEGORI → SUB KRITERIA
-    // ===============================
-    // $(document).on('change', '#kategori', function () {
-
-    //     let modal = $('#ModalCreate');
-    //     let kategoriId = $(this).val();
-
-    //     let sub = modal.find('#sub_kriteria');
-    //     let item = modal.find('#item_sub_kriteria');
-
-    //     // destroy select2
-    //     // if (sub.hasClass('select2-hidden-accessible')) sub.select2('destroy');
-    //     // if (item.hasClass('select2-hidden-accessible')) item.select2('destroy');
-
-    //     // reset option
-    //     sub.html('<option value="">Pilih Sub Kriteria</option>');
-    //     item.html('<option value="">Pilih Item Sub Kriteria</option>');
-
-    //     if (!kategoriId) {
-    //         initSelect2(modal);
-    //         return;
-    //     }
-
-    //     $.ajax({
-    //         url: '/get-sub-kriteria/' + kategoriId,
-    //         type: 'GET',
-    //         success: function (res) {
-    //             if (res.length > 0) {
-    //                 res.forEach(function (e) {
-    //                     sub.append(
-    //                         '<option value="'+e.id_sub_kriteria+'">'+e.nama_sub_kriteria+'</option>'
-    //                     );
-    //                 });
-    //             }
-    //             initSelect2(modal);
-    //         }
-    //     });
-    // });
-
-    // // ===============================
-    // // SUB KRITERIA → ITEM SUB KRITERIA
-    // // ===============================
-    // $(document).on('change', '#sub_kriteria', function () {
-
-    //     let modal = $('#ModalCreate');
-    //     let subId = $(this).val();
-
-    //     let item = modal.find('#item_sub_kriteria');
-
-    //     // if (item.hasClass('select2-hidden-accessible')) {
-    //     //     item.select2('destroy');
-    //     // }
-
-    //     item.html('<option value="" disable selected>Pilih Item Sub Kriteria</option>');
-
-    //     if (!subId) {
-    //         initSelect2(modal);
-    //         return;
-    //     }
-
-    //     $.ajax({
-    //         url: '/get-item-sub-kriteria/' + subId,
-    //         type: 'GET',
-    //         success: function (res) {
-    //             if (res.length > 0) {
-    //                 res.forEach(function (e) {
-    //                     item.append(
-    //                         '<option value="'+e.id_item_sub_kriteria+'">'+e.nama_item_sub_kriteria+'</option>'
-    //                     );
-    //                 });
-    //             }
-    //             initSelect2(modal);
-    //         }
-    //     });
-    // });
-
-
-
-
-// Global variable untuk menyimpan data yang akan di-set
-let pendingDataToSet = null;
-
-// Event handler menggunakan event delegation dan change event
-$(document).on('change', '#dokumen_id', function() {
-    const dokumenId = $(this).val();
-    
-    console.log('📋 Agenda selected:', dokumenId);
-    
-    if(dokumenId && dokumenId !== '') {
-        console.log('⏳ Fetching data...');
-        
-        // Tampilkan loading hanya di text field
-        $('#uraian').val('Memuat data...');
-        $('#penerima').val('Memuat data...');
-        
-        $.ajax({
-            url: '/get-dokumen-detail/' + dokumenId,
-            type: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                console.log('✅ Data received:', response);
-                
-                if(response.success && response.data) {
-                    // Isi field basic
-                    $('#uraian').val(response.data.uraian || '');
-                    $('#nilai_rupiahh').val(response.data.nilai_rupiah || '');
-                    $('#penerima').val(response.data.penerima || '');
-                    
-                    // Simpan data untuk di-set setelah dropdown loaded
-                    pendingDataToSet = {
-                        jenis_pembayaran_id: response.data.jenis_pembayaran_id,
-                        kategori_id: response.data.kategori_id,
-                        sub_kriteria_id: response.data.sub_kriteria_id,
-                        item_sub_kriteria_id: response.data.item_sub_kriteria_id
-                    };
-                    
-                    console.log('💾 Pending data to set:', pendingDataToSet);
-                    
-                    // ============================
-                    // STEP 1: SET JENIS PEMBAYARAN
-                    // ============================
-                    if (pendingDataToSet.jenis_pembayaran_id) {
-                        setTimeout(function() {
-                            $('#jenisPembayaran').val(pendingDataToSet.jenis_pembayaran_id).trigger('change');
-                            console.log('✅ Jenis Pembayaran set:', pendingDataToSet.jenis_pembayaran_id);
-                        }, 200);
-                    }
-                    
-                    // ============================
-                    // STEP 2: SET KATEGORI (FINAL FIX!)
-                    // ============================
-                    // GANTI SELURUH BAGIAN "STEP 2: SET KATEGORI" dengan ini:
-
-                                // ============================
-                    // STEP 2: FORCE SET KATEGORI
-                    // ============================
-                    if (pendingDataToSet.kategori_id) {
-                        const kategoriId = String(pendingDataToSet.kategori_id);
-                        const $kategori = $('#kategori');
-
-                        console.log('⚙️ Force setting kategori:', kategoriId);
-
-                        // cari option
-                        let $opt = $kategori.find(`option[value="${kategoriId}"]`);
-
-                        // JIKA OPTION TIDAK ADA → TAMBAHKAN
-                        if (!$opt.length) {
-                            console.warn('⚠️ Option kategori belum ada, inject manual');
-
-                            const kategoriText = response.data.kategori_nama 
-                                || 'Kategori Terpilih';
-
-                            $kategori.append(
-                                new Option(kategoriText, kategoriId, true, true)
-                            );
-                        }
-
-                        // SET VALUE + UPDATE SELECT2
-                        $kategori
-                            .val(kategoriId)
-                            .trigger('change.select2')
-                            .trigger('change');
-
-                        console.log('✅ Kategori FIXED:', $kategori.val());
-                    }
-
-                    
-                    console.log('✅ Form filled successfully!');
-                } else {
-                    console.error('❌ Invalid response format');
-                    alert('Data tidak dapat diambil dari Agenda');
-                    clearForm();
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('❌ AJAX Error:', {
-                    status: status,
-                    error: error,
-                    response: xhr.responseText
-                });
-                alert('Gagal memuat data: ' + error);
-                clearForm();
-            }
-        });
-    } else {
-        clearForm();
-    }
 });
 
 // ===============================
 // KATEGORI → SUB KRITERIA
 // ===============================
-$(document).on('change', '#kategori', function () {
-    let modal = $('#ModalCreate');
+$(document).on('change', '#kategori_kriteria', function () {
+    let modal = $('#ModalCreateKeluar');
     let kategoriId = $(this).val();
 
     let sub = modal.find('#sub_kriteria');
@@ -451,9 +297,9 @@ $(document).on('change', '#kategori', function () {
 
     console.log('🔄 Kategori changed to:', kategoriId);
 
-    // Reset option
-    sub.html('<option value="">Pilih Sub Kriteria</option>');
-    item.html('<option value="">Pilih Item Sub Kriteria</option>');
+    // Reset option (JANGAN destroy select2)
+    sub.html('<option value="">-- Pilih Sub Kriteria --</option>');
+    item.html('<option value="">-- Pilih Item Sub Kriteria --</option>');
 
     if (!kategoriId) {
         initSelect2(modal);
@@ -470,49 +316,22 @@ $(document).on('change', '#kategori', function () {
             
             if (res.length > 0) {
                 res.forEach(function (e) {
+                    // Trim untuk hilangkan \r\n
+                    let namaSub = (e.nama_sub_kriteria || '').trim();
                     sub.append(
-                        '<option value="'+e.id_sub_kriteria+'">'+e.nama_sub_kriteria+'</option>'
+                        '<option value="'+e.id_sub_kriteria+'">'+namaSub+'</option>'
                     );
                 });
             }
             
-            // Re-init select2
+            // Re-init select2 (hanya yang belum terinit)
             initSelect2(modal);
             
-            // Set sub kriteria jika ada pending data
-            if (pendingDataToSet && pendingDataToSet.sub_kriteria_id) {
-                setTimeout(function() {
-                    console.log('⚙️ Setting sub kriteria:', pendingDataToSet.sub_kriteria_id);
-                    
-                    const subId = String(pendingDataToSet.sub_kriteria_id);
-                    const optionExists = sub.find('option[value="' + subId + '"]').length > 0;
-                    console.log('🔍 Sub kriteria option exists?', optionExists);
-                    
-                    if (optionExists) {
-                        // Paksa update seperti kategori
-                        sub[0].value = subId;
-                        sub.val(subId);
-                        
-                        if (sub.hasClass('select2-hidden-accessible')) {
-                            const selectedText = sub.find('option[value="' + subId + '"]').text();
-                            sub.next('.select2-container')
-                               .find('.select2-selection__rendered')
-                               .text(selectedText)
-                               .attr('title', selectedText);
-                        }
-                        
-                        // Trigger change untuk load item
-                        sub.trigger('change');
-                        
-                        console.log('✅ Sub Kriteria set:', subId);
-                    } else {
-                        console.warn('⚠️ Sub Kriteria option not found:', subId);
-                    }
-                }, 500);
-            }
+            console.log('✅ Sub kriteria options added');
         },
         error: function(xhr, status, error) {
             console.error('❌ Error loading sub kriteria:', error);
+            sub.html('<option value="">-- Error memuat data --</option>');
         }
     });
 });
@@ -521,14 +340,15 @@ $(document).on('change', '#kategori', function () {
 // SUB KRITERIA → ITEM SUB KRITERIA
 // ===============================
 $(document).on('change', '#sub_kriteria', function () {
-    let modal = $('#ModalCreate');
+    let modal = $('#ModalCreateKeluar');
     let subId = $(this).val();
 
     let item = modal.find('#item_sub_kriteria');
 
     console.log('🔄 Sub kriteria changed to:', subId);
 
-    item.html('<option value="">Pilih Item Sub Kriteria</option>');
+    // Reset option (JANGAN destroy select2)
+    item.html('<option value="">-- Pilih Item Sub Kriteria --</option>');
 
     if (!subId) {
         initSelect2(modal);
@@ -545,158 +365,144 @@ $(document).on('change', '#sub_kriteria', function () {
             
             if (res.length > 0) {
                 res.forEach(function (e) {
+                    // Trim untuk hilangkan \r\n
+                    let namaItem = (e.nama_item_sub_kriteria || '').trim();
                     item.append(
-                        '<option value="'+e.id_item_sub_kriteria+'">'+e.nama_item_sub_kriteria+'</option>'
+                        '<option value="'+e.id_item_sub_kriteria+'">'+namaItem+'</option>'
                     );
                 });
             }
             
-            // Re-init select2
+            // Re-init select2 (hanya yang belum terinit)
             initSelect2(modal);
             
-            // Set item sub kriteria jika ada pending data
-            if (pendingDataToSet && pendingDataToSet.item_sub_kriteria_id) {
-                setTimeout(function() {
-                    console.log('⚙️ Setting item sub kriteria:', pendingDataToSet.item_sub_kriteria_id);
-                    
-                    const itemId = String(pendingDataToSet.item_sub_kriteria_id);
-                    const optionExists = item.find('option[value="' + itemId + '"]').length > 0;
-                    console.log('🔍 Item option exists?', optionExists);
-                    
-                    if (optionExists) {
-                        // Paksa update seperti kategori
-                        item[0].value = itemId;
-                        item.val(itemId);
-                        
-                        if (item.hasClass('select2-hidden-accessible')) {
-                            const selectedText = item.find('option[value="' + itemId + '"]').text();
-                            item.next('.select2-container')
-                                .find('.select2-selection__rendered')
-                                .text(selectedText)
-                                .attr('title', selectedText);
-                        }
-                        
-                        console.log('✅ Item Sub Kriteria set:', itemId);
-                        
-                        // Clear pending data setelah semua selesai
-                        pendingDataToSet = null;
-                    } else {
-                        console.warn('⚠️ Item Sub Kriteria option not found:', itemId);
-                    }
-                }, 500);
-            }
+            console.log('✅ Item sub kriteria options added');
         },
         error: function(xhr, status, error) {
             console.error('❌ Error loading item sub kriteria:', error);
+            item.html('<option value="">-- Error memuat data --</option>');
         }
     });
 });
 
+// ===============================
+// RESET SAAT MODAL DITUTUP
+// ===============================
+$('#ModalCreateKeluar').on('hidden.bs.modal', function () {
+    const modal = $(this);
 
+    // Reset value saja (JANGAN destroy select2)
+    modal.find('select').val(null).trigger('change');
 
+    console.log('🧹 Modal reset without destroying Select2');
+});
 
+// ===============================
+// MODAL EDIT KELUAR
+// ===============================
+$('#editKeluar').on('shown.bs.modal', function (event) {
+    let button = $(event.relatedTarget);
+    let id       = button.data('id');
+    let agenda   = button.data('agenda');
+    let penerima = button.data('penerima');
+    let tanggal  = button.data('tanggal');
+    let bank     = button.data('bank');
+    let sumber   = button.data('sumber');
+    let kategori = button.data('kategori');
+    let sub      = button.data('sub');
+    let item     = button.data('item');
+    let jenis    = button.data('jenis');
+    let kredit   = button.data('kredit');
+    let uraian   = button.data('uraian');
+    let keterangan = button.data('keterangan');
 
+    console.log('📝 Edit modal opened with kategori:', kategori);
 
-    // ===============================
-    // RESET SAAT MODAL DITUTUP
-    // ===============================
-    // $('#ModalCreate').on('hidden.bs.modal', function () {
-    //     let modal = $(this);
+    // INIT SELECT2 di modal edit
+    const modal = $(this);
+    initSelect2(modal);
 
-    //     modal.find('select').each(function () {
-    //         if ($(this).hasClass('select2-hidden-accessible')) 
-    //     });
-    // });
+    // Set form action
+    $('#formEdit').attr('action', '/bank-keluar/' + id);
 
-  $('#ModalCreate').on('hidden.bs.modal', function () {
-        const modal = $(this);
+    // Input biasa
+    $('#agenda_tahun').val(agenda);
+    $('#penerima').val(penerima);
+    $('#kredit').val(kredit);
+    $('#keterangan').val(keterangan);
+    $('#uraian').val(uraian);
+    $('[name="tanggal"]').val(tanggal);
 
-        // reset value saja
-        modal.find('select').val(null).trigger('change');
+    // SET VALUE SELECT2 (trigger change untuk reload dependent dropdowns)
+    $('[name="id_bank_tujuan"]').val(bank).trigger('change');
+    $('[name="id_sumber_dana"]').val(sumber).trigger('change');
+    $('[name="id_jenis_pembayaran"]').val(jenis).trigger('change');
 
-        $('#uraian').val('');
-        $('#nilai_rupiahh').val('');
-        $('#penerima').val('');
+    // SET KATEGORI → Load Sub → Set Sub → Load Item → Set Item
+    $('[name="id_kategori_kriteria"]').val(kategori).trigger('change');
 
-        // reset pending data
-        pendingDataToSet = null;
-
-        console.log('🧹 Modal reset without destroying Select2');
-    });
-
-    
-
-    const bankMap = {
-        "81029155533": "81029155533 - PPPBB",
-        "81029155531": "81029155531 - UGKB",
-        "81029155528": "81029155528 - GUNME",
-        "81029155527": "81029155527 - PAGUN",
-        "81029155526": "81029155526 - GUMAS",
-        "81029155525": "81029155525 - RIMBA",
-        "81029155524": "81029155524 - PARBA",
-        "81029155523": "81029155523 - SINTANG",
-        "81029155522": "81029155522 - NGABANG",
-        "81029155521": "81029155521 - PANGA",
-        "81029155520": "81029155520 - PARINDU",
-        "81029155519": "81029155519 - PAPAR",
-        "81029155518": "81029155518 - BAYAN",
-        "81029155517": "81029155517 - PAKEM",
-        "81029155530": "81029155530 - UGKST",
-        "81029155516": "81029155516 - DASAL",
-        "81029155515": "81029155515 - TAMBA",
-        "81029155514": "81029155514 - PAMUKAN",
-        "81029155513": "81029155513 - PAPAM",
-        "81029155512": "81029155512 - BALIN",
-        "81029155511": "81029155511 - PELAIHARI",
-        "81029155510": "81029155510 - PALAI",
-        "81029155509": "81029155509 - KUMAI",
-        "81029155532": "81029155532 - PRYBB",
-        "81029155529": "81029155529 - UGKT",
-        "81029155508": "81029155508 - TABARA",
-        "81029155507": "81029155507 - TAJATI",
-        "81029155506": "81029155506 - PANDAWA",
-        "81029155505": "81029155505 - PALPI",
-        "81029155504": "81029155504 - PASAM",
-        "81029155503": "81029155503 - LONGKALI",
-        "81029155502": "81029155502 - DEKAN",
-        "81029155501": "81029155501 - RAREN"
-    };
-
-    $('#uraian').on('keyup change', function () {
-        let uraian = $(this).val().trim();
-        if (!uraian) return;
-
-        // Ambil kata pertama sebelum |
-        let kode = uraian.split('|')[0];
-
-        if (bankMap[kode]) {
-            let namaBank = bankMap[kode];
-
-            // Cari option bank tujuan yang sesuai
-            $('#id_bank_tujuan option').each(function () {
-                if ($(this).text().includes(namaBank)) {
-                    $('#id_bank_tujuan').val($(this).val()).trigger('change');
-                }
+    // Load sub kriteria berdasarkan kategori
+    if (kategori) {
+        $.get('/get-sub-kriteria/' + kategori, function (subs) {
+            let opt = '<option value="">-- Pilih Sub Kriteria --</option>';
+            subs.forEach(s => {
+                let namaSub = (s.nama_sub_kriteria || '').trim();
+                opt += `<option value="${s.id_sub_kriteria}">${namaSub}</option>`;
             });
-        }
+            $('#sub_kriteria').html(opt).val(sub).trigger('change');
+
+            // Load item sub kriteria berdasarkan sub
+            if (sub) {
+                $.get('/get-item-sub-kriteria/' + sub, function (items) {
+                    let opt2 = '<option value="">-- Pilih Item Sub Kriteria --</option>';
+                    items.forEach(i => {
+                        let namaItem = (i.nama_item_sub_kriteria || '').trim();
+                        opt2 += `<option value="${i.id_item_sub_kriteria}">${namaItem}</option>`;
+                    });
+                    $('#item_sub_kriteria').html(opt2).val(item).trigger('change');
+                });
+            }
+        });
+    }
+});
+
+// ===============================
+// CHECKBOX & DELETE
+// ===============================
+$(document).on('click', '#select_all_ids', function () {
+    $('.checkbox_ids').prop('checked', this.checked);
+});
+
+$(document).on('click', '#deleteAllSelectedRecord', function (e) {
+    e.preventDefault();
+
+    let all_ids = [];
+    $('.checkbox_ids:checked').each(function () {
+        all_ids.push($(this).val());
     });
 
-
-    function clearForm() {
-        $('#uraian').val('');
-        $('#nilai_rupiahh').val('');
-        $('#penerima').val('');
-        $('#pembayaran').val('');
-        $('#jenisPembayaran').val('').trigger('change');
-        $('#kategori').val('').trigger('change');
-        $('#sub_kriteria').val('').trigger('change');
-        $('#item_sub_kriteria').val('').trigger('change');
-    
-    // Clear pending data
-    pendingDataToSet = null;
+    if (all_ids.length === 0) {
+        alert('Pilih data terlebih dahulu!');
+        return;
     }
 
+    if (!confirm(`Yakin ingin menghapus ${all_ids.length} data?`)) return;
 
+    $.ajax({
+        url: "{{ route('bank-keluar.delete') }}",
+        type: "DELETE",
+        data: {
+            ids: all_ids,
+            _token: '{{ csrf_token() }}'
+        },
+        success: function (res) {
+            $('#example3').DataTable().ajax.reload(null, false);
+            alert(res.success);
+        },
+        error: function () {
+            alert('Gagal menghapus data');
+        }
+    });
 });
 let splitIndex = 0;
 

@@ -5,12 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\BankMasuk;
 use App\Models\BankTujuan;
 use App\Models\SumberDana;
-use App\Models\SubKriteria;
 use App\Imports\importMasuk;
 use App\Imports\importSheet;
-
+use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Http\Request;
-use App\Models\ItemSubKriteria;
 use App\Models\JenisPembayaran;
 use App\Models\KategoriKriteria;
 use App\Exports\reportMasukExcel;
@@ -25,70 +23,78 @@ class BankMasukController extends Controller
 {
     public function index(Request $request)
     {
-        $search = $request->query('search');
-         $data = BankMasuk::select(
-            'id_bank_masuk',
-            'agenda_tahun',
-            'tanggal',
-            'id_sumber_dana',
-            'id_bank_tujuan',
-            'id_kategori_kriteria',
-            'penerima',
-            'uraian',
-            'id_jenis_pembayaran',
-            'nilai_rupiah',
-            'debet',
-            'keterangan'
-        )
-        ->with([
+        return view('cash_bank.bankMasuk', [
+        'sumberDana' => SumberDana::all(),
+        'bankTujuan' => BankTujuan::all(),
+        'kategoriKriteria' => KategoriKriteria::where('tipe', 'Masuk')->get(),
+        'jenisPembayaran' => JenisPembayaran::all(),
+        ]);
+    }
+    public function datatable(Request $request)
+    {
+        $query = BankMasuk::with([
             'sumberDana:id_sumber_dana,nama_sumber_dana',
             'bankTujuan:id_bank_tujuan,nama_tujuan',
             'kategori:id_kategori_kriteria,nama_kriteria',
             'jenisPembayaran:id_jenis_pembayaran,nama_jenis_pembayaran',
-        ])->when($search ,function($query) use ($search){
-            $query->where(function($q) use ($search){
-                $q->where('uraian','like',"%$search%")
-                  ->orWhere('penerima','like',"%$search%")
-                  ->orWhere('agenda_tahun','like',"%$search%")
-                  ->orWhere('debet','like',"%$search%")
-                  ->orWhere('tanggal','like',"%$search%")
-                  ->orWhere('nilai_rupiah','like',"%$search%")
-                  ->orWhereHas('sumberDana', function($q2) use ($search){
-                      $q2->where('nama_sumber_dana','like',"%$search%");
-                  })
-                  ->orWhereHas('bankTujuan', function($q3) use ($search){
-                      $q3->where('nama_tujuan','like',"%$search%");
-                  })
-                  ->orWhereHas('kategori', function($q4) use ($search){
-                      $q4->where('nama_kriteria','like',"%$search%");
-                  })
-                  ->orWhereHas('jenisPembayaran', function($q5) use ($search){
-                      $q5->where('nama_jenis_pembayaran','like',"%$search%");
-                  });
-            });
-        })
-       ->orderBy('tanggal', 'asc')
-       ->orderBy('id_bank_masuk')
-       ->get();
-        // ->paginate(25)
-        // ->withQueryString();
+        ])->orderBy('tanggal','asc');
 
-        return view('cash_bank.bankMasuk', [
-            'data' => $data,
-            'search'=> $search,
-            'sumberDana' => SumberDana::all(),
-            'bankTujuan' => BankTujuan::all(),
-            'kategoriKriteria' => KategoriKriteria::where('tipe','Masuk')->get(),
-            'jenisPembayaran' => JenisPembayaran::all(),
-        ]);
+        return DataTables::of($query)
+            ->addIndexColumn() 
+            ->addColumn('jenis_pembayaran', function ($row) {
+                    return $row->jenisPembayaran
+                        ? $row->jenisPembayaran->nama_jenis_pembayaran
+                        : '-';
+                })
+            ->addColumn('kategori_kriteria', function ($row) {
+                    return $row->kategori
+                        ? $row->kategori->nama_kriteria
+                        : '-';
+                })
+            ->addColumn('bank_tujuan', function ($row) {
+                    return $row->bankTujuan
+                        ? $row->bankTujuan->nama_tujuan
+                        : '-';
+                })
+            ->addColumn('sumber_dana', function ($row) {
+                    return $row->sumberDana
+                        ? $row->sumberDana->nama_sumber_dana
+                        : '-';
+                })
+            ->addColumn('checkbox', function ($row) {
+                return '<input type="checkbox" class="checkbox_ids" name="ids[]" value="'.$row->id_bank_masuk.'">';
+            })
+            ->addColumn('aksi', function ($row) {
+                return '
+                <button class="btn btn-warning btn-sm" 
+                    data-toggle="modal"
+                        data-target="#edit"
+                        data-id="'.$row->id_bank_masuk.'"
+                        data-agenda="'.$row->agenda_tahun.'"
+                        data-penerima="'.$row->penerima.'"
+                        data-uraian="'.$row->uraian.'"
+                        data-tanggal="'.$row->tanggal.'"
+                        data-bank="'.$row->id_bank_tujuan.'"
+                        data-sumber="'.$row->id_sumber_dana.'"
+                        data-kategori="'.$row->id_kategori_kriteria.'"
+                        data-jenis="'.$row->id_jenis_pembayaran.'"
+                        data-keterangan="'.$row->keterangan.'"
+                        data-debet="'.$row->debet.'">Edit</button>
+                ';
+            })
+            ->rawColumns(['checkbox','aksi'])
+            ->make(true);
     }
 
     public function store(Request $request)
     {
+        // dd($request->method(), $request->all());
+
         $validated = $request->validate([
             'tanggal' => 'required|date',
             'debet' => 'required|numeric',
         ]);
+        // dd($request->tanggal);
 
         BankMasuk::create([
             'agenda_tahun' => $request->agenda_tahun,
@@ -99,7 +105,7 @@ class BankMasukController extends Controller
             'uraian' => $request->uraian,
             'penerima' => $request->penerima,
             'tanggal' => $request->tanggal,
-            'debet' => $validated['debet'] ?? 0,
+            'debet' => str_replace('.', '', $request->debet) ?? 0,
             'kredit' => 0,
             'keterangan' => $request->keterangan,
         ]);

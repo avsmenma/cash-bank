@@ -1,109 +1,134 @@
-<div class="container-fluid">
-    <div class="modal fade" id="edit" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Bank Masuk</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="formEdit" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <div class="modal-body">
-                        @if ($errors->any())
-                            <div class="alert alert-danger">
-                                <strong>Terjadi kesalahan!</strong>
-                                <ul>
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
+<div class="modal fade" id="edit" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <form id="formEdit" method="POST" enctype="multipart/form-data">
+      @csrf
+      @method('PUT')
 
-                        @method('PUT')
-                        <div class="row">
-                            <div class="col-md-4">
-                                <label>Agenda Tahun</label>
-                                <input type="text" name="agenda_tahun" class="form-control">
+      <input type="hidden" id="id_bank_masuk">
+
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Bank Masuk</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+        </div>
+
+        <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-12 d-flex">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="agenda_tahun">No Agenda</label>
+                                <input type="text" id="agenda_tahun" name="agenda_tahun" class="form-control">
                             </div>
-                            <div class="col-md-4">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
                                 <label>Tanggal</label>
-                                <input type="date" name="tanggal" class="form-control">
-                            </div>
-                            <div class="col-md-4">
+                                <div class="input-group date" id="reservationdate" data-target-input="nearest">
+                                    <input type="text" class="form-control datetimepicker-input" name="tanggal" data-target="#reservationdate"/>
+                                    <div class="input-group-append" data-target="#reservationdate" data-toggle="datetimepicker">
+                                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                    </div>
+                                </div>
+                            </div>  
+                        </div>
+                    </div>
+                    <div class="col-md-12 d-flex">
+                        <div class="col-md-6">
+                            <div class="form-group">
                                 <label>Bank Tujuan</label>
-                               <select name="id_bank_tujuan" class="form-select">
-                                @foreach($bankTujuan as $bt)
-                                    <option value="{{ $bt->id_bank_tujuan }}">
-                                        {{ $bt->nama_tujuan }}
-                                    </option>
-                                @endforeach
+                                <select class="select2"  name="id_bank_tujuan">
+                                    @foreach($bankTujuan as $bt)
+                                        <option value="{{ $bt->id_bank_tujuan }}">
+                                            {{ $bt->nama_tujuan }}
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
-                        <div class="mt-3">
-                            <label>Sumber Dana</label>
-                            <select name="id_sumber_dana" class="form-select">
-                                @foreach($sumberDana as $sd)
-                                 <option value="{{ $sd->id_sumber_dana }}">
-                                        {{ $sd->nama_sumber_dana }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        
-                        <div class="mt-3">
-                            <label>Kategori</label>
-                            <select name="id_kategori_kriteria" class="form-select">
-                                @foreach($kategoriKriteria as $k)
-                                     <option value="{{ $k->id_kategori_kriteria }}">
-                                        {{ $k->nama_kriteria }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="mt-3">
-                            <label>Penerima</label>
-                            <input type="text" name="penerima" class="form-control">
-                        </div>
-                       
-
-                        <div class="row mt-3">
-                            <!-- <div class="col-md-4">
-                                <label>Nilai Rupiah</label>
-                                <input type="number" name="nilai_rupiah"  class="form-control" disabled>
-                            </div> -->
-                            <div class="col-md-6">
-                                <label>Debet</label>
-                                <input type="number" name="debet"  class="form-control" disabled>
-                            </div>
-                            <div class="col-md-6">
-                                <label>Jenis Pembayaran</label>
-                                <select name="id_jenis_pembayaran" class="form-select">
-                                @foreach($jenisPembayaran as $jp)
-                                    <option value="{{ $jp->id_jenis_pembayaran }}">
-                                        {{ $jp->nama_jenis_pembayaran }}
-                                    </option>
-                                @endforeach
-                            </select>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Sumber Dana</label>
+                                <select class="select2"  name="id_sumber_dana">
+                                    @foreach($sumberDana as $sd)
+                                    <option value="{{ $sd->id_sumber_dana }}">
+                                            {{ $sd->nama_sumber_dana }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
-                        
-                        <div class="mt-3">
-                            <label>Keterangan</label>
-                            <textarea name="keterangan" class="form-control"></textarea>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="submit" class="btn bg-primary text-white w-25 shadow-sm">Update</button>
-                        </div>
-                       
                     </div>
-                </form>
-
+                    <div class="col-md-12 d-flex">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Kategori</label>
+                                <select class="select2"  name="id_kategori_kriteria">
+                                     @foreach($kategoriKriteria as $k)
+                                        <option value="{{ $k->id_kategori_kriteria }}">
+                                            {{ $k->nama_kriteria }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Bank Tujuan</label>
+                                <select class="select2"  name="id_jenis_pembayaran">
+                                    @foreach($jenisPembayaran as $sd)
+                                    <option value="{{ $sd->id_jenis_pembayaran }}">
+                                            {{ $sd->nama_jenis_pembayaran }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="uraian" class="col-sm-2 col-form-label">Uraian</label>
+                            <div class="col-sm-12">
+                                <textarea class="form-control" id="uraian" name="uraian" placeholder="uraian"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12 d-flex">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="penerima">Penerima</label>
+                                <input type="text" class="form-control" id="penerima" name="penerima" placeholder="penerima">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="debet">Debet</label>
+                                <input type="number" id="debet" class="form-control" value="2300" step="1" name="debet">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="keterangan" class="col-sm-2 col-form-label">Keterangan</label>
+                            <div class="col-sm-12">
+                                <textarea class="form-control" id="keterangan" name="keterangan" placeholder="keterangan"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
+            <div class="modal-footer justify-content-end">
+                <!-- <button type="button" class="btn btn-default" data-dismiss="modal">Close</button> -->
+                <button type="submit" class="btn btn-primary">Save changes</button>
+            </div>
+      </div>
+    </form>
+  </div>
 </div>
+
+
 
 

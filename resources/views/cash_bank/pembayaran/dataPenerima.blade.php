@@ -1,187 +1,157 @@
-<div class="d-flex justify-content-between mb-3">
-    <h3 class="card-title">Daftar Penerima PTPN VI Regional 5</h3>
-    <button class="btn btn-success" data-toggle="modal" data-target="#modal-lg">
-        <i class="bi bi-database-fill-add"></i> Tambah
-    </button>
-</div>
+@push('styles')
+<style>
+    #example {
+    table-layout: auto !important;
+    width: 100% !important;
+    }
 
-<!-- Modal -->
-<div class="modal fade" id="modal-lg">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title">Tambah</h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-12 d-flex">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="exampleInputEmail1">Email address</label>
-                                <input type="email" class="form-control" id="exampleInputEmail1" placeholder="Enter email">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="penerima">Penerima</label>
-                                <input type="email" class="form-control" id="penerima" placeholder="Enter penerima">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-12 d-flex">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="exampleInputEmail1">Tanggal Diterima</label>
-                                <input type="email" class="form-control" id="exampleInputEmail1" placeholder="Enter email">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="penerima">NO. REKG. PENERIMA</label>
-                                <input type="email" class="form-control" id="penerima" placeholder="Enter penerima">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-12 d-flex">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="exampleInputEmail1">Volume (Kg)</label>
-                                <input type="email" class="form-control" id="exampleInputEmail1" placeholder="Enter email">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="penerima">Harga (Rp)</label>
-                                <input type="email" class="form-control" id="penerima" placeholder="Enter penerima">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-12 d-flex">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="exampleInputEmail1">NILAI</label>
-                                <input type="email" class="form-control" id="exampleInputEmail1" placeholder="Enter email">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="penerima">PPN</label>
-                                <input type="email" class="form-control" id="penerima" placeholder="Enter penerima">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-12 d-flex">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="exampleInputEmail1">Pot PPh</label>
-                                <input type="email" class="form-control" id="exampleInputEmail1" placeholder="Enter email">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                    <label>Jenis Penerimaan</label>
-                                    <select class="form-control select2 select2-danger" data-dropdown-css-class="select2-danger" style="width: 100%;">
-                                        <option selected="selected">Alabama</option>
-                                        <option>Alaska</option>
-                                        <option>California</option>
-                                        <option>Delaware</option>
-                                        <option>Tennessee</option>
-                                        <option>Texas</option>
-                                        <option>Washington</option>
-                                    </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                </div>
-            </div>
-            <div class="modal-footer justify-content-between">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Save changes</button>
-            </div>
-        </div>
+    #example th,
+    #example td {
+        white-space: nowrap;        /* biar kolom melebar */
+        vertical-align: middle;
+    }
+</style>
+@endpush
+
+<div class="row">
+    <div class="col-12 table-responsive">
+        <table id="example" class="table table-bordered table-hover">
+            <thead class="bg-navy">
+                <tr id="employee_ids">
+                    <th>No</th>
+                    <th>Penerimaan</th>
+                    <th>No Rekening Penerima</th>
+                    <th>Pembeli</th>
+                    <th>Tanggal</th>
+                    <th>Kontrak</th>
+                    <th>Volume (Kg)</th>
+                    <th>Harga (Rp)</th>
+                    <th>Nilai</th>
+                    <th>PPN</th>
+                    <th>Pot PPN</th>
+                    <th>Nilai Inc. PPN</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+        </table>
     </div>
 </div>
 
-<!-- Tabel DataTable -->
-<div class="card-body">
-    <table id="example1" class="table table-bordered table-striped">
-        <thead>
-            <tr>
-                <th>Rendering engine</th>
-                <th>Browser</th>
-                <th>Platform(s)</th>
-                <th>Engine version</th>
-                <th>CSS grade</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Gecko</td>
-                <td>Firefox 1.0</td>
-                <td>Win 98+ / OSX.2+</td>
-                <td>1.7</td>
-                <td>A</td>
-            </tr>
-            <tr>
-                <td>Trident</td>
-                <td>Internet Explorer 4.0</td>
-                <td>Win 95+</td>
-                <td>4</td>
-                <td>X</td>
-            </tr>
-            <tr>
-                <td>Trident</td>
-                <td>Internet Explorer 5.0</td>
-                <td>Win 95+</td>
-                <td>5</td>
-                <td>C</td>
-            </tr>
-        </tbody>
-        <tfoot>
-            <tr>
-                <th>Rendering engine</th>
-                <th>Browser</th>
-                <th>Platform(s)</th>
-                <th>Engine version</th>
-                <th>CSS grade</th>
-            </tr>
-        </tfoot>
-    </table>
-</div>
 
 @push('scripts')
+
 <script>
-$(function () {
-    // Inisialisasi DataTable
-    $("#example1").DataTable({
-        "responsive": true, 
-        "lengthChange": false, 
-        "autoWidth": false,
-        "buttons": ["excel", "pdf", "print"]
-    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-    
-    // Inisialisasi Select2 di dalam Modal
-    // PENTING: dropdownParent harus diset ke modal agar dropdown tidak terpotong
-    $('.select2').select2({
-        theme: 'bootstrap4',
-        placeholder: 'Pilih salah satu',
-        allowClear: true,
-        dropdownParent: $('#modal-lg') // INI YANG PENTING!
+    var table = null;
+    var tableReady = false;
+$(document).ready(function () {
+    $('#example').DataTable({
+        processing: true,
+        serverSide: true,
+        ordering: false,
+        autoWidth: false,
+        ajax: {
+            url: "{{ route('penerima.data') }}",
+        data: function (d) {
+            d.tahun  = $('#filterTahunRealisasi').val();
+            d.bulan  = $('#filterBulanRealisasi').val();
+            d.kategori = $('#filterKategoriRealisasi').val();
+        }
+         },
+        columns: [
+           {
+            data: 'DT_RowIndex',
+            orderable: false,
+            searchable: false,
+            title: 'No',className: 'text-center',
+        },
+            // {data: 'id_ka'},
+            {data: 'kategori_kriteria',className: 'text-center', },
+            {data: 'no_reg',className: 'text-center', },
+            {data: 'pembeli',className: 'text-center',},
+            {data: 'tanggal',className: 'text-center', },
+            {data: 'kontrak',className: 'text-center', },
+            {data: 'volume' ,className: 'text-right',},     
+            {data: 'harga',className: 'text-right',},
+            {data: 'nilai',className: 'text-right', },
+            {data: 'ppn',className: 'text-right',},
+            {data: 'potppn',className: 'text-right',},
+            {data: 'nilai_inc_ppn',className: 'text-right',},
+            {data: 'aksi', orderable:false, searchable:false}
+        ],
+         drawCallback: function (settings) {
+            drawTotalPerKategori.call(this, settings);
+        }
     });
-    
-    // Alternatif: Inisialisasi ulang saat modal dibuka (lebih aman)
-    $('#modal-lg').on('shown.bs.modal', function () {
-        $('.select2').select2({
-            theme: 'bootstrap4',
-            placeholder: 'Pilih salah satu',
-            allowClear: true,
-            dropdownParent: $('#modal-lg')
-        });
+    setTimeout(() => {
+            table.ajax.reload();
+        }, 300);
+    $('#filterTahunRealisasi, #filterBulanRealisasi, #filterKategoriRealisasi')
+    .on('change select2:select select2:clear', function () {
+
+        if (!table) {
+            console.error('TABLE BELUM ADA');
+            return;
+        }
+
+        console.log('FILTER JALAN, reload datatable');
+        table.ajax.reload();
     });
+    tableReady = true;   
+    console.log('TABLE SIAP');
 });
+function drawTotalPerKategori(settings) {
+
+    let api = this.api();
+    let rows = api.rows({ page:'current' }).nodes();
+    let data = api.rows({ page:'current' }).data();
+
+    let lastKategori = null;
+    let total = {
+        volume:0, nilai:0, ppn:0, potppn:0, inc:0
+    };
+
+    data.each(function (row, i) {
+
+        if (lastKategori !== null && row.kategori_kriteria !== lastKategori) {
+            insertTotalRow(rows, i-1, lastKategori, total);
+            resetTotal(total);
+        }
+
+        total.volume += Number(row.volume || 0);
+        total.nilai  += Number(row.nilai || 0);
+        total.ppn    += Number(row.ppn || 0);
+        total.potppn += Number(row.potppn || 0);
+        total.inc    += Number(row.nilai_inc_ppn || 0);
+
+        lastKategori = row.kategori_kriteria;
+    });
+
+    if (lastKategori !== null) {
+        insertTotalRow(rows, rows.length-1, lastKategori, total);
+    }
+}
+
+function insertTotalRow(rows, index, kategori, total) {
+    let hargaRata = total.volume > 0 ? total.nilai / total.volume : 0;
+
+    $(rows).eq(index).after(`
+        <tr class="table-warning font-weight-bold text-right">
+            <td colspan="6" class="text-left">TOTAL ${kategori}</td>
+            <td>${total.volume.toLocaleString('id-ID')}</td>
+            <td>${hargaRata.toLocaleString('id-ID')}</td>
+            <td>${total.nilai.toLocaleString('id-ID')}</td>
+            <td>${total.ppn.toLocaleString('id-ID')}</td>
+            <td>${total.potppn.toLocaleString('id-ID')}</td>
+            <td>${total.inc.toLocaleString('id-ID')}</td>
+            <td></td>
+        </tr>
+    `);
+}
+
+function resetTotal(total){
+    Object.keys(total).forEach(k => total[k]=0);
+}
 </script>
 @endpush
+@include('cash_bank.modal.modalPenerima.editPenerima')
+

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\KategoriKriteria;
 use Illuminate\Database\Eloquent\Model;
 
 class SubKriteria extends Model
@@ -10,8 +11,12 @@ class SubKriteria extends Model
     protected $primaryKey = 'id_sub_kriteria';
     protected $fillable = ['id_kategori_kriteria', 'nama_sub_kriteria'];
 
-    public function itemSub()
+    public function kategori()
     {
-        return $this->hasMany(ItemSubKriteria::class, 'id_sub_kriteria');
+        return $this->belongsTo(
+            KategoriKriteria::class,
+            'id_kategori_kriteria',
+            'id_kategori_kriteria'
+        );
     }
 }

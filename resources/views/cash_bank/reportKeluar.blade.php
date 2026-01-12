@@ -2,9 +2,24 @@
 @section('content')
 
 <div class="container-fluid mt-4">
-    <h1 class="tittle">Report <span style="color: #FF7518">Bank Keluar</span></h1>
-    <small>Ini daftar Report Bank Keluar</small>
-    
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Report Keluar</h1>
+            </div>
+         
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="{{ route('dashboard.pembayaran.index') }}">Dashboard Pembayaran</a></li>
+              <li class="breadcrumb-item"><a href="{{ route('bank-keluar.index') }}"> Bank Keluar </a></li>
+              <li class="breadcrumb-item active">Report Keluar</li>
+            </ol>
+          </div>
+        </div>
+      </div><!-- /.container-fluid -->
+    </section>
+    <section>
     <div class="row mt-4">
         <div class="col-md-12">
             <div class="card rounded-3 border-0 shadow-sm">
@@ -15,7 +30,7 @@
                             <!-- Tahun -->
                             <div class="col-md-3">
                                 <label class="form-label">Tahun</label>
-                                <select name="tahun" class="form-select" onchange="submitForm()">
+                                <select name="tahun" class="form-control select2" onchange="submitForm()">
                                     @foreach($tahunList as $t)
                                         <option value="{{ $t }}" {{ request('tahun') == $t ? 'selected' : '' }}>
                                             {{ $t }}
@@ -27,7 +42,7 @@
                             <!-- Bulan -->
                             <div class="col-md-3">
                                 <label class="form-label">Bulan</label>
-                                <select name="bulan" class="form-select" onchange="submitForm()">
+                                <select name="bulan" class="form-control select2" onchange="submitForm()">
                                     <option value="">Semua Jenis Bulan</option>
                                     @foreach($bulanList as $b)
                                         <option value="{{ $b }}" {{ request('bulan') == $b ? 'selected' : '' }}>
@@ -41,7 +56,7 @@
                             <div class="col-md-3">
                                 <label class="form-label">Tanggal</label>
                                 <div class="dropdown">
-                                    <button class="form-select text-start" type="button" data-bs-toggle="dropdown">
+                                    <button class="form-control select2 text-start" type="button" data-toggle="dropdown">
                                         <span id="tanggalText">-- Pilih Tanggal --</span>
                                     </button>
 
@@ -71,7 +86,7 @@
                             <!-- Bank Tujuan -->
                             <div class="col-md-3">
                                 <label class="form-label">Bank Tujuan</label>
-                                <select name="bank_tujuan" class="form-select" onchange="submitForm()">
+                                <select name="bank_tujuan" class="form-control select2" onchange="submitForm()">
                                     <option value="" disable>Semua Bank Tujuan</option>
                                     @foreach($bankTujuanList as $bank)
                                         <option value="{{ $bank->id_bank_tujuan }}" {{ request('bank_tujuan') == $bank->id_bank_tujuan ? 'selected' : '' }}>
@@ -85,7 +100,7 @@
                             <div class="col-md-3">
                                 <label class="form-label">Sumber Dana</label>
                                 <div class="dropdown">
-                                    <button class="form-select text-start" type="button" data-bs-toggle="dropdown">
+                                    <button class="form-control select2 text-start" type="button" data-toggle="dropdown">
                                         <span id="sdText">Semua Sumber Dana</span>
                                     </button>
 
@@ -114,7 +129,7 @@
                             <div class="col-md-3">
                                 <label class="form-label">Kategori</label>
                                 <div class="dropdown">
-                                    <button class="form-select text-start" type="button" data-bs-toggle="dropdown">
+                                    <button class="form-control select2 text-start" type="button" data-toggle="dropdown">
                                         <span id="kategoriText">Semua Kategori</span>
                                     </button>
 
@@ -142,7 +157,7 @@
                             <!-- Jenis Pembayaran -->
                             <div class="col-md-3">
                                 <label class="form-label">Jenis Pembayaran</label>
-                                <select name="id_jenis_pembayaran" class="form-select" onchange="submitForm()">
+                                <select name="id_jenis_pembayaran" class="form-control select2" onchange="submitForm()">
                                     <option value="">Semua Jenis Pembayaran</option>
                                     @foreach($jenisPembayaranList as $rjs)
                                         @if($rjs->id_jenis_pembayaran)
@@ -158,7 +173,7 @@
                             <!-- Rekapan -->
                             <div class="col-md-3">
                                 <label class="form-label">Rekapan</label>
-                                <select name="rekapanVA" class="form-select" onchange="submitForm()">
+                                <select name="rekapanVA" class="form-control select2" onchange="submitForm()">
                                     <option value="">-- Pilih Rekapan --</option>
                                     <option value="va" {{ request('rekapanVA') == 'va' ? 'selected' : '' }}>Saldo Bank</option>
                                     <option value="bank" {{ request('rekapanVA') == 'bank' ? 'selected' : '' }}>Saldo VA</option>
@@ -224,6 +239,7 @@
             </div>
         </div>
     </div>
+    </section>
 </div>
 
 <style>
@@ -258,6 +274,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    
     const form = document.getElementById('filterForm');
 
     // Sumber Dana Multi-select

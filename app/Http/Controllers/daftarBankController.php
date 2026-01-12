@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BankTujuan;
 use App\Models\daftarBank;
 use Illuminate\Http\Request;
+use Yajra\DataTables\Facades\DataTables;
 
 class daftarBankController extends Controller
 {
@@ -13,16 +14,50 @@ class daftarBankController extends Controller
      */
     public function index(Request $request)
     {
-        $search = $request->keyword;
-        $data = BankTujuan::when($search, function($query, $search) {
-            return $query->where('nama_tujuan', 'like', "%{$search}%");
-        })->get();
-        return view('cash_bank.saldo.daftarBank', compact('data'));
+        return view('cash_bank.saldo.daftarBank');
+    }
+    public function datatable(Request $request)
+    {
+        $filterStatus = $request->status;
+
+        $query = BankTujuan::all();
+
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->addColumn('aksi', function ($row) {
+                $route = route('daftarBank.destroy', $row->id_bank_tujuan);
+                $csrf = csrf_token();
+
+                return '
+                    <button type="button"
+                        class="btn btn-warning btn-sm"
+                        data-toggle="modal"
+                        data-target="#editBankTujuan"
+                        data-id="'.$row->id_bank_tujuan.'"
+                        data-nama="'.$row->nama_tujuan.'">
+                        Edit
+                    </button>
+
+                    <form action="'.$route.'" method="POST" style="display:inline;">
+                        <input type="hidden" name="_token" value="'.$csrf.'">
+                        <input type="hidden" name="_method" value="DELETE">
+
+                        <button type="submit"
+                            class="btn btn-sm btn-danger"
+                            onclick="return confirm(\'Yakin ingin menghapus?\')">
+                            <i class="bi bi-trash"></i>Hapus
+                        </button>
+                    </form>
+                ';
+            })
+            ->rawColumns(['aksi'])
+            ->make(true);
     }
 
     /**
      * Show the form for creating a new resource.
      */
+
     public function create()
     {
         return view('modal.tambahBank');
@@ -36,7 +71,6 @@ class daftarBankController extends Controller
         $validated = $request->validate([
         'nama_tujuan' => 'required',
     ]);
-
         BankTujuan::create($validated);
         return redirect()->route('daftarBank.index')->with('success', 'Data berhasil ditambahkan!');
     }

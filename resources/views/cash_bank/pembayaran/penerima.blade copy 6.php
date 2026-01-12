@@ -42,7 +42,8 @@
                         <div class="collapse mt-3" id="filterCollapse" >
                           <div class="d-flex gap-2">
                               <div class="form-group mb-0">
-                                  <select class="select2" id="filterTahunRealisasi">
+                                  <select class="select2" id="filterTahunRealisasi
+                                  ">
                                     @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
                                         <option value="{{ $t }}" {{ request('tahun', date('Y')) == $t ? 'selected' : '' }}>
                                             {{ $t }}

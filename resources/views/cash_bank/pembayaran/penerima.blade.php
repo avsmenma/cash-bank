@@ -30,59 +30,28 @@
                   <div class="tab-content">
                       <div class="active tab-pane" id="activity">
                         <div class="row no-print">
-                          <div class="col-12 gap-4">
-                            <div class="col-6"></div>
-                            <a href="#" rel="noopener"  class="btn btn-danger" id="deleteAllSelectedRecord"><i class="fas fa-trash"></i> Delete All</a>
-                            <a href="javascript:void(0)" class="btn btn-success" data-toggle="modal" data-target="#ModalCreatePenerima"><i class="fas fa-plus"></i> Tambah Data</a>
-                            <!-- <a href="{{ url('/bank-masuk/view/pdf')}}" target="_blank" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download PDF</a> -->
-                            <a href="#" class="btn btn-outline-danger " ><i class=" nav-icon fas fa-file-excel"></i></i> Download Excel</a>
-                          </div>
+                            <div class="col-12 gap-4">
+                                <div class="row no-print mb-3 gap-2">
+                                    <div style="width:150px" class="gap-2">
+                                        <select class="select2" id="tahunRealisasi">
+                                            @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
+                                                <option value="{{ $t }}"{{ request('tahun', date('Y')) == $t ? 'selected' : '' }}>
+                                                    {{ $t }}
+                                                </option>
+                                            @endfor
+                                        </select>
+                                    </div>
+                                
+                                    <a href="#" rel="noopener"  class="btn btn-danger" id="deleteAllSelectedRecord"><i class="fas fa-trash"></i> Delete All</a>
+                                    <a href="javascript:void(0)" class="btn btn-success" data-toggle="modal" data-target="#ModalCreatePenerima"><i class="fas fa-plus"></i> Tambah Data</a>
+                                    <!-- <a href="{{ url('/bank-masuk/view/pdf')}}" target="_blank" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download PDF</a> -->
+                                    <a href="#" class="btn btn-outline-danger " ><i class=" nav-icon fas fa-file-excel"></i></i> Download Excel</a>
+                                </div>
+                            </div>
+                          
                           
                         </div>
-                        <div class="collapse mt-3" id="filterCollapse" >
-                          <div class="d-flex gap-2">
-                              <div class="form-group mb-0">
-                                  <select class="select2" id="filterTahunRealisasi">
-                                    @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
-                                        <option value="{{ $t }}" {{ request('tahun', date('Y')) == $t ? 'selected' : '' }}>
-                                            {{ $t }}
-                                        </option>
-                                    @endfor
-                                </select>
-                              </div>
-                              <div class="form-group mb-0">
-                                  <select class="select2" id="filterBulanRealisasi">
-                                  <option value="">Semua Bulan</option>
-                                  <option value="01">Januari</option>
-                                  <option value="02">Februari</option>
-                                  <option value="03">Maret</option>
-                                  <option value="04">April</option>
-                                  <option value="05">Mei</option>
-                                  <option value="06">Juni</option>
-                                  <option value="07">Juli</option>
-                                  <option value="08">Agustus</option>
-                                  <option value="09">September</option>
-                                  <option value="10">Oktober</option>
-                                  <option value="11">November</option>
-                                  <option value="12">Desember</option>
-                              </select>
-
-                              </div>
-                              <div class="form-group mb-0">
-                                  <select class="select2" id="filterKategoriRealisasi">
-                                    <option value="">Semua Kategori</option>
-                                    @foreach($kategoriKriteria as $k)
-                                        <option value="{{ $k->id_kategori_kriteria }}">
-                                            {{ $k->nama_kriteria }}
-                                        </option>
-                                    @endforeach
-                                </select>
-
-                              </div>
-                              <a href="3" class="btn btn-danger " ><i class=" nav-icon fas fa-user-secret"></i></i> Reset Filter</a>
-
-                          </div>
-                        </div>
+    
                       
                         @include('cash_bank.pembayaran.dataPenerima')
                       
@@ -98,7 +67,8 @@
                             <div class="col-md-3">
                                  <select class="select2" id="tahunCashflow">
                                   @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
-                                    <option value="{{ $t }}">{{ $t }}</option>
+                                    <option value="{{ $t }}" {{ request('tahun', date('Y')) == $t ? 'selected' : '' }}> {{ $t }}
+                                        </option>
                                   @endfor
                                 </select>
                             </div>
@@ -119,7 +89,8 @@
                             <div class="col-md-3">
                                  <select class="select2" id="tahunRencana">
                                   @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
-                                    <option value="{{ $t }}">{{ $t }}</option>
+                                    <option value="{{ $t }}" {{ request('tahun', date('Y')) == $t ? 'selected' : '' }}> {{ $t }}
+                                        </option>
                                   @endfor
                                 </select>
                             </div>
@@ -229,6 +200,31 @@ $(document).ready(function () {
         $('.select2').select2({
             theme: 'bootstrap4',
             width: '100%'
+        });
+    }
+    $('#tahunRealisasi').on('change', function () {
+        loadRealisasi();
+    });
+
+    function loadRealisasi() {
+        let tahun = $('#tahunRealisasi').val();
+
+        $('#realisasi-content').html(
+            '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>'
+        );
+
+        $.ajax({
+            url: "{{ route('penerima.index') }}",
+            type: "GET",
+            data: { tahun: tahun },
+            success: function (res) {
+                $('#realisasi-content').html(res);
+            },
+            error: function () {
+                $('#realisasi-content').html(
+                    '<div class="alert alert-danger">Gagal memuat data</div>'
+                );
+            }
         });
     }
     

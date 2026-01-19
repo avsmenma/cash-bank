@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class saldoAwal extends Model
+class SaldoAwal extends Model
 {
     protected $table = 'saldo_awals'; // sesuaikan dengan nama tabel
 
@@ -16,11 +16,11 @@ class saldoAwal extends Model
 
     public function bank()
     {
-        return $this->belongsTo(daftarBank::class, 'id_daftar_bank', 'id_daftar_bank');
+        return $this->belongsTo(DaftarBank::class, 'id_daftar_bank', 'id_daftar_bank');
     }
 
     public function rekening()
     {
-        return $this->belongsTo(daftarRekening::class, 'id_rekening', 'id_rekening');
+        return $this->belongsTo(DaftarRekening::class, 'id_rekening', 'id_rekening');
     }
 }

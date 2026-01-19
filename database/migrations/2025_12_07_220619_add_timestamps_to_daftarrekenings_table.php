@@ -4,16 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
+     * Note: timestamps already exist in create table migration
      */
     public function up(): void
     {
-        Schema::table('daftarrekenings', function (Blueprint $table) {
-             $table->timestamps();
-        });
+        // Timestamps already added in create table migration
     }
 
     /**
@@ -21,8 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('daftarrekenings', function (Blueprint $table) {
-            $table->dropColumn(['created_at', 'updated_at']);
-        });
+        // No action needed
     }
 };

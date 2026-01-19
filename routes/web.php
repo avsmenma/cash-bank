@@ -3,20 +3,20 @@
 
 use App\Models\ItemSubKriteria;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\pdfController;
+use App\Http\Controllers\PdfController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserSAPController;
 use App\Http\Controllers\DroppingController;
 use App\Http\Controllers\PenerimaController;
 use App\Http\Controllers\BankMasukController;
-use App\Http\Controllers\daftarSPPController;
-use App\Http\Controllers\dashboardController;
-use App\Http\Controllers\saldoAwalController;
+use App\Http\Controllers\DaftarSPPController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SaldoAwalController;
 use App\Http\Controllers\BankKeluarController;
-use App\Http\Controllers\daftarBankController;
+use App\Http\Controllers\DaftarBankController;
 use App\Http\Controllers\DetailItemController;
 use App\Http\Controllers\PermintaanController;
-use App\Http\Controllers\daftarRekeningController;
+use App\Http\Controllers\DaftarRekeningController;
 use App\Http\Controllers\DetailSubKategoriController;
 use App\Http\Controllers\DashboardPembayaranController;
 use App\Http\Controllers\DetaiControllerCashFlowController;

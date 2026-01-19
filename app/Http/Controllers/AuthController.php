@@ -8,23 +8,28 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    public function login(Request $request){
+    public function login(Request $request)
+    {
         $request->validate([
             'username' => 'required',
-            'password' => 'required|max:8',
+            'password' => 'required|min:6|max:8',
         ]);
 
-        if(Auth::attempt($request->only('username','password'), $request->remember)){
-            if(Auth::user()->role == 'vendor') return redirect('/userVendor');
+        if (Auth::attempt($request->only('username', 'password'), $request->remember)) {
+            if (Auth::user()->role == 'vendor')
+                return redirect('/userVendor');
 
-          return redirect('/dashboard-cash-bank');
+            return redirect('/dashboard-cash-bank');
         }
 
-        return back()->with('failed','Username atau password salah');
+        return back()->with('failed', 'Username atau password salah');
     }
 
-    public function logout(){
-        Auth::logout(Auth::user());
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
         return redirect('/login');
     }
 }

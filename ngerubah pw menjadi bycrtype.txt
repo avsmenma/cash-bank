@@ -1,8 +1,0 @@
-PS C:\laragon\www\cash-bank> php artisan tinker
-Psy Shell v0.12.14 (PHP 8.3.16 — cli) by Justin Hileman
-The system cannot find the path specified.
-New PHP manual is available (latest: 3.0.0). Update with `--update-manual`
-> Hash::make('12345678');
-= "$2y$12$J/GTeFk0lflyjA4iF8MCFe6nE2BLPp6Io2/XxinCthOyZ09s3jGT."
-
->

@@ -114,11 +114,11 @@ return [
         ],
         'mysql_agenda_online' => [
             'driver' => 'mysql',
-            'host' => env('AGENDA_HOST', '47.236.49.229'),
+            'host' => env('AGENDA_HOST', '127.0.0.1'),
             'port' => env('AGENDA_PORT', 3306),
-            'database' => env('AGENDA_DB','agenda_ptpn_new'), 
-            'username' => env('AGENDA_USER','agenda_user_new'), 
-            'password' => env('AGENDA_PASS','@Skw12345'), 
+            'database' => env('AGENDA_DB', 'agenda_ptpn'),
+            'username' => env('AGENDA_USER', 'root'),
+            'password' => env('AGENDA_PASS', ''),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
@@ -160,7 +160,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-database-'),
+            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')) . '-database-'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 

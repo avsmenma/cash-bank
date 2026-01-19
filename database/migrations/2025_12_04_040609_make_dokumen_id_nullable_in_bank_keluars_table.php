@@ -4,24 +4,18 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
+     * Note: This migration is no longer needed as columns are already nullable in create table migration
      */
     public function up()
     {
-        Schema::table('bank_keluars', function (Blueprint $table) {
-            $table->unsignedBigInteger('dokumen_id')->nullable()->change();
-            $table->string('no_agenda')->nullable()->change();
-        });
+        // Columns already nullable in create table migration
     }
 
     public function down()
     {
-        Schema::table('bank_keluars', function (Blueprint $table) {
-            $table->unsignedBigInteger('dokumen_id')->nullable(false)->change();
-            $table->string('no_agenda')->nullable(false)->change();
-        });
+        // No action needed
     }
 };

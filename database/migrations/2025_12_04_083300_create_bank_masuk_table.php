@@ -24,6 +24,7 @@ return new class extends Migration {
             $table->decimal('debet', 20, 2)->default(0);
             $table->decimal('kredit', 20, 2)->default(0);
             $table->text('keterangan')->nullable();
+            $table->string('no_sap')->nullable();
             $table->timestamps();
 
             // Foreign keys

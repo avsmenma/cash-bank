@@ -28,6 +28,8 @@ class DatabaseSeeder extends Seeder
             SubKriteriaSeeder::class,
             ItemSubKriteriaSeeder::class,
             JenisPembayaranSeeder::class,
+            SumberDanaSeeder::class,
+            BankTujuanSeeder::class,
         ]);
     }
 }

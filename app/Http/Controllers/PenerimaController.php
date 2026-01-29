@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ExportExcelPenerima;
+use App\Exports\ExportExcelRencanaPenerima;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class penerimaController extends Controller
 {
@@ -335,5 +337,31 @@ class penerimaController extends Controller
     {
         $tahun = $request->tahun ?? date('Y');
         return Excel::download(new ExportExcelPenerima($tahun), 'penerima-' . $tahun . '.xlsx');
+    }
+
+    public function export_excel_rencana(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+        return Excel::download(new ExportExcelRencanaPenerima($tahun), 'rencana-penerima-' . $tahun . '.xlsx');
+    }
+
+    public function export_pdf_rencana(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+
+        $kategori = KategoriKriteria::where('tipe', 'Penerima')->get();
+        $data = RencanaPenerima::where('tahun', $tahun)
+            ->get()
+            ->keyBy('id_kategori_kriteria');
+
+        $pdf = Pdf::loadView('cash_bank.exportPDF.pdfRencanaPenerima', [
+            'kategori' => $kategori,
+            'data' => $data,
+            'tahun' => $tahun
+        ]);
+
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('rencana-penerima-' . $tahun . '.pdf');
     }
 }

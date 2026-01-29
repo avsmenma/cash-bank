@@ -96,9 +96,9 @@
                         <div class="row no-print mb-3">
                             <div class="col-12">
                                 <div class="d-flex gap-2">
-                                    <a href="#" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download
+                                    <a href="{{ route('penerima.export_pdf_rencana') }}" id="btnDownloadPdfRencana" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download
                                         PDF</a>
-                                    <a href="#" class="btn btn-outline-danger"><i class="fas fa-file-excel"></i> Download
+                                    <a href="{{ route('penerima.export_excel_rencana') }}" id="btnDownloadExcelRencana" class="btn btn-outline-danger"><i class="fas fa-file-excel"></i> Download
                                         Excel</a>
                                     <div class="col-md-3">
                                         <select class="select2" id="tahunRencana">
@@ -303,6 +303,12 @@
                 function loadRencana() {
                     const tahun = $('#tahunRencana').val();
                     console.log('Loading rencana for year:', tahun);
+                    
+                    // Update export links
+                    let baseUrlExcel = "{{ route('penerima.export_excel_rencana') }}";
+                    let baseUrlPdf = "{{ route('penerima.export_pdf_rencana') }}";
+                    $('#btnDownloadExcelRencana').attr('href', baseUrlExcel + '?tahun=' + tahun);
+                    $('#btnDownloadPdfRencana').attr('href', baseUrlPdf + '?tahun=' + tahun);
 
                     $('#rencana-content').html('<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>');
 

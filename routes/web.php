@@ -265,6 +265,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/penerima/data', [PenerimaController::class, 'datatable'])
         ->name('penerima.data');
 
+    Route::get('/penerima/export_excel', [PenerimaController::class, 'export_excel'])
+        ->name('penerima.export_excel');
+
     Route::resource('penerima', PenerimaController::class);
 
 });

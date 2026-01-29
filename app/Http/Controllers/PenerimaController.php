@@ -9,12 +9,15 @@ use App\Models\RencanaPenerima;
 use App\Models\KategoriKriteria;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ExportExcelPenerima;
 
 class penerimaController extends Controller
 {
-    public function index(){
+    public function index()
+    {
         $result = [];
-        return view('cash_bank.pembayaran.penerima',[
+        return view('cash_bank.pembayaran.penerima', [
             'kategoriKriteria' => KategoriKriteria::where('tipe', 'penerima')->get(),
             'result' => $result
         ]);
@@ -24,8 +27,8 @@ class penerimaController extends Controller
         $filterStatus = $request->status;
 
         $query = Penerima::with('kategori')
-        ->orderBy('id_kategori_kriteria')
-        ->orderBy('tanggal');
+            ->orderBy('id_kategori_kriteria')
+            ->orderBy('tanggal');
 
         if ($request->tahun) {
             $query->whereYear('tanggal', $request->tahun);
@@ -39,16 +42,20 @@ class penerimaController extends Controller
             $query->where('id_kategori_kriteria', $request->kategori);
         }
 
-         return DataTables::of($query)
-        ->addIndexColumn()
+        return DataTables::of($query)
+            ->addIndexColumn()
 
-        ->addColumn('kategori_kriteria', fn($r) =>
-            $r->kategori->nama_kriteria ?? '-'
-        )
+            ->addColumn(
+                'kategori_kriteria',
+                fn($r) =>
+                $r->kategori->nama_kriteria ?? '-'
+            )
 
-        ->addColumn('nilai_inc_ppn', fn($r) =>
-            ($r->nilai ?? 0) + ($r->ppn ?? 0) - ($r->potppn ?? 0)
-        )
+            ->addColumn(
+                'nilai_inc_ppn',
+                fn($r) =>
+                ($r->nilai ?? 0) + ($r->ppn ?? 0) - ($r->potppn ?? 0)
+            )
             ->addColumn('aksi', function ($row) {
                 $route = route('penerima.destroy', $row->id_penerima);
                 $csrf = csrf_token();
@@ -57,21 +64,21 @@ class penerimaController extends Controller
                     <button class="btn btn-warning btn-sm" 
                         data-toggle="modal"
                         data-target="#editPenerima"
-                        data-id="'.$row->id_penerima.'"
-                        data-pembeli="'.$row->pembeli.'"
-                        data-kontrak="'.$row->kontrak.'"
-                        data-no_reg="'.$row->no_reg.'"
-                        data-harga="'.$row->harga.'"
-                        data-tanggal="'.$row->tanggal.'"
-                        data-volume="'.$row->volume.'"
-                        data-nilai="'.$row->nilai.'"
-                        data-kategori="'.$row->id_kategori_kriteria.'"
-                        data-ppn="'.$row->ppn.'"
-                        data-potppn="'.$row->potppn.'"
+                        data-id="' . $row->id_penerima . '"
+                        data-pembeli="' . $row->pembeli . '"
+                        data-kontrak="' . $row->kontrak . '"
+                        data-no_reg="' . $row->no_reg . '"
+                        data-harga="' . $row->harga . '"
+                        data-tanggal="' . $row->tanggal . '"
+                        data-volume="' . $row->volume . '"
+                        data-nilai="' . $row->nilai . '"
+                        data-kategori="' . $row->id_kategori_kriteria . '"
+                        data-ppn="' . $row->ppn . '"
+                        data-potppn="' . $row->potppn . '"
                         >Edit</button>
 
-                    <form action="'.$route.'" method="POST" style="display:inline;">
-                        <input type="hidden" name="_token" value="'.$csrf.'">
+                    <form action="' . $route . '" method="POST" style="display:inline;">
+                        <input type="hidden" name="_token" value="' . $csrf . '">
                         <input type="hidden" name="_method" value="DELETE">
 
                         <button type="submit"
@@ -107,10 +114,10 @@ class penerimaController extends Controller
         $volume = $validated['volume'];
         $harga = $validated['harga'];
         $nilai = $volume * $harga;
-        
+
         // PPN 11% (kecuali pembeli EUP)
         $ppn = $validated['pembeli'] === 'EUP' ? 0 : round($nilai * 0.11);
-        
+
         // Pot PPN dari input user (bisa 0 jika kosong)
         $potppn = $validated['potppn'] ?? 0;
 
@@ -122,12 +129,12 @@ class penerimaController extends Controller
             'tanggal' => $validated['tanggal'],
             'volume' => $volume,
             'harga' => $harga,
-            'nilai' => $nilai,           
-            'ppn' => $ppn,               
-            'potppn' => $potppn,         
+            'nilai' => $nilai,
+            'ppn' => $ppn,
+            'potppn' => $potppn,
         ]);
 
-        return back()->with('success','Data berhasil disimpan');
+        return back()->with('success', 'Data berhasil disimpan');
     }
 
     public function edit(string $id)
@@ -175,7 +182,7 @@ class penerimaController extends Controller
 
         foreach ($data as $row) {
             $kategori = $row->kategori->nama_kriteria ?? '-';
-            $bulan    = (int) $row->bulan;
+            $bulan = (int) $row->bulan;
 
             if (!isset($result[$kategori])) {
                 $result[$kategori] = array_fill(1, 12, 0);
@@ -191,31 +198,31 @@ class penerimaController extends Controller
         );
     }
 
-   public function rencana(Request $request)
-{
-    try {
-        $tahun = $request->tahun ?? date('Y');
-        
-        $kategori = KategoriKriteria::where('tipe', 'Penerima')->get();
-        
-        $data = RencanaPenerima::where('tahun', $tahun)
-            ->get()
-            ->keyBy('id_kategori_kriteria');
-        
-        // Debugging
-        \Log::info('Rencana Data:', [
-            'tahun' => $tahun,
-            'kategori_count' => $kategori->count(),
-            'data_count' => $data->count()
-        ]);
-        
-        return view('cash_bank.pembayaran.rencanaPenerima', compact('kategori', 'data', 'tahun'));
-        
-    } catch (\Exception $e) {
-        \Log::error('Error in rencana(): ' . $e->getMessage());
-        return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+    public function rencana(Request $request)
+    {
+        try {
+            $tahun = $request->tahun ?? date('Y');
+
+            $kategori = KategoriKriteria::where('tipe', 'Penerima')->get();
+
+            $data = RencanaPenerima::where('tahun', $tahun)
+                ->get()
+                ->keyBy('id_kategori_kriteria');
+
+            // Debugging
+            \Log::info('Rencana Data:', [
+                'tahun' => $tahun,
+                'kategori_count' => $kategori->count(),
+                'data_count' => $data->count()
+            ]);
+
+            return view('cash_bank.pembayaran.rencanaPenerima', compact('kategori', 'data', 'tahun'));
+
+        } catch (\Exception $e) {
+            \Log::error('Error in rencana(): ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
-}
     public function save(Request $request)
     {
         try {
@@ -243,75 +250,90 @@ class penerimaController extends Controller
     }
 
     public function gabungan(Request $request)
-{
-    $tahun = $request->tahun ?? date('Y');
-    $bulanDari = $request->bulan_dari ?? 1; // filter bulan dari
-    $bulanSampai = $request->bulan_sampai ?? 12; // filter bulan sampai
+    {
+        $tahun = $request->tahun ?? date('Y');
+        $bulanDari = $request->bulan_dari ?? 1; // filter bulan dari
+        $bulanSampai = $request->bulan_sampai ?? 12; // filter bulan sampai
 
-    $bulanList = [
-        'januari' => 1, 'februari' => 2, 'maret' => 3, 'april' => 4,
-        'mei' => 5, 'juni' => 6, 'juli' => 7, 'agustus' => 8,
-        'september' => 9, 'oktober' => 10, 'november' => 11, 'desember' => 12,
-    ];
+        $bulanList = [
+            'januari' => 1,
+            'februari' => 2,
+            'maret' => 3,
+            'april' => 4,
+            'mei' => 5,
+            'juni' => 6,
+            'juli' => 7,
+            'agustus' => 8,
+            'september' => 9,
+            'oktober' => 10,
+            'november' => 11,
+            'desember' => 12,
+        ];
 
-    // Filter bulan sesuai range yang dipilih
-    $bulanListFiltered = array_filter($bulanList, function($noBulan) use ($bulanDari, $bulanSampai) {
-        return $noBulan >= $bulanDari && $noBulan <= $bulanSampai;
-    });
+        // Filter bulan sesuai range yang dipilih
+        $bulanListFiltered = array_filter($bulanList, function ($noBulan) use ($bulanDari, $bulanSampai) {
+            return $noBulan >= $bulanDari && $noBulan <= $bulanSampai;
+        });
 
-    $kategori = KategoriKriteria::where('tipe', 'penerima')->get();
-    $data = [];
-    $bulanAktif = []; // untuk tracking bulan yang punya data
+        $kategori = KategoriKriteria::where('tipe', 'penerima')->get();
+        $data = [];
+        $bulanAktif = []; // untuk tracking bulan yang punya data
 
-    foreach ($kategori as $k) {
-        foreach ($bulanListFiltered as $namaBulan => $noBulan) {
+        foreach ($kategori as $k) {
+            foreach ($bulanListFiltered as $namaBulan => $noBulan) {
 
-            // RENCANA
-            $rencana = DB::table('rencana_penerimas')
-                ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
-                ->where('tahun', $tahun)
-                ->sum($namaBulan);
+                // RENCANA
+                $rencana = DB::table('rencana_penerimas')
+                    ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
+                    ->where('tahun', $tahun)
+                    ->sum($namaBulan);
 
-            // REALISASI (DARI TABEL penerimas)
-            $nilai = DB::table('penerimas')
-                ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
-                ->whereYear('tanggal', $tahun)
-                ->whereMonth('tanggal', $noBulan)
-                ->sum('nilai');
-            $ppn = DB::table('penerimas')
-                ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
-                ->whereYear('tanggal', $tahun)
-                ->whereMonth('tanggal', $noBulan)
-                ->sum('ppn');
-            $potppn = DB::table('penerimas')
-                ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
-                ->whereYear('tanggal', $tahun)
-                ->whereMonth('tanggal', $noBulan)
-                ->sum('potppn');
-            $realisasi = $nilai + $ppn - $potppn;
+                // REALISASI (DARI TABEL penerimas)
+                $nilai = DB::table('penerimas')
+                    ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
+                    ->whereYear('tanggal', $tahun)
+                    ->whereMonth('tanggal', $noBulan)
+                    ->sum('nilai');
+                $ppn = DB::table('penerimas')
+                    ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
+                    ->whereYear('tanggal', $tahun)
+                    ->whereMonth('tanggal', $noBulan)
+                    ->sum('ppn');
+                $potppn = DB::table('penerimas')
+                    ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
+                    ->whereYear('tanggal', $tahun)
+                    ->whereMonth('tanggal', $noBulan)
+                    ->sum('potppn');
+                $realisasi = $nilai + $ppn - $potppn;
 
-            // Tandai bulan yang punya data
-            if ($rencana > 0 || $realisasi > 0) {
-                $bulanAktif[$namaBulan] = true;
+                // Tandai bulan yang punya data
+                if ($rencana > 0 || $realisasi > 0) {
+                    $bulanAktif[$namaBulan] = true;
+                }
+
+                $selisih = $realisasi - $rencana;
+                $persen = $rencana > 0 ? ($realisasi / $rencana) * 100 : 0;
+
+                $data[$k->nama_kriteria][$namaBulan] = [
+                    'rencana' => $rencana,
+                    'realisasi' => $realisasi,
+                    'selisih' => $selisih,
+                    'persen' => $persen
+                ];
             }
-
-            $selisih = $realisasi - $rencana;
-            $persen  = $rencana > 0 ? ($realisasi / $rencana) * 100 : 0;
-
-            $data[$k->nama_kriteria][$namaBulan] = [
-                'rencana'   => $rencana,
-                'realisasi' => $realisasi,
-                'selisih'   => $selisih,
-                'persen'    => $persen
-            ];
         }
+
+        // Filter hanya bulan yang punya data
+        $bulanListFiltered = array_filter($bulanListFiltered, function ($namaBulan) use ($bulanAktif) {
+            return isset($bulanAktif[$namaBulan]);
+        }, ARRAY_FILTER_USE_KEY);
+
+        return view('cash_bank.pembayaran.cashFlowGabunganPenerima', compact('data', 'bulanListFiltered', 'tahun', 'bulanDari', 'bulanSampai'));
     }
 
-    // Filter hanya bulan yang punya data
-    $bulanListFiltered = array_filter($bulanListFiltered, function($namaBulan) use ($bulanAktif) {
-        return isset($bulanAktif[$namaBulan]);
-    }, ARRAY_FILTER_USE_KEY);
-
-    return view('cash_bank.pembayaran.cashFlowGabunganPenerima', compact('data', 'bulanListFiltered', 'tahun', 'bulanDari', 'bulanSampai'));
-}
+    public function export_excel(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+        return Excel::download(new ExportExcelPenerima($tahun), 'penerima-' . $tahun . '.xlsx');
+    }
 }

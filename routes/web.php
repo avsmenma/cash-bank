@@ -264,6 +264,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/penerima/export_pdf_rencana', [PenerimaController::class, 'export_pdf_rencana'])
         ->name('penerima.export_pdf_rencana');
 
+    Route::get('/penerima/export_excel_cashFlow', [PenerimaController::class, 'export_excel_cashFlow'])
+        ->name('penerima.export_excel_cashFlow');
+    Route::get('/penerima/export_pdf_cashFlow', [PenerimaController::class, 'export_pdf_cashFlow'])
+        ->name('penerima.export_pdf_cashFlow');
+
+    Route::get('/penerima/export_excel_gabungan', [PenerimaController::class, 'export_excel_gabungan'])
+        ->name('penerima.export_excel_gabungan');
+    Route::get('/penerima/export_pdf_gabungan', [PenerimaController::class, 'export_pdf_gabungan'])
+        ->name('penerima.export_pdf_gabungan');
+
     Route::post('/penerima/save', [PenerimaController::class, 'save'])
         ->name('penerima.rencana.save');
 

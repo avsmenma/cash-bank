@@ -12,6 +12,8 @@ use Yajra\DataTables\Facades\DataTables;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ExportExcelPenerima;
 use App\Exports\ExportExcelRencanaPenerima;
+use App\Exports\ExportExcelCashFlowPenerima;
+use App\Exports\ExportExcelGabunganPenerima;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class penerimaController extends Controller
@@ -363,5 +365,153 @@ class penerimaController extends Controller
         $pdf->setPaper('a4', 'landscape');
 
         return $pdf->download('rencana-penerima-' . $tahun . '.pdf');
+    }
+
+    public function export_excel_cashFlow(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+        return Excel::download(new ExportExcelCashFlowPenerima($tahun), 'cashflow-realisasi-' . $tahun . '.xlsx');
+    }
+
+    public function export_pdf_cashFlow(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+
+        $data = Penerima::with('kategori')
+            ->select(
+                'id_kategori_kriteria',
+                DB::raw('MONTH(tanggal) as bulan'),
+                DB::raw('SUM(nilai + ppn - potppn) as total')
+            )
+            ->whereYear('tanggal', $tahun)
+            ->groupBy(
+                'id_kategori_kriteria',
+                DB::raw('MONTH(tanggal)')
+            )
+            ->orderBy('id_kategori_kriteria')
+            ->orderBy(DB::raw('MONTH(tanggal)'))
+            ->get();
+
+        $result = [];
+        $kategoriList = [];
+
+        foreach ($data as $row) {
+            $kategori = $row->kategori->nama_kriteria ?? '-';
+            $bulan = (int) $row->bulan;
+
+            if (!in_array($kategori, $kategoriList)) {
+                $kategoriList[] = $kategori;
+            }
+
+            if (!isset($result[$kategori])) {
+                $result[$kategori] = array_fill(1, 12, 0);
+            }
+
+            $result[$kategori][$bulan] = $row->total;
+        }
+
+        $pdf = Pdf::loadView('cash_bank.exportPDF.pdfCashFlowPenerima', [
+            'result' => $result,
+            'tahun' => $tahun
+        ]);
+
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('cashflow-realisasi-' . $tahun . '.pdf');
+    }
+
+    public function export_excel_gabungan(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+        $bulanDari = $request->bulan_dari ?? 1;
+        $bulanSampai = $request->bulan_sampai ?? 12;
+
+        return Excel::download(new ExportExcelGabunganPenerima($tahun, $bulanDari, $bulanSampai), 'cashflow-gabungan-' . $tahun . '.xlsx');
+    }
+
+    public function export_pdf_gabungan(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+        $bulanDari = $request->bulan_dari ?? 1;
+        $bulanSampai = $request->bulan_sampai ?? 12;
+
+        $bulanList = [
+            'januari' => 1,
+            'februari' => 2,
+            'maret' => 3,
+            'april' => 4,
+            'mei' => 5,
+            'juni' => 6,
+            'juli' => 7,
+            'agustus' => 8,
+            'september' => 9,
+            'oktober' => 10,
+            'november' => 11,
+            'desember' => 12,
+        ];
+
+        $bulanListFiltered = array_filter($bulanList, function ($noBulan) use ($bulanDari, $bulanSampai) {
+            return $noBulan >= $bulanDari && $noBulan <= $bulanSampai;
+        });
+
+        $kategori = KategoriKriteria::where('tipe', 'penerima')->get();
+        $data = [];
+        $bulanAktif = [];
+
+        foreach ($kategori as $k) {
+            foreach ($bulanListFiltered as $namaBulan => $noBulan) {
+                $rencana = DB::table('rencana_penerimas')
+                    ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
+                    ->where('tahun', $tahun)
+                    ->sum($namaBulan);
+
+                $nilai = DB::table('penerimas')
+                    ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
+                    ->whereYear('tanggal', $tahun)
+                    ->whereMonth('tanggal', $noBulan)
+                    ->sum('nilai');
+                $ppn = DB::table('penerimas')
+                    ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
+                    ->whereYear('tanggal', $tahun)
+                    ->whereMonth('tanggal', $noBulan)
+                    ->sum('ppn');
+                $potppn = DB::table('penerimas')
+                    ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
+                    ->whereYear('tanggal', $tahun)
+                    ->whereMonth('tanggal', $noBulan)
+                    ->sum('potppn');
+                $realisasi = $nilai + $ppn - $potppn;
+
+                if ($rencana > 0 || $realisasi > 0) {
+                    $bulanAktif[$namaBulan] = true;
+                }
+
+                $selisih = $realisasi - $rencana;
+                $persen = $rencana > 0 ? ($realisasi / $rencana) * 100 : 0;
+
+                $data[$k->nama_kriteria][$namaBulan] = [
+                    'rencana' => $rencana,
+                    'realisasi' => $realisasi,
+                    'selisih' => $selisih,
+                    'persen' => $persen
+                ];
+            }
+        }
+
+        $bulanListFiltered = array_filter($bulanListFiltered, function ($namaBulan) use ($bulanAktif) {
+            return isset($bulanAktif[$namaBulan]);
+        }, ARRAY_FILTER_USE_KEY);
+
+        $pdf = Pdf::loadView('cash_bank.exportPDF.pdfGabunganPenerima', [
+            'data' => $data,
+            'bulanListFiltered' => $bulanListFiltered,
+            'tahun' => $tahun,
+            'bulanDari' => $bulanDari,
+            'bulanSampai' => $bulanSampai
+        ]);
+
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('cashflow-gabungan-' . $tahun . '.pdf');
     }
 }

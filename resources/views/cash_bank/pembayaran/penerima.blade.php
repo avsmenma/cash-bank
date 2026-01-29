@@ -72,9 +72,9 @@
                         <div class="row no-print mb-3">
                             <div class="col-12">
                                 <div class="d-flex gap-2">
-                                    <a href="#" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download
+                                    <a href="{{ route('penerima.export_pdf_cashFlow') }}" id="btnDownloadPdfCashFlow" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download
                                         PDF</a>
-                                    <a href="#" class="btn btn-outline-danger"><i class="fas fa-file-excel"></i> Download
+                                    <a href="{{ route('penerima.export_excel_cashFlow') }}" id="btnDownloadExcelCashFlow" class="btn btn-outline-danger"><i class="fas fa-file-excel"></i> Download
                                         Excel</a>
                                     <div class="col-md-3">
                                         <select class="select2" id="tahunCashflow">
@@ -124,10 +124,10 @@
                         <div class="row no-print mb-3">
                             <div class="col-12">
                                 <div class="d-flex gap-2 align-items-center">
-                                    <a href="#" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download
+                                    <a href="{{ route('penerima.export_pdf_gabungan') }}" id="btnDownloadPdfGabungan" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download
                                         PDF</a>
-                                    <a href="#" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download
-                                        PDF</a>
+                                    <a href="{{ route('penerima.export_excel_gabungan') }}" id="btnDownloadExcelGabungan" class="btn btn-outline-danger"><i class="fas fa-file-excel"></i> Download
+                                        Excel</a>
                                     <div class="col-md-2">
                                         <label>Tahun:</label>
                                         <select class="select2" id="tahunGabungan">
@@ -271,6 +271,12 @@
                 function loadCashflow() {
                     const tahun = $('#tahunCashflow').val();
                     console.log('Loading cashflow for year:', tahun);
+                    
+                    // Update export links for CashFlow Realisasi
+                    let baseUrlExcel = "{{ route('penerima.export_excel_cashFlow') }}";
+                    let baseUrlPdf = "{{ route('penerima.export_pdf_cashFlow') }}";
+                    $('#btnDownloadExcelCashFlow').attr('href', baseUrlExcel + '?tahun=' + tahun);
+                    $('#btnDownloadPdfCashFlow').attr('href', baseUrlPdf + '?tahun=' + tahun);
 
                     $('#cashflow-content').html('<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>');
 

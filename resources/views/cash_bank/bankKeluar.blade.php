@@ -45,7 +45,7 @@
 
                         <div class="row">
                             <div class="col-12 table-responsive">
-                                @include('cash_bank.exportExcel.excelKeluar')
+                                @include('cash_bank.table.tableKeluar')
                             </div>
                             <!-- /.col -->
                         </div>

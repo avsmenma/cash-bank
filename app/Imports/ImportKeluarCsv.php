@@ -2,7 +2,7 @@
 
 namespace App\Imports;
 
-use App\Models\bankKeluar;
+use App\Models\BankKeluar;
 use App\Models\BankTujuan;
 use App\Models\SumberDana;
 use App\Models\SubKriteria;
@@ -161,7 +161,7 @@ class ImportKeluarCsv
 
                     // Batch insert
                     if (count($batchData) >= $batchSize) {
-                        bankKeluar::insert($batchData);
+                        BankKeluar::insert($batchData);
                         $batchData = [];
                         Log::info("Inserted batch at row {$rowCount}");
                     }
@@ -177,7 +177,7 @@ class ImportKeluarCsv
 
             // Insert remaining batch
             if (!empty($batchData)) {
-                bankKeluar::insert($batchData);
+                BankKeluar::insert($batchData);
                 Log::info("Inserted final batch");
             }
 

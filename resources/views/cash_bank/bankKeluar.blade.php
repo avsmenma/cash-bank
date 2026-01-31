@@ -316,4 +316,5 @@
     @endpush
     {{-- MODAL CREATE & IMPORT --}}
     @include('cash_bank.modal.create')
+    @include('cash_bank.modal.importExcel')
 @endsection

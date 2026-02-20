@@ -79,6 +79,7 @@ class penerimaController extends Controller
                         data-kategori="' . $row->id_kategori_kriteria . '"
                         data-ppn="' . $row->ppn . '"
                         data-potppn="' . $row->potppn . '"
+                        data-nilai_inc_ppn="' . (($row->nilai ?? 0) + ($row->ppn ?? 0) - ($row->potppn ?? 0)) . '"
                         >Edit</button>
 
                     <form action="' . $route . '" method="POST" style="display:inline;">
@@ -111,19 +112,11 @@ class penerimaController extends Controller
             'kontrak' => 'nullable|string',
             'no_reg' => 'nullable|string',
             'id_kategori_kriteria' => 'required|exists:kategori_kriteria,id_kategori_kriteria',
+            'nilai' => 'nullable|numeric',
+            'ppn' => 'nullable|numeric',
             'potppn' => 'nullable|numeric',
+            'nilai_inc_ppn' => 'nullable|numeric',
         ]);
-
-        // Hitung nilai dan PPN
-        $volume = $validated['volume'];
-        $harga = $validated['harga'];
-        $nilai = $volume * $harga;
-
-        // PPN 11% (kecuali pembeli EUP)
-        $ppn = $validated['pembeli'] === 'EUP' ? 0 : round($nilai * 0.11);
-
-        // Pot PPN dari input user (bisa 0 jika kosong)
-        $potppn = $validated['potppn'] ?? 0;
 
         Penerima::create([
             'kontrak' => $validated['kontrak'] ?? null,
@@ -131,11 +124,11 @@ class penerimaController extends Controller
             'pembeli' => $validated['pembeli'],
             'no_reg' => $validated['no_reg'] ?? null,
             'tanggal' => $validated['tanggal'],
-            'volume' => $volume,
-            'harga' => $harga,
-            'nilai' => $nilai,
-            'ppn' => $ppn,
-            'potppn' => $potppn,
+            'volume' => $validated['volume'],
+            'harga' => $validated['harga'],
+            'nilai' => $validated['nilai'] ?? 0,
+            'ppn' => $validated['ppn'] ?? 0,
+            'potppn' => $validated['potppn'] ?? 0,
         ]);
 
         return back()->with('success', 'Data berhasil disimpan');

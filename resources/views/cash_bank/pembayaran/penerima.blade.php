@@ -415,21 +415,6 @@
                 });
 
                 // ===== MODAL CREATE =====
-                function hitungNilaiCreate() {
-                    let volume = parseFloat($('#create_volume').val()) || 0;
-                    let harga = parseFloat($('#create_harga').val()) || 0;
-                    let nilai = volume * harga;
-                    $('#create_nilai').val(nilai.toFixed(2));
-                    let ppn = Math.round(nilai * 0.11);
-                    $('#create_ppn').val(ppn);
-                    let potppn = parseFloat($('#create_potppn').val()) || 0;
-                    let nilaiInc = nilai + ppn - potppn;
-                    $('#create_nilai_inc_ppn').val(nilaiInc.toFixed(2));
-                }
-
-                $(document).on('input change', '#create_volume, #create_harga, #create_potppn', function () {
-                    hitungNilaiCreate();
-                });
 
                 $('#ModalCreatePenerima').on('shown.bs.modal', function () {
                     $('#importExcel')[0].reset();
@@ -444,21 +429,6 @@
                 });
 
                 // ===== MODAL EDIT =====
-                function hitungNilaiEdit() {
-                    let volume = parseFloat($('#edit_volume').val()) || 0;
-                    let harga = parseFloat($('#edit_harga').val()) || 0;
-                    let nilai = volume * harga;
-                    $('#edit_nilai').val(nilai.toFixed(2));
-                    let ppn = Math.round(nilai * 0.11);
-                    $('#edit_ppn').val(ppn);
-                    let potppn = parseFloat($('#edit_potppn').val()) || 0;
-                    let nilaiInc = nilai + ppn - potppn;
-                    $('#edit_nilai_inc_ppn').val(nilaiInc.toFixed(2));
-                }
-
-                $(document).on('input change', '#edit_volume, #edit_harga, #edit_potppn', function () {
-                    hitungNilaiEdit();
-                });
 
                 $('#editPenerima').on('shown.bs.modal', function (event) {
                     let button = $(event.relatedTarget);
@@ -484,8 +454,7 @@
                     $('#edit_nilai').val(nilai);
                     $('#edit_harga').val(harga);
 
-                    let nilaiInc = (parseFloat(nilai) || 0) + (parseFloat(ppn) || 0) - (parseFloat(potppn) || 0);
-                    $('#edit_nilai_inc_ppn').val(nilaiInc.toFixed(2));
+                    $('#edit_nilai_inc_ppn').val(button.data('nilai_inc_ppn') || '');
 
                     if (!$('#edit_reservationdate').data('datetimepicker')) {
                         $('#edit_reservationdate').datetimepicker({ format: 'YYYY-MM-DD' });

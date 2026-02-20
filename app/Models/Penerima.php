@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Penerima extends Model
 {
     protected $primaryKey = 'id_penerima';
-    
+
     protected $fillable = [
         'kontrak',
         'id_kategori_kriteria',
@@ -20,6 +20,7 @@ class Penerima extends Model
         'nilai',
         'ppn',
         'potppn',
+        'nilai_inc_ppn',
     ];
 
     public function kategori()

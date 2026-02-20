@@ -58,7 +58,7 @@ class penerimaController extends Controller
             ->addColumn(
                 'nilai_inc_ppn',
                 fn($r) =>
-                ($r->nilai ?? 0) + ($r->ppn ?? 0) - ($r->potppn ?? 0)
+                $r->nilai_inc_ppn ?? 0
             )
             ->addColumn('aksi', function ($row) {
                 $route = route('penerima.destroy', $row->id_penerima);
@@ -79,7 +79,7 @@ class penerimaController extends Controller
                         data-kategori="' . $row->id_kategori_kriteria . '"
                         data-ppn="' . $row->ppn . '"
                         data-potppn="' . $row->potppn . '"
-                        data-nilai_inc_ppn="' . (($row->nilai ?? 0) + ($row->ppn ?? 0) - ($row->potppn ?? 0)) . '"
+                        data-nilai_inc_ppn="' . ($row->nilai_inc_ppn ?? 0) . '"
                         >Edit</button>
 
                     <form action="' . $route . '" method="POST" style="display:inline;">
@@ -129,6 +129,7 @@ class penerimaController extends Controller
             'nilai' => $validated['nilai'] ?? 0,
             'ppn' => $validated['ppn'] ?? 0,
             'potppn' => $validated['potppn'] ?? 0,
+            'nilai_inc_ppn' => $validated['nilai_inc_ppn'] ?? 0,
         ]);
 
         return back()->with('success', 'Data berhasil disimpan');
@@ -159,6 +160,7 @@ class penerimaController extends Controller
                     'nilai' => $row['nilai'] ?? 0,
                     'ppn' => $row['ppn'] ?? 0,
                     'potppn' => $row['potppn'] ?? 0,
+                    'nilai_inc_ppn' => $row['nilai_inc_ppn'] ?? 0,
                 ]);
                 $count++;
             }
@@ -198,6 +200,7 @@ class penerimaController extends Controller
             'nilai' => $request->nilai ?? 0,
             'ppn' => $request->ppn ?? 0,
             'potppn' => $request->potppn ?? 0,
+            'nilai_inc_ppn' => $request->nilai_inc_ppn ?? 0,
         ]);
 
         return redirect()->route('penerima.index')->with('success', 'Data berhasil diperbarui');

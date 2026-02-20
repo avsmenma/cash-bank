@@ -58,6 +58,7 @@
                 serverSide: true,
                 ordering: false,
                 autoWidth: false,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Semua"]],
                 ajax: {
                     url: "{{ route('penerima.data') }}",
                     data: function (d) {
@@ -145,17 +146,17 @@
             let hargaRata = total.volume > 0 ? total.nilai / total.volume : 0;
 
             $(rows).eq(index).after(`
-                            <tr class="table-warning font-weight-bold text-right">
-                        <td colspan="7" class="text-left">TOTAL ${kategori}</td>
-                                <td>${Math.round(total.volume).toLocaleString('id-ID')}</td>
-                                <td>${Math.round(hargaRata).toLocaleString('id-ID')}</td>
-                                <td>${Math.round(total.nilai).toLocaleString('id-ID')}</td>
-                                <td>${Math.round(total.ppn).toLocaleString('id-ID')}</td>
-                                <td>${Math.round(total.potppn).toLocaleString('id-ID')}</td>
-                                <td>${Math.round(total.inc).toLocaleString('id-ID')}</td>
-                                <td></td>
-                            </tr>
-                        `);
+                                <tr class="table-warning font-weight-bold text-right">
+                            <td colspan="7" class="text-left">TOTAL ${kategori}</td>
+                                    <td>${Math.round(total.volume).toLocaleString('id-ID')}</td>
+                                    <td>${Math.round(hargaRata).toLocaleString('id-ID')}</td>
+                                    <td>${Math.round(total.nilai).toLocaleString('id-ID')}</td>
+                                    <td>${Math.round(total.ppn).toLocaleString('id-ID')}</td>
+                                    <td>${Math.round(total.potppn).toLocaleString('id-ID')}</td>
+                                    <td>${Math.round(total.inc).toLocaleString('id-ID')}</td>
+                                    <td></td>
+                                </tr>
+                            `);
         }
 
         function resetTotal(total) {

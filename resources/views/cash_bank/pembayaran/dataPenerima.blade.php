@@ -19,6 +19,7 @@
         <table id="example" class="table table-bordered table-hover">
             <thead class="bg-navy">
                 <tr id="employee_ids">
+                    <th><input type="checkbox" id="select_all_ids"></th>
                     <th>No</th>
                     <th>Penerimaan</th>
                     <th>No Rekening Penerima</th>
@@ -66,6 +67,7 @@
                     }
                 },
                 columns: [
+                    { data: 'checkbox', orderable: false, searchable: false },
                     {
                         data: 'DT_RowIndex',
                         orderable: false,
@@ -143,17 +145,17 @@
             let hargaRata = total.volume > 0 ? total.nilai / total.volume : 0;
 
             $(rows).eq(index).after(`
-                    <tr class="table-warning font-weight-bold text-right">
-                        <td colspan="6" class="text-left">TOTAL ${kategori}</td>
-                        <td>${Math.round(total.volume).toLocaleString('id-ID')}</td>
-                        <td>${Math.round(hargaRata).toLocaleString('id-ID')}</td>
-                        <td>${Math.round(total.nilai).toLocaleString('id-ID')}</td>
-                        <td>${Math.round(total.ppn).toLocaleString('id-ID')}</td>
-                        <td>${Math.round(total.potppn).toLocaleString('id-ID')}</td>
-                        <td>${Math.round(total.inc).toLocaleString('id-ID')}</td>
-                        <td></td>
-                    </tr>
-                `);
+                            <tr class="table-warning font-weight-bold text-right">
+                        <td colspan="7" class="text-left">TOTAL ${kategori}</td>
+                                <td>${Math.round(total.volume).toLocaleString('id-ID')}</td>
+                                <td>${Math.round(hargaRata).toLocaleString('id-ID')}</td>
+                                <td>${Math.round(total.nilai).toLocaleString('id-ID')}</td>
+                                <td>${Math.round(total.ppn).toLocaleString('id-ID')}</td>
+                                <td>${Math.round(total.potppn).toLocaleString('id-ID')}</td>
+                                <td>${Math.round(total.inc).toLocaleString('id-ID')}</td>
+                                <td></td>
+                            </tr>
+                        `);
         }
 
         function resetTotal(total) {

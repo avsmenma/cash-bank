@@ -415,6 +415,42 @@
                         }
                     });
                 });
+                // ===== SELECT ALL & DELETE ALL =====
+                $(document).on('click', '#select_all_ids', function () {
+                    $('.checkbox_ids').prop('checked', $(this).prop('checked'));
+                });
+
+                $(document).on('click', '#deleteAllSelectedRecord', function (e) {
+                    e.preventDefault();
+
+                    let all_ids = [];
+                    $('.checkbox_ids:checked').each(function () {
+                        all_ids.push($(this).val());
+                    });
+
+                    if (all_ids.length === 0) {
+                        alert('Pilih data terlebih dahulu!');
+                        return;
+                    }
+
+                    if (!confirm('Yakin ingin menghapus ' + all_ids.length + ' data?')) return;
+
+                    $.ajax({
+                        url: "{{ route('penerima.delete') }}",
+                        type: "DELETE",
+                        data: {
+                            ids: all_ids,
+                            _token: '{{ csrf_token() }}'
+                        },
+                        success: function (res) {
+                            alert(res.success);
+                            location.reload();
+                        },
+                        error: function () {
+                            alert('Gagal menghapus data');
+                        }
+                    });
+                });
 
                 // ===== MODAL CREATE =====
 

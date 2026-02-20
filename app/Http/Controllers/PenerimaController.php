@@ -60,6 +60,9 @@ class penerimaController extends Controller
                 fn($r) =>
                 $r->nilai_inc_ppn ?? 0
             )
+            ->addColumn('checkbox', function ($row) {
+                return '<input type="checkbox" class="checkbox_ids" name="ids[]" value="' . $row->id_penerima . '">';
+            })
             ->addColumn('aksi', function ($row) {
                 $route = route('penerima.destroy', $row->id_penerima);
                 $csrf = csrf_token();
@@ -94,7 +97,7 @@ class penerimaController extends Controller
                     </form>
                 ';
             })
-            ->rawColumns(['aksi'])
+            ->rawColumns(['checkbox', 'aksi'])
             ->with([
                 'groupColumn' => 'nama_kriteria'
             ])
@@ -212,6 +215,16 @@ class penerimaController extends Controller
         $data->delete();
 
         return redirect()->route('penerima.index')->with('success', 'Data berhasil dihapus');
+    }
+
+    public function deleteAll(Request $request)
+    {
+        $ids = $request->ids;
+        Penerima::whereIn('id_penerima', $ids)->delete();
+
+        return response()->json([
+            'success' => 'Data berhasil dihapus!'
+        ]);
     }
 
     public function cashFlow(Request $request)

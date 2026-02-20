@@ -56,6 +56,8 @@
                                         <a href="{{ route('penerima.export_excel') }}"
                                             class="btn btn-outline-danger btn-download-excel" id="btnDownloadExcel"><i
                                                 class=" nav-icon fas fa-file-excel"></i></i> Download Excel</a>
+                                        <a href="javascript:void(0)" class="btn btn-info" data-toggle="modal"
+                                            data-target="#ModalImportPenerima"><i class="fas fa-file-import"></i> Import Data</a>
                                     </div>
                                 </div>
 
@@ -469,9 +471,164 @@
 
                     $('#edit_kategori').val(kategori).trigger('change');
                 });
+
+                // ===== MODAL IMPORT =====
+                $('#ModalImportPenerima').on('shown.bs.modal', function () {
+                    $(this).find('.select2').select2({
+                        theme: 'bootstrap4',
+                        dropdownParent: $('#ModalImportPenerima'),
+                        width: '100%'
+                    });
+                });
+
+                // Parse angka format Indonesia (titik = ribuan, koma = desimal)
+                function parseAngkaID(str) {
+                    if (!str || str.trim() === '') return 0;
+                    // Hapus titik (ribuan), ganti koma jadi titik (desimal)
+                    let cleaned = str.trim().replace(/\./g, '').replace(/,/g, '.');
+                    let val = parseFloat(cleaned);
+                    return isNaN(val) ? 0 : val;
+                }
+
+                // Parse tanggal "02 Jan 2026" -> "2026-01-02"
+                function parseTanggalID(str) {
+                    if (!str || str.trim() === '') return '';
+                    let bulanMap = {
+                        'Jan':'01','Feb':'02','Mar':'03','Apr':'04',
+                        'Mei':'05','May':'05','Jun':'06','Jul':'07',
+                        'Agu':'08','Aug':'08','Sep':'09','Okt':'10',
+                        'Oct':'10','Nov':'11','Des':'12','Dec':'12'
+                    };
+                    let parts = str.trim().split(/\s+/);
+                    if (parts.length === 3) {
+                        let day = parts[0].padStart(2, '0');
+                        let month = bulanMap[parts[1]] || '01';
+                        let year = parts[2];
+                        return year + '-' + month + '-' + day;
+                    }
+                    // Coba parse langsung jika format lain
+                    return str.trim();
+                }
+
+                function parseImportData() {
+                    let text = $('#import_data_text').val().trim();
+                    if (!text) return [];
+
+                    let lines = text.split('\n');
+                    let rows = [];
+
+                    for (let i = 0; i < lines.length; i++) {
+                        let line = lines[i].trim();
+                        if (!line) continue;
+
+                        let cols = line.split('\t');
+
+                        // Minimal harus punya beberapa kolom
+                        if (cols.length < 3) continue;
+
+                        // Pastikan 10 kolom (pad jika kurang)
+                        while (cols.length < 10) cols.push('');
+
+                        rows.push({
+                            kontrak:    cols[0].trim(),
+                            pembeli:    cols[1].trim(),
+                            tanggal:    parseTanggalID(cols[2]),
+                            no_reg:     cols[3].trim(),
+                            volume:     parseAngkaID(cols[4]),
+                            harga:      parseAngkaID(cols[5]),
+                            nilai:      parseAngkaID(cols[6]),
+                            ppn:        parseAngkaID(cols[7]),
+                            potppn:     parseAngkaID(cols[8]),
+                            nilai_inc_ppn: parseAngkaID(cols[9]),
+                        });
+                    }
+
+                    return rows;
+                }
+
+                // Preview
+                $('#btnPreviewImport').on('click', function () {
+                    let rows = parseImportData();
+                    if (rows.length === 0) {
+                        alert('Tidak ada data yang bisa di-parse. Pastikan data sudah di-paste dengan benar.');
+                        return;
+                    }
+
+                    let tbody = $('#import_preview_table tbody');
+                    tbody.empty();
+                    let fmt = (n) => n.toLocaleString('id-ID');
+
+                    rows.forEach(function (r, i) {
+                        tbody.append(`
+                            <tr>
+                                <td>${i + 1}</td>
+                                <td>${r.kontrak}</td>
+                                <td>${r.pembeli}</td>
+                                <td>${r.tanggal}</td>
+                                <td>${r.no_reg}</td>
+                                <td class="text-right">${fmt(r.volume)}</td>
+                                <td class="text-right">${fmt(r.harga)}</td>
+                                <td class="text-right">${fmt(r.nilai)}</td>
+                                <td class="text-right">${fmt(r.ppn)}</td>
+                                <td class="text-right">${fmt(r.potppn)}</td>
+                                <td class="text-right">${fmt(r.nilai_inc_ppn)}</td>
+                            </tr>
+                        `);
+                    });
+
+                    $('#import_row_count').text(rows.length);
+                    $('#import_preview_area').show();
+                });
+
+                // Submit Import
+                $('#btnSubmitImport').on('click', function () {
+                    let kategori = $('#import_kategori').val();
+                    if (!kategori) {
+                        alert('Pilih kategori terlebih dahulu!');
+                        return;
+                    }
+
+                    let rows = parseImportData();
+                    if (rows.length === 0) {
+                        alert('Tidak ada data yang bisa diimport. Paste data terlebih dahulu.');
+                        return;
+                    }
+
+                    if (!confirm('Yakin ingin mengimport ' + rows.length + ' baris data?')) {
+                        return;
+                    }
+
+                    let $btn = $(this);
+                    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengimport...');
+
+                    $.ajax({
+                        url: "{{ route('penerima.import') }}",
+                        method: 'POST',
+                        data: {
+                            _token: "{{ csrf_token() }}",
+                            id_kategori_kriteria: kategori,
+                            rows: rows
+                        },
+                        success: function (response) {
+                            alert('Berhasil mengimport ' + response.count + ' data!');
+                            $('#ModalImportPenerima').modal('hide');
+                            $('#import_data_text').val('');
+                            $('#import_preview_area').hide();
+                            location.reload();
+                        },
+                        error: function (xhr) {
+                            console.error('Import error:', xhr);
+                            alert('Gagal mengimport data: ' + (xhr.responseJSON?.message || xhr.statusText));
+                        },
+                        complete: function () {
+                            $btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Import Data');
+                        }
+                    });
+                });
             });
         </script>
     @endpush
 
     @include('cash_bank.modal.modalPenerima.createPenerima')
+    @include('cash_bank.modal.modalPenerima.importPenerima')
 @endsection

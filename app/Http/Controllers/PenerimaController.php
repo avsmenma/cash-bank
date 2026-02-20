@@ -134,6 +134,50 @@ class penerimaController extends Controller
         return back()->with('success', 'Data berhasil disimpan');
     }
 
+    public function importData(Request $request)
+    {
+        $request->validate([
+            'id_kategori_kriteria' => 'required|exists:kategori_kriteria,id_kategori_kriteria',
+            'rows' => 'required|array|min:1',
+        ]);
+
+        $kategori = $request->id_kategori_kriteria;
+        $rows = $request->rows;
+        $count = 0;
+
+        DB::beginTransaction();
+        try {
+            foreach ($rows as $row) {
+                Penerima::create([
+                    'id_kategori_kriteria' => $kategori,
+                    'kontrak' => $row['kontrak'] ?? null,
+                    'pembeli' => $row['pembeli'] ?? null,
+                    'tanggal' => $row['tanggal'] ?? null,
+                    'no_reg' => $row['no_reg'] ?? null,
+                    'volume' => $row['volume'] ?? 0,
+                    'harga' => $row['harga'] ?? 0,
+                    'nilai' => $row['nilai'] ?? 0,
+                    'ppn' => $row['ppn'] ?? 0,
+                    'potppn' => $row['potppn'] ?? 0,
+                ]);
+                $count++;
+            }
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Berhasil mengimport $count data",
+                'count' => $count
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengimport data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function edit(string $id)
     {
         $penerima = Penerima::findOrFail($id);

@@ -187,7 +187,18 @@ class penerimaController extends Controller
     {
 
         $penerima = Penerima::findOrFail($id);
-        $penerima->update($request->all());
+        $penerima->update([
+            'id_kategori_kriteria' => $request->id_kategori_kriteria,
+            'kontrak' => $request->kontrak,
+            'pembeli' => $request->pembeli,
+            'tanggal' => $request->tanggal,
+            'no_reg' => $request->no_reg,
+            'volume' => $request->volume ?? 0,
+            'harga' => $request->harga ?? 0,
+            'nilai' => $request->nilai ?? 0,
+            'ppn' => $request->ppn ?? 0,
+            'potppn' => $request->potppn ?? 0,
+        ]);
 
         return redirect()->route('penerima.index')->with('success', 'Data berhasil diperbarui');
     }

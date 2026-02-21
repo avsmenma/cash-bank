@@ -92,7 +92,8 @@
                 <nav class="mt-5">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                         data-accordion="false">
-                        <li class="nav-item">
+                        <li
+                            class="nav-item {{ request()->routeIs('dashboard.*', 'dashboard-pembayaran.*') ? 'menu-open menu-is-opening' : '' }}">
                             <a href="#"
                                 class="nav-link {{ request()->routeIs('dashboard.*', 'dashboard-pembayaran.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>

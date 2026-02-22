@@ -137,11 +137,12 @@ class daftarBankController extends Controller
 
         // Get Bank Masuk transactions for this VA
         $masuk = BankMasuk::where('id_bank_tujuan', $id)
-            ->select('tanggal', 'penerima', 'uraian', 'debet', 'kredit')
+            ->select('tanggal', 'penerima', 'uraian', 'debet', 'kredit', 'created_at')
             ->get()
             ->map(function ($item) {
                 return [
                     'tanggal' => $item->tanggal,
+                    'created_at' => $item->created_at,
                     'penerima' => $item->penerima,
                     'uraian' => $item->uraian,
                     'debet' => (float) $item->debet,
@@ -152,11 +153,12 @@ class daftarBankController extends Controller
 
         // Get Bank Keluar transactions for this VA
         $keluar = BankKeluar::where('id_bank_tujuan', $id)
-            ->select('tanggal', 'penerima', 'uraian', 'debet', 'kredit')
+            ->select('tanggal', 'penerima', 'uraian', 'debet', 'kredit', 'created_at')
             ->get()
             ->map(function ($item) {
                 return [
                     'tanggal' => $item->tanggal,
+                    'created_at' => $item->created_at,
                     'penerima' => $item->penerima,
                     'uraian' => $item->uraian,
                     'debet' => 0,
@@ -165,8 +167,10 @@ class daftarBankController extends Controller
                 ];
             });
 
-        // Merge and sort by date ascending
-        $transactions = $masuk->toBase()->merge($keluar->toBase())->sortBy('tanggal')->values();
+        // Merge and sort by date ascending, then by created_at for same-date entries
+        $transactions = $masuk->toBase()->merge($keluar->toBase())
+            ->sortBy(['tanggal', 'created_at'])
+            ->values();
 
         // Compute running total (saldo akhir)
         $saldo = 0;

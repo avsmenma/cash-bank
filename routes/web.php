@@ -241,6 +241,8 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('daftarRekening', DaftarRekeningController::class);
     Route::get('/daftarBank/data', [DaftarBankController::class, 'datatable'])->name('daftarBank.data');
     Route::resource('daftarBank', DaftarBankController::class);
+    Route::get('/daftarBank/{id}/detail', [DaftarBankController::class, 'showDetail'])
+        ->name('daftarBank.detail');
 
     Route::resource('saldoAwal', SaldoAwalController::class);
 

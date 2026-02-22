@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\BankTujuan;
+use App\Models\BankMasuk;
+use App\Models\BankKeluar;
 use App\Models\daftarBank;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
@@ -26,20 +28,25 @@ class daftarBankController extends Controller
             ->addIndexColumn()
             ->addColumn('aksi', function ($row) {
                 $route = route('daftarBank.destroy', $row->id_bank_tujuan);
+                $detailRoute = route('daftarBank.detail', $row->id_bank_tujuan);
                 $csrf = csrf_token();
 
                 return '
+                    <a href="' . $detailRoute . '" class="btn btn-info btn-sm">
+                        <i class="fas fa-eye"></i> Lihat Detail
+                    </a>
+
                     <button type="button"
                         class="btn btn-warning btn-sm"
                         data-toggle="modal"
                         data-target="#editBankTujuan"
-                        data-id="'.$row->id_bank_tujuan.'"
-                        data-nama="'.$row->nama_tujuan.'">
+                        data-id="' . $row->id_bank_tujuan . '"
+                        data-nama="' . $row->nama_tujuan . '">
                         Edit
                     </button>
 
-                    <form action="'.$route.'" method="POST" style="display:inline;">
-                        <input type="hidden" name="_token" value="'.$csrf.'">
+                    <form action="' . $route . '" method="POST" style="display:inline;">
+                        <input type="hidden" name="_token" value="' . $csrf . '">
                         <input type="hidden" name="_method" value="DELETE">
 
                         <button type="submit"
@@ -69,8 +76,8 @@ class daftarBankController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-        'nama_tujuan' => 'required',
-    ]);
+            'nama_tujuan' => 'required',
+        ]);
         BankTujuan::create($validated);
         return redirect()->route('daftarBank.index')->with('success', 'Data berhasil ditambahkan!');
     }
@@ -120,4 +127,56 @@ class daftarBankController extends Controller
 
         return redirect()->route('daftarBank.index')->with('success', 'Data berhasil dihapus');
     }
+
+    /**
+     * Show detail ledger for a specific Virtual Account.
+     */
+    public function showDetail($id)
+    {
+        $va = BankTujuan::findOrFail($id);
+
+        // Get Bank Masuk transactions for this VA
+        $masuk = BankMasuk::where('id_bank_tujuan', $id)
+            ->select('tanggal', 'penerima', 'uraian', 'debet', 'kredit')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'tanggal' => $item->tanggal,
+                    'penerima' => $item->penerima,
+                    'uraian' => $item->uraian,
+                    'debet' => (float) $item->debet,
+                    'kredit' => 0,
+                    'tipe' => 'masuk',
+                ];
+            });
+
+        // Get Bank Keluar transactions for this VA
+        $keluar = BankKeluar::where('id_bank_tujuan', $id)
+            ->select('tanggal', 'penerima', 'uraian', 'debet', 'kredit')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'tanggal' => $item->tanggal,
+                    'penerima' => $item->penerima,
+                    'uraian' => $item->uraian,
+                    'debet' => 0,
+                    'kredit' => (float) $item->kredit,
+                    'tipe' => 'keluar',
+                ];
+            });
+
+        // Merge and sort by date ascending
+        $transactions = $masuk->merge($keluar)->sortBy('tanggal')->values();
+
+        // Compute running total (saldo akhir)
+        $saldo = 0;
+        $transactions = $transactions->map(function ($item) use (&$saldo) {
+            $saldo = $saldo + $item['debet'] - $item['kredit'];
+            $item['saldo'] = $saldo;
+            return $item;
+        });
+
+        return view('cash_bank.saldo.detailVA', compact('va', 'transactions'));
+    }
 }
+

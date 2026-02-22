@@ -166,7 +166,7 @@ class daftarBankController extends Controller
             });
 
         // Merge and sort by date ascending
-        $transactions = $masuk->merge($keluar)->sortBy('tanggal')->values();
+        $transactions = $masuk->toBase()->merge($keluar->toBase())->sortBy('tanggal')->values();
 
         // Compute running total (saldo akhir)
         $saldo = 0;

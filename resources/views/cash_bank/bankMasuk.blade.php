@@ -140,6 +140,21 @@
                 $('#debet').val(debetVal.replace(/\./g, ''));
             });
 
+            // Live formatting on debet input as user types
+            $('#debet').on('input', function () {
+                let cursorPos = this.selectionStart;
+                let oldLen = this.value.length;
+                // Strip non-digit characters
+                let raw = this.value.replace(/\D/g, '');
+                // Format with dots as thousand separator
+                let formatted = raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                this.value = formatted;
+                // Adjust cursor position
+                let newLen = formatted.length;
+                cursorPos = cursorPos + (newLen - oldLen);
+                this.setSelectionRange(cursorPos, cursorPos);
+            });
+
             $(document).on('click', '#select_all_ids', function () {
                 $('.checkbox_ids').prop('checked', $(this).prop('checked'));
             });
@@ -181,13 +196,13 @@
     @push('style')
         <style>
             /* ===============================
-                   TABLE WRAPPER
-                ================================ */
+                           TABLE WRAPPER
+                        ================================ */
 
 
             /* ===============================
-                   MOBILE RESPONSIVE
-                ================================ */
+                           MOBILE RESPONSIVE
+                        ================================ */
             @media (max-width: 768px) {
                 table {
                     width: 1200px;
@@ -195,8 +210,8 @@
             }
 
             /* ===============================
-                   UTILITY
-                ================================ */
+                           UTILITY
+                        ================================ */
             .font-monospace {
                 font-family: 'Courier New', monospace;
             }

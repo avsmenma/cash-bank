@@ -1,20 +1,20 @@
 @push('style')
-<style>
-    #example {
-        table-layout: auto;
-    }
+    <style>
+        #example {
+            table-layout: auto;
+        }
 
-    #example th:first-child,
-    #example td:first-child {
-        min-width: 250px;
-    }
+        #example th:first-child,
+        #example td:first-child {
+            min-width: 250px;
+        }
 
-    #example th:not(:first-child),
-    #example td:not(:first-child) {
-        min-width: 100px;
-        text-align: right;
-    }
-</style>
+        #example th:not(:first-child),
+        #example td:not(:first-child) {
+            min-width: 100px;
+            text-align: right;
+        }
+    </style>
 @endpush
 
 @php
@@ -37,7 +37,29 @@
                 </th>
 
                 @foreach ($bulanListFiltered as $bulan)
-                    <th colspan="4">{{ ucfirst($bulan) }}</th>
+                    @php
+                        $bulanToAngka = [
+                            'januari' => 1,
+                            'februari' => 2,
+                            'maret' => 3,
+                            'april' => 4,
+                            'mei' => 5,
+                            'juni' => 6,
+                            'juli' => 7,
+                            'agustus' => 8,
+                            'september' => 9,
+                            'oktober' => 10,
+                            'november' => 11,
+                            'desember' => 12
+                        ];
+                        $bulanAngka = $bulanToAngka[$bulan] ?? 0;
+                    @endphp
+                    <th colspan="4">
+                        <a href="javascript:void(0)" class="btn-weekly-detail text-white" data-bulan="{{ $bulanAngka }}"
+                            style="text-decoration: underline; cursor: pointer;">
+                            {{ ucfirst($bulan) }} <i class="fas fa-search-plus" style="font-size:10px;"></i>
+                        </a>
+                    </th>
                 @endforeach
 
                 <th colspan="4">TOTAL</th>
@@ -69,7 +91,7 @@
 
             @foreach ($dataPenerima as $kategori => $bulanData)
                 @php
-                    $totalRencana   = 0;
+                    $totalRencana = 0;
                     $totalRealisasi = 0;
                 @endphp
 
@@ -78,12 +100,12 @@
 
                     @foreach ($bulanListFiltered as $b)
                         @php
-                            $r  = $bulanData[$b]['rencana'] ?? 0;
+                            $r = $bulanData[$b]['rencana'] ?? 0;
                             $re = $bulanData[$b]['realisasi'] ?? 0;
-                            $s  = $bulanData[$b]['selisih'] ?? 0;
-                            $p  = $bulanData[$b]['persen'] ?? 0;
+                            $s = $bulanData[$b]['selisih'] ?? 0;
+                            $p = $bulanData[$b]['persen'] ?? 0;
 
-                            $totalRencana   += $r;
+                            $totalRencana += $r;
                             $totalRealisasi += $re;
                         @endphp
 
@@ -95,7 +117,7 @@
 
                     @php
                         $totalSelisih = $totalRealisasi - $totalRencana;
-                        $totalPersen  = $totalRencana > 0
+                        $totalPersen = $totalRencana > 0
                             ? ($totalRealisasi / $totalRencana) * 100
                             : 0;
                     @endphp
@@ -109,7 +131,7 @@
 
             {{-- ================= TOTAL PENERIMA ================= --}}
             @php
-                $totalRencana   = 0;
+                $totalRencana = 0;
                 $totalRealisasi = 0;
             @endphp
 
@@ -118,12 +140,12 @@
 
                 @foreach ($bulanListFiltered as $b)
                     @php
-                        $r  = $totalPenerima[$b]['rencana'] ?? 0;
+                        $r = $totalPenerima[$b]['rencana'] ?? 0;
                         $re = $totalPenerima[$b]['realisasi'] ?? 0;
-                        $s  = $totalPenerima[$b]['selisih'] ?? 0;
-                        $p  = $totalPenerima[$b]['persen'] ?? 0;
+                        $s = $totalPenerima[$b]['selisih'] ?? 0;
+                        $p = $totalPenerima[$b]['persen'] ?? 0;
 
-                        $totalRencana   += $r;
+                        $totalRencana += $r;
                         $totalRealisasi += $re;
                     @endphp
 
@@ -135,7 +157,7 @@
 
                 @php
                     $totalSelisih = $totalRealisasi - $totalRencana;
-                    $totalPersen  = $totalRencana > 0
+                    $totalPersen = $totalRencana > 0
                         ? ($totalRealisasi / $totalRencana) * 100
                         : 0;
                 @endphp
@@ -169,7 +191,7 @@
 
                     @foreach ($items as $item => $bulanData)
                         @php
-                            $totalRencana   = 0;
+                            $totalRencana = 0;
                             $totalRealisasi = 0;
                         @endphp
 
@@ -178,12 +200,12 @@
 
                             @foreach ($bulanListFiltered as $b)
                                 @php
-                                    $r  = $bulanData[$b]['rencana'] ?? 0;
+                                    $r = $bulanData[$b]['rencana'] ?? 0;
                                     $re = $bulanData[$b]['realisasi'] ?? 0;
-                                    $s  = $bulanData[$b]['selisih'] ?? 0;
-                                    $p  = $bulanData[$b]['persen'] ?? 0;
+                                    $s = $bulanData[$b]['selisih'] ?? 0;
+                                    $p = $bulanData[$b]['persen'] ?? 0;
 
-                                    $totalRencana   += $r;
+                                    $totalRencana += $r;
                                     $totalRealisasi += $re;
                                 @endphp
 
@@ -195,7 +217,7 @@
 
                             @php
                                 $totalSelisih = $totalRealisasi - $totalRencana;
-                                $totalPersen  = $totalRencana > 0
+                                $totalPersen = $totalRencana > 0
                                     ? ($totalRealisasi / $totalRencana) * 100
                                     : 0;
                             @endphp
@@ -211,7 +233,7 @@
 
             {{-- ================= TOTAL DROPPING ================= --}}
             @php
-                $totalRencana   = 0;
+                $totalRencana = 0;
                 $totalRealisasi = 0;
             @endphp
 
@@ -220,12 +242,12 @@
 
                 @foreach ($bulanListFiltered as $b)
                     @php
-                        $r  = $totalDropping[$b]['rencana'] ?? 0;
+                        $r = $totalDropping[$b]['rencana'] ?? 0;
                         $re = $totalDropping[$b]['realisasi'] ?? 0;
-                        $s  = $totalDropping[$b]['selisih'] ?? 0;
-                        $p  = $totalDropping[$b]['persen'] ?? 0;
+                        $s = $totalDropping[$b]['selisih'] ?? 0;
+                        $p = $totalDropping[$b]['persen'] ?? 0;
 
-                        $totalRencana   += $r;
+                        $totalRencana += $r;
                         $totalRealisasi += $re;
                     @endphp
 
@@ -237,7 +259,7 @@
 
                 @php
                     $totalSelisih = $totalRealisasi - $totalRencana;
-                    $totalPersen  = $totalRencana > 0
+                    $totalPersen = $totalRencana > 0
                         ? ($totalRealisasi / $totalRencana) * 100
                         : 0;
                 @endphp
@@ -253,7 +275,7 @@
         {{-- ================= FOOTER ================= --}}
         <tfoot class="bg-dark text-white font-weight-bold">
             @php
-                $totalRencana   = 0;
+                $totalRencana = 0;
                 $totalRealisasi = 0;
             @endphp
 
@@ -264,7 +286,7 @@
 
                 @foreach ($bulanListFiltered as $b)
                     @php
-                        $r  = ($totalPenerima[$b]['rencana'] ?? 0)
+                        $r = ($totalPenerima[$b]['rencana'] ?? 0)
                             - ($totalDropping[$b]['rencana'] ?? 0);
 
                         $re = ($totalPenerima[$b]['realisasi'] ?? 0)
@@ -273,7 +295,7 @@
                         $s = $re - $r;
                         $p = $r != 0 ? ($re / $r) * 100 : 0;
 
-                        $totalRencana   += $r;
+                        $totalRencana += $r;
                         $totalRealisasi += $re;
                     @endphp
 
@@ -285,7 +307,7 @@
 
                 @php
                     $totalSelisih = $totalRealisasi - $totalRencana;
-                    $totalPersen  = $totalRencana != 0
+                    $totalPersen = $totalRencana != 0
                         ? ($totalRealisasi / $totalRencana) * 100
                         : 0;
                 @endphp

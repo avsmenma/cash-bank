@@ -23,13 +23,13 @@ class DashboardPembayaranController extends Controller
         $tahun = $request->tahun ?? date('Y');
         $bulanDari = $request->bulan_dari ?? 1;
         $bulanSampai = $request->bulan_sampai ?? 12;
-        
+
         $kategoriList = KategoriKriteria::whereIn('tipe', ['keluar', 'Penerima'])
             ->pluck('nama_kriteria', 'id_kategori_kriteria');
-        
+
         // Load data langsung untuk tampilan awal
         $data = $this->getData($tahun, $bulanDari, $bulanSampai);
-        
+
         return view('cash_bank.dashboardPembayaran', array_merge(
             compact('kategoriList', 'tahun', 'bulanDari', 'bulanSampai'),
             $data,
@@ -40,16 +40,34 @@ class DashboardPembayaranController extends Controller
     {
         // ===== BULAN =====
         $bulanList = [
-            'januari', 'februari', 'maret', 'april',
-            'mei', 'juni', 'juli', 'agustus',
-            'september', 'oktober', 'november', 'desember'
+            'januari',
+            'februari',
+            'maret',
+            'april',
+            'mei',
+            'juni',
+            'juli',
+            'agustus',
+            'september',
+            'oktober',
+            'november',
+            'desember'
         ];
 
         // Mapping bulan ke angka
         $bulanMap = [
-            1 => 'januari', 2 => 'februari', 3 => 'maret', 4 => 'april',
-            5 => 'mei', 6 => 'juni', 7 => 'juli', 8 => 'agustus',
-            9 => 'september', 10 => 'oktober', 11 => 'november', 12 => 'desember'
+            1 => 'januari',
+            2 => 'februari',
+            3 => 'maret',
+            4 => 'april',
+            5 => 'mei',
+            6 => 'juni',
+            7 => 'juli',
+            8 => 'agustus',
+            9 => 'september',
+            10 => 'oktober',
+            11 => 'november',
+            12 => 'desember'
         ];
 
         $templateBulan = [];
@@ -62,11 +80,11 @@ class DashboardPembayaranController extends Controller
             ];
         }
 
-        $dataPenerima  = [];
-        $dataDropping  = [];
+        $dataPenerima = [];
+        $dataDropping = [];
         $totalPenerima = $templateBulan;
         $totalDropping = $templateBulan;
-        
+
         // ✅ TRACKING BULAN YANG ADA TRANSAKSI
         $bulanAktif = [];
 
@@ -88,12 +106,12 @@ class DashboardPembayaranController extends Controller
 
             foreach ($bulanList as $index => $bulan) {
                 $bulanAngka = $index + 1; // 1 = januari, 2 = februari, dst
-                
+
                 // ✅ FILTER BERDASARKAN RANGE BULAN
                 if ($bulanAngka < $bulanDari || $bulanAngka > $bulanSampai) {
                     continue;
                 }
-                
+
                 $nilaiRencana = $row->$bulan ?? 0;
                 if ($nilaiRencana > 0) {
                     $dataPenerima[$namaKategori][$bulan]['rencana'] += $nilaiRencana;
@@ -117,8 +135,9 @@ class DashboardPembayaranController extends Controller
         foreach ($realisasiPenerima as $row) {
             $bulanAngka = Carbon::parse($row->tanggal)->month;
             $bulan = $bulanMap[$bulanAngka] ?? null;
-            
-            if (!$bulan) continue;
+
+            if (!$bulan)
+                continue;
 
             $namaKategori = $row->kategori->nama_kriteria ?? 'Tidak Dikategorikan';
 
@@ -127,7 +146,7 @@ class DashboardPembayaranController extends Controller
             }
 
             $nilaiRealisasi = ($row->nilai ?? 0) + ($row->ppn ?? 0) - ($row->potppn ?? 0);
-            
+
             if ($nilaiRealisasi > 0) {
                 $dataPenerima[$namaKategori][$bulan]['realisasi'] += $nilaiRealisasi;
                 $totalPenerima[$bulan]['realisasi'] += $nilaiRealisasi;
@@ -139,13 +158,13 @@ class DashboardPembayaranController extends Controller
         foreach ($dataPenerima as $k => $bulanData) {
             foreach ($bulanData as $b => $v) {
                 $dataPenerima[$k][$b]['selisih'] = $v['realisasi'] - $v['rencana'];
-                $dataPenerima[$k][$b]['persen']  = $v['rencana'] > 0 ? ($v['realisasi'] / $v['rencana']) * 100 : 0;
+                $dataPenerima[$k][$b]['persen'] = $v['rencana'] > 0 ? ($v['realisasi'] / $v['rencana']) * 100 : 0;
             }
         }
 
         foreach ($totalPenerima as $b => $v) {
             $totalPenerima[$b]['selisih'] = $v['realisasi'] - $v['rencana'];
-            $totalPenerima[$b]['persen']  = $v['rencana'] > 0 ? ($v['realisasi'] / $v['rencana']) * 100 : 0;
+            $totalPenerima[$b]['persen'] = $v['rencana'] > 0 ? ($v['realisasi'] / $v['rencana']) * 100 : 0;
         }
 
         /*
@@ -161,8 +180,9 @@ class DashboardPembayaranController extends Controller
         foreach ($rencanaDropping as $row) {
             $bulanAngka = $row->bulan;
             $bulan = $bulanMap[$bulanAngka] ?? null;
-            
-            if (!$bulan) continue;
+
+            if (!$bulan)
+                continue;
 
             $k = $row->kategori->nama_kriteria ?? 'Tidak Dikategorikan';
             $s = $row->subKriteria->nama_sub_kriteria ?? 'Tidak Ada Sub';
@@ -200,8 +220,9 @@ class DashboardPembayaranController extends Controller
         foreach ($realisasiDropping as $row) {
             $bulanAngka = $row->bulan;
             $bulan = $bulanMap[$bulanAngka] ?? null;
-            
-            if (!$bulan) continue;
+
+            if (!$bulan)
+                continue;
 
             $k = $row->kategori->nama_kriteria ?? 'Tidak Dikategorikan';
             $s = $row->subKriteria->nama_sub_kriteria ?? 'Tidak Ada Sub';
@@ -218,7 +239,7 @@ class DashboardPembayaranController extends Controller
             }
 
             $nilaiRealisasi = ($row->M1 ?? 0) + ($row->M2 ?? 0) + ($row->M3 ?? 0) + ($row->M4 ?? 0);
-            
+
             if ($nilaiRealisasi > 0) {
                 $dataDropping[$k][$s][$i][$bulan]['realisasi'] += $nilaiRealisasi;
                 $totalDropping[$bulan]['realisasi'] += $nilaiRealisasi;
@@ -232,7 +253,7 @@ class DashboardPembayaranController extends Controller
                 foreach ($items as $i => $bulanData) {
                     foreach ($bulanData as $b => $v) {
                         $dataDropping[$k][$s][$i][$b]['selisih'] = $v['realisasi'] - $v['rencana'];
-                        $dataDropping[$k][$s][$i][$b]['persen']  = $v['rencana'] > 0 ? ($v['realisasi'] / $v['rencana']) * 100 : 0;
+                        $dataDropping[$k][$s][$i][$b]['persen'] = $v['rencana'] > 0 ? ($v['realisasi'] / $v['rencana']) * 100 : 0;
                     }
                 }
             }
@@ -240,7 +261,7 @@ class DashboardPembayaranController extends Controller
 
         foreach ($totalDropping as $b => $v) {
             $totalDropping[$b]['selisih'] = $v['realisasi'] - $v['rencana'];
-            $totalDropping[$b]['persen']  = $v['rencana'] > 0 ? ($v['realisasi'] / $v['rencana']) * 100 : 0;
+            $totalDropping[$b]['persen'] = $v['rencana'] > 0 ? ($v['realisasi'] / $v['rencana']) * 100 : 0;
         }
 
         // ✅ FILTER BULAN: Hanya bulan yang ada transaksi DAN dalam range
@@ -260,18 +281,19 @@ class DashboardPembayaranController extends Controller
             'totalDropping'
         );
     }
-    
-    
+
+
     public function exportPdf(Request $request)
     {
         $tahun = $request->tahun ?? date('Y');
         $data = $this->getData($tahun);
-        
-        
+
+
         return response()->json(['message' => 'Export PDF belum diimplementasikan']);
     }
 
-    public function export_excel(Request $request){
+    public function export_excel(Request $request)
+    {
         return Excel::download(new ExcelPembayaran, 'Rekapan-PD .xlsx');
     }
 
@@ -279,10 +301,121 @@ class DashboardPembayaranController extends Controller
     // {
     //     $tahun = $request->tahun ?? date('Y');
     //     $data = $this->getData($tahun);
-        
+
     //     // TODO: Implementasi export Excel menggunakan Laravel Excel
     //     // return Excel::download(new DashboardPembayaranExport($tahun), 'dashboard-pembayaran-'.$tahun.'.xlsx');
-        
+
     //     return response()->json(['message' => 'Export Excel belum diimplementasikan']);
     // }
+
+    /**
+     * AJAX: Return weekly breakdown for a given month
+     */
+    public function weeklyDetail(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+        $bulan = $request->bulan; // angka 1-12
+
+        $bulanMap = [
+            1 => 'januari',
+            2 => 'februari',
+            3 => 'maret',
+            4 => 'april',
+            5 => 'mei',
+            6 => 'juni',
+            7 => 'juli',
+            8 => 'agustus',
+            9 => 'september',
+            10 => 'oktober',
+            11 => 'november',
+            12 => 'desember'
+        ];
+
+        $namaBulanMap = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
+        ];
+
+        $namaBulan = $namaBulanMap[$bulan] ?? '';
+        $bulanKey = $bulanMap[$bulan] ?? '';
+
+        // Template per minggu
+        $weekTemplate = ['w1' => 0, 'w2' => 0, 'w3' => 0, 'w4' => 0];
+
+        /*
+        |================================================
+        | PENERIMA (Realisasi) - breakdown by tanggal into weeks
+        |================================================
+        */
+        $penerimaData = [];
+
+        $realisasiPenerima = Penerima::with('kategori')
+            ->whereYear('tanggal', $tahun)
+            ->whereMonth('tanggal', $bulan)
+            ->get();
+
+        foreach ($realisasiPenerima as $row) {
+            $namaKategori = $row->kategori->nama_kriteria ?? 'Tidak Dikategorikan';
+            if (!isset($penerimaData[$namaKategori])) {
+                $penerimaData[$namaKategori] = $weekTemplate;
+            }
+
+            $day = Carbon::parse($row->tanggal)->day;
+            $nilai = ($row->nilai ?? 0) + ($row->ppn ?? 0) - ($row->potppn ?? 0);
+
+            if ($day <= 7) {
+                $penerimaData[$namaKategori]['w1'] += $nilai;
+            } elseif ($day <= 14) {
+                $penerimaData[$namaKategori]['w2'] += $nilai;
+            } elseif ($day <= 21) {
+                $penerimaData[$namaKategori]['w3'] += $nilai;
+            } else {
+                $penerimaData[$namaKategori]['w4'] += $nilai;
+            }
+        }
+
+        /*
+        |================================================
+        | DROPPING (Realisasi) - M1, M2, M3, M4 are weeks
+        |================================================
+        */
+        $droppingData = [];
+
+        $realisasiDropping = Dropping::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+            ->where('tahun', $tahun)
+            ->where('bulan', $bulan)
+            ->get();
+
+        foreach ($realisasiDropping as $row) {
+            $label = ($row->kategori->nama_kriteria ?? 'Tidak Dikategorikan')
+                . ' > ' . ($row->subKriteria->nama_sub_kriteria ?? '-')
+                . ' > ' . ($row->itemSubKriteria->nama_item_sub_kriteria ?? '-');
+
+            if (!isset($droppingData[$label])) {
+                $droppingData[$label] = $weekTemplate;
+            }
+
+            $droppingData[$label]['w1'] += $row->M1 ?? 0;
+            $droppingData[$label]['w2'] += $row->M2 ?? 0;
+            $droppingData[$label]['w3'] += $row->M3 ?? 0;
+            $droppingData[$label]['w4'] += $row->M4 ?? 0;
+        }
+
+        return view('cash_bank.pembayaran.weeklyDetail', compact(
+            'penerimaData',
+            'droppingData',
+            'namaBulan',
+            'tahun'
+        ));
+    }
 }

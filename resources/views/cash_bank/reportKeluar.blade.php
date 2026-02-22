@@ -75,7 +75,7 @@
                                                 value="{{ $tt }}"
                                                 {{ in_array($tt, request('tanggal', [])) ? 'checked' : '' }}>
                                             <label class="form-check-label">
-                                                {{ \Carbon\Carbon::parse($tt)->format('d-m-Y') }}
+                                                {{ \Carbon\Carbon::parse($tt)->translatedFormat('d F Y') }}
                                             </label>
                                         </div>
                                         @endforeach

@@ -163,6 +163,9 @@ class BankKeluarController extends Controller
             ->editColumn('kredit', function ($row) {
                 return number_format((float) $row->kredit, 0, ',', '.');
             })
+            ->editColumn('tanggal', function ($row) {
+                return \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d F Y');
+            })
             ->rawColumns(['checkbox', 'aksi'])
             ->make(true);
     }

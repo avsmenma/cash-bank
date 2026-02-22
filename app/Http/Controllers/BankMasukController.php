@@ -67,6 +67,9 @@ class BankMasukController extends Controller
             ->editColumn('debet', function ($row) {
                 return number_format((float) $row->debet, 0, ',', '.');
             })
+            ->editColumn('tanggal', function ($row) {
+                return \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d F Y');
+            })
             ->addColumn('aksi', function ($row) {
                 return '
                 <button class="btn btn-warning btn-sm" 

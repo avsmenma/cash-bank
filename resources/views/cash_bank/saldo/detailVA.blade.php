@@ -91,7 +91,7 @@
                                     @forelse ($transactions as $i => $trx)
                                         <tr>
                                             <td>{{ $i + 1 }}</td>
-                                            <td>{{ \Carbon\Carbon::parse($trx['tanggal'])->format('d/m/Y') }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($trx['tanggal'])->translatedFormat('d F Y') }}</td>
                                             <td>{{ $va->nama_tujuan }}</td>
                                             <td>{{ $trx['penerima'] ?? '-' }}</td>
                                             <td>{{ $trx['uraian'] ?? '-' }}</td>

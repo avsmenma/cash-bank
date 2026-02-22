@@ -111,7 +111,9 @@
                 // input biasa
                 $('#agenda_tahun').val(agenda);
                 $('#penerima').val(penerima);
-                $('#debet').val(debet);
+                // Format debet with thousand separator
+                let debetNum = parseFloat(debet) || 0;
+                $('#debet').val(debetNum.toLocaleString('id-ID'));
                 $('#keterangan').val(keterangan);
                 $('#uraian').val(uraian);
 
@@ -130,6 +132,12 @@
                 $('[name="id_sumber_dana"]').val(sumber).trigger('change');
                 $('[name="id_kategori_kriteria"]').val(kategori).trigger('change');
                 $('[name="id_jenis_pembayaran"]').val(jenis).trigger('change');
+            });
+
+            // Strip dots from debet before form submit
+            $('#formEdit').on('submit', function () {
+                let debetVal = $('#debet').val();
+                $('#debet').val(debetVal.replace(/\./g, ''));
             });
 
             $(document).on('click', '#select_all_ids', function () {
@@ -173,13 +181,13 @@
     @push('style')
         <style>
             /* ===============================
-           TABLE WRAPPER
-        ================================ */
+                   TABLE WRAPPER
+                ================================ */
 
 
             /* ===============================
-           MOBILE RESPONSIVE
-        ================================ */
+                   MOBILE RESPONSIVE
+                ================================ */
             @media (max-width: 768px) {
                 table {
                     width: 1200px;
@@ -187,8 +195,8 @@
             }
 
             /* ===============================
-           UTILITY
-        ================================ */
+                   UTILITY
+                ================================ */
             .font-monospace {
                 font-family: 'Courier New', monospace;
             }

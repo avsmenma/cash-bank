@@ -97,6 +97,9 @@ class penerimaController extends Controller
                     </form>
                 ';
             })
+            ->editColumn('tanggal', function ($row) {
+                return \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d F Y');
+            })
             ->rawColumns(['checkbox', 'aksi'])
             ->with([
                 'groupColumn' => 'nama_kriteria'

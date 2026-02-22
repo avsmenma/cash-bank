@@ -19,7 +19,7 @@
             <tr>
                 <td>{{ $index + 1 }}</td>
                 <td>{{ $item->agenda_tahun }}</td>
-                <td>{{ $item->tanggal }}</td>
+                <td>{{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d F Y') }}</td>
                 <td>{{ $item->sumberDana->nama_sumber_dana ?? '-' }}</td>
                 <td>{{ $item->bankTujuan->nama_tujuan ?? '-' }}</td>
                 <td>{{ $item->kategori->nama_kriteria ?? '-' }}</td>

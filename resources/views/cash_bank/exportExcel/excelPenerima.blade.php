@@ -19,7 +19,7 @@
         @foreach($data as $index => $item)
             <tr>
                 <td>{{ $index + 1 }}</td>
-                <td>{{ $item->tanggal }}</td>
+                <td>{{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d F Y') }}</td>
                 <td>{{ $item->kategori->nama_kriteria ?? '-' }}</td>
                 <td>{{ $item->pembeli }}</td>
                 <td>{{ $item->no_reg }}</td>

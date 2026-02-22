@@ -160,6 +160,9 @@ class BankKeluarController extends Controller
                         data-kredit="' . $row->kredit . '">Edit</button>
                 ';
             })
+            ->editColumn('kredit', function ($row) {
+                return number_format((float) $row->kredit, 0, ',', '.');
+            })
             ->rawColumns(['checkbox', 'aksi'])
             ->make(true);
     }

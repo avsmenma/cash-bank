@@ -20,6 +20,7 @@ use App\Http\Controllers\DaftarRekeningController;
 use App\Http\Controllers\DetailSubKategoriController;
 use App\Http\Controllers\DashboardPembayaranController;
 use App\Http\Controllers\DetaiControllerCashFlowController;
+use App\Http\Controllers\VADashboardController;
 
 // Route::post('/logout',[AuthController::class, 'logout']);
 // Route::get('/login',fn()=> view('auth.login'))->name('login');
@@ -395,3 +396,9 @@ Route::middleware(['auth'])->group(function () {
 
 
 // Route::get('/userSAP',fn()=> view('userSAP.userSAP'))->name('userSAP');
+
+// VA USER ROUTES
+Route::group(['middleware' => ['auth', 'check_role:va'], 'prefix' => 'va'], function () {
+    Route::get('/dashboard', [VADashboardController::class, 'index'])->name('va.dashboard');
+    Route::get('/rekening-koran', [VADashboardController::class, 'rekeningKoran'])->name('va.rekening-koran');
+});

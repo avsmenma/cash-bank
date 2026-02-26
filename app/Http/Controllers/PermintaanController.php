@@ -34,9 +34,32 @@ class PermintaanController extends Controller
         }
 
         // Get items from sub kriteria
-        $items = ItemSubKriteria::where('id_sub_kriteria', $subKriteriaId)
-            ->orderBy('nama_item_sub_kriteria')
-            ->get();
+        $sortOrder = [
+            'Gaji dan Tunjangan',
+            'Cuti Tahunan',
+            'Cuti Panjang',
+            'THR',
+            'Bonus',
+            'PPh Pasal 21',
+            'Iuran Dapenbun (Normal)',
+            'Penghargaan Masa Kerja',
+            'Iuran BPJS B. Perusahaan',
+            'SHT (Cicilan)',
+            'Lainnya',
+        ];
+
+        $items = ItemSubKriteria::where('id_sub_kriteria', $subKriteriaId)->get();
+        $items = $items->sort(function ($a, $b) use ($sortOrder) {
+            $posA = array_search($a->nama_item_sub_kriteria, $sortOrder);
+            $posB = array_search($b->nama_item_sub_kriteria, $sortOrder);
+            if ($posA !== false && $posB !== false)
+                return $posA - $posB;
+            if ($posA !== false)
+                return -1;
+            if ($posB !== false)
+                return 1;
+            return strcmp($a->nama_item_sub_kriteria, $b->nama_item_sub_kriteria);
+        })->values();
 
         if ($items->isEmpty()) {
             return view('cash_bank.pembayaran.createPermintaan', [
@@ -296,10 +319,33 @@ class PermintaanController extends Controller
             $tahun = $request->tahun;
             $rows = $request->rows;
 
-            // Get items in the same sorted order as displayed in the view
-            $items = ItemSubKriteria::where('id_sub_kriteria', $subKriteriaId)
-                ->orderBy('nama_item_sub_kriteria')
-                ->get();
+            // Get items in sorted order (same order as displayed in view)
+            $sortOrder = [
+                'Gaji dan Tunjangan',
+                'Cuti Tahunan',
+                'Cuti Panjang',
+                'THR',
+                'Bonus',
+                'PPh Pasal 21',
+                'Iuran Dapenbun (Normal)',
+                'Penghargaan Masa Kerja',
+                'Iuran BPJS B. Perusahaan',
+                'SHT (Cicilan)',
+                'Lainnya',
+            ];
+
+            $items = ItemSubKriteria::where('id_sub_kriteria', $subKriteriaId)->get();
+            $items = $items->sort(function ($a, $b) use ($sortOrder) {
+                $posA = array_search($a->nama_item_sub_kriteria, $sortOrder);
+                $posB = array_search($b->nama_item_sub_kriteria, $sortOrder);
+                if ($posA !== false && $posB !== false)
+                    return $posA - $posB;
+                if ($posA !== false)
+                    return -1;
+                if ($posB !== false)
+                    return 1;
+                return strcmp($a->nama_item_sub_kriteria, $b->nama_item_sub_kriteria);
+            })->values();
 
             $subKriteria = SubKriteria::find($subKriteriaId);
             $imported = 0;

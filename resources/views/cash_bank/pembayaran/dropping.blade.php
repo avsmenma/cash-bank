@@ -206,11 +206,11 @@
           let id = $(this).val();
           $('#sub_kriteria').html('<option value="">-- Pilih Sub Kriteria --</option>');
           $('#table-wrapper').html(`
-                <div class="text-muted text-center py-5">
-                    <i class="fas fa-info-circle fa-2x mb-2"></i>
-                    <p>Silakan pilih Kategori, Sub Kriteria, Tahun, dan Bulan untuk menampilkan data</p>
-                </div>
-            `);
+                    <div class="text-muted text-center py-5">
+                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                        <p>Silakan pilih Kategori, Sub Kriteria, Tahun, dan Bulan untuk menampilkan data</p>
+                    </div>
+                `);
 
           if (id) {
             $.get('/dropping/sub-kriteria/' + id, function (res) {
@@ -251,11 +251,11 @@
           }
 
           $('#table-wrapper').html(`
-                <div class="text-center py-5">
-                    <i class="fas fa-spinner fa-spin fa-2x"></i>
-                    <p>Memuat data...</p>
-                </div>
-            `);
+                    <div class="text-center py-5">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p>Memuat data...</p>
+                    </div>
+                `);
 
           $.get('/dropping/table', {
             sub: sub,
@@ -268,10 +268,10 @@
             attachCellEvents();
           }).fail(function () {
             $('#table-wrapper').html(`
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle"></i> Gagal memuat data. Silakan coba lagi.
-                    </div>
-                `);
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i> Gagal memuat data. Silakan coba lagi.
+                        </div>
+                    `);
           });
         }
 
@@ -365,10 +365,11 @@
           $.ajax({
             url: '/dropping/save-batch',
             method: 'POST',
-            data: {
-              _token: '{{ csrf_token() }}',
-              items: dataToSave
+            contentType: 'application/json',
+            headers: {
+              'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
+            data: JSON.stringify({ items: dataToSave }),
             success: function (response) {
               $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Simpan');
               if (response.success) {
@@ -381,7 +382,11 @@
             },
             error: function (xhr) {
               $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Simpan');
-              alert('Gagal menyimpan data. Silakan coba lagi.');
+              let errorMsg = 'Gagal menyimpan data. Silakan coba lagi.';
+              if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMsg = xhr.responseJSON.message;
+              }
+              alert(errorMsg);
               console.error('Save error:', xhr);
             }
           });
@@ -402,11 +407,11 @@
           }
 
           $('#cashflow-wrapper').html(`
-                <div class="text-center py-5">
-                    <i class="fas fa-spinner fa-spin fa-2x"></i>
-                    <p>Memuat data cashflow...</p>
-                </div>
-            `);
+                    <div class="text-center py-5">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p>Memuat data cashflow...</p>
+                    </div>
+                `);
 
           $.ajax({
             url: '/dropping/cashflow',
@@ -420,11 +425,11 @@
               console.error('Error:', error); // Debug
               console.error('Response:', xhr.responseText); // Debug
               $('#cashflow-wrapper').html(`
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle"></i> Gagal memuat data cashflow. 
-                            <br><small>Error: ${error}</small>
-                        </div>
-                    `);
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i> Gagal memuat data cashflow. 
+                                <br><small>Error: ${error}</small>
+                            </div>
+                        `);
             }
           });
         });

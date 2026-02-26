@@ -136,26 +136,37 @@ class DroppingController extends Controller
             DB::beginTransaction();
 
             foreach ($items as $item) {
-                $kolom = $item['kolom'];
+                $kolom = $item['kolom'] ?? null;
 
-                if (!in_array($kolom, ['M1', 'M2', 'M3', 'M4'])) {
+                if (!$kolom || !in_array($kolom, ['M1', 'M2', 'M3', 'M4'])) {
                     continue;
                 }
 
-                $subKriteria = SubKriteria::find($item['sub_kriteria']);
+                $itemId = $item['item'] ?? null;
+                $subKriteriaId = $item['sub_kriteria'] ?? null;
+                $tahun = $item['tahun'] ?? null;
+                $bulan = $item['bulan'] ?? null;
+                $nilai = $item['nilai'] ?? 0;
+
+                if (!$itemId || !$subKriteriaId || !$tahun || !$bulan) {
+                    continue;
+                }
 
                 $dropping = Dropping::firstOrNew([
-                    'id_item_sub_kriteria' => $item['item'],
-                    'id_sub_kriteria' => $item['sub_kriteria'],
-                    'tahun' => $item['tahun'],
-                    'bulan' => $item['bulan']
+                    'id_item_sub_kriteria' => $itemId,
+                    'id_sub_kriteria' => $subKriteriaId,
+                    'tahun' => $tahun,
+                    'bulan' => $bulan
                 ]);
 
                 if (!$dropping->exists) {
-                    $dropping->id_kategori_kriteria = $subKriteria->id_kategori_kriteria;
+                    $subKriteria = SubKriteria::find($subKriteriaId);
+                    if ($subKriteria) {
+                        $dropping->id_kategori_kriteria = $subKriteria->id_kategori_kriteria;
+                    }
                 }
 
-                $dropping->$kolom = $item['nilai'] ?? 0;
+                $dropping->$kolom = $nilai;
                 $dropping->save();
             }
 

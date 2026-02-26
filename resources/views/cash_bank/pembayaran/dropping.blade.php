@@ -79,6 +79,10 @@
                       <a href="{{ url('/bank-masuk/export_excel')}}" class="btn btn-outline-danger">
                         <i class="fas fa-file-excel"></i> Download Excel
                       </a>
+                      <button type="button" class="btn btn-outline-success" id="btn-import-dropping" data-toggle="modal"
+                        data-target="#modalImportDropping">
+                        <i class="fas fa-file-upload"></i> Import Excel
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -192,6 +196,41 @@
     </div>
   </div>
 
+  {{-- MODAL IMPORT EXCEL DROPPING --}}
+  <div class="modal fade" id="modalImportDropping" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-file-upload"></i> Import Excel Dropping</h5>
+          <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        </div>
+        <form id="form-import-dropping" enctype="multipart/form-data">
+          @csrf
+          <div class="modal-body">
+            <div class="alert alert-info">
+              <strong>Format Excel:</strong> Kolom yang dibutuhkan: <code>item_sub_kriteria</code>, <code>M1</code>, <code>M2</code>, <code>M3</code>, <code>M4</code>.
+              Item yang tidak ditemukan akan dilewati.
+            </div>
+            <div class="form-group">
+              <label>Filter Aktif</label>
+              <p id="import-dropping-info" class="text-muted small">-</p>
+            </div>
+            <div class="form-group">
+              <label>File Excel <span class="text-danger">*</span></label>
+              <input type="file" name="file" id="import-dropping-file" class="form-control-file" accept=".xlsx,.xls,.csv" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-success" id="btn-submit-import-dropping">
+              <i class="fas fa-upload"></i> Import
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   @push('scripts')
     <script>
       $(document).ready(function () {
@@ -206,11 +245,11 @@
           let id = $(this).val();
           $('#sub_kriteria').html('<option value="">-- Pilih Sub Kriteria --</option>');
           $('#table-wrapper').html(`
-                    <div class="text-muted text-center py-5">
-                        <i class="fas fa-info-circle fa-2x mb-2"></i>
-                        <p>Silakan pilih Kategori, Sub Kriteria, Tahun, dan Bulan untuk menampilkan data</p>
-                    </div>
-                `);
+                        <div class="text-muted text-center py-5">
+                            <i class="fas fa-info-circle fa-2x mb-2"></i>
+                            <p>Silakan pilih Kategori, Sub Kriteria, Tahun, dan Bulan untuk menampilkan data</p>
+                        </div>
+                    `);
 
           if (id) {
             $.get('/dropping/sub-kriteria/' + id, function (res) {
@@ -251,11 +290,11 @@
           }
 
           $('#table-wrapper').html(`
-                    <div class="text-center py-5">
-                        <i class="fas fa-spinner fa-spin fa-2x"></i>
-                        <p>Memuat data...</p>
-                    </div>
-                `);
+                        <div class="text-center py-5">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p>Memuat data...</p>
+                        </div>
+                    `);
 
           $.get('/dropping/table', {
             sub: sub,
@@ -268,10 +307,10 @@
             attachCellEvents();
           }).fail(function () {
             $('#table-wrapper').html(`
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle"></i> Gagal memuat data. Silakan coba lagi.
-                        </div>
-                    `);
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i> Gagal memuat data. Silakan coba lagi.
+                            </div>
+                        `);
           });
         }
 
@@ -407,11 +446,11 @@
           }
 
           $('#cashflow-wrapper').html(`
-                    <div class="text-center py-5">
-                        <i class="fas fa-spinner fa-spin fa-2x"></i>
-                        <p>Memuat data cashflow...</p>
-                    </div>
-                `);
+                        <div class="text-center py-5">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p>Memuat data cashflow...</p>
+                        </div>
+                    `);
 
           $.ajax({
             url: '/dropping/cashflow',
@@ -425,11 +464,11 @@
               console.error('Error:', error); // Debug
               console.error('Response:', xhr.responseText); // Debug
               $('#cashflow-wrapper').html(`
-                            <div class="alert alert-danger">
-                                <i class="fas fa-exclamation-triangle"></i> Gagal memuat data cashflow. 
-                                <br><small>Error: ${error}</small>
-                            </div>
-                        `);
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i> Gagal memuat data cashflow. 
+                                    <br><small>Error: ${error}</small>
+                                </div>
+                            `);
             }
           });
         });
@@ -506,6 +545,64 @@
           });
         }
       });
+
+        // ===== IMPORT EXCEL DROPPING =====
+        $('#modalImportDropping').on('show.bs.modal', function () {
+          let sub = $('#sub_kriteria option:selected').text();
+          let bulan = $('#bulan option:selected').text();
+          let tahun = $('#tahun').val();
+          if ($('#sub_kriteria').val() && tahun && $('#bulan').val()) {
+            $('#import-dropping-info').text('Sub Kriteria: ' + sub + ' | Bulan: ' + bulan + ' | Tahun: ' + tahun);
+          } else {
+            $('#import-dropping-info').html('<span class="text-danger">Harap pilih Sub Kriteria, Bulan, dan Tahun pada filter utama terlebih dahulu.</span>');
+          }
+          $('#import-dropping-file').val('');
+        });
+
+        $('#form-import-dropping').on('submit', function (e) {
+          e.preventDefault();
+          let subId = $('#sub_kriteria').val();
+          let bulan = $('#bulan').val();
+          let tahun = $('#tahun').val();
+
+          if (!subId || !bulan || !tahun) {
+            alert('Harap pilih Sub Kriteria, Bulan, dan Tahun pada filter utama terlebih dahulu.');
+            return;
+          }
+
+          let formData = new FormData();
+          formData.append('_token', '{{ csrf_token() }}');
+          formData.append('file', $('#import-dropping-file')[0].files[0]);
+          formData.append('sub_kriteria', subId);
+          formData.append('bulan', bulan);
+          formData.append('tahun', tahun);
+
+          let $btn = $('#btn-submit-import-dropping');
+          $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengimport...');
+
+          $.ajax({
+            url: '{{ route("dropping.import") }}',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (res) {
+              $btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Import');
+              if (res.success) {
+                $('#modalImportDropping').modal('hide');
+                alert(res.message);
+                loadTable();
+              } else {
+                alert('Gagal: ' + res.message);
+              }
+            },
+            error: function (xhr) {
+              $btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Import');
+              let msg = xhr.responseJSON ? (xhr.responseJSON.message || JSON.stringify(xhr.responseJSON)) : 'Terjadi kesalahan.';
+              alert('Import gagal: ' + msg);
+            }
+          });
+        });
 
     </script>
   @endpush

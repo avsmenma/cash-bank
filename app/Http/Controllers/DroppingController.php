@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use App\Models\ItemSubKriteria;
 use App\Models\RencanaDropping;
 use App\Models\KategoriKriteria;
+use App\Imports\ImportDropping;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\DB;
 
 class DroppingController extends Controller
@@ -441,6 +443,37 @@ class DroppingController extends Controller
             'cash_bank.pembayaran.cashFlowGabunganDropping',
             compact('data', 'bulanList')
         );
+    }
+
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv',
+            'sub_kriteria' => 'required|exists:sub_kriteria,id_sub_kriteria',
+            'bulan' => 'required|integer|between:1,12',
+            'tahun' => 'required|integer',
+        ]);
+
+        try {
+            $importer = new ImportDropping(
+                'dropping',
+                $request->sub_kriteria,
+                $request->bulan,
+                $request->tahun
+            );
+
+            Excel::import($importer, $request->file('file'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Import berhasil! ' . $importer->getImported() . ' baris diimport, ' . $importer->getSkipped() . ' baris dilewati.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Import gagal: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
 }

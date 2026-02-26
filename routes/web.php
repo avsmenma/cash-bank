@@ -311,6 +311,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/permintaan/save', [PermintaanController::class, 'saveData'])->name('permintaan.save');
     Route::delete('/permintaan/delete', [PermintaanController::class, 'deleteData'])->name('permintaan.delete');
     Route::get('/permintaan/sub-kriteria/{id}', [PermintaanController::class, 'getSub']);
+    Route::post('/permintaan/import', [PermintaanController::class, 'importExcel'])->name('permintaan.import');
     Route::resource('permintaan', PermintaanController::class);
     Route::get('/dropping/gabungan', [DroppingController::class, 'gabungan'])
         ->name('dropping.gabungan');
@@ -334,6 +335,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dropping/saveRencana', [DroppingController::class, 'saveRencana'])
         ->name('dropping.rencana.saveRencana');
     Route::delete('/dropping/delete', [DroppingController::class, 'deleteData'])->name('dropping.delete');
+    Route::post('/dropping/import', [DroppingController::class, 'importExcel'])->name('dropping.import');
     Route::resource('dropping', DroppingController::class);
 
 });

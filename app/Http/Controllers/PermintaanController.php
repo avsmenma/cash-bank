@@ -8,16 +8,18 @@ use App\Models\SubKriteria;
 use App\Models\ItemSubKriteria;
 use App\Models\Permintaan;
 use Illuminate\Support\Facades\DB;
+use App\Imports\ImportDropping;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PermintaanController extends Controller
 {
     public function index()
     {
         $kategori = KategoriKriteria::where('tipe', 'keluar')->get();
-        
+
         return view('cash_bank.pembayaran.permintaan', compact('kategori'));
     }
-       public function getSub($id)
+    public function getSub($id)
     {
         return SubKriteria::where('id_kategori_kriteria', $id)->get();
     }
@@ -28,7 +30,7 @@ class PermintaanController extends Controller
         $tahun = $request->tahun;
         $bulan = $request->bulan;
 
-        if(!$subKriteriaId || !$tahun || !$bulan){
+        if (!$subKriteriaId || !$tahun || !$bulan) {
             return response()->json(['error' => 'Parameter tidak lengkap'], 400);
         }
 
@@ -37,7 +39,7 @@ class PermintaanController extends Controller
             ->orderBy('nama_item_sub_kriteria')
             ->get();
 
-        if($items->isEmpty()){
+        if ($items->isEmpty()) {
             return view('cash_bank.pembayaran.createPermintaan', [
                 'items' => [],
                 'data' => [],
@@ -58,7 +60,7 @@ class PermintaanController extends Controller
 
         // Format data for view
         $data = [];
-        foreach($items as $item){
+        foreach ($items as $item) {
             $permintaan = $existingData->get($item->id_item_sub_kriteria);
             $data[$item->id_item_sub_kriteria] = [
                 'M1' => $permintaan ? $permintaan->M1 : 0,
@@ -88,7 +90,7 @@ class PermintaanController extends Controller
 
             // Get kategori from sub_kriteria
             $subKriteria = SubKriteria::find($validated['sub_kriteria']);
-            
+
             // Find or create permintaan record
             $permintaan = Permintaan::firstOrNew([
                 'id_item_sub_kriteria' => $validated['item'],
@@ -98,7 +100,7 @@ class PermintaanController extends Controller
             ]);
 
             // Set kategori if creating new
-            if(!$permintaan->exists){
+            if (!$permintaan->exists) {
                 $permintaan->id_kategori_kriteria = $subKriteria->id_kategori_kriteria;
             }
 
@@ -134,7 +136,7 @@ class PermintaanController extends Controller
                 ->where('bulan', $validated['bulan'])
                 ->first();
 
-            if($permintaan){
+            if ($permintaan) {
                 $kolom = $validated['kolom'];
                 $permintaan->$kolom = 0;
                 $permintaan->save();
@@ -150,68 +152,99 @@ class PermintaanController extends Controller
     }
 
     public function cashFlow(Request $request)
-{
-    $tahun = $request->tahun ?? date('Y');
-    
-    \Log::info('CashFlow Request - Tahun: ' . $tahun);
+    {
+        $tahun = $request->tahun ?? date('Y');
 
-    // Get all data permintaan for selected year
-    $data = Permintaan::with(['kategori', 'subKriteria', 'itemSubKriteria'])
-        ->where('tahun', $tahun)
-        ->orderBy('id_kategori_kriteria')
-        ->orderBy('id_sub_kriteria')
-        ->orderBy('id_item_sub_kriteria')
-        ->get();
+        \Log::info('CashFlow Request - Tahun: ' . $tahun);
 
-    \Log::info('Total Data Found: ' . $data->count());
-    
-    // Debug: return JSON dulu untuk cek data
-    // return response()->json([
-    //     'tahun' => $tahun,
-    //     'count' => $data->count(),
-    //     'data' => $data
-    // ]);
+        // Get all data permintaan for selected year
+        $data = Permintaan::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+            ->where('tahun', $tahun)
+            ->orderBy('id_kategori_kriteria')
+            ->orderBy('id_sub_kriteria')
+            ->orderBy('id_item_sub_kriteria')
+            ->get();
 
-    // Group data by kategori -> sub -> item
-    $result = [];
-    $totals = array_fill(1, 12, 0);
-    $grandTotal = 0;
+        \Log::info('Total Data Found: ' . $data->count());
 
-    foreach ($data as $row) {
-        $kategoriName = $row->kategori->nama_kriteria ?? 'Tidak ada kategori';
-        $subName = $row->subKriteria->nama_sub_kriteria ?? 'Tidak ada sub';
-        $itemName = $row->itemSubKriteria->nama_item_sub_kriteria ?? 'Tidak ada item';
+        // Debug: return JSON dulu untuk cek data
+        // return response()->json([
+        //     'tahun' => $tahun,
+        //     'count' => $data->count(),
+        //     'data' => $data
+        // ]);
 
-        if (!isset($result[$kategoriName])) {
-            $result[$kategoriName] = [
-                'subs' => [],
-                'totals' => array_fill(1, 12, 0)
-            ];
+        // Group data by kategori -> sub -> item
+        $result = [];
+        $totals = array_fill(1, 12, 0);
+        $grandTotal = 0;
+
+        foreach ($data as $row) {
+            $kategoriName = $row->kategori->nama_kriteria ?? 'Tidak ada kategori';
+            $subName = $row->subKriteria->nama_sub_kriteria ?? 'Tidak ada sub';
+            $itemName = $row->itemSubKriteria->nama_item_sub_kriteria ?? 'Tidak ada item';
+
+            if (!isset($result[$kategoriName])) {
+                $result[$kategoriName] = [
+                    'subs' => [],
+                    'totals' => array_fill(1, 12, 0)
+                ];
+            }
+
+            if (!isset($result[$kategoriName]['subs'][$subName])) {
+                $result[$kategoriName]['subs'][$subName] = [
+                    'items' => [],
+                    'totals' => array_fill(1, 12, 0)
+                ];
+            }
+
+            if (!isset($result[$kategoriName]['subs'][$subName]['items'][$itemName])) {
+                $result[$kategoriName]['subs'][$subName]['items'][$itemName] = array_fill(1, 12, 0);
+            }
+
+            $bulan = $row->bulan;
+            $totalBulan = $row->M1 + $row->M2 + $row->M3 + $row->M4;
+
+            $result[$kategoriName]['subs'][$subName]['items'][$itemName][$bulan] += $totalBulan;
+            $result[$kategoriName]['subs'][$subName]['totals'][$bulan] += $totalBulan;
+            $result[$kategoriName]['totals'][$bulan] += $totalBulan;
+            $totals[$bulan] += $totalBulan;
+            $grandTotal += $totalBulan;
         }
 
-        if (!isset($result[$kategoriName]['subs'][$subName])) {
-            $result[$kategoriName]['subs'][$subName] = [
-                'items' => [],
-                'totals' => array_fill(1, 12, 0)
-            ];
-        }
+        \Log::info('Result Count: ' . count($result));
 
-        if (!isset($result[$kategoriName]['subs'][$subName]['items'][$itemName])) {
-            $result[$kategoriName]['subs'][$subName]['items'][$itemName] = array_fill(1, 12, 0);
-        }
-
-        $bulan = $row->bulan;
-        $totalBulan = $row->M1 + $row->M2 + $row->M3 + $row->M4;
-
-        $result[$kategoriName]['subs'][$subName]['items'][$itemName][$bulan] += $totalBulan;
-        $result[$kategoriName]['subs'][$subName]['totals'][$bulan] += $totalBulan;
-        $result[$kategoriName]['totals'][$bulan] += $totalBulan;
-        $totals[$bulan] += $totalBulan;
-        $grandTotal += $totalBulan;
+        return view('cash_bank.pembayaran.cashFlowPermintaan', compact('result', 'tahun', 'totals', 'grandTotal'));
     }
 
-    \Log::info('Result Count: ' . count($result));
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv',
+            'sub_kriteria' => 'required|exists:sub_kriteria,id_sub_kriteria',
+            'bulan' => 'required|integer|between:1,12',
+            'tahun' => 'required|integer',
+        ]);
 
-    return view('cash_bank.pembayaran.cashFlowPermintaan', compact('result', 'tahun', 'totals', 'grandTotal'));
-}
+        try {
+            $importer = new ImportDropping(
+                'permintaan',
+                $request->sub_kriteria,
+                $request->bulan,
+                $request->tahun
+            );
+
+            Excel::import($importer, $request->file('file'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Import berhasil! ' . $importer->getImported() . ' baris diimport, ' . $importer->getSkipped() . ' baris dilewati.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Import gagal: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

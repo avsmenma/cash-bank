@@ -1,6 +1,6 @@
 <div class="modal fade" id="editKeluar" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <form id="formEdit" method="POST" enctype="multipart/form-data">
+        <form id="formEditKeluar" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -20,17 +20,17 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="agenda_tahun">No Agenda</label>
-                                    <input type="text" id="agenda_tahun" name="agenda_tahun" class="form-control">
+                                    <input type="text" id="edit_keluar_agenda" name="agenda_tahun" class="form-control">
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Tanggal</label>
-                                    <div class="input-group date" id="reservationdate" data-target-input="nearest">
+                                    <div class="input-group date" id="edit_keluar_date" data-target-input="nearest">
                                         <input type="text" class="form-control datetimepicker-input" name="tanggal"
-                                            data-target="#reservationdate" />
-                                        <div class="input-group-append" data-target="#reservationdate"
+                                            data-target="#edit_keluar_date" />
+                                        <div class="input-group-append" data-target="#edit_keluar_date"
                                             data-toggle="datetimepicker">
                                             <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                         </div>
@@ -80,7 +80,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Sub Kategori</label>
-                                    <select id="sub_kriteria" name="id_sub_kriteria" class="select2">
+                                    <select id="edit_keluar_sub_kriteria" name="id_sub_kriteria" class="select2">
                                         <option value="">-- Pilih Sub Kriteria --</option>
                                     </select>
                                 </div>
@@ -90,7 +90,8 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Item Sub Kategori</label>
-                                    <select id="item_sub_kriteria" name="id_item_sub_kriteria" class="select2">
+                                    <select id="edit_keluar_item_sub_kriteria" name="id_item_sub_kriteria"
+                                        class="select2">
                                         <option value="">-- Pilih Item Sub Kriteria --</option>
                                     </select>
                                 </div>
@@ -113,7 +114,7 @@
                             <div class="form-group">
                                 <label for="uraian" class="col-sm-2 col-form-label">Uraian</label>
                                 <div class="col-sm-12">
-                                    <textarea class="form-control" id="uraian" name="uraian"
+                                    <textarea class="form-control" id="edit_keluar_uraian" name="uraian"
                                         placeholder="uraian"></textarea>
                                 </div>
                             </div>
@@ -122,15 +123,15 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="penerima">Penerima</label>
-                                    <input type="text" class="form-control" id="penerima" name="penerima"
+                                    <input type="text" class="form-control" id="edit_keluar_penerima" name="penerima"
                                         placeholder="penerima">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="kredit">Kredit</label>
-                                    <input type="text" id="kredit" class="form-control rupiah-input" value="0"
-                                        name="kredit">
+                                    <input type="text" id="edit_keluar_kredit" class="form-control rupiah-input"
+                                        value="0" name="kredit">
                                 </div>
                             </div>
                         </div>
@@ -138,7 +139,7 @@
                             <div class="form-group">
                                 <label for="keterangan" class="col-sm-2 col-form-label">Keterangan</label>
                                 <div class="col-sm-12">
-                                    <textarea class="form-control" id="keterangan" name="keterangan"
+                                    <textarea class="form-control" id="edit_keluar_keterangan" name="keterangan"
                                         placeholder="keterangan"></textarea>
                                 </div>
                             </div>

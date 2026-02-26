@@ -209,6 +209,13 @@
                     }
                 });
             });
+            // Format rupiah helper
+            function formatRupiah(angka) {
+                if (angka === null || angka === undefined || angka === '' || isNaN(angka)) return '0';
+                let number = Math.round(Number(angka));
+                return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            }
+
             $('#editKeluar').on('shown.bs.modal', function (event) {
 
                 let button = $(event.relatedTarget);
@@ -226,37 +233,34 @@
                 let uraian = button.data('uraian');
                 let keterangan = button.data('keterangan');
 
-                $('[name="id_kategori_kriteria"]').val(kategori).trigger('change');
-
-                // Load sub → set sub → load item → set item
-                $.get('/get-sub-kriteria/' + kategori, function (subs) {
-                    let opt = '<option value="">Pilih Sub</option>';
-                    subs.forEach(s => {
-                        opt += `<option value="${s.id_sub_kriteria}">${s.nama_sub_kriteria}</option>`;
-                    });
-                    $('#sub_kriteria').html(opt).val(sub).trigger('change');
-
-                    $.get('/get-item-sub-kriteria/' + sub, function (items) {
-                        let opt2 = '<option value="">Pilih Item</option>';
-                        items.forEach(i => {
-                            opt2 += `<option value="${i.id_item_sub_kriteria}">${i.nama_item_sub_kriteria}</option>`;
-                        });
-                        $('#item_sub_kriteria').html(opt2).val(item).trigger('change');
-                    });
-                });
-
                 // set form action
-                $('#formEdit').attr('action', '/bank-keluar/' + id);
+                $('#formEditKeluar').attr('action', '/bank-keluar/' + id);
 
-                // input biasa
-                $('#agenda_tahun').val(agenda);
-                $('#penerima').val(penerima);
-                $('#kredit').val(formatRupiah(kredit));
-                $('#keterangan').val(keterangan);
-                $('#uraian').val(uraian);
+                // input biasa (unique IDs)
+                $('#edit_keluar_agenda').val(agenda);
+                $('#edit_keluar_penerima').val(penerima);
+                $('#edit_keluar_kredit').val(formatRupiah(kredit));
+                $('#edit_keluar_keterangan').val(keterangan);
+                $('#edit_keluar_uraian').val(uraian);
 
                 // datepicker
-                $('[name="tanggal"]').val(tanggal);
+                $('[name="tanggal"]', '#editKeluar').val(tanggal);
+
+                // Init datepicker
+                $('#edit_keluar_date').datetimepicker({
+                    format: 'YYYY-MM-DD',
+                    icons: {
+                        time: 'far fa-clock',
+                        date: 'far fa-calendar',
+                        up: 'fas fa-chevron-up',
+                        down: 'fas fa-chevron-down',
+                        previous: 'fas fa-chevron-left',
+                        next: 'fas fa-chevron-right',
+                        today: 'far fa-calendar-check',
+                        clear: 'far fa-trash-alt',
+                        close: 'far fa-times-circle'
+                    }
+                });
 
                 // INIT SELECT2 (WAJIB DI MODAL)
                 $(this).find('.select2').select2({
@@ -266,9 +270,61 @@
                 });
 
                 // SET VALUE SELECT2 (WAJIB trigger)
-                $('[name="id_bank_tujuan"]').val(bank).trigger('change');
-                $('[name="id_sumber_dana"]').val(sumber).trigger('change');
-                $('[name="id_jenis_pembayaran"]').val(jenis).trigger('change');
+                $('[name="id_bank_tujuan"]', '#editKeluar').val(bank).trigger('change');
+                $('[name="id_sumber_dana"]', '#editKeluar').val(sumber).trigger('change');
+                $('[name="id_kategori_kriteria"]', '#editKeluar').val(kategori).trigger('change');
+                $('[name="id_jenis_pembayaran"]', '#editKeluar').val(jenis).trigger('change');
+
+                // Load sub → set sub → load item → set item
+                $.get('/get-sub-kriteria/' + kategori, function (subs) {
+                    let opt = '<option value="">Pilih Sub</option>';
+                    subs.forEach(s => {
+                        opt += `<option value="${s.id_sub_kriteria}">${s.nama_sub_kriteria}</option>`;
+                    });
+                    $('#edit_keluar_sub_kriteria').html(opt).val(sub);
+                    if ($('#edit_keluar_sub_kriteria').hasClass("select2-hidden-accessible")) {
+                        $('#edit_keluar_sub_kriteria').select2('destroy');
+                    }
+                    $('#edit_keluar_sub_kriteria').select2({
+                        theme: 'bootstrap4',
+                        dropdownParent: $('#editKeluar'),
+                        width: '100%'
+                    });
+
+                    $.get('/get-item-sub-kriteria/' + sub, function (items) {
+                        let opt2 = '<option value="">Pilih Item</option>';
+                        items.forEach(i => {
+                            opt2 += `<option value="${i.id_item_sub_kriteria}">${i.nama_item_sub_kriteria}</option>`;
+                        });
+                        $('#edit_keluar_item_sub_kriteria').html(opt2).val(item);
+                        if ($('#edit_keluar_item_sub_kriteria').hasClass("select2-hidden-accessible")) {
+                            $('#edit_keluar_item_sub_kriteria').select2('destroy');
+                        }
+                        $('#edit_keluar_item_sub_kriteria').select2({
+                            theme: 'bootstrap4',
+                            dropdownParent: $('#editKeluar'),
+                            width: '100%'
+                        });
+                    });
+                });
+            });
+
+            // Live formatting on kredit input
+            $('#edit_keluar_kredit').on('input', function () {
+                let cursorPos = this.selectionStart;
+                let oldLen = this.value.length;
+                let raw = this.value.replace(/\D/g, '');
+                let formatted = raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                this.value = formatted;
+                let newLen = formatted.length;
+                cursorPos = cursorPos + (newLen - oldLen);
+                this.setSelectionRange(cursorPos, cursorPos);
+            });
+
+            // Strip dots before submit
+            $('#formEditKeluar').on('submit', function () {
+                let credit = $('#edit_keluar_kredit').val();
+                $('#edit_keluar_kredit').val(credit.replace(/\./g, ''));
             });
 
             $(document).on('click', '#select_all_ids', function () {
@@ -305,12 +361,6 @@
                         alert('Gagal menghapus data');
                     }
                 });
-            });
-
-            $('#formEdit').on('submit', function () {
-                let credit = $('#kredit').val();
-                // Remove dots before submit
-                $('#kredit').val(credit.replace(/\./g, ''));
             });
         </script>
     @endpush

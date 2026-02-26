@@ -36,8 +36,40 @@ class DroppingController extends Controller
 
         // Get items from sub kriteria
         $items = ItemSubKriteria::where('id_sub_kriteria', $subKriteriaId)
-            ->orderBy('nama_item_sub_kriteria')
             ->get();
+
+        // Custom sort order matching reference document
+        $sortOrder = [
+            'Gaji dan Tunjangan',
+            'Cuti Tahunan',
+            'Cuti Panjang',
+            'THR',
+            'Bonus',
+            'PPh Pasal 21',
+            'Iuran Dapenbun (Normal)',
+            'Penghargaan Masa Kerja',
+            'Iuran BPJS B. Perusahaan',
+            'SHT (Cicilan)',
+            'Lainnya',
+        ];
+
+        $items = $items->sort(function ($a, $b) use ($sortOrder) {
+            $posA = array_search($a->nama_item_sub_kriteria, $sortOrder);
+            $posB = array_search($b->nama_item_sub_kriteria, $sortOrder);
+
+            // If both are in the sort order, sort by position
+            if ($posA !== false && $posB !== false) {
+                return $posA - $posB;
+            }
+            // If only A is in the sort order, A comes first
+            if ($posA !== false)
+                return -1;
+            // If only B is in the sort order, B comes first
+            if ($posB !== false)
+                return 1;
+            // Both not in sort order, sort alphabetically
+            return strcmp($a->nama_item_sub_kriteria, $b->nama_item_sub_kriteria);
+        })->values();
 
         if ($items->isEmpty()) {
             return view('cash_bank.pembayaran.createDropping', [

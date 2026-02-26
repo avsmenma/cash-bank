@@ -15,7 +15,7 @@ class DroppingController extends Controller
     public function index()
     {
         $kategori = KategoriKriteria::where('tipe', 'keluar')->get();
-        
+
         return view('cash_bank.pembayaran.dropping', compact('kategori'));
     }
 
@@ -30,7 +30,7 @@ class DroppingController extends Controller
         $tahun = $request->tahun;
         $bulan = $request->bulan;
 
-        if(!$subKriteriaId || !$tahun || !$bulan){
+        if (!$subKriteriaId || !$tahun || !$bulan) {
             return response()->json(['error' => 'Parameter tidak lengkap'], 400);
         }
 
@@ -39,7 +39,7 @@ class DroppingController extends Controller
             ->orderBy('nama_item_sub_kriteria')
             ->get();
 
-        if($items->isEmpty()){
+        if ($items->isEmpty()) {
             return view('cash_bank.pembayaran.createDropping', [
                 'items' => [],
                 'data' => [],
@@ -60,7 +60,7 @@ class DroppingController extends Controller
 
         // Format data for view
         $data = [];
-        foreach($items as $item){
+        foreach ($items as $item) {
             $dropping = $existingData->get($item->id_item_sub_kriteria);
             $data[$item->id_item_sub_kriteria] = [
                 'M1' => $dropping ? $dropping->M1 : 0,
@@ -90,7 +90,7 @@ class DroppingController extends Controller
 
             // Get kategori from sub_kriteria
             $subKriteria = SubKriteria::find($validated['sub_kriteria']);
-            
+
             // Find or create dropping record
             $dropping = Dropping::firstOrNew([
                 'id_item_sub_kriteria' => $validated['item'],
@@ -100,7 +100,7 @@ class DroppingController extends Controller
             ]);
 
             // Set kategori if creating new
-            if(!$dropping->exists){
+            if (!$dropping->exists) {
                 $dropping->id_kategori_kriteria = $subKriteria->id_kategori_kriteria;
             }
 
@@ -114,6 +114,60 @@ class DroppingController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function saveBatch(Request $request)
+    {
+        try {
+            $items = $request->input('items', []);
+
+            if (empty($items)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada data untuk disimpan'
+                ], 400);
+            }
+
+            DB::beginTransaction();
+
+            foreach ($items as $item) {
+                $kolom = $item['kolom'];
+
+                if (!in_array($kolom, ['M1', 'M2', 'M3', 'M4'])) {
+                    continue;
+                }
+
+                $subKriteria = SubKriteria::find($item['sub_kriteria']);
+
+                $dropping = Dropping::firstOrNew([
+                    'id_item_sub_kriteria' => $item['item'],
+                    'id_sub_kriteria' => $item['sub_kriteria'],
+                    'tahun' => $item['tahun'],
+                    'bulan' => $item['bulan']
+                ]);
+
+                if (!$dropping->exists) {
+                    $dropping->id_kategori_kriteria = $subKriteria->id_kategori_kriteria;
+                }
+
+                $dropping->$kolom = $item['nilai'] ?? 0;
+                $dropping->save();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Semua data berhasil disimpan'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menyimpan data: ' . $e->getMessage()
@@ -136,7 +190,7 @@ class DroppingController extends Controller
                 ->where('bulan', $validated['bulan'])
                 ->first();
 
-            if($dropping){
+            if ($dropping) {
                 $kolom = $validated['kolom'];
                 $dropping->$kolom = 0;
                 $dropping->save();
@@ -154,7 +208,7 @@ class DroppingController extends Controller
     public function rencana(Request $request)
     {
         $tahun = $request->tahun ?? date('Y');
-        $sub   = $request->sub;
+        $sub = $request->sub;
 
         if (!$sub) {
             return response('Sub kriteria kosong', 400);
@@ -168,7 +222,9 @@ class DroppingController extends Controller
             ->keyBy('id_item_sub_kriteria');
 
         return view('cash_bank.pembayaran.rencanaDropping', compact(
-            'items','data','tahun'
+            'items',
+            'data',
+            'tahun'
         ));
     }
     public function saveRencana(Request $request)
@@ -202,7 +258,7 @@ class DroppingController extends Controller
     public function cashFlow(Request $request)
     {
         $tahun = $request->tahun ?? date('Y');
-        
+
         \Log::info('CashFlow Request - Tahun: ' . $tahun);
 
         // Get all data p for selected year
@@ -214,8 +270,8 @@ class DroppingController extends Controller
             ->get();
 
         \Log::info('Total Data Found: ' . $data->count());
-        
-       
+
+
         $result = [];
         $totals = array_fill(1, 12, 0);
         $grandTotal = 0;
@@ -263,8 +319,18 @@ class DroppingController extends Controller
         $tahun = $request->tahun ?? date('Y');
 
         $bulanList = [
-            'januari','februari','maret','april','mei','juni',
-            'juli','agustus','september','oktober','november','desember'
+            'januari',
+            'februari',
+            'maret',
+            'april',
+            'mei',
+            'juni',
+            'juli',
+            'agustus',
+            'september',
+            'oktober',
+            'november',
+            'desember'
         ];
         $mapBulan = [
             'januari' => 1,
@@ -279,16 +345,16 @@ class DroppingController extends Controller
             'oktober' => 10,
             'november' => 11,
             'desember' => 12,
-            ];
+        ];
         $idsRencana = DB::table('rencana_droppings')
-    ->where('tahun', $tahun)
-    ->pluck('id_item_sub_kriteria');
+            ->where('tahun', $tahun)
+            ->pluck('id_item_sub_kriteria');
 
-$idsDropping = DB::table('droppings')
-    ->where('tahun', $tahun)
-    ->pluck('id_item_sub_kriteria');
+        $idsDropping = DB::table('droppings')
+            ->where('tahun', $tahun)
+            ->pluck('id_item_sub_kriteria');
 
-$itemIds = $idsRencana->merge($idsDropping)->unique();
+        $itemIds = $idsRencana->merge($idsDropping)->unique();
 
         $items = ItemSubKriteria::with(['subKriteria.kategori'])
             ->whereIn('id_item_sub_kriteria', $itemIds)
@@ -297,7 +363,7 @@ $itemIds = $idsRencana->merge($idsDropping)->unique();
 
         foreach ($items as $item) {
             $kategori = $item->subKriteria->kategori->nama_kriteria;
-            $sub      = $item->subKriteria->nama_sub_kriteria;
+            $sub = $item->subKriteria->nama_sub_kriteria;
             $itemNama = $item->nama_item_sub_kriteria;
 
             foreach ($bulanList as $bulan) {
@@ -308,7 +374,7 @@ $itemIds = $idsRencana->merge($idsDropping)->unique();
                     ->where('tahun', $tahun)
                     ->sum($bulan);
 
-               $bulanAngka = $mapBulan[$bulan];
+                $bulanAngka = $mapBulan[$bulan];
 
                 $realisasi = Dropping::
                     where('id_item_sub_kriteria', $item->id_item_sub_kriteria)
@@ -317,20 +383,20 @@ $itemIds = $idsRencana->merge($idsDropping)->unique();
                     ->sum(DB::raw('M1 + M2 + M3 + M4'));
 
                 $selisih = $realisasi - $rencana;
-                $persen  = $rencana > 0 ? ($realisasi / $rencana) * 100 : 0;
+                $persen = $rencana > 0 ? ($realisasi / $rencana) * 100 : 0;
 
                 $data[$kategori][$sub][$itemNama][$bulan] = [
-                    'rencana'   => $rencana,
+                    'rencana' => $rencana,
                     'realisasi' => $realisasi,
-                    'selisih'   => $selisih,
-                    'persen'    => $persen,
+                    'selisih' => $selisih,
+                    'persen' => $persen,
                 ];
             }
         }
 
         return view(
             'cash_bank.pembayaran.cashFlowGabunganDropping',
-            compact('data','bulanList')
+            compact('data', 'bulanList')
         );
     }
 
@@ -351,7 +417,7 @@ $itemIds = $idsRencana->merge($idsDropping)->unique();
 //     public function index()
 //     {
 //         $kategori = KategoriKriteria::where('tipe', 'keluar')->get();
-        
+
 //         return view('cash_bank.pembayaran.dropping', compact('kategori'));
 //     }
 //        public function getSub($id)
@@ -425,7 +491,7 @@ $itemIds = $idsRencana->merge($idsDropping)->unique();
 
 //             // Get kategori from sub_kriteria
 //             $subKriteria = SubKriteria::find($validated['sub_kriteria']);
-            
+
 //             // Find or create dropping record
 //             $dropping = Dropping::firstOrNew([
 //                 'id_item_sub_kriteria' => $validated['item'],
@@ -489,7 +555,7 @@ $itemIds = $idsRencana->merge($idsDropping)->unique();
 //     public function cashFlow(Request $request)
 // {
 //     $tahun = $request->tahun ?? date('Y');
-    
+
 //     \Log::info('CashFlow Request - Tahun: ' . $tahun);
 
 //     // Get all data dropping for selected year
@@ -501,7 +567,7 @@ $itemIds = $idsRencana->merge($idsDropping)->unique();
 //         ->get();
 
 //     \Log::info('Total Data Found: ' . $data->count());
-    
+
 //     // Debug: return JSON dulu untuk cek data
 //     // return response()->json([
 //     //     'tahun' => $tahun,

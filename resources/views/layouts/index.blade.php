@@ -175,13 +175,13 @@
                                 <li class="nav-item">
                                     <a href="{{ route('bank-masuk.index') }}"
                                         class="nav-link {{ request()->routeIs('bank-masuk.index') ? 'active' : '' }}">
-                                        <p>Bank Masuk</p>
+                                        <p>Input Bank Masuk</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="{{ route('bank-keluar.index') }}"
                                         class="nav-link {{ request()->routeIs('bank-keluar.index') ? 'active' : '' }}">
-                                        <p>Bank Keluar</p>
+                                        <p>Input Bank Keluar</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">

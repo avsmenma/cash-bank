@@ -330,6 +330,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('dropping.rencana');
     Route::get('/dropping/table', [DroppingController::class, 'getTable'])->name('dropping.table');
     Route::post('/dropping/save', [DroppingController::class, 'saveData'])->name('dropping.save');
+    Route::post('/dropping/save-batch', [DroppingController::class, 'saveBatch'])->name('dropping.saveBatch');
     Route::post('/dropping/saveRencana', [DroppingController::class, 'saveRencana'])
         ->name('dropping.rencana.saveRencana');
     Route::delete('/dropping/delete', [DroppingController::class, 'deleteData'])->name('dropping.delete');

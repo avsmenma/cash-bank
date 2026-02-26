@@ -74,14 +74,10 @@
                         data: 'kredit',
                         className: 'text-right',
                         render: function (data) {
-                            if (!data || data == 0) {
+                            if (data === null || data === undefined || data === '') {
                                 return '0';
                             }
-
-                            return Number(data).toLocaleString('id-ID', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            });
+                            return data;
                         }
                     },
                     { data: 'keterangan' },

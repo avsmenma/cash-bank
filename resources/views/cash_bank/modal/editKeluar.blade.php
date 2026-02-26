@@ -8,7 +8,7 @@
 
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Edit Bank Masuk</h5>
+                    <h5 class="modal-title">Edit Bank Keluar</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -98,7 +98,7 @@
 
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Bank Tujuan</label>
+                                    <label>Jenis Pembayaran</label>
                                     <select class="select2" name="id_jenis_pembayaran">
                                         @foreach($jenisPembayaran as $sd)
                                             <option value="{{ $sd->id_jenis_pembayaran }}">

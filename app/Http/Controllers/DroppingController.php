@@ -8,8 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\ItemSubKriteria;
 use App\Models\RencanaDropping;
 use App\Models\KategoriKriteria;
-use App\Imports\ImportDropping;
-use Maatwebsite\Excel\Facades\Excel;
+
 use Illuminate\Support\Facades\DB;
 
 class DroppingController extends Controller
@@ -448,27 +447,92 @@ class DroppingController extends Controller
     public function importExcel(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv',
             'sub_kriteria' => 'required|exists:sub_kriteria,id_sub_kriteria',
             'bulan' => 'required|integer|between:1,12',
             'tahun' => 'required|integer',
+            'rows' => 'required|array',
         ]);
 
         try {
-            $importer = new ImportDropping(
-                'dropping',
-                $request->sub_kriteria,
-                $request->bulan,
-                $request->tahun
-            );
+            $subKriteriaId = $request->sub_kriteria;
+            $bulan = $request->bulan;
+            $tahun = $request->tahun;
+            $rows = $request->rows;
 
-            Excel::import($importer, $request->file('file'));
+            // Get items in sorted order (same order as displayed in view)
+            $sortOrder = [
+                'Gaji dan Tunjangan',
+                'Cuti Tahunan',
+                'Cuti Panjang',
+                'THR',
+                'Bonus',
+                'PPh Pasal 21',
+                'Iuran Dapenbun (Normal)',
+                'Penghargaan Masa Kerja',
+                'Iuran BPJS B. Perusahaan',
+                'SHT (Cicilan)',
+                'Lainnya',
+            ];
+
+            $items = ItemSubKriteria::where('id_sub_kriteria', $subKriteriaId)->get();
+            $items = $items->sort(function ($a, $b) use ($sortOrder) {
+                $posA = array_search($a->nama_item_sub_kriteria, $sortOrder);
+                $posB = array_search($b->nama_item_sub_kriteria, $sortOrder);
+                if ($posA !== false && $posB !== false)
+                    return $posA - $posB;
+                if ($posA !== false)
+                    return -1;
+                if ($posB !== false)
+                    return 1;
+                return strcmp($a->nama_item_sub_kriteria, $b->nama_item_sub_kriteria);
+            })->values();
+
+            $subKriteria = SubKriteria::find($subKriteriaId);
+            $imported = 0;
+
+            DB::beginTransaction();
+
+            foreach ($rows as $index => $row) {
+                if (!isset($items[$index]))
+                    break;
+
+                $item = $items[$index];
+                $M1 = isset($row['M1']) ? (int) $row['M1'] : 0;
+                $M2 = isset($row['M2']) ? (int) $row['M2'] : 0;
+                $M3 = isset($row['M3']) ? (int) $row['M3'] : 0;
+                $M4 = isset($row['M4']) ? (int) $row['M4'] : 0;
+
+                // Skip jika semua 0
+                if ($M1 === 0 && $M2 === 0 && $M3 === 0 && $M4 === 0)
+                    continue;
+
+                $dropping = Dropping::firstOrNew([
+                    'id_item_sub_kriteria' => $item->id_item_sub_kriteria,
+                    'id_sub_kriteria' => $subKriteriaId,
+                    'tahun' => $tahun,
+                    'bulan' => $bulan,
+                ]);
+
+                if (!$dropping->exists) {
+                    $dropping->id_kategori_kriteria = $subKriteria->id_kategori_kriteria;
+                }
+
+                $dropping->M1 = $M1;
+                $dropping->M2 = $M2;
+                $dropping->M3 = $M3;
+                $dropping->M4 = $M4;
+                $dropping->save();
+                $imported++;
+            }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Import berhasil! ' . $importer->getImported() . ' baris diimport, ' . $importer->getSkipped() . ' baris dilewati.',
+                'message' => 'Import berhasil! ' . $imported . ' baris diimport.',
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Import gagal: ' . $e->getMessage(),

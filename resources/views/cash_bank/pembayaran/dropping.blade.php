@@ -196,37 +196,59 @@
     </div>
   </div>
 
-  {{-- MODAL IMPORT EXCEL DROPPING --}}
+  {{-- MODAL IMPORT DROPPING (PASTE DARI SPREADSHEET) --}}
   <div class="modal fade" id="modalImportDropping" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-xl" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="fas fa-file-upload"></i> Import Excel Dropping</h5>
+          <h5 class="modal-title"><i class="fas fa-file-import"></i> Import Data Dropping/Realisasi</h5>
           <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
         </div>
-        <form id="form-import-dropping" enctype="multipart/form-data">
-          @csrf
-          <div class="modal-body">
-            <div class="alert alert-info">
-              <strong>Format Excel:</strong> Kolom yang dibutuhkan: <code>item_sub_kriteria</code>, <code>M1</code>, <code>M2</code>, <code>M3</code>, <code>M4</code>.
-              Item yang tidak ditemukan akan dilewati.
+        <div class="modal-body">
+          <div class="card-body">
+            <div class="alert alert-info mb-2" id="import-dropping-info"></div>
+            <div class="form-group mt-2">
+              <label>Paste Data dari Excel</label>
+              <p class="text-muted small mb-1">
+                Format kolom (tab-separated): <strong>M1 &nbsp; M2 &nbsp; M3 &nbsp; M4 &nbsp; Total</strong><br>
+                Setiap baris sesuai urutan item yang tampil di tabel.
+              </p>
+              <textarea id="dropping-import-text" class="form-control" rows="12"
+                placeholder="Paste data dari spreadsheet di sini..."
+                style="font-family: monospace; font-size: 12px;"></textarea>
             </div>
-            <div class="form-group">
-              <label>Filter Aktif</label>
-              <p id="import-dropping-info" class="text-muted small">-</p>
-            </div>
-            <div class="form-group">
-              <label>File Excel <span class="text-danger">*</span></label>
-              <input type="file" name="file" id="import-dropping-file" class="form-control-file" accept=".xlsx,.xls,.csv" required>
+            {{-- Preview area --}}
+            <div id="dropping-import-preview" class="mt-3" style="display:none;">
+              <h6>Preview Data <span id="dropping-import-count" class="badge badge-info">0</span> baris</h6>
+              <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-bordered table-sm table-striped" id="dropping-import-table">
+                  <thead class="bg-navy">
+                    <tr>
+                      <th>No</th>
+                      <th>Item</th>
+                      <th class="text-right">M1</th>
+                      <th class="text-right">M2</th>
+                      <th class="text-right">M3</th>
+                      <th class="text-right">M4</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </div>
           </div>
-          <div class="modal-footer">
+        </div>
+        <div class="modal-footer justify-content-between">
+          <button type="button" class="btn btn-info" id="btn-preview-dropping">
+            <i class="fas fa-eye"></i> Preview
+          </button>
+          <div>
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-success" id="btn-submit-import-dropping">
-              <i class="fas fa-upload"></i> Import
+            <button type="button" class="btn btn-success" id="btn-submit-import-dropping">
+              <i class="fas fa-upload"></i> Import Data
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   </div>
@@ -245,11 +267,11 @@
           let id = $(this).val();
           $('#sub_kriteria').html('<option value="">-- Pilih Sub Kriteria --</option>');
           $('#table-wrapper').html(`
-                        <div class="text-muted text-center py-5">
-                            <i class="fas fa-info-circle fa-2x mb-2"></i>
-                            <p>Silakan pilih Kategori, Sub Kriteria, Tahun, dan Bulan untuk menampilkan data</p>
-                        </div>
-                    `);
+                            <div class="text-muted text-center py-5">
+                                <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                <p>Silakan pilih Kategori, Sub Kriteria, Tahun, dan Bulan untuk menampilkan data</p>
+                            </div>
+                        `);
 
           if (id) {
             $.get('/dropping/sub-kriteria/' + id, function (res) {
@@ -290,11 +312,11 @@
           }
 
           $('#table-wrapper').html(`
-                        <div class="text-center py-5">
-                            <i class="fas fa-spinner fa-spin fa-2x"></i>
-                            <p>Memuat data...</p>
-                        </div>
-                    `);
+                            <div class="text-center py-5">
+                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                <p>Memuat data...</p>
+                            </div>
+                        `);
 
           $.get('/dropping/table', {
             sub: sub,
@@ -307,10 +329,10 @@
             attachCellEvents();
           }).fail(function () {
             $('#table-wrapper').html(`
-                            <div class="alert alert-danger">
-                                <i class="fas fa-exclamation-triangle"></i> Gagal memuat data. Silakan coba lagi.
-                            </div>
-                        `);
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i> Gagal memuat data. Silakan coba lagi.
+                                </div>
+                            `);
           });
         }
 
@@ -446,11 +468,11 @@
           }
 
           $('#cashflow-wrapper').html(`
-                        <div class="text-center py-5">
-                            <i class="fas fa-spinner fa-spin fa-2x"></i>
-                            <p>Memuat data cashflow...</p>
-                        </div>
-                    `);
+                            <div class="text-center py-5">
+                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                <p>Memuat data cashflow...</p>
+                            </div>
+                        `);
 
           $.ajax({
             url: '/dropping/cashflow',
@@ -464,11 +486,11 @@
               console.error('Error:', error); // Debug
               console.error('Response:', xhr.responseText); // Debug
               $('#cashflow-wrapper').html(`
-                                <div class="alert alert-danger">
-                                    <i class="fas fa-exclamation-triangle"></i> Gagal memuat data cashflow. 
-                                    <br><small>Error: ${error}</small>
-                                </div>
-                            `);
+                                    <div class="alert alert-danger">
+                                        <i class="fas fa-exclamation-triangle"></i> Gagal memuat data cashflow. 
+                                        <br><small>Error: ${error}</small>
+                                    </div>
+                                `);
             }
           });
         });
@@ -546,63 +568,151 @@
         }
       });
 
-        // ===== IMPORT EXCEL DROPPING =====
-        $('#modalImportDropping').on('show.bs.modal', function () {
-          let sub = $('#sub_kriteria option:selected').text();
-          let bulan = $('#bulan option:selected').text();
-          let tahun = $('#tahun').val();
-          if ($('#sub_kriteria').val() && tahun && $('#bulan').val()) {
-            $('#import-dropping-info').text('Sub Kriteria: ' + sub + ' | Bulan: ' + bulan + ' | Tahun: ' + tahun);
-          } else {
-            $('#import-dropping-info').html('<span class="text-danger">Harap pilih Sub Kriteria, Bulan, dan Tahun pada filter utama terlebih dahulu.</span>');
+      // ===== IMPORT DROPPING (PASTE DARI SPREADSHEET) =====
+
+      // Simpan daftar item dari tabel yang sedang tampil
+      let droppingItemList = [];
+
+      // Update item list setiap kali tabel dimuat
+      $(document).on('tableLoaded', function () {
+        droppingItemList = [];
+        $('#table-wrapper [data-item]').each(function () {
+          let itemId = $(this).data('item');
+          let itemName = $(this).closest('tr').find('td:first').text().trim();
+          if (itemId && !droppingItemList.find(x => x.id == itemId)) {
+            droppingItemList.push({ id: itemId, name: itemName });
           }
-          $('#import-dropping-file').val('');
         });
+      });
 
-        $('#form-import-dropping').on('submit', function (e) {
-          e.preventDefault();
-          let subId = $('#sub_kriteria').val();
-          let bulan = $('#bulan').val();
-          let tahun = $('#tahun').val();
+      $('#modalImportDropping').on('show.bs.modal', function () {
+        let sub = $('#sub_kriteria option:selected').text();
+        let bulan = $('#bulan option:selected').text();
+        let tahun = $('#tahun').val();
+        if ($('#sub_kriteria').val() && tahun && $('#bulan').val()) {
+          $('#import-dropping-info').html(
+            '<i class="fas fa-info-circle"></i> <strong>Sub Kriteria:</strong> ' + sub +
+            ' &nbsp;|&nbsp; <strong>Bulan:</strong> ' + bulan +
+            ' &nbsp;|&nbsp; <strong>Tahun:</strong> ' + tahun
+          );
+        } else {
+          $('#import-dropping-info').html('<span class="text-danger"><i class="fas fa-exclamation-triangle"></i> Harap pilih Sub Kriteria, Bulan, dan Tahun pada filter utama terlebih dahulu.</span>');
+        }
+        $('#dropping-import-text').val('');
+        $('#dropping-import-preview').hide();
+        $('#dropping-import-table tbody').empty();
+      });
 
-          if (!subId || !bulan || !tahun) {
-            alert('Harap pilih Sub Kriteria, Bulan, dan Tahun pada filter utama terlebih dahulu.');
-            return;
-          }
+      // Parse angka format Indonesia (misal "6.300.168" -> 6300168)
+      function parseAngkaDropping(str) {
+        if (!str || str.trim() === '' || str.trim() === '-') return 0;
+        let cleaned = str.trim().replace(/\./g, '').replace(/,/g, '.');
+        let val = parseInt(cleaned);
+        return isNaN(val) ? 0 : val;
+      }
 
-          let formData = new FormData();
-          formData.append('_token', '{{ csrf_token() }}');
-          formData.append('file', $('#import-dropping-file')[0].files[0]);
-          formData.append('sub_kriteria', subId);
-          formData.append('bulan', bulan);
-          formData.append('tahun', tahun);
-
-          let $btn = $('#btn-submit-import-dropping');
-          $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengimport...');
-
-          $.ajax({
-            url: '{{ route("dropping.import") }}',
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (res) {
-              $btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Import');
-              if (res.success) {
-                $('#modalImportDropping').modal('hide');
-                alert(res.message);
-                loadTable();
-              } else {
-                alert('Gagal: ' + res.message);
-              }
-            },
-            error: function (xhr) {
-              $btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Import');
-              let msg = xhr.responseJSON ? (xhr.responseJSON.message || JSON.stringify(xhr.responseJSON)) : 'Terjadi kesalahan.';
-              alert('Import gagal: ' + msg);
-            }
+      function parseDroppingPasteData() {
+        let text = $('#dropping-import-text').val().trim();
+        if (!text) return [];
+        let lines = text.split('\n');
+        let rows = [];
+        for (let i = 0; i < lines.length; i++) {
+          let line = lines[i];
+          // Jangan trim baris agar tab di awal tetap ada
+          let cols = line.split('\t');
+          // Pad ke minimal 4 kolom
+          while (cols.length < 4) cols.push('');
+          rows.push({
+            M1: parseAngkaDropping(cols[0]),
+            M2: parseAngkaDropping(cols[1]),
+            M3: parseAngkaDropping(cols[2]),
+            M4: parseAngkaDropping(cols[3]),
           });
+        }
+        return rows;
+      }
+
+      // Preview
+      $('#btn-preview-dropping').on('click', function () {
+        let rows = parseDroppingPasteData();
+        if (rows.length === 0) {
+          alert('Tidak ada data. Paste data dari spreadsheet terlebih dahulu.');
+          return;
+        }
+        let tbody = $('#dropping-import-table tbody');
+        tbody.empty();
+        let fmt = (n) => n > 0 ? n.toLocaleString('id-ID') : '-';
+        // Ambil nama item dari tabel (berurutan)
+        let itemNames = [];
+        $('#table-wrapper tbody tr').each(function () {
+          let name = $(this).find('td:first').text().trim();
+          if (name) itemNames.push(name);
         });
+        rows.forEach(function (r, i) {
+          let itemName = itemNames[i] || ('Baris ' + (i + 1));
+          tbody.append(`
+                  <tr>
+                    <td>${i + 1}</td>
+                    <td>${itemName}</td>
+                    <td class="text-right">${fmt(r.M1)}</td>
+                    <td class="text-right">${fmt(r.M2)}</td>
+                    <td class="text-right">${fmt(r.M3)}</td>
+                    <td class="text-right">${fmt(r.M4)}</td>
+                  </tr>
+                `);
+        });
+        $('#dropping-import-count').text(rows.length);
+        $('#dropping-import-preview').show();
+      });
+
+      // Submit Import
+      $('#btn-submit-import-dropping').on('click', function () {
+        let subId = $('#sub_kriteria').val();
+        let bulan = $('#bulan').val();
+        let tahun = $('#tahun').val();
+
+        if (!subId || !bulan || !tahun) {
+          alert('Harap pilih Sub Kriteria, Bulan, dan Tahun pada filter utama terlebih dahulu.');
+          return;
+        }
+
+        let rows = parseDroppingPasteData();
+        if (rows.length === 0) {
+          alert('Tidak ada data. Paste data dari spreadsheet terlebih dahulu.');
+          return;
+        }
+
+        let $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengimport...');
+
+        $.ajax({
+          url: '{{ route("dropping.import") }}',
+          method: 'POST',
+          contentType: 'application/json',
+          headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+          data: JSON.stringify({
+            sub_kriteria: subId,
+            bulan: bulan,
+            tahun: tahun,
+            rows: rows
+          }),
+          success: function (res) {
+            $btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Import Data');
+            if (res.success) {
+              $('#modalImportDropping').modal('hide');
+              alert(res.message);
+              loadTable();
+            } else {
+              alert('Gagal: ' + res.message);
+            }
+          },
+          error: function (xhr) {
+            $btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Import Data');
+            let msg = xhr.responseJSON ? (xhr.responseJSON.message || JSON.stringify(xhr.responseJSON)) : 'Terjadi kesalahan.';
+            alert('Import gagal: ' + msg);
+          }
+        });
+      });
 
     </script>
   @endpush

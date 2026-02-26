@@ -8,8 +8,7 @@ use App\Models\SubKriteria;
 use App\Models\ItemSubKriteria;
 use App\Models\Permintaan;
 use Illuminate\Support\Facades\DB;
-use App\Imports\ImportDropping;
-use Maatwebsite\Excel\Facades\Excel;
+
 
 class PermintaanController extends Controller
 {
@@ -220,27 +219,69 @@ class PermintaanController extends Controller
     public function importExcel(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv',
             'sub_kriteria' => 'required|exists:sub_kriteria,id_sub_kriteria',
             'bulan' => 'required|integer|between:1,12',
             'tahun' => 'required|integer',
+            'rows' => 'required|array',
         ]);
 
         try {
-            $importer = new ImportDropping(
-                'permintaan',
-                $request->sub_kriteria,
-                $request->bulan,
-                $request->tahun
-            );
+            $subKriteriaId = $request->sub_kriteria;
+            $bulan = $request->bulan;
+            $tahun = $request->tahun;
+            $rows = $request->rows;
 
-            Excel::import($importer, $request->file('file'));
+            // Get items in the same sorted order as displayed in the view
+            $items = ItemSubKriteria::where('id_sub_kriteria', $subKriteriaId)
+                ->orderBy('nama_item_sub_kriteria')
+                ->get();
+
+            $subKriteria = SubKriteria::find($subKriteriaId);
+            $imported = 0;
+
+            DB::beginTransaction();
+
+            foreach ($rows as $index => $row) {
+                if (!isset($items[$index]))
+                    break;
+
+                $item = $items[$index];
+                $M1 = isset($row['M1']) ? (int) $row['M1'] : 0;
+                $M2 = isset($row['M2']) ? (int) $row['M2'] : 0;
+                $M3 = isset($row['M3']) ? (int) $row['M3'] : 0;
+                $M4 = isset($row['M4']) ? (int) $row['M4'] : 0;
+
+                // Skip jika semua 0
+                if ($M1 === 0 && $M2 === 0 && $M3 === 0 && $M4 === 0)
+                    continue;
+
+                $permintaan = Permintaan::firstOrNew([
+                    'id_item_sub_kriteria' => $item->id_item_sub_kriteria,
+                    'id_sub_kriteria' => $subKriteriaId,
+                    'tahun' => $tahun,
+                    'bulan' => $bulan,
+                ]);
+
+                if (!$permintaan->exists) {
+                    $permintaan->id_kategori_kriteria = $subKriteria->id_kategori_kriteria;
+                }
+
+                $permintaan->M1 = $M1;
+                $permintaan->M2 = $M2;
+                $permintaan->M3 = $M3;
+                $permintaan->M4 = $M4;
+                $permintaan->save();
+                $imported++;
+            }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Import berhasil! ' . $importer->getImported() . ' baris diimport, ' . $importer->getSkipped() . ' baris dilewati.',
+                'message' => 'Import berhasil! ' . $imported . ' baris diimport.',
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Import gagal: ' . $e->getMessage(),

@@ -309,6 +309,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/permintaan/table', [PermintaanController::class, 'getTable']);
     Route::get('/permintaan/table', [PermintaanController::class, 'getTable'])->name('permintaan.table');
     Route::post('/permintaan/save', [PermintaanController::class, 'saveData'])->name('permintaan.save');
+    Route::post('/permintaan/save-batch', [PermintaanController::class, 'saveBatch'])->name('permintaan.saveBatch');
     Route::delete('/permintaan/delete', [PermintaanController::class, 'deleteData'])->name('permintaan.delete');
     Route::get('/permintaan/sub-kriteria/{id}', [PermintaanController::class, 'getSub']);
     Route::post('/permintaan/import', [PermintaanController::class, 'importExcel'])->name('permintaan.import');

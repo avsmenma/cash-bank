@@ -150,6 +150,71 @@ class PermintaanController extends Controller
         }
     }
 
+    public function saveBatch(Request $request)
+    {
+        try {
+            $items = $request->input('items', []);
+
+            if (empty($items)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada data untuk disimpan'
+                ], 400);
+            }
+
+            DB::beginTransaction();
+
+            foreach ($items as $item) {
+                $kolom = $item['kolom'] ?? null;
+
+                if (!$kolom || !in_array($kolom, ['M1', 'M2', 'M3', 'M4'])) {
+                    continue;
+                }
+
+                $itemId = $item['item'] ?? null;
+                $subKriteriaId = $item['sub_kriteria'] ?? null;
+                $tahun = $item['tahun'] ?? null;
+                $bulan = $item['bulan'] ?? null;
+                $nilai = $item['nilai'] ?? 0;
+
+                if (!$itemId || !$subKriteriaId || !$tahun || !$bulan) {
+                    continue;
+                }
+
+                $permintaan = Permintaan::firstOrNew([
+                    'id_item_sub_kriteria' => $itemId,
+                    'id_sub_kriteria' => $subKriteriaId,
+                    'tahun' => $tahun,
+                    'bulan' => $bulan,
+                ]);
+
+                if (!$permintaan->exists) {
+                    $subKriteria = SubKriteria::find($subKriteriaId);
+                    if ($subKriteria) {
+                        $permintaan->id_kategori_kriteria = $subKriteria->id_kategori_kriteria;
+                    }
+                }
+
+                $permintaan->$kolom = $nilai;
+                $permintaan->save();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Semua data berhasil disimpan'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function cashFlow(Request $request)
     {
         $tahun = $request->tahun ?? date('Y');

@@ -252,87 +252,105 @@
           });
         }
 
-        // Attach events to cells
+        // Attach events to cells (mark changed, manual save via Simpan button)
         function attachCellEvents() {
-          // Store original value on focus
+          // Store original value on focus and remove formatting for editing
           $('.cell').on('focus', function () {
-            $(this).data('original-value', $(this).text().replace(/\./g, '').replace(/,/g, '.'));
+            let raw = $(this).text().replace(/\./g, '');
+            $(this).data('original-value', raw);
+            if (raw === '0') {
+              $(this).text('');
+            } else {
+              $(this).text(raw);
+            }
           });
 
+          // Format on blur (display only, no auto-save)
           $('.cell').on('blur', function () {
             let $cell = $(this);
-            let rawValue = $cell.text().replace(/\./g, '').replace(/,/g, '.');
-            let nilai = parseFloat(rawValue) || 0;
-            let originalValue = parseFloat($cell.data('original-value')) || 0;
+            let raw = $cell.text().replace(/\D/g, '').trim();
+            let nilai = parseInt(raw) || 0;
+            let originalValue = parseInt($cell.data('original-value')) || 0;
 
-            // Only save if value changed
-            if (nilai === originalValue) {
-              return;
+            // Format the display
+            $cell.text(formatNumber(nilai));
+
+            // Mark changed cells
+            if (nilai !== originalValue) {
+              $cell.addClass('cell-changed');
+              $cell.css('background-color', '#fff3cd');
             }
-
-            // Show loading indicator
-            $cell.css('opacity', '0.5');
-
-            $.post('/permintaan/save', {
-              _token: '{{ csrf_token() }}',
-              item: $cell.data('item'),
-              sub_kriteria: $cell.data('sub'),
-              bulan: $cell.data('bulan'),
-              tahun: $cell.data('tahun'),
-              kolom: $cell.data('kolom'),
-              nilai: nilai
-            })
-              .done(function (response) {
-                $cell.css('opacity', '1');
-                if (response.success) {
-                  // Format the number
-                  $cell.text(formatNumber(nilai));
-
-                  // Show success animation
-                  $cell.addClass('bg-success-light');
-                  setTimeout(() => {
-                    $cell.removeClass('bg-success-light');
-                  }, 1000);
-
-                  // Reload table to update totals
-                  setTimeout(() => {
-                    loadTable();
-                  }, 500);
-                }
-              })
-              .fail(function () {
-                $cell.css('opacity', '1');
-                alert('Gagal menyimpan data');
-                // Restore original value
-                $cell.text(formatNumber(originalValue));
-              });
           });
 
-          // Format number on input
+          // Only allow numbers on keypress
           $('.cell').on('keypress', function (e) {
-            // Allow: backspace, delete, tab, escape, enter
-            if ($.inArray(e.keyCode, [46, 8, 9, 27, 13]) !== -1 ||
-              // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+            if ($.inArray(e.keyCode, [8, 9, 27, 13]) !== -1 ||
               (e.keyCode === 65 && e.ctrlKey === true) ||
               (e.keyCode === 67 && e.ctrlKey === true) ||
               (e.keyCode === 86 && e.ctrlKey === true) ||
               (e.keyCode === 88 && e.ctrlKey === true)) {
               return;
             }
-            // Only allow numbers, comma, and period
-            if ((e.which < 48 || e.which > 57) && e.which !== 44 && e.which !== 46) {
+            if (e.which < 48 || e.which > 57) {
               e.preventDefault();
             }
           });
+        }
 
-          // Remove formatting when editing
-          $('.cell').on('focus', function () {
-            let value = $(this).text().replace(/\./g, '');
-            if (value === '0') {
-              $(this).text('');
+        // ===== SIMPAN BUTTON HANDLER =====
+        $(document).on('click', '#btn-simpan-permintaan', function () {
+          let $btn = $(this);
+          let changedCells = $('.cell-changed');
+
+          if (changedCells.length === 0) {
+            alert('Tidak ada perubahan untuk disimpan.');
+            return;
+          }
+
+          let dataToSave = [];
+          changedCells.each(function () {
+            let $cell = $(this);
+            let raw = $cell.text().replace(/\./g, '').trim();
+            dataToSave.push({
+              item: $cell.data('item'),
+              sub_kriteria: $cell.data('sub'),
+              bulan: $cell.data('bulan'),
+              tahun: $cell.data('tahun'),
+              kolom: $cell.data('kolom'),
+              nilai: parseInt(raw) || 0
+            });
+          });
+
+          $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
+          $.ajax({
+            url: '/permintaan/save-batch',
+            method: 'POST',
+            contentType: 'application/json',
+            headers: {
+              'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            data: JSON.stringify({ items: dataToSave }),
+            success: function (response) {
+              $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Simpan');
+              if (response.success) {
+                alert('Data berhasil disimpan!');
+                loadTable();
+              } else {
+                alert('Gagal menyimpan: ' + (response.message || 'Unknown error'));
+              }
+            },
+            error: function (xhr) {
+              $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Simpan');
+              let errorMsg = 'Gagal menyimpan data. Silakan coba lagi.';
+              if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMsg = xhr.responseJSON.message;
+              }
+              alert(errorMsg);
+              console.error('Save error:', xhr);
             }
           });
-        }
+        });
 
         // Format number with thousand separator
         function formatNumber(num) {

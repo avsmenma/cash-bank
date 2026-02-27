@@ -111,6 +111,7 @@
                         $subtotalDropping[$b] = 0;
                     }
                     $currentKategori = null;
+                    $currentSubKriteria = null;
                 @endphp
 
                 @if(isset($result['dropping']) && count($result['dropping']) > 0)
@@ -118,6 +119,7 @@
                         @php
                             $totalItem = 0;
                             $showKategoriHeader = ($currentKategori !== $item['kategori']);
+                            $showSubKriteria = ($currentSubKriteria !== ($item['kategori'].'|'.$item['sub_kriteria']));
                             
                             // Jika kategori berubah dan bukan pertama kali, tampilkan total kategori sebelumnya
                             $showKategoriTotal = false;
@@ -159,17 +161,25 @@
                                     <strong>{{ $item['kategori'] }}</strong>
                                 </td>
                             </tr>
-                            @php $currentKategori = $item['kategori']; @endphp
+                            @php 
+                                $currentKategori = $item['kategori'];
+                                $currentSubKriteria = null; // reset sub kriteria saat kategori berubah
+                            @endphp
+                        @endif
+
+                        {{-- HEADER SUB KRITERIA (hanya tampil sekali per sub_kriteria) --}}
+                        @if($showSubKriteria)
+                            <tr class="">
+                                <td colspan="{{ count($bulanListFiltered) + 2 }}" style="padding-left: 15px;">
+                                    {{ $item['sub_kriteria'] }}
+                                </td>
+                            </tr>
+                            @php $currentSubKriteria = $item['kategori'].'|'.$item['sub_kriteria']; @endphp
                         @endif
                         
-                        {{-- DETAIL ROW --}}
+                        {{-- DETAIL ROW (item_kriteria saja, sub_kriteria sudah di atas) --}}
                         <tr class="detail-row">
-                            <td>
-                                {{ $item['sub_kriteria'] }}
-                            </td>
-                        </tr>
-                        <tr class="detail-row">
-                            <td class="text-info"> 
+                            <td class="text-info" style="padding-left: 30px;"> 
                                 {{ "- " . $item['item_kriteria'] }}
                             </td>
                             @foreach($bulanListFiltered as $noBulan => $namaBulan)
@@ -255,6 +265,7 @@
                         $subtotalPembayaran[$b] = 0;
                     }
                     $currentKategoriPembayaran = null;
+                    $currentSubKriteriaPembayaran = null;
                 @endphp
 
                 @if(isset($result['pembayaran']) && count($result['pembayaran']) > 0)
@@ -262,6 +273,7 @@
                         @php
                             $totalItem = 0;
                             $showKategoriHeader = ($currentKategoriPembayaran !== $item['kategori']);
+                            $showSubKriteriaPembayaran = ($currentSubKriteriaPembayaran !== ($item['kategori'].'|'.$item['sub_kriteria']));
                             
                             // Tampilkan total kategori sebelumnya
                             $showKategoriTotal = false;
@@ -303,16 +315,25 @@
                                     <strong>{{ $item['kategori'] }}</strong>
                                 </td>
                             </tr>
-                            @php $currentKategoriPembayaran = $item['kategori']; @endphp
+                            @php 
+                                $currentKategoriPembayaran = $item['kategori'];
+                                $currentSubKriteriaPembayaran = null; // reset sub kriteria saat kategori berubah
+                            @endphp
                         @endif
                         
-                        {{-- DETAIL ROW --}}
-                        <tr class="text-info">
-                            <td>{{ $item['sub_kriteria'] }}</td>
-                        </tr>
+                        {{-- HEADER SUB KRITERIA PEMBAYARAN (hanya tampil sekali per sub_kriteria) --}}
+                        @if($showSubKriteriaPembayaran)
+                            <tr class="">
+                                <td colspan="{{ count($bulanListFiltered) + 2 }}" style="padding-left: 15px;">
+                                    {{ $item['sub_kriteria'] }}
+                                </td>
+                            </tr>
+                            @php $currentSubKriteriaPembayaran = $item['kategori'].'|'.$item['sub_kriteria']; @endphp
+                        @endif
+
+                        {{-- DETAIL ROW (item_kriteria saja) --}}
                         <tr class="detail-row">
-                            <td>
-                               
+                            <td class="text-info" style="padding-left: 30px;">
                                {{ "- " . $item['item_kriteria'] }}
                             </td>
                             @foreach($bulanListFiltered as $noBulan => $namaBulan)

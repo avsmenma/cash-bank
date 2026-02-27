@@ -107,13 +107,13 @@
                                 <li class="nav-item">
                                     <a href="{{ route('dashboard.index') }}"
                                         class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                                        <p>Dashboard Pembayaran</p>
+                                        <p>Pembayaran</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="{{ route('dashboard.pembayaran.index') }}"
                                         class="nav-link {{ request()->routeIs('dashboard.pembayaran.index') ? 'active' : ''}}">
-                                        <p>Dashboard</p>
+                                        <p>PD & PvD</p>
                                     </a>
                                 </li>
                             </ul>

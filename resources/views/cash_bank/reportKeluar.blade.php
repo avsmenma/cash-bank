@@ -120,7 +120,7 @@
                                     {{ $row->tanggal ? \Carbon\Carbon::parse($row->tanggal)->format('d/m/Y') : '-' }}
                                 </td>
                                 <td class="rk-td">{{ $row->no_sap ?? '-' }}</td>
-                                <td class="rk-td" style="color:#1a5276;font-weight:500;">{{ $row->nama_tujuan ?? '-' }}</td>
+                                <td class="rk-td">{{ $row->nama_tujuan ?? '-' }}</td>
                                 <td class="rk-td">{{ $row->penerima ?? '-' }}</td>
                                 <td class="rk-td rk-uraian" title="{{ $row->uraian }}">{{ $row->uraian ?? '-' }}</td>
                                 <td class="text-right rk-td rk-debet">

@@ -49,6 +49,9 @@ Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
     Route::get('/dashboard-modal-kerja', [dashboardController::class, 'modalKerja'])
         ->name('dashboard.modal-kerja.index');
 
+    Route::get('/dashboard-modal-kerja/data', [dashboardController::class, 'modalKerjaData'])
+        ->name('dashboard.modal-kerja.data');
+
 });
 // Route::group(['middleware' => ['auth','check_role:admin']], function(){
 //     Route::get('/dashboard-pembayaran', [DashboardPembayaranController::class, 'index'])

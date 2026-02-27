@@ -527,11 +527,144 @@ class dashboardController extends Controller
             9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'
         ];
 
-        $tahun = $request->tahun ?? date('Y');
+        $tahun     = $request->tahun      ?? date('Y');
         $bulanDari = $request->bulan_dari ?? 1;
-        $bulanSampai = $request->bulan_sampai ?? 12;
+        $bulanSampai = $request->bulan_sampai ?? date('m');
+
+        if ($request->ajax || $request->has('ajax')) {
+            return $this->modalKerjaData($request);
+        }
 
         return view('cash_bank.modalKerja', compact('tahun', 'bulanList', 'bulanDari', 'bulanSampai'));
     }
 
-}
+    public function modalKerjaData(Request $request)
+    {
+        $bulanMap = [
+            1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April',
+            5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus',
+            9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'
+        ];
+
+        $tahun       = $request->tahun       ?? date('Y');
+        $bulanDari   = (int)($request->bulan_dari   ?? 1);
+        $bulanSampai = (int)($request->bulan_sampai ?? date('m'));
+
+        // Template minggu per bulan
+        $weekTemplate = ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
+
+        // Bulan aktif sesuai filter
+        $bulanAktif = [];
+        for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+            $bulanAktif[$b] = $bulanMap[$b];
+        }
+
+        // ================================================================
+        // PERMINTAAN (Rencana Mingguan) - M1, M2, M3, M4 = W1..W4
+        // ================================================================
+        $permintaanRows = \App\Models\Permintaan::with(['kategori','subKriteria','itemSubKriteria'])
+            ->where('tahun', $tahun)
+            ->whereBetween('bulan', [$bulanDari, $bulanSampai])
+            ->get();
+
+        $permintaanData = []; // [bulan][kategori][sub][item] = weekTemplate
+
+        foreach ($permintaanRows as $row) {
+            $b   = (int)$row->bulan;
+            $k   = $row->kategori->nama_kriteria          ?? '-';
+            $s   = $row->subKriteria->nama_sub_kriteria   ?? '-';
+            $i   = $row->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+
+            if (!isset($permintaanData[$b][$k][$s][$i])) {
+                $permintaanData[$b][$k][$s][$i] = $weekTemplate;
+            }
+            $permintaanData[$b][$k][$s][$i]['w1'] += $row->M1 ?? 0;
+            $permintaanData[$b][$k][$s][$i]['w2'] += $row->M2 ?? 0;
+            $permintaanData[$b][$k][$s][$i]['w3'] += $row->M3 ?? 0;
+            $permintaanData[$b][$k][$s][$i]['w4'] += $row->M4 ?? 0;
+        }
+
+        // ================================================================
+        // DROPPING (Realisasi Mingguan) - M1, M2, M3, M4 = W1..W4
+        // ================================================================
+        $droppingRows = \App\Models\Dropping::with(['kategori','subKriteria','itemSubKriteria'])
+            ->where('tahun', $tahun)
+            ->whereBetween('bulan', [$bulanDari, $bulanSampai])
+            ->get();
+
+        $droppingData = []; // [bulan][kategori][sub][item] = weekTemplate
+
+        foreach ($droppingRows as $row) {
+            $b   = (int)$row->bulan;
+            $k   = $row->kategori->nama_kriteria          ?? '-';
+            $s   = $row->subKriteria->nama_sub_kriteria   ?? '-';
+            $i   = $row->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+
+            if (!isset($droppingData[$b][$k][$s][$i])) {
+                $droppingData[$b][$k][$s][$i] = $weekTemplate;
+            }
+            $droppingData[$b][$k][$s][$i]['w1'] += $row->M1 ?? 0;
+            $droppingData[$b][$k][$s][$i]['w2'] += $row->M2 ?? 0;
+            $droppingData[$b][$k][$s][$i]['w3'] += $row->M3 ?? 0;
+            $droppingData[$b][$k][$s][$i]['w4'] += $row->M4 ?? 0;
+        }
+
+        // ================================================================
+        // PEMBAYARAN (BankKeluar) - breakdown by tanggal into weeks
+        // ================================================================
+        $pembayaranRows = \App\Models\BankKeluar::with(['kategori','subKriteria','itemSubKriteria'])
+            ->whereYear('tanggal', $tahun)
+            ->whereBetween(DB::raw('MONTH(tanggal)'), [$bulanDari, $bulanSampai])
+            ->whereNotNull('kredit')
+            ->where('kredit', '!=', '')
+            ->where('kredit', '!=', '0')
+            ->whereNotNull('id_kategori_kriteria')
+            ->whereNotNull('id_sub_kriteria')
+            ->whereNotNull('id_item_sub_kriteria')
+            ->get();
+
+        $pembayaranData = []; // [bulan][kategori][sub][item] = weekTemplate
+
+        foreach ($pembayaranRows as $row) {
+            $b   = (int)\Carbon\Carbon::parse($row->tanggal)->month;
+            $day = (int)\Carbon\Carbon::parse($row->tanggal)->day;
+            $k   = $row->kategori->nama_kriteria          ?? '-';
+            $s   = $row->subKriteria->nama_sub_kriteria   ?? '-';
+            $i   = $row->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+            $nilai = (float)($row->kredit ?? 0);
+
+            if (!isset($pembayaranData[$b][$k][$s][$i])) {
+                $pembayaranData[$b][$k][$s][$i] = $weekTemplate;
+            }
+
+            if      ($day <= 7)  { $pembayaranData[$b][$k][$s][$i]['w1'] += $nilai; }
+            elseif  ($day <= 14) { $pembayaranData[$b][$k][$s][$i]['w2'] += $nilai; }
+            elseif  ($day <= 21) { $pembayaranData[$b][$k][$s][$i]['w3'] += $nilai; }
+            else                 { $pembayaranData[$b][$k][$s][$i]['w4'] += $nilai; }
+        }
+
+        // ================================================================
+        // Bangun daftar baris terurut (superset dari semua section)
+        // struktur: [kategori][sub][item] => ada/tidak
+        // ================================================================
+        $allKeys = [];
+        foreach ([$permintaanData, $droppingData, $pembayaranData] as $section) {
+            foreach ($section as $bulanRows) {
+                foreach ($bulanRows as $k => $subs) {
+                    foreach ($subs as $s => $items) {
+                        foreach ($items as $i => $_) {
+                            $allKeys[$k][$s][$i] = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return view('cash_bank.modalKerjaTable', compact(
+            'permintaanData', 'droppingData', 'pembayaranData',
+            'allKeys', 'bulanAktif', 'tahun', 'bulanMap',
+            'bulanDari', 'bulanSampai'
+        ));
+    }
+
+}

@@ -560,6 +560,29 @@ class dashboardController extends Controller
         }
 
         // ================================================================
+        // WEEK RANGES: custom cutoff per bulan dari request
+        // Default: W1=1-7, W2=8-14, W3=15-21, W4=22-akhir
+        // ================================================================
+        $weekRangesRaw = [];
+        if ($request->has('week_ranges')) {
+            $decoded = json_decode($request->week_ranges, true);
+            if (is_array($decoded)) $weekRangesRaw = $decoded;
+        }
+        $weekCuts = [];
+        foreach ($bulanAktif as $bNo => $_bNama) {
+            $raw = $weekRangesRaw[$bNo] ?? [];
+            $w1e = max(1, min(28, (int)($raw['w1_end'] ?? 7)));
+            $w2e = max($w1e+1, min(28, (int)($raw['w2_end'] ?? 14)));
+            $w3e = max($w2e+1, min(28, (int)($raw['w3_end'] ?? 21)));
+            $weekCuts[$bNo] = [
+                'w1_start' => 1,    'w1_end' => $w1e,
+                'w2_start' => $w1e+1, 'w2_end' => $w2e,
+                'w3_start' => $w2e+1, 'w3_end' => $w3e,
+                'w4_start' => $w3e+1, 'w4_end' => 31,
+            ];
+        }
+
+        // ================================================================
         // PERMINTAAN (Rencana Mingguan) - M1, M2, M3, M4 = W1..W4
         // ================================================================
         $permintaanRows = \App\Models\Permintaan::with(['kategori','subKriteria','itemSubKriteria'])
@@ -637,10 +660,11 @@ class dashboardController extends Controller
                 $pembayaranData[$b][$k][$s][$i] = $weekTemplate;
             }
 
-            if      ($day <= 7)  { $pembayaranData[$b][$k][$s][$i]['w1'] += $nilai; }
-            elseif  ($day <= 14) { $pembayaranData[$b][$k][$s][$i]['w2'] += $nilai; }
-            elseif  ($day <= 21) { $pembayaranData[$b][$k][$s][$i]['w3'] += $nilai; }
-            else                 { $pembayaranData[$b][$k][$s][$i]['w4'] += $nilai; }
+            $cuts = $weekCuts[$b] ?? ['w1_end'=>7,'w2_end'=>14,'w3_end'=>21];
+            if      ($day <= $cuts['w1_end']) { $pembayaranData[$b][$k][$s][$i]['w1'] += $nilai; }
+            elseif  ($day <= $cuts['w2_end']) { $pembayaranData[$b][$k][$s][$i]['w2'] += $nilai; }
+            elseif  ($day <= $cuts['w3_end']) { $pembayaranData[$b][$k][$s][$i]['w3'] += $nilai; }
+            else                              { $pembayaranData[$b][$k][$s][$i]['w4'] += $nilai; }
         }
 
         // ================================================================
@@ -714,7 +738,7 @@ class dashboardController extends Controller
         return view('cash_bank.modalKerjaTable', compact(
             'permintaanData', 'droppingData', 'pembayaranData',
             'allKeys', 'bulanAktif', 'tahun', 'bulanMap',
-            'bulanDari', 'bulanSampai'
+            'bulanDari', 'bulanSampai', 'weekCuts'
         ));
     }
 

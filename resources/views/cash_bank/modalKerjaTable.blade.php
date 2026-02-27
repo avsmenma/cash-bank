@@ -106,23 +106,87 @@
         {{-- ROW 2 --}}
         <tr>
             @foreach($bulanAktif as $bNo => $bNama)
-                <th class="th-permintaan-sub text-center">{{ $bNama }}-W1<br><small>(1-7)</small></th>
-                <th class="th-permintaan-sub text-center">{{ $bNama }}-W2<br><small>(8-14)</small></th>
-                <th class="th-permintaan-sub text-center">{{ $bNama }}-W3<br><small>(15-21)</small></th>
-                <th class="th-permintaan-sub text-center">{{ $bNama }}-W4<br><small>(22-31)</small></th>
+                @php $wc = $weekCuts[$bNo] ?? ['w1_start'=>1,'w1_end'=>7,'w2_start'=>8,'w2_end'=>14,'w3_start'=>15,'w3_end'=>21,'w4_start'=>22,'w4_end'=>31]; @endphp
+                <th class="th-permintaan-sub text-center">{{ $bNama }}-W1<br>
+                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w1"
+                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #333;">
+                        ({{ $wc['w1_start'] }}-{{ $wc['w1_end'] }})
+                    </small>
+                </th>
+                <th class="th-permintaan-sub text-center">{{ $bNama }}-W2<br>
+                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w2"
+                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #333;">
+                        ({{ $wc['w2_start'] }}-{{ $wc['w2_end'] }})
+                    </small>
+                </th>
+                <th class="th-permintaan-sub text-center">{{ $bNama }}-W3<br>
+                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w3"
+                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #333;">
+                        ({{ $wc['w3_start'] }}-{{ $wc['w3_end'] }})
+                    </small>
+                </th>
+                <th class="th-permintaan-sub text-center">{{ $bNama }}-W4<br>
+                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w4"
+                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #333;">
+                        ({{ $wc['w4_start'] }}-{{ $wc['w4_end'] }})
+                    </small>
+                </th>
                 <th class="th-permintaan-sub text-center">Weekly-{{ $bNama }}<br><small>(1-31)</small></th>
-                <th class="th-dropping-sub text-center">{{ $bNama }}-W1<br><small>(1-7)</small></th>
-                <th class="th-dropping-sub text-center">{{ $bNama }}-W2<br><small>(8-14)</small></th>
-                <th class="th-dropping-sub text-center">{{ $bNama }}-W3<br><small>(15-21)</small></th>
-                <th class="th-dropping-sub text-center">{{ $bNama }}-W4<br><small>(22-31)</small></th>
+
+                <th class="th-dropping-sub text-center">{{ $bNama }}-W1<br>
+                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w1"
+                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #adf;">
+                        ({{ $wc['w1_start'] }}-{{ $wc['w1_end'] }})
+                    </small>
+                </th>
+                <th class="th-dropping-sub text-center">{{ $bNama }}-W2<br>
+                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w2"
+                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #adf;">
+                        ({{ $wc['w2_start'] }}-{{ $wc['w2_end'] }})
+                    </small>
+                </th>
+                <th class="th-dropping-sub text-center">{{ $bNama }}-W3<br>
+                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w3"
+                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #adf;">
+                        ({{ $wc['w3_start'] }}-{{ $wc['w3_end'] }})
+                    </small>
+                </th>
+                <th class="th-dropping-sub text-center">{{ $bNama }}-W4<br>
+                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w4"
+                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #adf;">
+                        ({{ $wc['w4_start'] }}-{{ $wc['w4_end'] }})
+                    </small>
+                </th>
                 <th class="th-dropping-sub text-center">Weekly-{{ $bNama }}<br><small>(1-31)</small></th>
-                <th class="th-pembayaran-sub text-center">{{ $bNama }}-W1<br><small>(1-7)</small></th>
-                <th class="th-pembayaran-sub text-center">{{ $bNama }}-W2<br><small>(8-14)</small></th>
-                <th class="th-pembayaran-sub text-center">{{ $bNama }}-W3<br><small>(15-21)</small></th>
-                <th class="th-pembayaran-sub text-center">{{ $bNama }}-W4<br><small>(22-31)</small></th>
+
+                <th class="th-pembayaran-sub text-center">{{ $bNama }}-W1<br>
+                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w1"
+                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #bfb;">
+                        ({{ $wc['w1_start'] }}-{{ $wc['w1_end'] }})
+                    </small>
+                </th>
+                <th class="th-pembayaran-sub text-center">{{ $bNama }}-W2<br>
+                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w2"
+                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #bfb;">
+                        ({{ $wc['w2_start'] }}-{{ $wc['w2_end'] }})
+                    </small>
+                </th>
+                <th class="th-pembayaran-sub text-center">{{ $bNama }}-W3<br>
+                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w3"
+                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #bfb;">
+                        ({{ $wc['w3_start'] }}-{{ $wc['w3_end'] }})
+                    </small>
+                </th>
+                <th class="th-pembayaran-sub text-center">{{ $bNama }}-W4<br>
+                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w4"
+                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #bfb;">
+                        ({{ $wc['w4_start'] }}-{{ $wc['w4_end'] }})
+                    </small>
+                </th>
                 <th class="th-pembayaran-sub text-center">Weekly-{{ $bNama }}<br><small>(1-31)</small></th>
             @endforeach
         </tr>
+
         {{-- ROW 3: Nomor kolom --}}
         <tr>
             @php $colIdx = 1; @endphp

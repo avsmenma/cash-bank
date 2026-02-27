@@ -660,6 +660,57 @@ class dashboardController extends Controller
             }
         }
 
+        // ================================================================
+        // Urutkan allKeys sesuai referensi gambar:
+        // Sub kriteria dan item kriteria diurutkan by priority
+        // Item yg tidak ada di daftar ditempatkan di akhir (priority 999)
+        // ================================================================
+        $subPriority = [
+            'Karyawan Pimpinan'  => 1,
+            'Karyawan Pelaksana' => 2,
+        ];
+
+        $itemPriority = [
+            'Gaji dan Tunjangan'        => 1,
+            'Lembur'                    => 2,
+            'Premi'                     => 3,
+            'Cuti Tahunan'              => 4,
+            'Cuti Panjang'              => 5,
+            'T H R'                     => 6,
+            'THR'                       => 6,
+            'Bonus'                     => 7,
+            'PPh pasal 21'              => 8,
+            'PPh Pasal 21'              => 8,
+            'Iuran Dapenbun (Normal)'   => 9,
+            'Iuran Dapenbun (Tambahan)' => 10,
+            'Penghargaan Masa Kerja'    => 11,
+            'Iuran BPJS B. Perusahaan'  => 12,
+            'SHT (Cicilan)'             => 13,
+            'Lainnya'                   => 14,
+        ];
+
+        foreach ($allKeys as $kat => &$subs) {
+            // Sort sub_kriteria
+            uksort($subs, function($a, $b) use ($subPriority) {
+                $pA = $subPriority[$a] ?? 999;
+                $pB = $subPriority[$b] ?? 999;
+                if ($pA !== $pB) return $pA <=> $pB;
+                return strcmp($a, $b);
+            });
+
+            // Sort item_kriteria di tiap sub
+            foreach ($subs as $sub => &$items) {
+                uksort($items, function($a, $b) use ($itemPriority) {
+                    $pA = $itemPriority[$a] ?? 999;
+                    $pB = $itemPriority[$b] ?? 999;
+                    if ($pA !== $pB) return $pA <=> $pB;
+                    return strcmp($a, $b);
+                });
+            }
+            unset($items);
+        }
+        unset($subs);
+
         return view('cash_bank.modalKerjaTable', compact(
             'permintaanData', 'droppingData', 'pembayaranData',
             'allKeys', 'bulanAktif', 'tahun', 'bulanMap',

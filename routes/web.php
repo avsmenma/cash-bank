@@ -208,10 +208,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/sub-kriteria/{id}', [BankMasukController::class, 'getSubKriteria']);
     Route::get('/item-sub-kriteria/{id}', [BankMasukController::class, 'getItemSubKriteria']);
 
-    // REKENING KORAN
-    Route::get('/rekening-koran', function () {
-        return view('cash_bank.rekeningKoran');
-    })->name('rekening-koran.index');
 
 });
 

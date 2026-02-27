@@ -172,12 +172,6 @@
 
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
-                                    <a href="{{ route('daftarBank.index') }}"
-                                        class="nav-link {{ request()->routeIs('daftarBank.*') ? 'active' : '' }}">
-                                        <p>Virtual Account</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
                                     <a href="{{ route('bank-masuk.index') }}"
                                         class="nav-link {{ request()->routeIs('bank-masuk.index') ? 'active' : '' }}">
                                         <p>Input Bank Masuk</p>
@@ -190,14 +184,14 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="{{ route('bank-keluar.report') }}"
-                                        class="nav-link {{ request()->routeIs('bank-keluar.report') ? 'active' : '' }}">
-                                        <p>Report Keluar</p>
+                                    <a href="{{ route('daftarBank.index') }}"
+                                        class="nav-link {{ request()->routeIs('daftarBank.*') ? 'active' : '' }}">
+                                        <p>Virtual Account</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="{{ route('rekening-koran.index') }}"
-                                        class="nav-link {{ request()->routeIs('rekening-koran.*') ? 'active' : '' }}">
+                                    <a href="{{ route('bank-keluar.report') }}"
+                                        class="nav-link {{ request()->routeIs('bank-keluar.report') ? 'active' : '' }}">
                                         <p>Rekening Koran</p>
                                     </a>
                                 </li>

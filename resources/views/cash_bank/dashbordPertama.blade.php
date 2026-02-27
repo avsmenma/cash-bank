@@ -2,421 +2,434 @@
 <style>
     #cashflow-table {
         table-layout: auto !important;
-        /* width: 100% !important; */
         font-size: 11px;
-        
     }
-
-    .kolom-total{
-        background-color: #f6fa05;
-    }
-    .kolom-dropping{
-        background-color: #05f2fa;
-    }
-    .kolom-pembayaran{
-        background-color: #faac05;
-    }
-
-    #cashflow-table th,
-    #cashflow-table td {
+    #cashflow-table th, #cashflow-table td {
         white-space: nowrap;
         vertical-align: middle;
-        padding: 8px 5px;
+        padding: 5px 8px;
     }
-    
-    .kategori-row{
-        background-color: #e0e0e0;
-    }
-    
-
+    .sec-penerimaan { background-color: #FFD966; font-weight: bold; }
+    .sec-dropping   { background-color: #9DC3E6; font-weight: bold; }
+    .sec-pembayaran { background-color: #F4B183; font-weight: bold; }
+    .row-kat-header td { background-color: #D6E4F0; font-weight: bold; }
+    .row-item td    { background-color: #fff; }
+    .row-sub-total td { background-color: #BDD7EE; font-weight: bold; }
+    .row-total-dropping td, .row-total-pembayaran td { background-color: #70AD47; color:#fff; font-weight: bold; }
+    .row-total-penerimaan td { background-color: #70AD47; color:#fff; font-weight: bold; text-align: right; }
+    .row-selisih-pdn-drop td { background-color: #92D050; font-weight: bold; }
+    .row-selisih-pay-pdn td  { background-color: #FFD966; font-weight: bold; }
+    .row-selisih-pay-drop td { background-color: #FFD966; font-weight: bold; }
+    .row-summary-cpo td  { background-color: #FFD966; font-weight: bold; }
+    .row-summary-dtbs td { background-color: #FFD966; font-weight: bold; }
+    .row-summary-ptbs td { background-color: #FFD966; font-weight: bold; }
+    .row-gaji-group td  { font-weight: bold; }
+    .val { text-align: right; }
+    /* Nilai negatif / dalam kurung berwarna merah */
+    .neg { color: #c00000; }
 </style>
 @endpush
+
 @php
-    function formatMinus($angka) {
-        return $angka < 0
-            ? '(' . number_format(abs($angka), 0, ',', '.') . ')'
-            : number_format($angka, 0, ',', '.');
+    /**
+     * Helper: format angka, nilai negatif tampil (xxx)
+     */
+    if (!function_exists('fmtDash')) {
+        function fmtDash($v) {
+            if ($v == 0) return '-';
+            return $v < 0
+                ? '(' . number_format(abs($v), 0, ',', '.') . ')'
+                : number_format($v, 0, ',', '.');
+        }
     }
+    if (!function_exists('fmtBold')) {
+        function fmtBold($v) {
+            return $v < 0
+                ? '(' . number_format(abs($v), 0, ',', '.') . ')'
+                : number_format($v, 0, ',', '.');
+        }
+    }
+
+    // ================================================================
+    // Urutan kategori Penerimaan
+    // ================================================================
+    $pnOrder = [
+        'Penjualan CPO'                   => 1,
+        'Penjualan Kernel'                => 2,
+        'Hapor'                           => 3,
+        'Penjualan TBS'                   => 4,
+        'Penjualan Cangkang'              => 5,
+        'Penjualan Karet'                 => 6,
+        'KSO (Titip Olah/Revenue Sharing)'=> 7,
+        'KSU Batubara'                    => 8,
+        'Lainnya'                         => 9,
+    ];
+    uksort($result['penerima'], function($a,$b) use($pnOrder){
+        $pA = $pnOrder[$a] ?? 99; $pB = $pnOrder[$b] ?? 99;
+        return $pA <=> $pB;
+    });
+
+    // ================================================================
+    // Aggregate Dropping & Pembayaran ke level [kategori][sub_kriteria][bulan]
+    // ================================================================
+    $dropAgg = [];
+    foreach ($result['dropping'] as $item) {
+        $kat = $item['kategori']; $sub = $item['sub_kriteria'];
+        foreach ($bulanListFiltered as $b => $n) {
+            $dropAgg[$kat][$sub][$b] = ($dropAgg[$kat][$sub][$b] ?? 0) + ($item['data'][$b] ?? 0);
+        }
+    }
+
+    $payAgg = [];
+    foreach ($result['pembayaran'] as $item) {
+        $kat = $item['kategori']; $sub = $item['sub_kriteria'];
+        foreach ($bulanListFiltered as $b => $n) {
+            $payAgg[$kat][$sub][$b] = ($payAgg[$kat][$sub][$b] ?? 0) + ($item['data'][$b] ?? 0);
+        }
+    }
+
+    // ================================================================
+    // Urutan kategori untuk Dropping & Pembayaran
+    // ================================================================
+    $katOrder = [
+        'Kebutuhan Gaji, Upah dan Tunjangan'           => 1,
+        'Kebutuhan Pembayaran Aktivitas Ekploitasi'     => 2,
+        'Kebutuhan Pekerjaan Aktivitas Investasi'       => 3,
+    ];
+    // Kategori yang DIGRUP (ditampilkan sebagai 1 baris total saja)
+    $groupedKat = ['Kebutuhan Gaji, Upah dan Tunjangan'];
+
+    // Urutan sub_kriteria dalam tiap kategori
+    $subOrder = [
+        'Pembelian TBS'              => 1,
+        'Operasional Produksi'       => 2,
+        'Biaya Usaha dan lainnya'    => 3,
+        'Pajak'                      => 4,
+        'Investasi On Farm'          => 1,
+        'Investasi Off Farm'         => 2,
+        'Pembayaran investasi lainnya'=> 3,
+    ];
+
+    // Sort kategori
+    foreach ([&$dropAgg, &$payAgg] as &$agg) {
+        uksort($agg, function($a,$b) use($katOrder){
+            return ($katOrder[$a] ?? 99) <=> ($katOrder[$b] ?? 99);
+        });
+        foreach ($agg as $kat => &$subs) {
+            uksort($subs, function($a,$b) use($subOrder){
+                $pA = $subOrder[$a] ?? 99; $pB = $subOrder[$b] ?? 99;
+                if ($pA !== $pB) return $pA <=> $pB;
+                return strcmp($a,$b);
+            });
+        }
+    }
+    unset($agg, $subs);
+
+    // ================================================================
+    // Helper: hitung total per bulan untuk satu kategori
+    // ================================================================
+    $sumKat = function($agg, $kat, $bulanListFiltered) {
+        $res = [];
+        foreach ($bulanListFiltered as $b => $n) { $res[$b] = 0; }
+        foreach ($agg[$kat] ?? [] as $sub => $bData) {
+            foreach ($bulanListFiltered as $b => $n) { $res[$b] += ($bData[$b] ?? 0); }
+        }
+        return $res;
+    };
+    $sumSub = function($agg, $kat, $sub, $bulanListFiltered) {
+        $res = [];
+        foreach ($bulanListFiltered as $b => $n) { $res[$b] = ($agg[$kat][$sub][$b] ?? 0); }
+        return $res;
+    };
+
+    // ================================================================
+    // GRAND TOTALS
+    // ================================================================
+    $totalPenerima  = []; foreach ($bulanListFiltered as $b => $n) $totalPenerima[$b] = 0;
+    foreach ($result['penerima'] as $kat => $bData) {
+        foreach ($bulanListFiltered as $b => $n) $totalPenerima[$b] += ($bData[$b] ?? 0);
+    }
+    $totalDropAll   = []; foreach ($bulanListFiltered as $b => $n) $totalDropAll[$b] = 0;
+    foreach ($dropAgg as $kat => $subs) {
+        foreach ($subs as $sub => $bData) {
+            foreach ($bulanListFiltered as $b => $n) $totalDropAll[$b] += ($bData[$b] ?? 0);
+        }
+    }
+    $totalPayAll    = []; foreach ($bulanListFiltered as $b => $n) $totalPayAll[$b] = 0;
+    foreach ($payAgg as $kat => $subs) {
+        foreach ($subs as $sub => $bData) {
+            foreach ($bulanListFiltered as $b => $n) $totalPayAll[$b] += ($bData[$b] ?? 0);
+        }
+    }
+
+    // Summary: CPO + Kernel dari penerima
+    $cpnKernel = []; foreach ($bulanListFiltered as $b => $n) $cpnKernel[$b] = 0;
+    foreach (['Penjualan CPO','Penjualan Kernel'] as $cpk) {
+        foreach ($bulanListFiltered as $b => $n) {
+            $cpnKernel[$b] += ($result['penerima'][$cpk][$b] ?? 0);
+        }
+    }
+    // Summary: Dropping TBS & Pembayaran TBS
+    $dropTBS = []; $payTBS = [];
+    foreach ($bulanListFiltered as $b => $n) { $dropTBS[$b] = 0; $payTBS[$b] = 0; }
+    foreach ($dropAgg as $kat => $subs) {
+        foreach ($subs as $sub => $bData) {
+            if (stripos($sub,'TBS') !== false || $sub === 'Pembelian TBS') {
+                foreach ($bulanListFiltered as $b => $n) $dropTBS[$b] += ($bData[$b] ?? 0);
+            }
+        }
+    }
+    foreach ($payAgg as $kat => $subs) {
+        foreach ($subs as $sub => $bData) {
+            if (stripos($sub,'TBS') !== false || $sub === 'Pembelian TBS') {
+                foreach ($bulanListFiltered as $b => $n) $payTBS[$b] += ($bData[$b] ?? 0);
+            }
+        }
+    }
+
+    $nCol = count($bulanListFiltered) + 2; // uraian + bulan + total
 @endphp
 
 <div class="row">
-    <div class="col-12 table-responsive">
-        <table border="2" class="table table-bordered  table-sm" id="cashflow-table">
-            <thead class="text-center">
-                <tr>
-                    <th rowspan="2"class="table-warning" style="min-width: 250px; vertical-align: middle;">URAIAN</th>
-                    <th colspan="{{ count($bulanListFiltered) }}" class="table-primary">TAHUN {{ $tahun }}</th>
-                    <th rowspan="2" class="table-success" style="width: 150px;">Total<br>Tahun {{ $tahun }}</th>
-                </tr>
-                <tr>
-                    @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                        <th class="table-primary" style="width: 150px;">{{ $namaBulan }}</th>
+<div class="col-12 table-responsive">
+<table border="1" class="table table-bordered table-sm" id="cashflow-table">
+    <thead class="text-center">
+        <tr>
+            <th rowspan="2" class="table-warning" style="min-width:260px;vertical-align:middle;">URAIAN</th>
+            <th colspan="{{ count($bulanListFiltered) }}" class="table-primary">TAHUN {{ $tahun }}</th>
+            <th rowspan="2" class="kolom-total" style="min-width:120px;vertical-align:middle;">Sd {{ collect($bulanListFiltered)->last() }} Tahun {{ $tahun }}</th>
+        </tr>
+        <tr>
+            @foreach($bulanListFiltered as $noBulan => $namaBulan)
+                <th class="table-primary" style="min-width:120px;">{{ $namaBulan }}</th>
+            @endforeach
+        </tr>
+    </thead>
+    <tbody>
+
+        {{-- ================================================================
+             PENERIMAAN
+             ================================================================ --}}
+        <tr>
+            <td colspan="{{ $nCol }}" class="sec-penerimaan">PENERIMAAN</td>
+        </tr>
+
+        @php $totalPnAll = 0; @endphp
+        @foreach($result['penerima'] as $kat => $bData)
+            @php $rowTotal = 0; @endphp
+            <tr class="row-item">
+                <td>- {{ $kat }}</td>
+                @foreach($bulanListFiltered as $b => $nm)
+                    @php $v = $bData[$b] ?? 0; $rowTotal += $v; @endphp
+                    <td class="val">{{ fmtDash($v) }}</td>
+                @endforeach
+                @php $totalPnAll += $rowTotal; @endphp
+                <td class="val font-weight-bold">{{ fmtBold($rowTotal) }}</td>
+            </tr>
+        @endforeach
+
+        {{-- TOTAL PENERIMAAN --}}
+        <tr class="row-total-penerimaan">
+            <td class="text-right"><strong>TOTAL PENERIMAAN</strong></td>
+            @php $gTP = 0; @endphp
+            @foreach($bulanListFiltered as $b => $nm)
+                <td class="val">{{ fmtBold($totalPenerima[$b]) }}</td>
+                @php $gTP += $totalPenerima[$b]; @endphp
+            @endforeach
+            <td class="val">{{ fmtBold($gTP) }}</td>
+        </tr>
+
+        <tr><td colspan="{{ $nCol }}" style="background:#f5f5f5;height:6px;"></td></tr>
+
+        {{-- ================================================================
+             DROPPING HO
+             ================================================================ --}}
+        <tr>
+            <td colspan="{{ $nCol }}" class="sec-dropping">DROPPING HO</td>
+        </tr>
+
+        @foreach($dropAgg as $kat => $subs)
+            @php $katTotPerBulan = $sumKat($dropAgg, $kat, $bulanListFiltered); @endphp
+
+            @if(in_array($kat, $groupedKat))
+                {{-- KATEGORI DIGRUP: Tampilkan 1 baris total saja --}}
+                @php $gKat = 0; @endphp
+                <tr class="row-gaji-group">
+                    <td><strong>{{ $kat }}</strong></td>
+                    @foreach($bulanListFiltered as $b => $nm)
+                        <td class="val">{{ fmtBold($katTotPerBulan[$b]) }}</td>
+                        @php $gKat += $katTotPerBulan[$b]; @endphp
                     @endforeach
+                    <td class="val">{{ fmtBold($gKat) }}</td>
                 </tr>
-            </thead>
-            <tbody>
-                {{-- SECTION PENERIMA --}}
-                <tr class="section-header fw-bold">
-                    <td colspan="{{ count($bulanListFiltered) + 2 }}" class="kolom-total"><strong>PENERIMAAN</strong></td>
+            @else
+                {{-- KATEGORI DITAMPILKAN DETAIL --}}
+                <tr class="row-kat-header">
+                    <td colspan="{{ $nCol }}">{{ $kat }}</td>
                 </tr>
-                
-                @php
-                    $subtotalPenerima = [];
-                    foreach($bulanListFiltered as $b => $n) {
-                        $subtotalPenerima[$b] = 0;
-                    }
-                @endphp
-                
-                @foreach($result['penerima'] as $kategori => $bulanData)
-                    @php
-                        $totalKategori = 0;
-                    @endphp
-                    <tr class="kategori-row2">
-                        <td>{{ $kategori }}</td>
-                        @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                            @php
-                                $nilai = $bulanData[$noBulan] ?? 0;
-                                $totalKategori += $nilai;
-                                $subtotalPenerima[$noBulan] += $nilai;
-                            @endphp
-                            <td class="text-right">{{ number_format($nilai, 0, ',', '.') }}</td>
+                @php $subTotAll = 0; $subTotPerBulan = []; foreach($bulanListFiltered as $b=>$n) $subTotPerBulan[$b]=0; @endphp
+                @foreach($subs as $sub => $bData)
+                    @php $rowTot = 0; @endphp
+                    <tr class="row-item">
+                        <td>- {{ $sub }}</td>
+                        @foreach($bulanListFiltered as $b => $nm)
+                            @php $v = $bData[$b] ?? 0; $rowTot += $v; $subTotPerBulan[$b] += $v; @endphp
+                            <td class="val">{{ fmtDash($v) }}</td>
                         @endforeach
-                        <td class="text-right font-weight-bold">{{ number_format($totalKategori, 0, ',', '.') }}</td>
+                        @php $subTotAll += $rowTot; @endphp
+                        <td class="val font-weight-bold">{{ fmtBold($rowTot) }}</td>
                     </tr>
                 @endforeach
-                
-                {{-- TOTAL PENERIMAAN --}}
-                <tr class="total-row table-success">
-                    <td class="text-right"><strong>TOTAL PENERIMAAN</strong></td>
-                    @php $totalPenerimaanAll = 0; @endphp
-                    @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                        @php $totalPenerimaanAll += $subtotalPenerima[$noBulan]; @endphp
-                        <td class="text-right">{{ number_format($subtotalPenerima[$noBulan], 0, ',', '.') }}</td>
+                <tr class="row-sub-total">
+                    <td>Jumlah {{ $kat }}</td>
+                    @foreach($bulanListFiltered as $b => $nm)
+                        <td class="val">{{ fmtBold($subTotPerBulan[$b]) }}</td>
                     @endforeach
-                    <td class="text-right">{{ number_format($totalPenerimaanAll, 0, ',', '.') }}</td>
+                    <td class="val">{{ fmtBold($subTotAll) }}</td>
                 </tr>
+            @endif
+        @endforeach
 
-                <tr>
-                    <td></td>
-                </tr>
-                {{-- SECTION DROPPING --}}
-                <tr class="section-header">
-                    <td colspan="{{ count($bulanListFiltered) + 2 }}" class="kolom-dropping"><strong>DROPPING HO</strong></td>
-                </tr>
-                
-                @php
-                    $subtotalDropping = [];
-                    $subtotalPerKategori = []; // Untuk tracking total per kategori
-                    foreach($bulanListFiltered as $b => $n) {
-                        $subtotalDropping[$b] = 0;
-                    }
-                    $currentKategori = null;
-                    $currentSubKriteria = null;
-                @endphp
+        {{-- TOTAL DROPPING HO --}}
+        <tr class="row-total-dropping">
+            <td class="text-right"><strong>TOTAL DROPPING HO</strong></td>
+            @php $gTD = 0; @endphp
+            @foreach($bulanListFiltered as $b => $nm)
+                <td class="val">{{ fmtBold($totalDropAll[$b]) }}</td>
+                @php $gTD += $totalDropAll[$b]; @endphp
+            @endforeach
+            <td class="val">{{ fmtBold($gTD) }}</td>
+        </tr>
 
-                @if(isset($result['dropping']) && count($result['dropping']) > 0)
-                    @foreach($result['dropping'] as $key => $item)
-                        @php
-                            $totalItem = 0;
-                            $showKategoriHeader = ($currentKategori !== $item['kategori']);
-                            $showSubKriteria = ($currentSubKriteria !== ($item['kategori'].'|'.$item['sub_kriteria']));
-                            
-                            // Jika kategori berubah dan bukan pertama kali, tampilkan total kategori sebelumnya
-                            $showKategoriTotal = false;
-                            if ($currentKategori !== null && $showKategoriHeader) {
-                                $showKategoriTotal = true;
-                            }
-                            
-                            // Inisialisasi array untuk kategori baru
-                            if ($showKategoriHeader && !isset($subtotalPerKategori[$item['kategori']])) {
-                                $subtotalPerKategori[$item['kategori']] = [];
-                                foreach($bulanListFiltered as $b => $n) {
-                                    $subtotalPerKategori[$item['kategori']][$b] = 0;
-                                }
-                            }
-                        @endphp
-                        
-                        {{-- TAMPILKAN TOTAL KATEGORI SEBELUMNYA --}}
-                        @if($showKategoriTotal)
-                            <tr class="table-info font-weight-bold">
-                                <td style="padding-left: 15px;">
-                                Jumlah {{ $currentKategori }}
-                                </td>
-                                @php $totalKategoriAll = 0; @endphp
-                                @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                                    @php 
-                                        $nilaiKat = $subtotalPerKategori[$currentKategori][$noBulan] ?? 0;
-                                        $totalKategoriAll += $nilaiKat;
-                                    @endphp
-                                    <td class="text-right">{{ number_format($nilaiKat, 0, ',', '.') }}</td>
-                                @endforeach
-                                <td class="text-right">{{ number_format($totalKategoriAll, 0, ',', '.') }}</td>
-                            </tr>
-                        @endif
-                        
-                        {{-- HEADER KATEGORI BARU --}}
-                        @if($showKategoriHeader)
-                            <tr class="kategori-row">
-                                <td colspan="{{ count($bulanListFiltered) + 2 }}">
-                                    <strong>{{ $item['kategori'] }}</strong>
-                                </td>
-                            </tr>
-                            @php 
-                                $currentKategori = $item['kategori'];
-                                $currentSubKriteria = null; // reset sub kriteria saat kategori berubah
-                            @endphp
-                        @endif
+        {{-- SELISIH PENERIMAAN TERHADAP DROPPING --}}
+        <tr class="row-selisih-pdn-drop">
+            <td><strong>SELISIH PENERIMAAN TERHADAP DROPPING</strong></td>
+            @php $gSPD = 0; @endphp
+            @foreach($bulanListFiltered as $b => $nm)
+                @php $sel = $totalPenerima[$b] - $totalDropAll[$b]; $gSPD += $sel; @endphp
+                <td class="val {{ $sel < 0 ? 'neg' : '' }}">{{ fmtDash($sel) }}</td>
+            @endforeach
+            <td class="val {{ $gSPD < 0 ? 'neg' : '' }}">{{ fmtDash($gSPD) }}</td>
+        </tr>
 
-                        {{-- HEADER SUB KRITERIA (hanya tampil sekali per sub_kriteria) --}}
-                        @if($showSubKriteria)
-                            <tr class="">
-                                <td colspan="{{ count($bulanListFiltered) + 2 }}" style="padding-left: 15px;">
-                                    {{ $item['sub_kriteria'] }}
-                                </td>
-                            </tr>
-                            @php $currentSubKriteria = $item['kategori'].'|'.$item['sub_kriteria']; @endphp
-                        @endif
-                        
-                        {{-- DETAIL ROW (item_kriteria saja, sub_kriteria sudah di atas) --}}
-                        <tr class="detail-row">
-                            <td class="text-info" style="padding-left: 30px;"> 
-                                {{ "- " . $item['item_kriteria'] }}
-                            </td>
-                            @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                                @php
-                                    $nilai = $item['data'][$noBulan] ?? 0;
-                                    $totalItem += $nilai;
-                                    $subtotalDropping[$noBulan] += $nilai;
-                                    
-                                    // Tambahkan ke subtotal kategori
-                                    if (!isset($subtotalPerKategori[$currentKategori][$noBulan])) {
-                                        $subtotalPerKategori[$currentKategori][$noBulan] = 0;
-                                    }
-                                    $subtotalPerKategori[$currentKategori][$noBulan] += $nilai;
-                                @endphp
-                                <td class="text-right">{{ number_format($nilai, 0, ',', '.') }}</td>
-                            @endforeach
-                            <td class="text-right">{{ number_format($totalItem, 0, ',', '.') }}</td>
-                        </tr>
-                        
-                        {{-- TAMPILKAN TOTAL KATEGORI TERAKHIR (di akhir loop) --}}
-                        @if($loop->last && $currentKategori !== null)
-                            <tr class="table-info font-weight-bold">
-                                <td style="padding-left: 15px;">
-                                Jumlah {{ $currentKategori }}
-                                </td>
-                                @php $totalKategoriAll = 0; @endphp
-                                @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                                    @php 
-                                        $nilaiKat = $subtotalPerKategori[$currentKategori][$noBulan] ?? 0;
-                                        $totalKategoriAll += $nilaiKat;
-                                    @endphp
-                                    <td class="text-right">{{ number_format($nilaiKat, 0, ',', '.') }}</td>
-                                @endforeach
-                                <td class="text-right">{{ number_format($totalKategoriAll, 0, ',', '.') }}</td>
-                            </tr>
-                        @endif
+        <tr><td colspan="{{ $nCol }}" style="background:#f5f5f5;height:6px;"></td></tr>
+
+        {{-- ================================================================
+             PEMBAYARAN
+             ================================================================ --}}
+        <tr>
+            <td colspan="{{ $nCol }}" class="sec-pembayaran">PEMBAYARAN</td>
+        </tr>
+
+        @foreach($payAgg as $kat => $subs)
+            @php $katTotPerBulanP = $sumKat($payAgg, $kat, $bulanListFiltered); @endphp
+
+            @if(in_array($kat, $groupedKat))
+                @php $gKatP = 0; @endphp
+                <tr class="row-gaji-group">
+                    <td><strong>{{ $kat }}</strong></td>
+                    @foreach($bulanListFiltered as $b => $nm)
+                        <td class="val">{{ fmtBold($katTotPerBulanP[$b]) }}</td>
+                        @php $gKatP += $katTotPerBulanP[$b]; @endphp
                     @endforeach
-                    
-                    {{-- TOTAL DROPPING KESELURUHAN --}}
-                    <tr class="total-row table-success">
-                        <td class="text-right"><strong> TOTAL DROPPING HO</strong></td>
-                        @php $totalDroppingAll = 0; @endphp
-                        @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                            @php $totalDroppingAll += $subtotalDropping[$noBulan]; @endphp
-                            <td class="text-right">{{ number_format($subtotalDropping[$noBulan], 0, ',', '.') }}</td>
+                    <td class="val">{{ fmtBold($gKatP) }}</td>
+                </tr>
+            @else
+                <tr class="row-kat-header">
+                    <td colspan="{{ $nCol }}">{{ $kat }}</td>
+                </tr>
+                @php $subTotAllP = 0; $subTotPerBulanP = []; foreach($bulanListFiltered as $b=>$n) $subTotPerBulanP[$b]=0; @endphp
+                @foreach($subs as $sub => $bData)
+                    @php $rowTotP = 0; @endphp
+                    <tr class="row-item">
+                        <td>- {{ $sub }}</td>
+                        @foreach($bulanListFiltered as $b => $nm)
+                            @php $v = $bData[$b] ?? 0; $rowTotP += $v; $subTotPerBulanP[$b] += $v; @endphp
+                            <td class="val">{{ fmtDash($v) }}</td>
                         @endforeach
-                        <td class="text-right">{{ number_format($totalDroppingAll, 0, ',', '.') }}</td>
+                        @php $subTotAllP += $rowTotP; @endphp
+                        <td class="val font-weight-bold">{{ fmtBold($rowTotP) }}</td>
                     </tr>
-                @else
-                    <tr>
-                        <td colspan="{{ count($bulanListFiltered) + 2 }}" class="text-center text-muted">
-                            Tidak ada data dropping
-                        </td>
-                    </tr>
-                @endif
-
-                {{-- SELISIH PENERIMAAN DAN DROPPING --}}
-                <tr class="kolom-total font-weight-bold ">
-                    <td >SELISIH PENERIMAAN TERHADAP DROPPING HO</td>
-                    @php $selisihAll = 0; @endphp
-                    @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                        @php 
-                            $selisih = $subtotalPenerima[$noBulan] - $subtotalDropping[$noBulan];
-                            $selisihAll += $selisih;
-                        @endphp
-                        <td class="text-right"> {{ formatMinus($selisih) }}</td>
+                @endforeach
+                <tr class="row-sub-total">
+                    <td>Jumlah {{ $kat }}</td>
+                    @foreach($bulanListFiltered as $b => $nm)
+                        <td class="val">{{ fmtBold($subTotPerBulanP[$b]) }}</td>
                     @endforeach
-                    <td class="text-right"> {{ formatMinus($selisihAll) }}</td>
+                    <td class="val">{{ fmtBold($subTotAllP) }}</td>
                 </tr>
+            @endif
+        @endforeach
 
-                <tr>
-                    <td></td>
-                </tr>
-                {{-- SECTION PEMBAYARAN --}}
-                <tr class="section-header">
-                    <td colspan="{{ count($bulanListFiltered) + 2 }}" class="kolom-dropping">PEMBAYARAN</td>
-                </tr>
+        {{-- TOTAL PEMBAYARAN --}}
+        <tr class="row-total-pembayaran">
+            <td class="text-right"><strong>TOTAL PEMBAYARAN</strong></td>
+            @php $gTP2 = 0; @endphp
+            @foreach($bulanListFiltered as $b => $nm)
+                <td class="val">{{ fmtBold($totalPayAll[$b]) }}</td>
+                @php $gTP2 += $totalPayAll[$b]; @endphp
+            @endforeach
+            <td class="val">{{ fmtBold($gTP2) }}</td>
+        </tr>
 
-                @php
-                    $subtotalPembayaran = [];
-                    $subtotalPerKategoriPembayaran = [];
-                    foreach($bulanListFiltered as $b => $n) {
-                        $subtotalPembayaran[$b] = 0;
-                    }
-                    $currentKategoriPembayaran = null;
-                    $currentSubKriteriaPembayaran = null;
-                @endphp
+        {{-- SELISIH PEMBAYARAN TERHADAP PENERIMAAN --}}
+        <tr class="row-selisih-pay-pdn">
+            <td><strong>SELISIH PEMBAYARAN TERHADAP PENERIMAAN</strong></td>
+            @php $gSeiPP = 0; @endphp
+            @foreach($bulanListFiltered as $b => $nm)
+                @php $s2 = $totalPenerima[$b] - $totalPayAll[$b]; $gSeiPP += $s2; @endphp
+                <td class="val {{ $s2 < 0 ? 'neg' : '' }}">{{ fmtDash($s2) }}</td>
+            @endforeach
+            <td class="val {{ $gSeiPP < 0 ? 'neg' : '' }}">{{ fmtDash($gSeiPP) }}</td>
+        </tr>
 
-                @if(isset($result['pembayaran']) && count($result['pembayaran']) > 0)
-                    @foreach($result['pembayaran'] as $key => $item)
-                        @php
-                            $totalItem = 0;
-                            $showKategoriHeader = ($currentKategoriPembayaran !== $item['kategori']);
-                            $showSubKriteriaPembayaran = ($currentSubKriteriaPembayaran !== ($item['kategori'].'|'.$item['sub_kriteria']));
-                            
-                            // Tampilkan total kategori sebelumnya
-                            $showKategoriTotal = false;
-                            if ($currentKategoriPembayaran !== null && $showKategoriHeader) {
-                                $showKategoriTotal = true;
-                            }
-                            
-                            // Inisialisasi array untuk kategori baru
-                            if ($showKategoriHeader && !isset($subtotalPerKategoriPembayaran[$item['kategori']])) {
-                                $subtotalPerKategoriPembayaran[$item['kategori']] = [];
-                                foreach($bulanListFiltered as $b => $n) {
-                                    $subtotalPerKategoriPembayaran[$item['kategori']][$b] = 0;
-                                }
-                            }
-                        @endphp
-                        
-                        {{-- TAMPILKAN TOTAL KATEGORI SEBELUMNYA --}}
-                        @if($showKategoriTotal)
-                            <tr class="table-info font-weight-bold">
-                                <td style="padding-left: 15px;">
-                                    Jumlah {{ $currentKategoriPembayaran }}
-                                </td>
-                                @php $totalKategoriAll = 0; @endphp
-                                @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                                    @php 
-                                        $nilaiKat = $subtotalPerKategoriPembayaran[$currentKategoriPembayaran][$noBulan] ?? 0;
-                                        $totalKategoriAll += $nilaiKat;
-                                    @endphp
-                                    <td class="text-right">{{ number_format($nilaiKat, 0, ',', '.') }}</td>
-                                @endforeach
-                                <td class="text-right">{{ number_format($totalKategoriAll, 0, ',', '.') }}</td>
-                            </tr>
-                        @endif
-                        
-                        {{-- HEADER KATEGORI BARU --}}
-                        @if($showKategoriHeader)
-                            <tr class="kategori-row">
-                                <td colspan="{{ count($bulanListFiltered) + 2 }}">
-                                    <strong>{{ $item['kategori'] }}</strong>
-                                </td>
-                            </tr>
-                            @php 
-                                $currentKategoriPembayaran = $item['kategori'];
-                                $currentSubKriteriaPembayaran = null; // reset sub kriteria saat kategori berubah
-                            @endphp
-                        @endif
-                        
-                        {{-- HEADER SUB KRITERIA PEMBAYARAN (hanya tampil sekali per sub_kriteria) --}}
-                        @if($showSubKriteriaPembayaran)
-                            <tr class="">
-                                <td colspan="{{ count($bulanListFiltered) + 2 }}" style="padding-left: 15px;">
-                                    {{ $item['sub_kriteria'] }}
-                                </td>
-                            </tr>
-                            @php $currentSubKriteriaPembayaran = $item['kategori'].'|'.$item['sub_kriteria']; @endphp
-                        @endif
+        {{-- SELISIH PEMBAYARAN TERHADAP DROPPING --}}
+        <tr class="row-selisih-pay-drop">
+            <td><strong>SELISIH PEMBAYARAN TERHADAP DROPPING</strong></td>
+            @php $gSeiDP = 0; @endphp
+            @foreach($bulanListFiltered as $b => $nm)
+                @php $s3 = $totalDropAll[$b] - $totalPayAll[$b]; $gSeiDP += $s3; @endphp
+                <td class="val {{ $s3 < 0 ? 'neg' : '' }}">{{ fmtDash($s3) }}</td>
+            @endforeach
+            <td class="val {{ $gSeiDP < 0 ? 'neg' : '' }}">{{ fmtDash($gSeiDP) }}</td>
+        </tr>
 
-                        {{-- DETAIL ROW (item_kriteria saja) --}}
-                        <tr class="detail-row">
-                            <td class="text-info" style="padding-left: 30px;">
-                               {{ "- " . $item['item_kriteria'] }}
-                            </td>
-                            @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                                @php
-                                    $nilai = $item['data'][$noBulan] ?? 0;
-                                    $totalItem += $nilai;
-                                    $subtotalPembayaran[$noBulan] += $nilai;
-                                    
-                                    // Tambahkan ke subtotal kategori
-                                    if (!isset($subtotalPerKategoriPembayaran[$currentKategoriPembayaran][$noBulan])) {
-                                        $subtotalPerKategoriPembayaran[$currentKategoriPembayaran][$noBulan] = 0;
-                                    }
-                                    $subtotalPerKategoriPembayaran[$currentKategoriPembayaran][$noBulan] += $nilai;
-                                @endphp
-                                <td class="text-right">{{ number_format($nilai, 0, ',', '.') }}</td>
-                            @endforeach
-                            <td class="text-right">{{ number_format($totalItem, 0, ',', '.') }}</td>
-                        </tr>
-                        
-                        {{-- TAMPILKAN TOTAL KATEGORI TERAKHIR --}}
-                        @if($loop->last && $currentKategoriPembayaran !== null)
-                            <tr class="table-info font-weight-bold">
-                                <td style="padding-left: 15px;">
-                                    Jumlah {{ $currentKategoriPembayaran }}
-                                </td>
-                                @php $totalKategoriAll = 0; @endphp
-                                @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                                    @php 
-                                        $nilaiKat = $subtotalPerKategoriPembayaran[$currentKategoriPembayaran][$noBulan] ?? 0;
-                                        $totalKategoriAll += $nilaiKat;
-                                    @endphp
-                                    <td class="text-right">{{ number_format($nilaiKat, 0, ',', '.') }}</td>
-                                @endforeach
-                                <td class="text-right">{{ number_format($totalKategoriAll, 0, ',', '.') }}</td>
-                            </tr>
-                        @endif
-                    @endforeach
-                @else
-                    <tr>
-                        <td colspan="{{ count($bulanListFiltered) + 2 }}" class="text-center text-muted">
-                            Tidak ada data pembayaran
-                        </td>
-                    </tr>
-                @endif
+        <tr><td colspan="{{ $nCol }}" style="height:6px;"></td></tr>
 
-                {{-- TOTAL PEMBAYARAN --}}
-                <tr class="total-row table-success">
-                    <td class="text-right"><strong>TOTAL PEMBAYARAN</strong></td>
-                    @php $totalPembayaranAll = 0; @endphp
-                    @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                        @php $totalPembayaranAll += $subtotalPembayaran[$noBulan]; @endphp
-                        <td class="text-right">{{ number_format($subtotalPembayaran[$noBulan], 0, ',', '.') }}</td>
-                    @endforeach
-                    <td class="text-right">{{ number_format($totalPembayaranAll, 0, ',', '.') }}</td>
-                </tr>
-                {{-- SELISIH DROPPING DAN PEMBAYARAN --}}
-                <tr class="kolom-total font-weight-bold">
-                    <td>SELISIH DROPPING TERHADAP PEMBAYARAN</td>
-                    @php $selisihDropPembayaranAll = 0; @endphp
-                    @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                        @php 
-                            $selisihDropPembayaran = $subtotalDropping[$noBulan] - $subtotalPembayaran[$noBulan];
-                            $selisihDropPembayaranAll += $selisihDropPembayaran;
-                        @endphp
-                        <td class="text-right">{{ formatMinus($selisihDropPembayaran) }}</td>
-                    @endforeach
-                    <td class="text-right">{{ formatMinus($selisihDropPembayaranAll) }}</td>
-                </tr>
+        {{-- ================================================================
+             BARIS SUMMARY KUNING
+             ================================================================ --}}
+        <tr class="row-summary-cpo">
+            <td><strong>PENERIMAAN PENJUALAN CPO &amp; KERNEL</strong></td>
+            @php $gCPK = 0; @endphp
+            @foreach($bulanListFiltered as $b => $nm)
+                <td class="val">{{ fmtBold($cpnKernel[$b]) }}</td>
+                @php $gCPK += $cpnKernel[$b]; @endphp
+            @endforeach
+            <td class="val">{{ fmtBold($gCPK) }}</td>
+        </tr>
 
-                {{-- SELISIH PENERIMAAN DAN PEMBAYARAN --}}
-                <tr class="bg-danger text-white font-weight-bold">
-                    <td>SELISIH PENERIMAAN TERHADAP PEMBAYARAN</td>
-                    @php $selisihPenerimaanPembayaranAll = 0; @endphp
-                    @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                        @php 
-                            $selisihPenerimaanPembayaran = $subtotalPenerima[$noBulan] - $subtotalPembayaran[$noBulan];
-                            $selisihPenerimaanPembayaranAll += $selisihPenerimaanPembayaran;
-                        @endphp
-                        <td class="text-right">{{ formatMinus($selisihPenerimaanPembayaran) }}</td>
-                    @endforeach
-                    <td class="text-right">{{ formatMinus($selisihPenerimaanPembayaranAll) }}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+        <tr class="row-summary-dtbs">
+            <td><strong>DROPPING TBS</strong></td>
+            @php $gDTBS = 0; @endphp
+            @foreach($bulanListFiltered as $b => $nm)
+                <td class="val">{{ fmtBold($dropTBS[$b]) }}</td>
+                @php $gDTBS += $dropTBS[$b]; @endphp
+            @endforeach
+            <td class="val">{{ fmtBold($gDTBS) }}</td>
+        </tr>
+
+        <tr class="row-summary-ptbs">
+            <td><strong>PEMBAYARAN TBS</strong></td>
+            @php $gPTBS = 0; @endphp
+            @foreach($bulanListFiltered as $b => $nm)
+                <td class="val">{{ fmtBold($payTBS[$b]) }}</td>
+                @php $gPTBS += $payTBS[$b]; @endphp
+            @endforeach
+            <td class="val">{{ fmtBold($gPTBS) }}</td>
+        </tr>
+
+    </tbody>
+</table>
+</div>
 </div>

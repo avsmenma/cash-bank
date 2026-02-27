@@ -64,20 +64,7 @@
     @push('scripts')
         <script>
             $(document).ready(function () {
-                $('#reservationdate').datetimepicker({
-                    format: 'YYYY-MM-DD',
-                    icons: {
-                        time: 'far fa-clock',
-                        date: 'far fa-calendar',
-                        up: 'fas fa-chevron-up',
-                        down: 'fas fa-chevron-down',
-                        previous: 'fas fa-chevron-left',
-                        next: 'fas fa-chevron-right',
-                        today: 'far fa-calendar-check',
-                        clear: 'far fa-trash-alt',
-                        close: 'far fa-times-circle'
-                    }
-                });
+                // datetimepicker digantikan native HTML5 date input
             });
             $('#ModalCreateMasuk').on('shown.bs.modal', function () {
                 $('#formCreateMasuk')[0].reset();
@@ -88,7 +75,9 @@
                     width: '100%'
                 });
 
-                $('[name="tanggal"]').val(moment().format('YYYY-MM-DD'));
+                // Set tanggal hari ini ke native date input
+                var today = new Date().toISOString().split('T')[0];
+                $('#tanggal_masuk').val(today);
             });
             $('#edit').on('shown.bs.modal', function (event) {
 

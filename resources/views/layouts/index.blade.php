@@ -134,14 +134,7 @@
                             </a>
                         </li>
 
-                        <!-- DAFTAR VA -->
-                        <li class="nav-item">
-                            <a href="{{ route('daftarBank.index') }}"
-                                class="nav-link {{ request()->routeIs('daftarBank.*') ? 'active' : ''}}">
-                                <i class="nav-icon fas fa-th"></i>
-                                <p>Daftar VA</p>
-                            </a>
-                        </li>
+
                         <li class="nav-item">
                             <a href="{{ route('permintaan.index') }}"
                                 class="nav-link {{ request()->routeIs('permintaan.*') ? 'active' : ''}}">
@@ -167,9 +160,9 @@
 
                         <!-- DAFTAR BANK -->
                         <li
-                            class="nav-item {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'rekening-koran.*') ? 'menu-open menu-is-opening' : '' }}">
+                            class="nav-item {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'rekening-koran.*', 'daftarBank.*') ? 'menu-open menu-is-opening' : '' }}">
                             <a href="#"
-                                class="nav-link {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'rekening-koran.*') ? 'active' : '' }}">
+                                class="nav-link {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'rekening-koran.*', 'daftarBank.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-university"></i>
                                 <p>
                                     Daftar Bank
@@ -178,6 +171,12 @@
                             </a>
 
                             <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('daftarBank.index') }}"
+                                        class="nav-link {{ request()->routeIs('daftarBank.*') ? 'active' : '' }}">
+                                        <p>Virtual Account</p>
+                                    </a>
+                                </li>
                                 <li class="nav-item">
                                     <a href="{{ route('bank-masuk.index') }}"
                                         class="nav-link {{ request()->routeIs('bank-masuk.index') ? 'active' : '' }}">

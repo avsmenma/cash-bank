@@ -32,9 +32,9 @@
     #mk-table .th-uraian { min-width: 300px; max-width: 400px; white-space: normal; }
     #mk-table .col-num   { width: 28px; text-align: center; }
 
-    /* Nilai rupiah: rata KIRI */
-    #mk-table .td-val      { text-align: left; min-width: 85px; }
-    #mk-table .td-val-bold { text-align: left; font-weight: bold; min-width: 85px; }
+    /* Nilai rupiah: rata KANAN */
+    #mk-table .td-val      { text-align: right; min-width: 85px; }
+    #mk-table .td-val-bold { text-align: right; font-weight: bold; min-width: 85px; }
 
     /* Header section warna (referensi Excel) */
     .th-no-uraian  { background: #2F4F4F !important; color: #fff !important; }

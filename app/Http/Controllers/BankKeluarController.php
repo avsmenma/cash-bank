@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -950,6 +950,7 @@ class BankKeluarController extends Controller
                     'bank_masuk.debet',
                     DB::raw('0 as kredit'),
                     'bank_masuk.no_sap',
+                    DB::raw('NULL as no_agenda'),
                     DB::raw('NULL as nama_kriteria'),
                     DB::raw('NULL as nama_sub_kriteria'),
                     DB::raw('NULL as nama_item_sub_kriteria'),
@@ -986,6 +987,7 @@ class BankKeluarController extends Controller
                     DB::raw('0 as debet'),
                     'bank_keluars.kredit',
                     'bank_keluars.no_sap',
+                    'bank_keluars.no_agenda',
                     'kategori_kriteria.nama_kriteria',
                     'sub_kriteria.nama_sub_kriteria',
                     'item_sub_kriteria.nama_item_sub_kriteria',
@@ -1025,6 +1027,7 @@ class BankKeluarController extends Controller
                     DB::raw('0 as debet'),
                     'bank_keluars.kredit',
                     'bank_keluars.no_sap',
+                    'bank_keluars.no_agenda',
                     'kategori_kriteria.nama_kriteria',
                     'sub_kriteria.nama_sub_kriteria',
                     'item_sub_kriteria.nama_item_sub_kriteria',
@@ -1531,7 +1534,7 @@ class BankKeluarController extends Controller
 //     'tahunList'       => $tahunList,
 //     'bulanList'       => $bulanList,
 //     'tanggalList'     => $tanggalList,
-//     'bankTujuanList'  => $bankTujuanList, // ✅ WAJIB
+//     'bankTujuanList'  => $bankTujuanList, // âœ… WAJIB
 //     'sumberDanaList'  => $sumberDanaList ?? collect(),
 //     // 'kategoriList'    => $kategoriList ?? collect(),
 //     'rekapJenisPembayaran' =>  $jenisPembayaranList,

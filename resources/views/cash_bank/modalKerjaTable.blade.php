@@ -18,7 +18,6 @@
     $weekTemplate = ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
 @endphp
 
-@push('styles')
 <style>
     #mk-table {
         font-size: 10px;
@@ -81,7 +80,6 @@
     .sticky-col2 { position: sticky; left: 28px; z-index: 2; }
     .table-scroll { overflow-x: auto; max-width: 100%; }
 </style>
-@endpush
 
 @if(empty($bulanAktif))
     <div class="alert alert-info m-3">Tidak ada data untuk filter yang dipilih.</div>

@@ -519,4 +519,19 @@ class dashboardController extends Controller
         return view('cash_bank.dashboard');
     }
 
+    public function modalKerja(Request $request)
+    {
+        $bulanList = [
+            1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April',
+            5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus',
+            9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'
+        ];
+
+        $tahun = $request->tahun ?? date('Y');
+        $bulanDari = $request->bulan_dari ?? 1;
+        $bulanSampai = $request->bulan_sampai ?? 12;
+
+        return view('cash_bank.modalKerja', compact('tahun', 'bulanList', 'bulanDari', 'bulanSampai'));
+    }
+
 }

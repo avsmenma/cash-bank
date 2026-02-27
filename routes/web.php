@@ -46,6 +46,9 @@ Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
     Route::get('/dashboard-cash-bank/view_pdf', [dashboardController::class, 'view_pdf'])
         ->name('dashboard.pdf');
 
+    Route::get('/dashboard-modal-kerja', [dashboardController::class, 'modalKerja'])
+        ->name('dashboard.modal-kerja.index');
+
 });
 // Route::group(['middleware' => ['auth','check_role:admin']], function(){
 //     Route::get('/dashboard-pembayaran', [DashboardPembayaranController::class, 'index'])

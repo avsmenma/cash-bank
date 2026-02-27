@@ -116,6 +116,12 @@
                                         <p>PD & PvD</p>
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('dashboard.modal-kerja.index') }}"
+                                        class="nav-link {{ request()->routeIs('dashboard.modal-kerja.index') ? 'active' : ''}}">
+                                        <p>Modal Kerja</p>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
 

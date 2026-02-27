@@ -82,12 +82,6 @@
             </div>
         </div>
 
-        {{-- LEGEND --}}
-        <div class="mb-2 d-flex align-items-center" style="gap:16px;font-size:11px;">
-            <span><span class="legend-dot" style="background:#d4edff;"></span> Bank Masuk (Debet)</span>
-            <span><span class="legend-dot" style="background:#fff8f0;"></span> Bank Keluar (Kredit)</span>
-        </div>
-
         {{-- TABLE --}}
         <div class="card shadow" style="border:none;">
             <div class="card-body p-0 table-responsive">
@@ -206,14 +200,8 @@
 }
 
 /* ====== ROWS ====== */
-.rk-row-debet {
-    background-color: #d4edff;
-}
-.rk-row-debet:hover { background-color: #b8ddf7; }
-.rk-row-kredit {
-    background-color: #fff8f0;
-}
-.rk-row-kredit:hover { background-color: #fcebd7; }
+tbody tr { background-color: #ffffff; }
+tbody tr:hover { background-color: #f5f8fc; }
 
 /* ====== NILAI ====== */
 .rk-debet  { color: #1a7a3d; font-weight: 600; }
@@ -234,14 +222,6 @@
 .rk-footer .rk-saldo  { color: #fad7a0 !important; }
 
 /* ====== LEGEND DOT ====== */
-.legend-dot {
-    display: inline-block;
-    width: 14px; height: 14px;
-    border-radius: 3px;
-    margin-right: 4px;
-    vertical-align: middle;
-    border: 1px solid #ccc;
-}
 </style>
 
 <script>

@@ -1,4 +1,4 @@
-@push('style')
+@push('styles')
     <style>
         #example {
             table-layout: auto;
@@ -109,10 +109,10 @@
                             $totalRealisasi += $re;
                         @endphp
 
-                        <td>{{ formatMinus($r) }}</td>
-                        <td>{{ formatMinus($re) }}</td>
-                        <td>{{ formatMinus($s) }}</td>
-                        <td>{{ formatMinus($p, 2) }}%</td>
+                        <td class="text-right">{{ formatMinus($r) }}</td>
+                        <td class="text-right">{{ formatMinus($re) }}</td>
+                        <td class="text-right">{{ formatMinus($s) }}</td>
+                        <td class="text-right">{{ formatMinus($p, 2) }}%</td>
                     @endforeach
 
                     @php
@@ -149,10 +149,10 @@
                         $totalRealisasi += $re;
                     @endphp
 
-                    <td>{{ formatMinus($r) }}</td>
-                    <td>{{ formatMinus($re) }}</td>
-                    <td>{{ formatMinus($s) }}</td>
-                    <td>{{ formatMinus($p, 2) }}%</td>
+                    <td class="text-right">{{ formatMinus($r) }}</td>
+                    <td class="text-right">{{ formatMinus($re) }}</td>
+                    <td class="text-right">{{ formatMinus($s) }}</td>
+                    <td class="text-right">{{ formatMinus($p, 2) }}%</td>
                 @endforeach
 
                 @php
@@ -162,10 +162,10 @@
                         : 0;
                 @endphp
 
-                <td>{{ formatMinus($totalRencana) }}</td>
-                <td>{{ formatMinus($totalRealisasi) }}</td>
-                <td>{{ formatMinus($totalSelisih) }}</td>
-                <td>{{ formatMinus($totalPersen, 2) }}%</td>
+                <td class="text-right">{{ formatMinus($totalRencana) }}</td>
+                <td class="text-right">{{ formatMinus($totalRealisasi) }}</td>
+                <td class="text-right">{{ formatMinus($totalSelisih) }}</td>
+                <td class="text-right">{{ formatMinus($totalPersen, 2) }}%</td>
             </tr>
 
             {{-- ================= DROPPING ================= --}}
@@ -209,10 +209,10 @@
                                     $totalRealisasi += $re;
                                 @endphp
 
-                                <td>{{ formatMinus($r) }}</td>
-                                <td>{{ formatMinus($re) }}</td>
-                                <td>{{ formatMinus($s) }}</td>
-                                <td>{{ formatMinus($p, 2) }}%</td>
+                                <td class="text-right">{{ formatMinus($r) }}</td>
+                                <td class="text-right">{{ formatMinus($re) }}</td>
+                                <td class="text-right">{{ formatMinus($s) }}</td>
+                                <td class="text-right">{{ formatMinus($p, 2) }}%</td>
                             @endforeach
 
                             @php
@@ -222,10 +222,10 @@
                                     : 0;
                             @endphp
 
-                            <td>{{ formatMinus($totalRencana) }}</td>
-                            <td>{{ formatMinus($totalRealisasi) }}</td>
-                            <td>{{ formatMinus($totalSelisih) }}</td>
-                            <td>{{ formatMinus($totalPersen, 2) }}%</td>
+                            <td class="text-right">{{ formatMinus($totalRencana) }}</td>
+                            <td class="text-right">{{ formatMinus($totalRealisasi) }}</td>
+                            <td class="text-right">{{ formatMinus($totalSelisih) }}</td>
+                            <td class="text-right">{{ formatMinus($totalPersen, 2) }}%</td>
                         </tr>
                     @endforeach
                 @endforeach
@@ -251,10 +251,10 @@
                         $totalRealisasi += $re;
                     @endphp
 
-                    <td>{{ formatMinus($r) }}</td>
-                    <td>{{ formatMinus($re) }}</td>
-                    <td>{{ formatMinus($s) }}</td>
-                    <td>{{ formatMinus($p, 2) }}%</td>
+                    <td class="text-right">{{ formatMinus($r) }}</td>
+                    <td class="text-right">{{ formatMinus($re) }}</td>
+                    <td class="text-right">{{ formatMinus($s) }}</td>
+                    <td class="text-right">{{ formatMinus($p, 2) }}%</td>
                 @endforeach
 
                 @php
@@ -264,10 +264,10 @@
                         : 0;
                 @endphp
 
-                <td>{{ formatMinus($totalRencana) }}</td>
-                <td>{{ formatMinus($totalRealisasi) }}</td>
-                <td>{{ formatMinus($totalSelisih) }}</td>
-                <td>{{ formatMinus($totalPersen, 2) }}%</td>
+                <td class="text-right">{{ formatMinus($totalRencana) }}</td>
+                <td class="text-right">{{ formatMinus($totalRealisasi) }}</td>
+                <td class="text-right">{{ formatMinus($totalSelisih) }}</td>
+                <td class="text-right">{{ formatMinus($totalPersen, 2) }}%</td>
             </tr>
 
         </tbody>

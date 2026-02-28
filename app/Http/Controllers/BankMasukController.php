@@ -294,31 +294,43 @@ class BankMasukController extends Controller
             $tanggalStr = trim((string)$tanggalRaw);
             if (empty($tanggalStr) || ($debetNum <= 0 && empty($sumberRaw))) continue;
 
-            // Resolve referensi (partial match)
+            // Resolve referensi — HANYA jika nilai tidak kosong (str_contains(x,'') selalu true!)
             $sumberFound = null;
-            foreach ($sumberDanaMap as $nama => $id) {
-                if (str_contains(strtolower($nama), strtolower($sumberRaw)) || str_contains(strtolower($sumberRaw), strtolower($nama))) {
-                    $sumberFound = $nama; break;
+            if (!empty($sumberRaw)) {
+                foreach ($sumberDanaMap as $nama => $id) {
+                    if (str_contains(strtolower($nama), strtolower($sumberRaw)) || str_contains(strtolower($sumberRaw), strtolower($nama))) {
+                        $sumberFound = $nama; break;
+                    }
                 }
             }
+
             $bankFound = null;
-            foreach ($bankTujuanMap as $nama => $id) {
-                if (str_contains(strtolower($nama), strtolower($bankRaw)) || str_contains(strtolower($bankRaw), strtolower($nama))) {
-                    $bankFound = $nama; break;
+            if (!empty($bankRaw)) {
+                foreach ($bankTujuanMap as $nama => $id) {
+                    if (str_contains(strtolower($nama), strtolower($bankRaw)) || str_contains(strtolower($bankRaw), strtolower($nama))) {
+                        $bankFound = $nama; break;
+                    }
                 }
             }
+
             $kategoriFound = null;
-            foreach ($kategoriMap as $nama => $id) {
-                if (str_contains(strtolower($nama), strtolower($kategoriRaw)) || str_contains(strtolower($kategoriRaw), strtolower($nama))) {
-                    $kategoriFound = $nama; break;
+            if (!empty($kategoriRaw)) {
+                foreach ($kategoriMap as $nama => $id) {
+                    if (str_contains(strtolower($nama), strtolower($kategoriRaw)) || str_contains(strtolower($kategoriRaw), strtolower($nama))) {
+                        $kategoriFound = $nama; break;
+                    }
                 }
             }
+
             $jenisFound = null;
-            foreach ($jenisPembMap as $nama => $id) {
-                if (str_contains(strtolower($nama), strtolower($jenisRaw)) || str_contains(strtolower($jenisRaw), strtolower($nama))) {
-                    $jenisFound = $nama; break;
+            if (!empty($jenisRaw)) {
+                foreach ($jenisPembMap as $nama => $id) {
+                    if (str_contains(strtolower($nama), strtolower($jenisRaw)) || str_contains(strtolower($jenisRaw), strtolower($nama))) {
+                        $jenisFound = $nama; break;
+                    }
                 }
             }
+
 
             // Format tanggal
             $tanggalFormatted = null;

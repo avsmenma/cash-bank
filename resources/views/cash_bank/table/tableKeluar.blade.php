@@ -4,12 +4,21 @@
             table-layout: auto !important;
             width: 100% !important;
         }
-
         #example3 th,
         #example3 td {
             white-space: nowrap;
-            /* biar kolom melebar */
             vertical-align: middle;
+        }
+        /* Header navy - harus di sini agar berlaku saat scrollX aktif */
+        #example3 thead th,
+        .dataTables_scrollHead thead th {
+            background: #0d3b6e !important;
+            color: #fff !important;
+            font-size: 11.5px;
+            font-weight: 600;
+            padding: 9px 8px;
+            border-color: #1a5276 !important;
+            text-align: center;
         }
     </style>
 @endpush

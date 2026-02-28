@@ -1,4 +1,3 @@
-@push('styles')
 <style>
     #cashflow-table {
         table-layout: auto !important;
@@ -28,7 +27,6 @@
     /* Nilai negatif / dalam kurung berwarna merah */
     .neg { color: #c00000; }
 </style>
-@endpush
 
 @php
     /**

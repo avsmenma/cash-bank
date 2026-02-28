@@ -1,5 +1,4 @@
 
-@push('styles')
 <style>
     #cashflow-table-pvd {
         table-layout: auto !important;
@@ -23,7 +22,6 @@
 
    
 </style>
-@endpush
 @php
     $bulanColors = [
         1 => 'bg-januari',

@@ -219,14 +219,10 @@ class BankMasukController extends Controller
     public function importExcel(Request $request)
     {
         $request->validate([
-            'fileExcel' => 'required|mimes:xlsx,xls'
+            'fileExcel' => 'required|mimes:xlsx,xls,csv'
         ]);
         ini_set('memory_limit', '-1');
         set_time_limit(0);
-
-        // $file = $request->file('fileExcel')->store('public/import');
-
-        // Excel::import(new importSheet, $file);
 
         Excel::import(
             new importSheet,
@@ -237,6 +233,160 @@ class BankMasukController extends Controller
             ->route('bank-masuk.index')
             ->with('success', 'Data berhasil diimport');
     }
+
+    /**
+     * PREVIEW: Parse file tanpa simpan, return JSON untuk preview modal
+     */
+    public function previewImport(Request $request)
+    {
+        $request->validate([
+            'fileExcel' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        ini_set('memory_limit', '-1');
+        set_time_limit(0);
+
+        $file = $request->file('fileExcel');
+
+        // Simpan file sementara
+        $tempPath = $file->store('import_temp', 'local');
+        session(['masuk_import_temp' => $tempPath]);
+
+        // Baca data dari file sebagai array dengan heading row
+        $headingImport = new class implements \Maatwebsite\Excel\Concerns\WithHeadingRow {
+            public function headingRow(): int { return 1; }
+        };
+        $rows = Excel::toArray($headingImport, $file);
+        $sheetRows = $rows[0] ?? [];
+
+
+        // Lookup referensi dari DB (cache semuanya)
+        $sumberDanaMap  = \App\Models\SumberDana::pluck('id_sumber_dana', 'nama_sumber_dana')->toArray();
+        $bankTujuanMap  = \App\Models\BankTujuan::pluck('id_bank_tujuan', 'nama_tujuan')->toArray();
+        $kategoriMap    = \App\Models\KategoriKriteria::pluck('id_kategori_kriteria', 'nama_kriteria')->toArray();
+        $jenisPembMap   = \App\Models\JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran')->toArray();
+
+        $preview  = [];
+        $warnings = 0;
+
+        foreach ($sheetRows as $i => $row) {
+            // Skip baris kosong
+            if (empty(array_filter(array_values($row)))) continue;
+            // Skip jika semua nilai string header (baris pertama sebelum ToModel skip)
+            $tanggalRaw    = $row['tanggal'] ?? $row[1] ?? null;
+            $sumberRaw     = trim($row['sumber_dana'] ?? $row[2] ?? '');
+            $bankRaw       = trim($row['bank_tujuan'] ?? $row[3] ?? '');
+            $kategoriRaw   = trim($row['kategori'] ?? $row[4] ?? '');
+            $penerimaRaw   = trim($row['penerima'] ?? $row[5] ?? '');
+            $uraianRaw     = trim($row['uraian'] ?? $row[6] ?? '');
+            $debetRaw      = $row['debet'] ?? $row[7] ?? 0;
+            $jenisRaw      = trim($row['jenis_pembayaran'] ?? $row[8] ?? '');
+
+            // Resolve referensi (partial match)
+            $sumberFound = null;
+            foreach ($sumberDanaMap as $nama => $id) {
+                if (str_contains(strtolower($nama), strtolower($sumberRaw)) || str_contains(strtolower($sumberRaw), strtolower($nama))) {
+                    $sumberFound = $nama; break;
+                }
+            }
+            $bankFound = null;
+            foreach ($bankTujuanMap as $nama => $id) {
+                if (str_contains(strtolower($nama), strtolower($bankRaw)) || str_contains(strtolower($bankRaw), strtolower($nama))) {
+                    $bankFound = $nama; break;
+                }
+            }
+            $kategoriFound = null;
+            foreach ($kategoriMap as $nama => $id) {
+                if (str_contains(strtolower($nama), strtolower($kategoriRaw)) || str_contains(strtolower($kategoriRaw), strtolower($nama))) {
+                    $kategoriFound = $nama; break;
+                }
+            }
+            $jenisFound = null;
+            foreach ($jenisPembMap as $nama => $id) {
+                if (str_contains(strtolower($nama), strtolower($jenisRaw)) || str_contains(strtolower($jenisRaw), strtolower($nama))) {
+                    $jenisFound = $nama; break;
+                }
+            }
+
+            // Format tanggal
+            $tanggalFormatted = null;
+            if ($tanggalRaw) {
+                try {
+                    if (is_numeric($tanggalRaw)) {
+                        $dt = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float)$tanggalRaw);
+                        $tanggalFormatted = \Carbon\Carbon::instance($dt)->format('d/m/Y');
+                    } else {
+                        $tanggalFormatted = \Carbon\Carbon::parse(str_replace(['-','.'], '/', $tanggalRaw))->format('d/m/Y');
+                    }
+                } catch (\Exception $e) {
+                    $tanggalFormatted = (string)$tanggalRaw;
+                }
+            }
+
+            // Format debet
+            $debetNum = 0;
+            if ($debetRaw !== null && $debetRaw !== '') {
+                $debetNum = (float) str_replace(['.', ','], ['', '.'], (string)$debetRaw);
+            }
+
+            $hasWarning = ($sumberRaw && !$sumberFound)
+                       || ($bankRaw && !$bankFound)
+                       || ($kategoriRaw && !$kategoriFound)
+                       || ($jenisRaw && !$jenisFound);
+
+            if ($hasWarning) $warnings++;
+
+            $preview[] = [
+                'no'       => $i + 1,
+                'tanggal'  => $tanggalFormatted,
+                'sumber'   => $sumberFound ?? ($sumberRaw ?: '-'),
+                'bank'     => $bankFound   ?? ($bankRaw   ?: '-'),
+                'kategori' => $kategoriFound ?? ($kategoriRaw ?: '-'),
+                'jenis'    => $jenisFound  ?? ($jenisRaw ?: '-'),
+                'penerima' => $penerimaRaw ?: '-',
+                'uraian'   => $uraianRaw   ?: '-',
+                'debet'    => number_format($debetNum, 0, ',', '.'),
+                'warning'  => $hasWarning,
+                // warning detail
+                'warn_sumber'   => $sumberRaw && !$sumberFound,
+                'warn_bank'     => $bankRaw && !$bankFound,
+                'warn_kategori' => $kategoriRaw && !$kategoriFound,
+                'warn_jenis'    => $jenisRaw && !$jenisFound,
+            ];
+        }
+
+        return response()->json([
+            'rows'     => $preview,
+            'total'    => count($preview),
+            'warnings' => $warnings,
+        ]);
+    }
+
+    /**
+     * CONFIRM: Eksekusi import dari file temp yang tersimpan di session
+     */
+    public function confirmImport(Request $request)
+    {
+        $tempPath = session('masuk_import_temp');
+
+        if (!$tempPath || !\Illuminate\Support\Facades\Storage::disk('local')->exists($tempPath)) {
+            return response()->json(['error' => 'File sementara tidak ditemukan. Silakan upload ulang.'], 422);
+        }
+
+        ini_set('memory_limit', '-1');
+        set_time_limit(0);
+
+        $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($tempPath);
+
+        Excel::import(new importMasuk, $fullPath);
+
+        // Hapus file temp & session
+        \Illuminate\Support\Facades\Storage::disk('local')->delete($tempPath);
+        session()->forget('masuk_import_temp');
+
+        return response()->json(['success' => 'Data berhasil diimport ke database.', 'total' => 0]);
+    }
+
 
     public function edit(string $id)
     {

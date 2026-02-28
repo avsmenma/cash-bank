@@ -218,9 +218,11 @@ class BankMasukController extends Controller
 
     public function importExcel(Request $request)
     {
-        $request->validate([
-            'fileExcel' => 'required|mimes:xlsx,xls,csv'
-        ]);
+        $request->validate(['fileExcel' => 'required|file']);
+        $ext = strtolower($request->file('fileExcel')->getClientOriginalExtension());
+        if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
+            return back()->withErrors(['fileExcel' => 'File harus berformat xlsx, xls, atau csv.']);
+        }
         ini_set('memory_limit', '-1');
         set_time_limit(0);
 
@@ -239,9 +241,11 @@ class BankMasukController extends Controller
      */
     public function previewImport(Request $request)
     {
-        $request->validate([
-            'fileExcel' => 'required|mimes:xlsx,xls,csv'
-        ]);
+        $request->validate(['fileExcel' => 'required|file']);
+        $ext = strtolower($request->file('fileExcel')->getClientOriginalExtension());
+        if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
+            return response()->json(['message' => 'File harus berformat xlsx, xls, atau csv.'], 422);
+        }
 
         ini_set('memory_limit', '-1');
         set_time_limit(0);

@@ -1881,12 +1881,14 @@ class BankKeluarController extends Controller
 
     public function importExcel(Request $request)
     {
-        $request->validate([
-            'fileExcel' => 'required|mimes:csv,txt|max:10240' // Max 10MB
-        ]);
+        $request->validate(['fileExcel' => 'required|file']);
+        $ext = strtolower($request->file('fileExcel')->getClientOriginalExtension());
+        if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
+            return back()->withErrors(['fileExcel' => 'File harus berformat xlsx, xls, atau csv.']);
+        }
 
-        ini_set('memory_limit', '256M'); // Limit memory usage
-        set_time_limit(300); // 5 minutes max
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
 
         try {
             $file = $request->file('fileExcel');
@@ -1901,12 +1903,158 @@ class BankKeluarController extends Controller
 
         } catch (\Exception $e) {
             \Log::error('Import CSV failed: ' . $e->getMessage());
-
             return redirect()
                 ->route('bank-keluar.index')
                 ->with('error', 'Import gagal: ' . $e->getMessage());
         }
     }
+
+    /**
+     * PREVIEW: Baca CSV tanpa simpan, return JSON untuk modal preview
+     */
+    public function previewImport(Request $request)
+    {
+        $request->validate(['fileExcel' => 'required|file']);
+        $ext = strtolower($request->file('fileExcel')->getClientOriginalExtension());
+        if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
+            return response()->json(['message' => 'File harus berformat xlsx, xls, atau csv.'], 422);
+        }
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
+        $file = $request->file('fileExcel');
+
+        // Simpan sementara
+        $tempPath = $file->store('import_temp_keluar', 'local');
+        session(['keluar_import_temp' => $tempPath]);
+
+        $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($tempPath);
+
+        // Load cache referensi (1x query saja)
+        $sumberDanaMap  = \App\Models\SumberDana::pluck('id_sumber_dana', 'nama_sumber_dana')->toArray();
+        $bankTujuanMap  = \App\Models\BankTujuan::pluck('id_bank_tujuan', 'nama_tujuan')->toArray();
+        $kategoriMap    = \App\Models\KategoriKriteria::pluck('id_kategori_kriteria', 'nama_kriteria')->toArray();
+        $jenisPembMap   = \App\Models\JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran')->toArray();
+
+        // Helper partial match dengan guard empty
+        $findInMap = function($map, $search) {
+            if (empty($search)) return null;
+            $sl = strtolower(trim($search));
+            foreach ($map as $nama => $id) {
+                $nl = strtolower($nama);
+                if ($nl === $sl || str_contains($nl, $sl) || str_contains($sl, $nl)) {
+                    return $nama;
+                }
+            }
+            return null;
+        };
+
+        $handle = fopen($fullPath, 'r');
+        // Baca header & normalisasi
+        $header = fgetcsv($handle, 0, ';');
+        $header = array_map(fn($h) => strtolower(trim(str_replace(' ', '_', $h))), $header);
+
+        $preview  = [];
+        $warnings = 0;
+        $i = 0;
+
+        while (($row = fgetcsv($handle, 0, ';')) !== false) {
+            if (count($row) < count($header)) continue;
+            $data = array_combine($header, $row);
+
+            $tanggalRaw  = trim($data['tanggal'] ?? '');
+            $sumberRaw   = trim($data['sumber_dana'] ?? '');
+            $bankRaw     = trim($data['bank_tujuan'] ?? '');
+            $kategoriRaw = trim($data['kategori'] ?? '');
+            $penerimaRaw = trim($data['penerima'] ?? '');
+            $uraianRaw   = trim($data['uraian'] ?? '');
+            $debetRaw    = trim($data['debet'] ?? '');
+            $jenisRaw    = trim($data['jenis_pembayaran'] ?? '');
+
+            // Hitung kredit
+            $kreditNum = 0;
+            if (!empty($debetRaw)) {
+                $kreditNum = (float) str_replace(['.', ','], ['', '.'], $debetRaw);
+            }
+
+            // Skip baris kosong: wajib punya tanggal DAN (kredit > 0 ATAU sumber_dana tidak kosong)
+            if (empty($tanggalRaw) || ($kreditNum <= 0 && empty($sumberRaw))) continue;
+
+            // Lookup referensi
+            $sumberFound   = $findInMap($sumberDanaMap, $sumberRaw);
+            $bankFound     = $findInMap($bankTujuanMap, $bankRaw);
+            $kategoriFound = $findInMap($kategoriMap, $kategoriRaw);
+            $jenisFound    = $findInMap($jenisPembMap, $jenisRaw);
+
+            $hasWarning = ($sumberRaw && !$sumberFound)
+                       || ($bankRaw && !$bankFound)
+                       || ($kategoriRaw && !$kategoriFound)
+                       || ($jenisRaw && !$jenisFound);
+
+            if ($hasWarning) $warnings++;
+
+            $i++;
+            $preview[] = [
+                'no'       => $i,
+                'tanggal'  => $tanggalRaw,
+                'sumber'   => $sumberFound ?? ($sumberRaw ?: '-'),
+                'bank'     => $bankFound   ?? ($bankRaw   ?: '-'),
+                'kategori' => $kategoriFound ?? ($kategoriRaw ?: '-'),
+                'jenis'    => $jenisFound  ?? ($jenisRaw  ?: '-'),
+                'penerima' => $penerimaRaw ?: '-',
+                'uraian'   => $uraianRaw   ?: '-',
+                'kredit'   => number_format($kreditNum, 0, ',', '.'),
+                'warning'  => $hasWarning,
+                'warn_sumber'   => $sumberRaw && !$sumberFound,
+                'warn_bank'     => $bankRaw && !$bankFound,
+                'warn_kategori' => $kategoriRaw && !$kategoriFound,
+                'warn_jenis'    => $jenisRaw && !$jenisFound,
+            ];
+        }
+        fclose($handle);
+
+        return response()->json([
+            'rows'     => $preview,
+            'total'    => count($preview),
+            'warnings' => $warnings,
+        ]);
+    }
+
+    /**
+     * CONFIRM: Jalankan ImportKeluarCsv dari file temp di session
+     */
+    public function confirmImport(Request $request)
+    {
+        $tempPath = session('keluar_import_temp');
+
+        if (!$tempPath || !\Illuminate\Support\Facades\Storage::disk('local')->exists($tempPath)) {
+            return response()->json(['error' => 'File sementara tidak ditemukan. Silakan upload ulang.'], 422);
+        }
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
+        try {
+            $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($tempPath);
+
+            $importer = new \App\Imports\ImportKeluarCsv();
+            $result = $importer->import($fullPath);
+
+            \Illuminate\Support\Facades\Storage::disk('local')->delete($tempPath);
+            session()->forget('keluar_import_temp');
+
+            return response()->json([
+                'success' => "Data berhasil diimport! {$result['success']} baris tersimpan.",
+                'total'   => $result['success'],
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Confirm import keluar failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Import gagal: ' . $e->getMessage()], 500);
+        }
+    }
+
 
     public function edit(string $id)
     {

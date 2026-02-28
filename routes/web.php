@@ -120,6 +120,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/importExcel', [BankKeluarController::class, 'importExcel'])
             ->name('importExcel');
 
+        Route::post('/preview-import', [BankKeluarController::class, 'previewImport'])
+            ->name('previewImport');
+
+        Route::post('/confirm-import', [BankKeluarController::class, 'confirmImport'])
+            ->name('confirmImport');
+
         Route::get('/export_excel', [BankKeluarController::class, 'export_excel'])
             ->name('export_excel');
 

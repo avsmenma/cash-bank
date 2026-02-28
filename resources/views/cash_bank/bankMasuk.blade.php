@@ -113,10 +113,8 @@
     </div>
 
     {{-- TABLE CARD --}}
-    <div class="table-card">
-      <div class="table-responsive p-0">
-        @include('cash_bank.table.tableMasuk')
-      </div>
+    <div class="table-card p-3">
+      @include('cash_bank.table.tableMasuk')
     </div>
 
   </div>

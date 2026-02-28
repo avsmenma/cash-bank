@@ -94,7 +94,7 @@
     {{-- ACTION BAR --}}
     <div class="action-bar">
       <a href="#" rel="noopener" class="btn btn-danger btn-sm" id="deleteAllSelectedRecord">
-        <i class="fas fa-trash mr-1"></i>Hapus Terpilih
+        <i class="fas fa-trash mr-1"></i>Hapus
       </a>
       <a href="#" class="btn btn-warning btn-sm text-white" data-toggle="modal" data-target="#ModalImportFileExcel">
         <i class="fas fa-file-import mr-1"></i>Import Excel
@@ -113,10 +113,8 @@
     </div>
 
     {{-- TABLE CARD --}}
-    <div class="table-card">
-      <div class="table-responsive p-0">
-        @include('cash_bank.table.tableKeluar')
-      </div>
+    <div class="table-card p-3">
+      @include('cash_bank.table.tableKeluar')
     </div>
 
   </div>

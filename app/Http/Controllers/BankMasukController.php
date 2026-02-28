@@ -274,17 +274,25 @@ class BankMasukController extends Controller
         $warnings = 0;
 
         foreach ($sheetRows as $i => $row) {
-            // Skip baris kosong
-            if (empty(array_filter(array_values($row)))) continue;
-            // Skip jika semua nilai string header (baris pertama sebelum ToModel skip)
+            // Ambil nilai kolom utama dulu
             $tanggalRaw    = $row['tanggal'] ?? $row[1] ?? null;
-            $sumberRaw     = trim($row['sumber_dana'] ?? $row[2] ?? '');
-            $bankRaw       = trim($row['bank_tujuan'] ?? $row[3] ?? '');
-            $kategoriRaw   = trim($row['kategori'] ?? $row[4] ?? '');
-            $penerimaRaw   = trim($row['penerima'] ?? $row[5] ?? '');
-            $uraianRaw     = trim($row['uraian'] ?? $row[6] ?? '');
-            $debetRaw      = $row['debet'] ?? $row[7] ?? 0;
-            $jenisRaw      = trim($row['jenis_pembayaran'] ?? $row[8] ?? '');
+            $sumberRaw     = trim((string)($row['sumber_dana'] ?? $row[2] ?? ''));
+            $bankRaw       = trim((string)($row['bank_tujuan'] ?? $row[3] ?? ''));
+            $kategoriRaw   = trim((string)($row['kategori'] ?? $row[4] ?? ''));
+            $penerimaRaw   = trim((string)($row['penerima'] ?? $row[5] ?? ''));
+            $uraianRaw     = trim((string)($row['uraian'] ?? $row[6] ?? ''));
+            $debetRaw      = $row['debet'] ?? $row[7] ?? null;
+            $jenisRaw      = trim((string)($row['jenis_pembayaran'] ?? $row[8] ?? ''));
+
+            // Hitung nilai debet numerik untuk filter
+            $debetNum = 0;
+            if ($debetRaw !== null && $debetRaw !== '') {
+                $debetNum = (float) str_replace(['.', ','], ['', '.'], (string)$debetRaw);
+            }
+
+            // Skip baris kosong: wajib punya tanggal DAN (debet > 0 ATAU sumber_dana tidak kosong)
+            $tanggalStr = trim((string)$tanggalRaw);
+            if (empty($tanggalStr) || ($debetNum <= 0 && empty($sumberRaw))) continue;
 
             // Resolve referensi (partial match)
             $sumberFound = null;
@@ -327,11 +335,6 @@ class BankMasukController extends Controller
                 }
             }
 
-            // Format debet
-            $debetNum = 0;
-            if ($debetRaw !== null && $debetRaw !== '') {
-                $debetNum = (float) str_replace(['.', ','], ['', '.'], (string)$debetRaw);
-            }
 
             $hasWarning = ($sumberRaw && !$sumberFound)
                        || ($bankRaw && !$bankFound)

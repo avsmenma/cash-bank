@@ -67,7 +67,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>Bank Tujuan</label>
+                                <label>Jenis Pembayaran</label>
                                 <select class="select2"  id="id_jenis_pembayaran">
                                     @foreach($jenisPembayaran as $sd)
                                     <option value="{{ $sd->id_jenis_pembayaran }}">

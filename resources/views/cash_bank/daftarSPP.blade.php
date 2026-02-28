@@ -99,6 +99,7 @@
     let table = $('#example2').DataTable({
         processing: true,
         serverSide: true,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Semua']],
         ajax: {
             url: "{{ route('daftar-spp.data') }}",
             data: function (d) {

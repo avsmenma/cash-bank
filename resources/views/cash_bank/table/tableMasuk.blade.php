@@ -42,6 +42,7 @@
                 serverSide: true,
                 ordering: false,
                 autoWidth: false,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Semua']],
                 ajax: "{{ route('bank-masuk.data') }}",
                 columns: [
                     { data: 'checkbox' },

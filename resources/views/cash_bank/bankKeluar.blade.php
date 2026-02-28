@@ -52,6 +52,25 @@
     #example3 td { font-size: 12px; vertical-align: middle; }
     tbody tr { background-color: #fff; }
     tbody tr:hover { background-color: #f0f5fb; }
+
+    /* DataTable controls */
+    .dataTables_wrapper .dataTables_length label,
+    .dataTables_wrapper .dataTables_filter label {
+        font-size: 12.5px; font-weight: 500; color: #444;
+        display: flex; align-items: center; gap: 6px; margin: 0;
+    }
+    .dataTables_wrapper .dataTables_length select {
+        border: 1px solid #ced4da; border-radius: 4px;
+        padding: 3px 8px; font-size: 12.5px; height: 32px;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #ced4da; border-radius: 4px;
+        padding: 4px 10px; font-size: 12.5px; height: 32px; min-width: 200px;
+    }
+    .dataTables_wrapper .dataTables_filter input:focus {
+        outline: none; border-color: #0d3b6e;
+        box-shadow: 0 0 0 2px rgba(13,59,110,.15);
+    }
 </style>
 @endpush
 

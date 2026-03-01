@@ -37,8 +37,8 @@ class ImportKeluarCsv
      */
     private function loadExistingKeys(): void
     {
-        $existing = \App\Models\BankKeluar::leftJoin('sumber_dana', 'bank_keluar.id_sumber_dana', '=', 'sumber_dana.id_sumber_dana')
-            ->select('bank_keluar.tanggal', 'sumber_dana.nama_sumber_dana', 'bank_keluar.uraian', 'bank_keluar.kredit')
+        $existing = \App\Models\BankKeluar::leftJoin('sumber_dana', 'bank_keluars.id_sumber_dana', '=', 'sumber_dana.id_sumber_dana')
+            ->select('bank_keluars.tanggal', 'sumber_dana.nama_sumber_dana', 'bank_keluars.uraian', 'bank_keluars.kredit')
             ->get();
 
         foreach ($existing as $row) {

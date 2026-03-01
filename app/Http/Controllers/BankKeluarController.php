@@ -1939,8 +1939,8 @@ class BankKeluarController extends Controller
 
         // Load existing data fingerprints untuk deteksi duplikat (tanggal+sumber+uraian+kredit)
         $existingKeluarKeys = [];
-        \App\Models\BankKeluar::leftJoin('sumber_dana', 'bank_keluar.id_sumber_dana', '=', 'sumber_dana.id_sumber_dana')
-            ->select('bank_keluar.tanggal', 'sumber_dana.nama_sumber_dana', 'bank_keluar.uraian', 'bank_keluar.kredit')
+        \App\Models\BankKeluar::leftJoin('sumber_dana', 'bank_keluars.id_sumber_dana', '=', 'sumber_dana.id_sumber_dana')
+            ->select('bank_keluars.tanggal', 'sumber_dana.nama_sumber_dana', 'bank_keluars.uraian', 'bank_keluars.kredit')
             ->get()->each(function($r) use (&$existingKeluarKeys) {
                 $k = md5(($r->tanggal ?? '') . '||' . strtolower(trim($r->nama_sumber_dana ?? '')) . '||' . strtolower(trim($r->uraian ?? '')) . '||' . (int)$r->kredit);
                 $existingKeluarKeys[$k] = true;

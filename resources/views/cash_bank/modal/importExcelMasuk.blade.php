@@ -44,16 +44,18 @@
         {{-- Info bar --}}
         <div id="previewInfoBar" class="d-flex align-items-center px-3 py-2" style="background:#f8f9fa; border-bottom:1px solid #dee2e6; gap:12px; flex-wrap:wrap;">
           <span class="badge badge-primary px-3 py-2" id="badgeTotal">Total: 0 baris</span>
-          <span class="badge badge-warning px-3 py-2" id="badgeWarn" style="display:none;">⚠ 0 baris tidak cocok referensi</span>
-          <small class="text-muted ml-auto"><span style="background:#fff3cd;padding:2px 8px;border-radius:3px;">Kuning</span> = referensi tidak ditemukan (tetap bisa diimport)</small>
+          <span class="badge badge-danger  px-3 py-2" id="badgeDuplik" style="display:none;">🔴 0 duplikat (di-skip)</span>
+          <span class="badge badge-warning px-3 py-2" id="badgeWarn"  style="display:none;">⚠ 0 referensi tidak cocok</span>
+          <small class="text-muted ml-auto"><span style="background:#fff3cd;padding:2px 8px;border-radius:3px;">Kuning</span> = referensi tidak cocok &nbsp;<span style="background:#fde8e8;padding:2px 8px;border-radius:3px;">Merah</span> = duplikat (di-skip)</small>
         </div>
 
         {{-- Tabel scroll --}}
         <div style="max-height:420px; overflow-y:auto; overflow-x:auto;">
-          <table class="table table-bordered table-sm mb-0" style="font-size:11.5px; min-width:900px;">
+          <table class="table table-bordered table-sm mb-0" style="font-size:11.5px; min-width:1000px;">
             <thead>
               <tr style="background:#0d3b6e; color:#fff; position:sticky; top:0; z-index:1;">
                 <th style="width:40px;">No</th>
+                <th>Agenda</th>
                 <th>Tanggal</th>
                 <th>Sumber Dana</th>
                 <th>Bank Tujuan</th>
@@ -75,7 +77,7 @@
           <i class="fas fa-times mr-1"></i>Batal
         </button>
         <button type="button" class="btn btn-success btn-sm" id="btnKonfirmasiImportMasuk" disabled>
-          <i class="fas fa-check mr-1"></i>Konfirmasi Import (<span id="confirmCount">0</span> baris)
+          <i class="fas fa-check mr-1"></i>Konfirmasi Import (<span id="confirmCount">0</span> baris baru)
         </button>
       </div>
     </div>
@@ -125,24 +127,31 @@ $(document).ready(function () {
                 btn.prop('disabled', false).html('<i class="fas fa-eye mr-1"></i>Preview Sebelum Import');
 
                 $('#badgeTotal').text('Total: ' + res.total + ' baris');
-                $('#confirmCount').text(res.total);
-                $('#btnKonfirmasiImportMasuk').prop('disabled', res.total === 0);
+                var newCount = res.new !== undefined ? res.new : res.total;
+                $('#confirmCount').text(newCount);
+                $('#btnKonfirmasiImportMasuk').prop('disabled', newCount === 0);
 
+                if (res.duplicates > 0) {
+                    $('#badgeDuplik').text('🔴 ' + res.duplicates + ' duplikat (di-skip)').show();
+                } else { $('#badgeDuplik').hide(); }
                 if (res.warnings > 0) {
-                    $('#badgeWarn').text('⚠ ' + res.warnings + ' baris tidak cocok referensi').show();
-                }
+                    $('#badgeWarn').text('⚠ ' + res.warnings + ' referensi tidak cocok').show();
+                } else { $('#badgeWarn').hide(); }
 
                 var html = '';
                 if (res.rows.length === 0) {
                     html = '<tr><td colspan="9" class="text-center text-muted py-4">Tidak ada data.</td></tr>';
                 } else {
                     res.rows.forEach(function (row) {
-                        var bg = row.warning ? 'background:#fff8dc;' : '';
+                        // Warna baris: duplikat = merah, warning = kuning, normal = putih
+                        var bg = row.duplicate ? 'background:#fde8e8;' : (row.warning ? 'background:#fff8dc;' : '');
+                        var dupBadge = row.duplicate ? ' <span style="background:#e74c3c;color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;">DUPLIKAT</span>' : '';
                         var warnIcon = function(flag) { return flag ? ' <span title="Tidak ditemukan di referensi" style="color:#e67e22;">⚠</span>' : ''; };
-                        html += '<tr style="' + bg + '">'
+                        html += '<tr style="' + bg + (row.duplicate ? 'text-decoration:line-through;opacity:0.7;' : '') + '">'
                             + '<td class="text-center">' + row.no + '</td>'
+                            + '<td>' + (row.agenda || '-') + '</td>'
                             + '<td>' + (row.tanggal || '-') + '</td>'
-                            + '<td>' + row.sumber + warnIcon(row.warn_sumber) + '</td>'
+                            + '<td>' + row.sumber + warnIcon(row.warn_sumber) + dupBadge + '</td>'
                             + '<td>' + row.bank + warnIcon(row.warn_bank) + '</td>'
                             + '<td>' + row.kategori + warnIcon(row.warn_kategori) + '</td>'
                             + '<td>' + row.jenis + warnIcon(row.warn_jenis) + '</td>'

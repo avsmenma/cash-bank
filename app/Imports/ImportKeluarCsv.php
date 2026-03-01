@@ -22,9 +22,39 @@ class ImportKeluarCsv
     private $itemSubKriteriaCache = [];
     private $jenisPembayaranCache = [];
 
+    /** Fingerprint dari data yang sudah ada (untuk skip duplikat) */
+    private array $existingKeys = [];
+
     public function __construct()
     {
         $this->loadCaches();
+        $this->loadExistingKeys();
+    }
+
+    /**
+     * Load fingerprint semua data bank_keluar yang sudah ada di DB
+     * Kriteria duplikat: tanggal + sumber_dana + uraian + kredit
+     */
+    private function loadExistingKeys(): void
+    {
+        $existing = \App\Models\BankKeluar::leftJoin('sumber_dana', 'bank_keluar.id_sumber_dana', '=', 'sumber_dana.id_sumber_dana')
+            ->select('bank_keluar.tanggal', 'sumber_dana.nama_sumber_dana', 'bank_keluar.uraian', 'bank_keluar.kredit')
+            ->get();
+
+        foreach ($existing as $row) {
+            $key = $this->makeKey(
+                $row->tanggal ?? '',
+                $row->nama_sumber_dana ?? '',
+                $row->uraian ?? '',
+                (int)$row->kredit
+            );
+            $this->existingKeys[$key] = true;
+        }
+    }
+
+    private function makeKey(string $tanggal, string $sumber, string $uraian, int $kredit): string
+    {
+        return md5($tanggal . '||' . strtolower(trim($sumber)) . '||' . strtolower(trim($uraian)) . '||' . $kredit);
     }
 
     /**
@@ -136,8 +166,9 @@ class ImportKeluarCsv
         $rowCount = 0;
         $successCount = 0;
         $errorCount = 0;
+        $skipCount  = 0;
         $batchData = [];
-        $batchSize = 100; // Insert per 100 rows
+        $batchSize = 100;
 
         DB::beginTransaction();
 
@@ -145,21 +176,47 @@ class ImportKeluarCsv
             while (($row = fgetcsv($handle, 0, ';')) !== false) {
                 $rowCount++;
 
-                // Skip empty rows
-                if (empty(array_filter($row)))
-                    continue;
+                // Skip baris benar-benar kosong
+                if (empty(array_filter($row))) continue;
+                if (count($row) < count($header)) continue;
 
-                // Map row to associative array
                 $data = array_combine($header, $row);
 
-                // Process row
+                // ===== SKIP DUPLIKAT (opsi A) =====
+                $tanggalStr  = trim($data['tanggal'] ?? '');
+                $sumberStr   = trim($data['sumber_dana'] ?? '');
+                $uraianStr   = trim($data['uraian'] ?? '');
+                $kreditVal   = trim($data['debet'] ?? '');
+                $kreditNum   = empty($kreditVal) ? 0 : (int)str_replace(['.', ','], ['', '.'], $kreditVal);
+
+                // Normalize tanggal ke Y-m-d untuk fingerprint
+                $tanggalNorm = '';
+                try {
+                    $tanggalNorm = \Carbon\Carbon::createFromFormat('d/m/Y', str_replace(['-', '.'], '/', $tanggalStr))->format('Y-m-d');
+                } catch (\Exception $e) { $tanggalNorm = $tanggalStr; }
+
+                // Cari nama sumber dana dari cache untuk fingerprint
+                $sumberNama = '';
+                foreach ($this->sumberDanaCache as $nama => $id) {
+                    if (strpos($nama, strtolower(trim($sumberStr))) !== false || strpos(strtolower(trim($sumberStr)), $nama) !== false) {
+                        $sumberNama = $nama; break;
+                    }
+                }
+                $fingerprint = $this->makeKey($tanggalNorm, $sumberNama ?: $sumberStr, $uraianStr, $kreditNum);
+
+                if (isset($this->existingKeys[$fingerprint])) {
+                    $skipCount++;
+                    continue; // duplikat — skip
+                }
+                $this->existingKeys[$fingerprint] = true;
+
+                // Process row → build record
                 $record = $this->processRow($data);
 
                 if ($record) {
                     $batchData[] = $record;
                     $successCount++;
 
-                    // Batch insert
                     if (count($batchData) >= $batchSize) {
                         BankKeluar::insert($batchData);
                         $batchData = [];
@@ -169,13 +226,9 @@ class ImportKeluarCsv
                     $errorCount++;
                 }
 
-                // Free memory every 500 rows
-                if ($rowCount % 500 === 0) {
-                    gc_collect_cycles();
-                }
+                if ($rowCount % 500 === 0) gc_collect_cycles();
             }
 
-            // Insert remaining batch
             if (!empty($batchData)) {
                 BankKeluar::insert($batchData);
                 Log::info("Inserted final batch");
@@ -184,13 +237,15 @@ class ImportKeluarCsv
             DB::commit();
             fclose($handle);
 
-            Log::info("CSV Import completed: {$successCount} success, {$errorCount} errors out of {$rowCount} rows");
+            Log::info("CSV Import: {$successCount} success, {$skipCount} skipped (duplicate), {$errorCount} errors out of {$rowCount} rows");
 
             return [
-                'total' => $rowCount,
+                'total'   => $rowCount,
                 'success' => $successCount,
-                'errors' => $errorCount
+                'skipped' => $skipCount,
+                'errors'  => $errorCount,
             ];
+
 
         } catch (\Exception $e) {
             DB::rollback();

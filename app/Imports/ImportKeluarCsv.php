@@ -158,7 +158,7 @@ class ImportKeluarCsv
 
         // Normalize header (lowercase, trim, replace spaces)
         $header = array_map(function ($h) {
-            return strtolower(trim(str_replace(' ', '_', $h)));
+            return str_replace(' ', '_', strtolower(trim($h)));
         }, $header);
 
         Log::info('CSV Headers: ' . implode(', ', $header));

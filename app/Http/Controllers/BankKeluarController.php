@@ -1964,7 +1964,7 @@ class BankKeluarController extends Controller
         $handle = fopen($fullPath, 'r');
         // Baca header & normalisasi
         $header = fgetcsv($handle, 0, ';');
-        $header = array_map(fn($h) => strtolower(trim(str_replace(' ', '_', $h))), $header);
+        $header = array_map(fn($h) => str_replace(' ', '_', strtolower(trim($h))), $header);
 
         $preview    = [];
         $warnings   = 0;

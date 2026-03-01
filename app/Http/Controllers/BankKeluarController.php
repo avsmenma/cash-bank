@@ -1932,10 +1932,12 @@ class BankKeluarController extends Controller
         $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($tempPath);
 
         // Load cache referensi (1x query saja)
-        $sumberDanaMap  = \App\Models\SumberDana::pluck('id_sumber_dana', 'nama_sumber_dana')->toArray();
-        $bankTujuanMap  = \App\Models\BankTujuan::pluck('id_bank_tujuan', 'nama_tujuan')->toArray();
-        $kategoriMap    = \App\Models\KategoriKriteria::pluck('id_kategori_kriteria', 'nama_kriteria')->toArray();
-        $jenisPembMap   = \App\Models\JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran')->toArray();
+        $sumberDanaMap    = \App\Models\SumberDana::pluck('id_sumber_dana', 'nama_sumber_dana')->toArray();
+        $bankTujuanMap    = \App\Models\BankTujuan::pluck('id_bank_tujuan', 'nama_tujuan')->toArray();
+        $kategoriMap      = \App\Models\KategoriKriteria::pluck('id_kategori_kriteria', 'nama_kriteria')->toArray();
+        $subKriteriaMap   = \App\Models\SubKriteria::pluck('id_sub_kriteria', 'nama_sub_kriteria')->toArray();
+        $itemSubKritMap   = \App\Models\ItemSubKriteria::pluck('id_item_sub_kriteria', 'nama_item_sub_kriteria')->toArray();
+        $jenisPembMap     = \App\Models\JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran')->toArray();
 
         // Load existing data fingerprints untuk deteksi duplikat (tanggal+sumber+uraian+kredit)
         $existingKeluarKeys = [];
@@ -1973,15 +1975,17 @@ class BankKeluarController extends Controller
             if (count($row) < count($header)) continue;
             $data = array_combine($header, $row);
 
-            $agendaRaw   = trim($data['agenda_tahun'] ?? '');
-            $tanggalRaw  = trim($data['tanggal'] ?? '');
-            $sumberRaw   = trim($data['sumber_dana'] ?? '');
-            $bankRaw     = trim($data['bank_tujuan'] ?? '');
-            $kategoriRaw = trim($data['kategori'] ?? '');
-            $penerimaRaw = trim($data['penerima'] ?? '');
-            $uraianRaw   = trim($data['uraian'] ?? '');
-            $debetRaw    = trim($data['debet'] ?? '');
-            $jenisRaw    = trim($data['jenis_pembayaran'] ?? '');
+            $agendaRaw      = trim($data['agenda_tahun'] ?? '');
+            $tanggalRaw     = trim($data['tanggal'] ?? '');
+            $sumberRaw      = trim($data['sumber_dana'] ?? '');
+            $bankRaw        = trim($data['bank_tujuan'] ?? '');
+            $kategoriRaw    = trim($data['kategori'] ?? '');
+            $subKritRaw     = trim($data['sub_kriteria'] ?? '');
+            $itemSubKritRaw = trim($data['item_sub_kriteria'] ?? '');
+            $penerimaRaw    = trim($data['penerima'] ?? '');
+            $uraianRaw      = trim($data['uraian'] ?? '');
+            $debetRaw       = trim($data['debet'] ?? '');
+            $jenisRaw       = trim($data['jenis_pembayaran'] ?? '');
 
             // Hitung kredit
             $kreditNum = 0;
@@ -1993,14 +1997,18 @@ class BankKeluarController extends Controller
             if (empty($tanggalRaw) || ($kreditNum <= 0 && empty($sumberRaw))) continue;
 
             // Lookup referensi
-            $sumberFound   = $findInMap($sumberDanaMap, $sumberRaw);
-            $bankFound     = $findInMap($bankTujuanMap, $bankRaw);
-            $kategoriFound = $findInMap($kategoriMap, $kategoriRaw);
-            $jenisFound    = $findInMap($jenisPembMap, $jenisRaw);
+            $sumberFound      = $findInMap($sumberDanaMap, $sumberRaw);
+            $bankFound        = $findInMap($bankTujuanMap, $bankRaw);
+            $kategoriFound    = $findInMap($kategoriMap, $kategoriRaw);
+            $subKritFound     = $findInMap($subKriteriaMap, $subKritRaw);
+            $itemSubKritFound = $findInMap($itemSubKritMap, $itemSubKritRaw);
+            $jenisFound       = $findInMap($jenisPembMap, $jenisRaw);
 
             $hasWarning = ($sumberRaw && !$sumberFound)
                        || ($bankRaw && !$bankFound)
                        || ($kategoriRaw && !$kategoriFound)
+                       || ($subKritRaw && !$subKritFound)
+                       || ($itemSubKritRaw && !$itemSubKritFound)
                        || ($jenisRaw && !$jenisFound);
 
             if ($hasWarning) $warnings++;
@@ -2020,22 +2028,26 @@ class BankKeluarController extends Controller
 
             $i++;
             $preview[] = [
-                'no'        => $i,
-                'agenda'    => $agendaRaw ?: '-',
-                'tanggal'   => $tanggalRaw,
-                'sumber'    => $sumberFound ?? ($sumberRaw ?: '-'),
-                'bank'      => $bankFound   ?? ($bankRaw   ?: '-'),
-                'kategori'  => $kategoriFound ?? ($kategoriRaw ?: '-'),
-                'jenis'     => $jenisFound  ?? ($jenisRaw  ?: '-'),
-                'penerima'  => $penerimaRaw ?: '-',
-                'uraian'    => $uraianRaw   ?: '-',
-                'kredit'    => number_format($kreditNum, 0, ',', '.'),
-                'warning'   => $hasWarning,
-                'duplicate' => $isDuplicate,
-                'warn_sumber'   => $sumberRaw && !$sumberFound,
-                'warn_bank'     => $bankRaw && !$bankFound,
-                'warn_kategori' => $kategoriRaw && !$kategoriFound,
-                'warn_jenis'    => $jenisRaw && !$jenisFound,
+                'no'            => $i,
+                'agenda'        => $agendaRaw ?: '-',
+                'tanggal'       => $tanggalRaw,
+                'sumber'        => $sumberFound      ?? ($sumberRaw   ?: '-'),
+                'bank'          => $bankFound         ?? ($bankRaw     ?: '-'),
+                'kategori'      => $kategoriFound     ?? ($kategoriRaw ?: '-'),
+                'sub_kriteria'  => $subKritFound      ?? ($subKritRaw  ?: '-'),
+                'item_sub_krit' => $itemSubKritFound  ?? ($itemSubKritRaw ?: '-'),
+                'jenis'         => $jenisFound        ?? ($jenisRaw    ?: '-'),
+                'penerima'      => $penerimaRaw ?: '-',
+                'uraian'        => $uraianRaw   ?: '-',
+                'kredit'        => number_format($kreditNum, 0, ',', '.'),
+                'warning'       => $hasWarning,
+                'duplicate'     => $isDuplicate,
+                'warn_sumber'       => $sumberRaw && !$sumberFound,
+                'warn_bank'         => $bankRaw && !$bankFound,
+                'warn_kategori'     => $kategoriRaw && !$kategoriFound,
+                'warn_sub_krit'     => $subKritRaw && !$subKritFound,
+                'warn_item_sub'     => $itemSubKritRaw && !$itemSubKritFound,
+                'warn_jenis'        => $jenisRaw && !$jenisFound,
             ];
         }
         fclose($handle);

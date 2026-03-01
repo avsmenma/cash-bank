@@ -53,7 +53,7 @@
 
         {{-- Tabel scroll --}}
         <div style="max-height:420px; overflow-y:auto; overflow-x:auto;">
-          <table class="table table-bordered table-sm mb-0" style="font-size:11.5px; min-width:1000px;">
+          <table class="table table-bordered table-sm mb-0" style="font-size:11px; min-width:1400px;">
             <thead>
               <tr style="background:#0d3b6e; color:#fff; position:sticky; top:0; z-index:1;">
                 <th style="width:40px;">No</th>
@@ -61,7 +61,9 @@
                 <th>Tanggal</th>
                 <th>Sumber Dana</th>
                 <th>Bank Tujuan</th>
-                <th>Kategori</th>
+                <th>Kategori/Kriteria</th>
+                <th>Sub Kriteria</th>
+                <th>Item Sub Kriteria</th>
                 <th>Jenis Pembayaran</th>
                 <th>Penerima</th>
                 <th>Uraian</th>
@@ -69,7 +71,7 @@
               </tr>
             </thead>
             <tbody id="previewTableBodyKeluar">
-              <tr><td colspan="9" class="text-center text-muted py-4">Memuat data...</td></tr>
+              <tr><td colspan="12" class="text-center text-muted py-4">Memuat data...</td></tr>
             </tbody>
           </table>
         </div>
@@ -142,7 +144,7 @@ $(document).ready(function () {
 
                 var html = '';
                 if (res.rows.length === 0) {
-                    html = '<tr><td colspan="9" class="text-center text-muted py-4">Tidak ada data valid.</td></tr>';
+                    html = '<tr><td colspan="12" class="text-center text-muted py-4">Tidak ada data valid.</td></tr>';
                 } else {
                     res.rows.forEach(function (row) {
                         var bg = row.duplicate ? 'background:#fde8e8;' : (row.warning ? 'background:#fff8dc;' : '');
@@ -155,6 +157,8 @@ $(document).ready(function () {
                             + '<td>' + row.sumber + warnIcon(row.warn_sumber) + dupBadge + '</td>'
                             + '<td>' + row.bank + warnIcon(row.warn_bank) + '</td>'
                             + '<td>' + row.kategori + warnIcon(row.warn_kategori) + '</td>'
+                            + '<td>' + (row.sub_kriteria || '-') + warnIcon(row.warn_sub_krit) + '</td>'
+                            + '<td>' + (row.item_sub_krit || '-') + warnIcon(row.warn_item_sub) + '</td>'
                             + '<td>' + row.jenis + warnIcon(row.warn_jenis) + '</td>'
                             + '<td>' + row.penerima + '</td>'
                             + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + row.uraian + '">' + row.uraian + '</td>'

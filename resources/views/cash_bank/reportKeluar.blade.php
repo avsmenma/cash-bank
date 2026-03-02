@@ -46,12 +46,12 @@
                             </select>
                         </div>
                         <div class="col-auto">
-                            <label class="mb-1 small font-weight-bold text-secondary">Bank Tujuan</label>
-                            <select name="bank_tujuan" class="form-control form-control-sm" onchange="submitForm()" style="min-width:160px;">
-                                <option value="">Semua Bank Tujuan</option>
-                                @foreach($bankTujuanList as $bank)
-                                    <option value="{{ $bank->id_bank_tujuan }}" {{ request('bank_tujuan') == $bank->id_bank_tujuan ? 'selected' : '' }}>
-                                        {{ $bank->nama_tujuan }}
+                            <label class="mb-1 small font-weight-bold text-secondary">Sumber Dana</label>
+                            <select name="sumber_dana[]" class="form-control form-control-sm" onchange="submitForm()" style="min-width:180px;">
+                                <option value="">Semua Sumber Dana</option>
+                                @foreach($sumberDanaList as $sd)
+                                    <option value="{{ $sd->id_sumber_dana }}" {{ collect(request('sumber_dana'))->contains($sd->id_sumber_dana) ? 'selected' : '' }}>
+                                        {{ $sd->nama_sumber_dana }}
                                     </option>
                                 @endforeach
                             </select>
@@ -106,7 +106,7 @@
                             <th class="rk-th text-center">No Agenda</th>
                             <th class="rk-th text-center">Tanggal</th>
                             <th class="rk-th text-center">No Bukti</th>
-                            <th class="rk-th text-center">Bank Tujuan</th>
+                            <th class="rk-th text-center">Sumber Dana</th>
                             <th class="rk-th text-center">Penerima / Dari</th>
                             <th class="rk-th text-center">Uraian</th>
                             <th class="rk-th text-center">Debet</th>
@@ -134,7 +134,7 @@
                                     {{ $row->tanggal ? \Carbon\Carbon::parse($row->tanggal)->format('d/m/Y') : '-' }}
                                 </td>
                                 <td class="rk-td">{{ $row->no_sap ?? '-' }}</td>
-                                <td class="rk-td">{{ $row->nama_tujuan ?? '-' }}</td>
+                                <td class="rk-td">{{ $row->nama_sumber_dana ?? '-' }}</td>
                                 <td class="rk-td">{{ $row->penerima ?? '-' }}</td>
                                 <td class="rk-td rk-uraian" title="{{ $row->uraian }}">{{ $row->uraian ?? '-' }}</td>
                                 <td class="text-right rk-td rk-debet">

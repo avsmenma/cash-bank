@@ -31,7 +31,7 @@ class ExcelPd implements FromView
             ->select(
                 'id_kategori_kriteria',
                 DB::raw('MONTH(tanggal) as bulan'),
-                DB::raw('SUM(nilai + ppn - potppn) as total')
+                DB::raw('SUM(nilai_inc_ppn) as total')
             )
             ->whereYear('tanggal', $tahun)
             ->whereBetween(DB::raw('MONTH(tanggal)'), [$bulanDari, $bulanSampai])

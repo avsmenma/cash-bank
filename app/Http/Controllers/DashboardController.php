@@ -33,7 +33,7 @@ class dashboardController extends Controller
         ->select(
             'id_kategori_kriteria',
             DB::raw('MONTH(tanggal) as bulan'),
-            DB::raw('SUM(nilai + ppn - potppn) as total')
+            DB::raw('SUM(nilai_inc_ppn) as total')
         )
         ->whereYear('tanggal', $tahun)
         ->whereBetween(DB::raw('MONTH(tanggal)'), [$bulanDari, $bulanSampai])
@@ -87,7 +87,7 @@ class dashboardController extends Controller
             }
         }
 
-        $result['penerima'][$kategori][$bulan] += $p->total / 1000;
+        $result['penerima'][$kategori][$bulan] += $p->total;
         $bulanAktif[$bulan] = true;
     }
 
@@ -742,4 +742,4 @@ class dashboardController extends Controller
         ));
     }
 
-}
+}

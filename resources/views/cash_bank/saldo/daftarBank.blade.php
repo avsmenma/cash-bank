@@ -159,6 +159,10 @@
         { data: 'created_at' },
         { data: 'updated_at' },
         { data: 'aksi', orderable: false, searchable: false }
+      ],
+      columnDefs: [
+        { targets: 1, className: 'text-center' },
+        { targets: 2, className: 'text-right' }
       ]
     });
   });

@@ -84,6 +84,20 @@
 
         {{-- TABLE --}}
         <div class="card shadow" style="border:none;">
+            {{-- Show Entries + Info --}}
+            <div class="d-flex align-items-center justify-content-between px-3 pt-3 pb-2">
+                <div class="d-flex align-items-center">
+                    <label class="mb-0 small font-weight-bold text-secondary mr-2">Tampilkan</label>
+                    <select id="showEntriesSelect" class="form-control form-control-sm" style="width:90px;" onchange="changePageSize()">
+                        <option value="10" selected>10</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="all">Semua</option>
+                    </select>
+                    <label class="mb-0 small font-weight-bold text-secondary ml-2">entri</label>
+                </div>
+                <div id="rkEntriesInfo" class="small text-secondary"></div>
+            </div>
             <div class="card-body p-0 table-responsive">
                 <table class="table table-bordered mb-0" id="rkTable">
                     <thead>
@@ -168,6 +182,13 @@
                     @endif
                 </table>
             </div>
+            {{-- Pagination Controls --}}
+            <div class="d-flex align-items-center justify-content-between px-3 py-2" id="rkPaginationWrap">
+                <div id="rkPageInfo" class="small text-secondary"></div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="rkPagination"></ul>
+                </nav>
+            </div>
         </div>
     </section>
 </div>
@@ -230,6 +251,97 @@ function resetFilter() {
     const tahun = document.querySelector('[name="tahun"]')?.value;
     window.location.href = '{{ route("bank-keluar.report") }}?tahun=' + (tahun || '');
 }
+
+// ===== Show Entries + Pagination =====
+(function() {
+    var currentPage = 1;
+    var pageSize    = 10;
+
+    function getRows() {
+        // semua <tr> di tbody, kecuali baris kosong (colspan)
+        return Array.from(document.querySelectorAll('#rkTable tbody tr')).filter(function(tr) {
+            return !tr.querySelector('td[colspan]');
+        });
+    }
+
+    function render() {
+        var rows = getRows();
+        var total = rows.length;
+
+        // sembunyikan / tampilkan baris
+        rows.forEach(function(tr, i) {
+            if (pageSize === 'all') {
+                tr.style.display = '';
+            } else {
+                var start = (currentPage - 1) * pageSize;
+                var end   = start + pageSize;
+                tr.style.display = (i >= start && i < end) ? '' : 'none';
+            }
+        });
+
+        // info entri
+        var infoEl   = document.getElementById('rkEntriesInfo');
+        var pageEl   = document.getElementById('rkPageInfo');
+        if (total === 0) {
+            if (infoEl) infoEl.textContent = '';
+            if (pageEl) pageEl.textContent = '';
+            document.getElementById('rkPagination').innerHTML = '';
+            return;
+        }
+
+        var start = pageSize === 'all' ? 1 : (currentPage - 1) * pageSize + 1;
+        var end   = pageSize === 'all' ? total : Math.min(currentPage * pageSize, total);
+        var text  = 'Menampilkan ' + start + ' – ' + end + ' dari ' + total + ' entri';
+        if (infoEl) infoEl.textContent = text;
+        if (pageEl) pageEl.textContent = text;
+
+        // pagination buttons
+        var pagUl = document.getElementById('rkPagination');
+        pagUl.innerHTML = '';
+        if (pageSize === 'all') return;
+
+        var totalPages = Math.ceil(total / pageSize);
+        if (totalPages <= 1) return;
+
+        function makeItem(label, page, disabled, active) {
+            var li = document.createElement('li');
+            li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+            var a = document.createElement('a');
+            a.className = 'page-link';
+            a.href = '#';
+            a.innerHTML = label;
+            a.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!disabled) { currentPage = page; render(); }
+            });
+            li.appendChild(a);
+            return li;
+        }
+
+        pagUl.appendChild(makeItem('&laquo;', currentPage - 1, currentPage === 1, false));
+
+        // tampilkan max 5 halaman di tengah
+        var startP = Math.max(1, currentPage - 2);
+        var endP   = Math.min(totalPages, startP + 4);
+        startP     = Math.max(1, endP - 4);
+        for (var p = startP; p <= endP; p++) {
+            pagUl.appendChild(makeItem(p, p, false, p === currentPage));
+        }
+
+        pagUl.appendChild(makeItem('&raquo;', currentPage + 1, currentPage === totalPages, false));
+    }
+
+    window.changePageSize = function() {
+        var sel = document.getElementById('showEntriesSelect');
+        pageSize    = sel.value === 'all' ? 'all' : parseInt(sel.value);
+        currentPage = 1;
+        render();
+    };
+
+    // init
+    document.addEventListener('DOMContentLoaded', function() { render(); });
+    render(); // fallback jika DOM sudah siap
+})();
 </script>
 
 @endsection

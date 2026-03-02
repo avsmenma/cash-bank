@@ -37,95 +37,86 @@
                         <div class="active tab-pane" id="activity">
                             <div class="row no-print">
                                 <div class="col-12">
-                                    {{-- BARIS 1: Tombol aksi --}}
-                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                                        {{-- Tombol Aksi --}}
                                         <a href="#" rel="noopener" class="btn btn-danger btn-sm" id="deleteAllSelectedRecord">
                                             <i class="fas fa-trash"></i> Delete All
                                         </a>
                                         <a href="javascript:void(0)" class="btn btn-success btn-sm" data-toggle="modal" data-target="#ModalCreatePenerima">
                                             <i class="fas fa-plus"></i> Tambah Data
                                         </a>
-                                        <a href="{{ route('penerima.export_excel') }}" class="btn btn-outline-danger btn-sm btn-download-excel" id="btnDownloadExcel">
+                                        <a href="{{ route('penerima.export_excel') }}" class="btn btn-outline-danger btn-sm" id="btnDownloadExcel">
                                             <i class="nav-icon fas fa-file-excel"></i> Download Excel
                                         </a>
                                         <a href="javascript:void(0)" class="btn btn-info btn-sm" data-toggle="modal" data-target="#ModalImportPenerima">
                                             <i class="fas fa-file-import"></i> Import Data
                                         </a>
-                                    </div>
 
-                                    {{-- BARIS 2: Filter --}}
-                                    <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
+                                        {{-- Separator --}}
+                                        <div style="width:1px;height:28px;background:#ccc;margin:0 4px;"></div>
+
                                         {{-- Filter Tahun --}}
-                                        <div style="min-width:100px;">
-                                            <label class="mb-1" style="font-size:12px;font-weight:600;">Tahun</label>
-                                            <select class="select2 form-control form-control-sm" id="filterTahunRealisasi">
-                                                @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
-                                                    <option value="{{ $t }}" {{ $t == date('Y') ? 'selected' : '' }}>{{ $t }}</option>
-                                                @endfor
-                                            </select>
-                                        </div>
+                                        <select class="select2 form-control form-control-sm" id="filterTahunRealisasi" style="width:90px;">
+                                            @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
+                                                <option value="{{ $t }}" {{ $t == date('Y') ? 'selected' : '' }}>{{ $t }}</option>
+                                            @endfor
+                                        </select>
 
                                         {{-- Filter Kategori --}}
-                                        <div style="min-width:180px;">
-                                            <label class="mb-1" style="font-size:12px;font-weight:600;">Kategori</label>
-                                            <select class="select2 form-control form-control-sm" id="filterKategoriRealisasi">
-                                                <option value="">— Semua Kategori —</option>
-                                                @foreach($kategoriKriteria as $k)
-                                                    <option value="{{ $k->id_kategori_kriteria }}">{{ $k->nama_kriteria }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
+                                        <select class="select2 form-control form-control-sm" id="filterKategoriRealisasi" style="width:170px;">
+                                            <option value="">— Semua Kategori —</option>
+                                            @foreach($kategoriKriteria as $k)
+                                                <option value="{{ $k->id_kategori_kriteria }}">{{ $k->nama_kriteria }}</option>
+                                            @endforeach
+                                        </select>
 
                                         {{-- Filter Dari Bulan --}}
-                                        <div style="min-width:130px;">
-                                            <label class="mb-1" style="font-size:12px;font-weight:600;">Dari Bulan</label>
-                                            <select class="form-control form-control-sm" id="filterBulanDariRealisasi">
-                                                <option value="">— Semua —</option>
-                                                <option value="1">Januari</option>
-                                                <option value="2">Februari</option>
-                                                <option value="3">Maret</option>
-                                                <option value="4">April</option>
-                                                <option value="5">Mei</option>
-                                                <option value="6">Juni</option>
-                                                <option value="7">Juli</option>
-                                                <option value="8">Agustus</option>
-                                                <option value="9">September</option>
-                                                <option value="10">Oktober</option>
-                                                <option value="11">November</option>
-                                                <option value="12">Desember</option>
-                                            </select>
-                                        </div>
+                                        <select class="form-control form-control-sm" id="filterBulanDariRealisasi" style="width:115px;">
+                                            <option value="">Dari Bulan</option>
+                                            <option value="1">Januari</option>
+                                            <option value="2">Februari</option>
+                                            <option value="3">Maret</option>
+                                            <option value="4">April</option>
+                                            <option value="5">Mei</option>
+                                            <option value="6">Juni</option>
+                                            <option value="7">Juli</option>
+                                            <option value="8">Agustus</option>
+                                            <option value="9">September</option>
+                                            <option value="10">Oktober</option>
+                                            <option value="11">November</option>
+                                            <option value="12">Desember</option>
+                                        </select>
 
                                         {{-- Filter Sampai Bulan --}}
-                                        <div style="min-width:130px;">
-                                            <label class="mb-1" style="font-size:12px;font-weight:600;">Sampai Bulan</label>
-                                            <select class="form-control form-control-sm" id="filterBulanSampaiRealisasi">
-                                                <option value="">— Semua —</option>
-                                                <option value="1">Januari</option>
-                                                <option value="2">Februari</option>
-                                                <option value="3">Maret</option>
-                                                <option value="4">April</option>
-                                                <option value="5">Mei</option>
-                                                <option value="6">Juni</option>
-                                                <option value="7">Juli</option>
-                                                <option value="8">Agustus</option>
-                                                <option value="9">September</option>
-                                                <option value="10">Oktober</option>
-                                                <option value="11">November</option>
-                                                <option value="12">Desember</option>
-                                            </select>
-                                        </div>
+                                        <select class="form-control form-control-sm" id="filterBulanSampaiRealisasi" style="width:115px;">
+                                            <option value="">Sampai Bulan</option>
+                                            <option value="1">Januari</option>
+                                            <option value="2">Februari</option>
+                                            <option value="3">Maret</option>
+                                            <option value="4">April</option>
+                                            <option value="5">Mei</option>
+                                            <option value="6">Juni</option>
+                                            <option value="7">Juli</option>
+                                            <option value="8">Agustus</option>
+                                            <option value="9">September</option>
+                                            <option value="10">Oktober</option>
+                                            <option value="11">November</option>
+                                            <option value="12">Desember</option>
+                                        </select>
 
-                                        {{-- Tombol Reset Filter --}}
-                                        <div>
-                                            <label class="mb-1" style="font-size:12px;">&nbsp;</label>
-                                            <button class="btn btn-secondary btn-sm d-block" id="resetFilterRealisasi">
-                                                <i class="fas fa-times"></i> Reset
-                                            </button>
-                                        </div>
+                                        {{-- Tombol Terapkan --}}
+                                        <button class="btn btn-primary btn-sm" id="terapkanFilterRealisasi">
+                                            <i class="fas fa-filter"></i> Terapkan
+                                        </button>
+
+                                        {{-- Tombol Reset --}}
+                                        <button class="btn btn-secondary btn-sm" id="resetFilterRealisasi">
+                                            <i class="fas fa-times"></i> Reset
+                                        </button>
                                     </div>
                                 </div>
                             </div>
+
 
 
                             @include('cash_bank.pembayaran.dataPenerima')

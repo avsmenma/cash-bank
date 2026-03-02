@@ -110,25 +110,20 @@
             setTimeout(() => {
                 table.ajax.reload();
             }, 300);
-            $('#filterTahunRealisasi, #filterKategoriRealisasi, #filterBulanDariRealisasi, #filterBulanSampaiRealisasi')
-                .on('change select2:select select2:clear', function () {
-
-                    if (!table) {
-                        console.error('TABLE BELUM ADA');
-                        return;
-                    }
-
-                    console.log('FILTER JALAN, reload datatable');
-                    table.ajax.reload();
-                });
+            // Terapkan filter — reload DataTable hanya saat tombol diklik
+            $('#terapkanFilterRealisasi').on('click', function () {
+                if (table) table.ajax.reload();
+            });
 
             // Reset Filter
             $('#resetFilterRealisasi').on('click', function () {
+                $('#filterTahunRealisasi').val({{ date('Y') }}).trigger('change');
                 $('#filterKategoriRealisasi').val('').trigger('change');
                 $('#filterBulanDariRealisasi').val('');
                 $('#filterBulanSampaiRealisasi').val('');
                 if (table) table.ajax.reload();
             });
+
             tableReady = true;
             console.log('TABLE SIAP');
         });

@@ -36,32 +36,95 @@
                     <div class="tab-content">
                         <div class="active tab-pane" id="activity">
                             <div class="row no-print">
-                                <div class="col-12 gap-4">
-                                    <div class="row no-print mb-3 gap-2">
-                                        <div style="width:150px" class="gap-2">
-                                            <select class="select2" id="tahunRealisasi">
+                                <div class="col-12">
+                                    {{-- BARIS 1: Tombol aksi --}}
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                        <a href="#" rel="noopener" class="btn btn-danger btn-sm" id="deleteAllSelectedRecord">
+                                            <i class="fas fa-trash"></i> Delete All
+                                        </a>
+                                        <a href="javascript:void(0)" class="btn btn-success btn-sm" data-toggle="modal" data-target="#ModalCreatePenerima">
+                                            <i class="fas fa-plus"></i> Tambah Data
+                                        </a>
+                                        <a href="{{ route('penerima.export_excel') }}" class="btn btn-outline-danger btn-sm btn-download-excel" id="btnDownloadExcel">
+                                            <i class="nav-icon fas fa-file-excel"></i> Download Excel
+                                        </a>
+                                        <a href="javascript:void(0)" class="btn btn-info btn-sm" data-toggle="modal" data-target="#ModalImportPenerima">
+                                            <i class="fas fa-file-import"></i> Import Data
+                                        </a>
+                                    </div>
+
+                                    {{-- BARIS 2: Filter --}}
+                                    <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
+                                        {{-- Filter Tahun --}}
+                                        <div style="min-width:100px;">
+                                            <label class="mb-1" style="font-size:12px;font-weight:600;">Tahun</label>
+                                            <select class="select2 form-control form-control-sm" id="filterTahunRealisasi">
                                                 @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
-                                                    <option value="{{ $t }}" {{ request('tahun', date('Y')) == $t ? 'selected' : '' }}>
-                                                        {{ $t }}
-                                                    </option>
+                                                    <option value="{{ $t }}" {{ $t == date('Y') ? 'selected' : '' }}>{{ $t }}</option>
                                                 @endfor
                                             </select>
                                         </div>
 
-                                        <a href="#" rel="noopener" class="btn btn-danger" id="deleteAllSelectedRecord"><i
-                                                class="fas fa-trash"></i> Delete All</a>
-                                        <a href="javascript:void(0)" class="btn btn-success" data-toggle="modal"
-                                            data-target="#ModalCreatePenerima"><i class="fas fa-plus"></i> Tambah Data</a>
-                                        <!-- <a href="{{ url('/bank-masuk/view/pdf')}}" target="_blank" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download PDF</a> -->
-                                        <a href="{{ route('penerima.export_excel') }}"
-                                            class="btn btn-outline-danger btn-download-excel" id="btnDownloadExcel"><i
-                                                class=" nav-icon fas fa-file-excel"></i></i> Download Excel</a>
-                                        <a href="javascript:void(0)" class="btn btn-info" data-toggle="modal"
-                                            data-target="#ModalImportPenerima"><i class="fas fa-file-import"></i> Import Data</a>
+                                        {{-- Filter Kategori --}}
+                                        <div style="min-width:180px;">
+                                            <label class="mb-1" style="font-size:12px;font-weight:600;">Kategori</label>
+                                            <select class="select2 form-control form-control-sm" id="filterKategoriRealisasi">
+                                                <option value="">— Semua Kategori —</option>
+                                                @foreach($kategoriKriteria as $k)
+                                                    <option value="{{ $k->id_kategori_kriteria }}">{{ $k->nama_kriteria }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        {{-- Filter Dari Bulan --}}
+                                        <div style="min-width:130px;">
+                                            <label class="mb-1" style="font-size:12px;font-weight:600;">Dari Bulan</label>
+                                            <select class="form-control form-control-sm" id="filterBulanDariRealisasi">
+                                                <option value="">— Semua —</option>
+                                                <option value="1">Januari</option>
+                                                <option value="2">Februari</option>
+                                                <option value="3">Maret</option>
+                                                <option value="4">April</option>
+                                                <option value="5">Mei</option>
+                                                <option value="6">Juni</option>
+                                                <option value="7">Juli</option>
+                                                <option value="8">Agustus</option>
+                                                <option value="9">September</option>
+                                                <option value="10">Oktober</option>
+                                                <option value="11">November</option>
+                                                <option value="12">Desember</option>
+                                            </select>
+                                        </div>
+
+                                        {{-- Filter Sampai Bulan --}}
+                                        <div style="min-width:130px;">
+                                            <label class="mb-1" style="font-size:12px;font-weight:600;">Sampai Bulan</label>
+                                            <select class="form-control form-control-sm" id="filterBulanSampaiRealisasi">
+                                                <option value="">— Semua —</option>
+                                                <option value="1">Januari</option>
+                                                <option value="2">Februari</option>
+                                                <option value="3">Maret</option>
+                                                <option value="4">April</option>
+                                                <option value="5">Mei</option>
+                                                <option value="6">Juni</option>
+                                                <option value="7">Juli</option>
+                                                <option value="8">Agustus</option>
+                                                <option value="9">September</option>
+                                                <option value="10">Oktober</option>
+                                                <option value="11">November</option>
+                                                <option value="12">Desember</option>
+                                            </select>
+                                        </div>
+
+                                        {{-- Tombol Reset Filter --}}
+                                        <div>
+                                            <label class="mb-1" style="font-size:12px;">&nbsp;</label>
+                                            <button class="btn btn-secondary btn-sm d-block" id="resetFilterRealisasi">
+                                                <i class="fas fa-times"></i> Reset
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-
-
                             </div>
 
 
@@ -221,42 +284,19 @@
                         width: '100%'
                     });
                 }
-            $('#tahunRealisasi').on('change', function () {
-                    loadRealisasi();
+            $('#filterTahunRealisasi').on('change', function () {
                     updateDownloadExcelLink();
                 });
 
                 // Initialize and update download excel link with year parameter
                 function updateDownloadExcelLink() {
-                    let tahun = $('#tahunRealisasi').val();
+                    let tahun = $('#filterTahunRealisasi').val();
                     let baseUrl = "{{ route('penerima.export_excel') }}";
                     $('#btnDownloadExcel').attr('href', baseUrl + '?tahun=' + tahun);
                 }
                 
                 // Initialize download link on page load
                 updateDownloadExcelLink();
-
-                function loadRealisasi() {
-                    let tahun = $('#tahunRealisasi').val();
-
-                    $('#realisasi-content').html(
-                        '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>'
-                    );
-
-                    $.ajax({
-                        url: "{{ route('penerima.index') }}",
-                        type: "GET",
-                        data: { tahun: tahun },
-                        success: function (res) {
-                            $('#realisasi-content').html(res);
-                        },
-                        error: function () {
-                            $('#realisasi-content').html(
-                                '<div class="alert alert-danger">Gagal memuat data</div>'
-                            );
-                        }
-                    });
-                }
 
 
                 // ===== TAB CASHFLOW =====

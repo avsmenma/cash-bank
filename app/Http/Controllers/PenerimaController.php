@@ -38,8 +38,13 @@ class penerimaController extends Controller
             $query->whereYear('tanggal', $request->tahun);
         }
 
-        if ($request->bulan) {
-            $query->whereMonth('tanggal', $request->bulan);
+        if ($request->bulan_dari && $request->bulan_sampai) {
+            $query->whereMonth('tanggal', '>=', $request->bulan_dari)
+                  ->whereMonth('tanggal', '<=', $request->bulan_sampai);
+        } elseif ($request->bulan_dari) {
+            $query->whereMonth('tanggal', '>=', $request->bulan_dari);
+        } elseif ($request->bulan_sampai) {
+            $query->whereMonth('tanggal', '<=', $request->bulan_sampai);
         }
 
         if ($request->kategori) {

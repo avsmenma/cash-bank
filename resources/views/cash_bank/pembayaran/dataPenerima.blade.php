@@ -74,9 +74,10 @@
                 ajax: {
                     url: "{{ route('penerima.data') }}",
                     data: function (d) {
-                        d.tahun = $('#filterTahunRealisasi').val();
-                        d.bulan = $('#filterBulanRealisasi').val();
+                        d.tahun    = $('#filterTahunRealisasi').val();
                         d.kategori = $('#filterKategoriRealisasi').val();
+                        d.bulan_dari   = $('#filterBulanDariRealisasi').val();
+                        d.bulan_sampai = $('#filterBulanSampaiRealisasi').val();
                     }
                 },
                 columns: [
@@ -109,7 +110,7 @@
             setTimeout(() => {
                 table.ajax.reload();
             }, 300);
-            $('#filterTahunRealisasi, #filterBulanRealisasi, #filterKategoriRealisasi')
+            $('#filterTahunRealisasi, #filterKategoriRealisasi, #filterBulanDariRealisasi, #filterBulanSampaiRealisasi')
                 .on('change select2:select select2:clear', function () {
 
                     if (!table) {
@@ -120,6 +121,14 @@
                     console.log('FILTER JALAN, reload datatable');
                     table.ajax.reload();
                 });
+
+            // Reset Filter
+            $('#resetFilterRealisasi').on('click', function () {
+                $('#filterKategoriRealisasi').val('').trigger('change');
+                $('#filterBulanDariRealisasi').val('');
+                $('#filterBulanSampaiRealisasi').val('');
+                if (table) table.ajax.reload();
+            });
             tableReady = true;
             console.log('TABLE SIAP');
         });

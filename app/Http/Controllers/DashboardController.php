@@ -742,4 +742,65 @@ class dashboardController extends Controller
         ));
     }
 
+    public function bank(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+
+        $bulanList = [
+            1 => 'Januari',  2 => 'Februari', 3 => 'Maret',    4 => 'April',
+            5 => 'Mei',      6 => 'Juni',     7 => 'Juli',     8 => 'Agustus',
+            9 => 'September',10 => 'Oktober', 11 => 'November',12 => 'Desember',
+        ];
+
+        // Total Bank Masuk (debet) per bulan
+        $masukPerBulan = DB::table('bank_masuk')
+            ->selectRaw('MONTH(tanggal) as bulan, SUM(debet) as total_debet')
+            ->whereYear('tanggal', $tahun)
+            ->groupByRaw('MONTH(tanggal)')
+            ->pluck('total_debet', 'bulan');
+
+        // Total Bank Keluar (kredit) per bulan
+        $keluarPerBulan = DB::table('bank_keluars')
+            ->selectRaw('MONTH(tanggal) as bulan, SUM(kredit) as total_kredit')
+            ->whereYear('tanggal', $tahun)
+            ->groupByRaw('MONTH(tanggal)')
+            ->pluck('total_kredit', 'bulan');
+
+        // Total keseluruhan
+        $totalDebet  = DB::table('bank_masuk')->whereYear('tanggal', $tahun)->sum('debet');
+        $totalKredit = DB::table('bank_keluars')->whereYear('tanggal', $tahun)->sum('kredit');
+
+        // Ringkasan per Sumber Dana
+        $sumberDanaMasuk = DB::table('bank_masuk')
+            ->leftJoin('sumber_dana', 'sumber_dana.id_sumber_dana', '=', 'bank_masuk.id_sumber_dana')
+            ->selectRaw('COALESCE(sumber_dana.nama_sumber_dana, "-") as nama_sumber_dana, SUM(bank_masuk.debet) as total_debet')
+            ->whereYear('bank_masuk.tanggal', $tahun)
+            ->groupBy('sumber_dana.nama_sumber_dana')
+            ->get();
+
+        $sumberDanaKeluar = DB::table('bank_keluars')
+            ->leftJoin('sumber_dana', 'sumber_dana.id_sumber_dana', '=', 'bank_keluars.id_sumber_dana')
+            ->selectRaw('COALESCE(sumber_dana.nama_sumber_dana, "-") as nama_sumber_dana, SUM(bank_keluars.kredit) as total_kredit')
+            ->whereYear('bank_keluars.tanggal', $tahun)
+            ->groupBy('sumber_dana.nama_sumber_dana')
+            ->get();
+
+        // Tahun list untuk filter
+        $tahunList = collect()
+            ->merge(DB::table('bank_masuk')->selectRaw('YEAR(tanggal) as tahun')->pluck('tahun'))
+            ->merge(DB::table('bank_keluars')->selectRaw('YEAR(tanggal) as tahun')->pluck('tahun'))
+            ->unique()->sortDesc()->values();
+
+        return view('cash_bank.dashboardBank', compact(
+            'tahun',
+            'tahunList',
+            'bulanList',
+            'masukPerBulan',
+            'keluarPerBulan',
+            'totalDebet',
+            'totalKredit',
+            'sumberDanaMasuk',
+            'sumberDanaKeluar'
+        ));
+    }
 }

@@ -93,9 +93,9 @@
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                         data-accordion="false">
                         <li
-                            class="nav-item {{ request()->routeIs('dashboard.*', 'dashboard-pembayaran.*') ? 'menu-open menu-is-opening' : '' }}">
+                            class="nav-item {{ request()->routeIs('dashboard.*', 'dashboard-pembayaran.*', 'dashboard.bank.*') ? 'menu-open menu-is-opening' : '' }}">
                             <a href="#"
-                                class="nav-link {{ request()->routeIs('dashboard.*', 'dashboard-pembayaran.*') ? 'active' : '' }}">
+                                class="nav-link {{ request()->routeIs('dashboard.*', 'dashboard-pembayaran.*', 'dashboard.bank.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>
                                     Dashboard
@@ -120,6 +120,12 @@
                                     <a href="{{ route('dashboard.modal-kerja.index') }}"
                                         class="nav-link {{ request()->routeIs('dashboard.modal-kerja.index') ? 'active' : ''}}">
                                         <p>Modal Kerja</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('dashboard.bank.index') }}"
+                                        class="nav-link {{ request()->routeIs('dashboard.bank.index') ? 'active' : ''}}">
+                                        <p>Bank</p>
                                     </a>
                                 </li>
                             </ul>

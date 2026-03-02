@@ -56,14 +56,14 @@
                                         <div style="width:1px;height:28px;background:#ccc;margin:0 4px;"></div>
 
                                         {{-- Filter Tahun --}}
-                                        <select class="select2 form-control form-control-sm" id="filterTahunRealisasi" style="width:90px;">
+                                        <select class="filter-select2 form-control form-control-sm" id="filterTahunRealisasi" style="width:90px;">
                                             @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
                                                 <option value="{{ $t }}" {{ $t == date('Y') ? 'selected' : '' }}>{{ $t }}</option>
                                             @endfor
                                         </select>
 
                                         {{-- Filter Kategori --}}
-                                        <select class="select2 form-control form-control-sm" id="filterKategoriRealisasi" style="width:170px;">
+                                        <select class="filter-select2 form-control form-control-sm" id="filterKategoriRealisasi" style="width:180px;">
                                             <option value="">— Semua Kategori —</option>
                                             @foreach($kategoriKriteria as $k)
                                                 <option value="{{ $k->id_kategori_kriteria }}">{{ $k->nama_kriteria }}</option>
@@ -268,11 +268,16 @@
             $(document).ready(function () {
                 console.log('=== SCRIPT LOADED ===');
 
-                // INIT SELECT2
+                // INIT SELECT2 (global - untuk modal dan tab lain)
                 if ($.fn.select2) {
                     $('.select2').select2({
                         theme: 'bootstrap4',
                         width: '100%'
+                    });
+                    // Filter selects — pakai lebar elemen asli (tidak 100%)
+                    $('.filter-select2').select2({
+                        theme: 'bootstrap4',
+                        width: 'resolve'
                     });
                 }
             $('#filterTahunRealisasi').on('change', function () {

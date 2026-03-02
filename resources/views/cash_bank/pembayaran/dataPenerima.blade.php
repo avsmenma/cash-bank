@@ -65,7 +65,7 @@
                 return Math.round(num).toLocaleString('id-ID');
             }
 
-            $('#example').DataTable({
+            table = $('#example').DataTable({
                 processing: true,
                 serverSide: true,
                 ordering: false,
@@ -107,9 +107,7 @@
                     drawTotalPerKategori.call(this, settings);
                 }
             });
-            setTimeout(() => {
-                table.ajax.reload();
-            }, 300);
+
             // Terapkan filter — reload DataTable hanya saat tombol diklik
             $('#terapkanFilterRealisasi').on('click', function () {
                 if (table) table.ajax.reload();

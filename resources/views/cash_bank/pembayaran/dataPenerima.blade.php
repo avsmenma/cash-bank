@@ -11,6 +11,18 @@
             /* biar kolom melebar */
             vertical-align: middle;
         }
+
+        /* Warna bergantian per bulan dalam tiap kategori */
+        #example tbody tr.month-shade-a {
+            background-color: #ffffff !important;
+        }
+        #example tbody tr.month-shade-b {
+            background-color: #dce8f5 !important;
+        }
+        #example tbody tr.month-shade-a:hover,
+        #example tbody tr.month-shade-b:hover {
+            background-color: #c8dff0 !important;
+        }
     </style>
 @endpush
 
@@ -87,7 +99,8 @@
                     { data: 'ppn', className: 'text-right', render: function (data) { return fmtAngka(data); } },
                     { data: 'potppn', className: 'text-right', render: function (data) { return fmtAngka(data); } },
                     { data: 'nilai_inc_ppn', className: 'text-right', render: function (data) { return fmtAngka(data); } },
-                    { data: 'aksi', orderable: false, searchable: false }
+                    { data: 'aksi', orderable: false, searchable: false },
+                    { data: 'bulan_num', visible: false, searchable: false },
                 ],
                 drawCallback: function (settings) {
                     drawTotalPerKategori.call(this, settings);
@@ -117,6 +130,8 @@
             let data = api.rows({ page: 'current' }).data();
 
             let lastKategori = null;
+            let lastBulan = null;
+            let shadeToggle = 0; // 0 = shade-a, 1 = shade-b
             let total = {
                 volume: 0, nilai: 0, ppn: 0, potppn: 0, inc: 0
             };
@@ -126,7 +141,20 @@
                 if (lastKategori !== null && row.kategori_kriteria !== lastKategori) {
                     insertTotalRow(rows, i - 1, lastKategori, total);
                     resetTotal(total);
+                    // Reset shade saat ganti kategori
+                    shadeToggle = 0;
+                    lastBulan = null;
                 }
+
+                // Toggle shade saat bulan berubah dalam kategori yang sama
+                if (lastBulan !== null && row.bulan_num !== lastBulan) {
+                    shadeToggle = shadeToggle === 0 ? 1 : 0;
+                }
+
+                // Terapkan class warna ke baris
+                let $tr = $(rows).eq(i);
+                $tr.removeClass('month-shade-a month-shade-b');
+                $tr.addClass(shadeToggle === 0 ? 'month-shade-a' : 'month-shade-b');
 
                 total.volume += Number(row.volume || 0);
                 total.nilai += Number(row.nilai || 0);
@@ -135,6 +163,7 @@
                 total.inc += Number(row.nilai_inc_ppn || 0);
 
                 lastKategori = row.kategori_kriteria;
+                lastBulan = row.bulan_num;
             });
 
             if (lastKategori !== null) {
@@ -146,17 +175,17 @@
             let hargaRata = total.volume > 0 ? total.nilai / total.volume : 0;
 
             $(rows).eq(index).after(`
-                                <tr class="table-warning font-weight-bold text-right">
-                            <td colspan="7" class="text-left">TOTAL ${kategori}</td>
-                                    <td>${Math.round(total.volume).toLocaleString('id-ID')}</td>
-                                    <td>${Math.round(hargaRata).toLocaleString('id-ID')}</td>
-                                    <td>${Math.round(total.nilai).toLocaleString('id-ID')}</td>
-                                    <td>${Math.round(total.ppn).toLocaleString('id-ID')}</td>
-                                    <td>${Math.round(total.potppn).toLocaleString('id-ID')}</td>
-                                    <td>${Math.round(total.inc).toLocaleString('id-ID')}</td>
-                                    <td></td>
-                                </tr>
-                            `);
+                            <tr class="table-warning font-weight-bold text-right">
+                        <td colspan="7" class="text-left">TOTAL ${kategori}</td>
+                                <td>${Math.round(total.volume).toLocaleString('id-ID')}</td>
+                                <td>${Math.round(hargaRata).toLocaleString('id-ID')}</td>
+                                <td>${Math.round(total.nilai).toLocaleString('id-ID')}</td>
+                                <td>${Math.round(total.ppn).toLocaleString('id-ID')}</td>
+                                <td>${Math.round(total.potppn).toLocaleString('id-ID')}</td>
+                                <td>${Math.round(total.inc).toLocaleString('id-ID')}</td>
+                                <td></td>
+                            </tr>
+                        `);
         }
 
         function resetTotal(total) {

@@ -63,12 +63,12 @@
                         {{-- DAFTAR SUMBER DANA --}}
                         @forelse($sumberDanaList as $sd)
                         @php
-                            {{-- Coba ekstrak nomor rekening dari nama (format: nomor/-/nama bank) --}}
+                            // Coba ekstrak nomor rekening dari nama sumber dana
                             $noRek = '-';
                             if (preg_match('/^([\d\-]+)\/?/', $sd->nama_sumber_dana, $m)) {
                                 $noRek = trim($m[1], '-/ ');
                             }
-                            {{-- Ambil nama nama bank saja (hapus nomor di depan) --}}
+                            // Ambil nama bank saja (hapus nomor di depan jika ada)
                             $namaBersih = preg_replace('/^[\d\-]+\s*\/?\s*[-]?\s*/', '', $sd->nama_sumber_dana);
                             if (empty(trim($namaBersih))) $namaBersih = $sd->nama_sumber_dana;
                         @endphp

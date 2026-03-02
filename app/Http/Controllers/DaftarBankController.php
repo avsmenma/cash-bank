@@ -26,6 +26,12 @@ class daftarBankController extends Controller
 
         return DataTables::of($query)
             ->addIndexColumn()
+            ->addColumn('saldo_akhir', function ($row) {
+                $totalMasuk = BankMasuk::where('id_bank_tujuan', $row->id_bank_tujuan)->sum('debet');
+                $totalKeluar = BankKeluar::where('id_bank_tujuan', $row->id_bank_tujuan)->sum('kredit');
+                $saldo = (float) $totalMasuk - (float) $totalKeluar;
+                return 'Rp ' . number_format($saldo, 0, ',', '.');
+            })
             ->addColumn('aksi', function ($row) {
                 $route = route('daftarBank.destroy', $row->id_bank_tujuan);
                 $detailRoute = route('daftarBank.detail', $row->id_bank_tujuan);

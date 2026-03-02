@@ -130,6 +130,7 @@
             <tr>
               <th>No</th>
               <th>Nama Bank / VA</th>
+              <th>Saldo Akhir</th>
               <th>Dibuat</th>
               <th>Diperbarui</th>
               <th>Aksi</th>
@@ -154,6 +155,7 @@
       columns: [
         { data: 'DT_RowIndex', orderable: false, searchable: false, title: 'No' },
         { data: 'nama_tujuan' },
+        { data: 'saldo_akhir', orderable: false, searchable: false },
         { data: 'created_at' },
         { data: 'updated_at' },
         { data: 'aksi', orderable: false, searchable: false }

@@ -19,32 +19,6 @@ class importMasuk implements ToModel, WithHeadingRow
 {
     use Importable;
 
-    /** fingerprint dari data yang sudah ada di DB (untuk skip duplikat) */
-    private array $existingKeys = [];
-
-    public function __construct()
-    {
-        // Load semua data yang ada: tanggal + sumber_dana + uraian + debet
-        $existing = \App\Models\BankMasuk::leftJoin('sumber_dana', 'bank_masuk.id_sumber_dana', '=', 'sumber_dana.id_sumber_dana')
-            ->select('bank_masuk.tanggal', 'sumber_dana.nama_sumber_dana', 'bank_masuk.uraian', 'bank_masuk.debet')
-            ->get();
-
-        foreach ($existing as $row) {
-            $key = $this->makeKey(
-                $row->tanggal ?? '',
-                $row->nama_sumber_dana ?? '',
-                $row->uraian ?? '',
-                (int)$row->debet
-            );
-            $this->existingKeys[$key] = true;
-        }
-    }
-
-    private function makeKey(string $tanggal, string $sumber, string $uraian, int $debet): string
-    {
-        return md5($tanggal . '||' . strtolower(trim($sumber)) . '||' . strtolower(trim($uraian)) . '||' . $debet);
-    }
-
     public function bindValue(Cell $cell, $value)
     {
         $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
@@ -97,20 +71,6 @@ class importMasuk implements ToModel, WithHeadingRow
             ? (int) str_replace(['.', ','], '', $row['debet'])
             : 0;
         $tanggal = $this->parseTanggal($row['tanggal'] ?? null);
-
-        // ===== SKIP DUPLIKAT (opsi A) =====
-        // Cari nama sumber dana yang cocok untuk fingerprint
-        $sumberNama = '';
-        if (!empty($sumberDana)) {
-            $sd = SumberDana::where('nama_sumber_dana', 'LIKE', "%{$sumberDana}%")->first();
-            $sumberNama = $sd ? $sd->nama_sumber_dana : $sumberDana;
-        }
-        $fingerprint = $this->makeKey($tanggal ?? '', $sumberNama, $uraian, $debet);
-        if (isset($this->existingKeys[$fingerprint])) {
-            return null; // skip duplikat
-        }
-        // Daftarkan ke cache agar tidak duplikat antar baris dalam 1 file
-        $this->existingKeys[$fingerprint] = true;
 
         return new BankMasuk([
              'agenda_tahun'  => $row['agenda_tahun'] ?? null,

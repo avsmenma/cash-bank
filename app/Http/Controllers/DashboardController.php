@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Exports\ExcelPd;
+use App\Exports\ExportExcelDashboardBank;
 use App\Models\Dropping;
 use App\Models\Penerima;
 use App\Exports\ExcelPvd;
@@ -762,6 +763,45 @@ class dashboardController extends Controller
         return view('cash_bank.dashboardBank', compact(
             'sumberDanaList',
             'totalSaldoBank'
+        ));
+    }
+    public function bankExportExcel(Request $request)
+    {
+        $tanggal = $request->tanggal ?? 'Pontianak, ' . \Carbon\Carbon::now()->translatedFormat('d F Y');
+        $nama    = $request->nama    ?? 'Herry Wahyudi';
+        $jabatan = $request->jabatan ?? 'Kepala Bagian Akuntansi & Keuangan';
+
+        return Excel::download(
+            new ExportExcelDashboardBank($tanggal, $nama, $jabatan),
+            'Saldo-Kas-Bank.xlsx'
+        );
+    }
+
+    public function bankExportPdf(Request $request)
+    {
+        $tanggal = $request->tanggal ?? 'Pontianak, ' . \Carbon\Carbon::now()->translatedFormat('d F Y');
+        $nama    = $request->nama    ?? 'Herry Wahyudi';
+        $jabatan = $request->jabatan ?? 'Kepala Bagian Akuntansi & Keuangan';
+
+        $sumberDanaList = DB::table('sumber_dana')
+            ->select('sumber_dana.id_sumber_dana', 'sumber_dana.nama_sumber_dana')
+            ->selectRaw('COALESCE((SELECT SUM(debet) FROM bank_masuk WHERE bank_masuk.id_sumber_dana = sumber_dana.id_sumber_dana), 0) as total_masuk')
+            ->selectRaw('COALESCE((SELECT SUM(kredit) FROM bank_keluars WHERE bank_keluars.id_sumber_dana = sumber_dana.id_sumber_dana), 0) as total_keluar')
+            ->orderBy('sumber_dana.id_sumber_dana')
+            ->get()
+            ->map(function ($sd) {
+                $sd->saldo_va = (float) $sd->total_masuk - (float) $sd->total_keluar;
+                return $sd;
+            });
+
+        $totalSaldoBank = $sumberDanaList->sum('saldo_va');
+
+        return view('cash_bank.exportPDF.pdfDashboardBank', compact(
+            'sumberDanaList',
+            'totalSaldoBank',
+            'tanggal',
+            'nama',
+            'jabatan'
         ));
     }
 }

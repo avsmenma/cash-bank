@@ -1,6 +1,17 @@
 @extends('layouts/index')
 @section('content')
 
+@php
+    $bulanList = [
+        1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April',
+        5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus',
+        9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'
+    ];
+    $hariIni   = (int) date('d');
+    $bulanIni  = (int) date('m');
+    $tahunIni  = (int) date('Y');
+@endphp
+
 <div class="container-fluid mt-4">
     <section class="content-header">
         <div class="container-fluid">
@@ -21,6 +32,16 @@
     </section>
 
     <section class="content">
+        {{-- TOMBOL EXPORT --}}
+        <div class="mb-3" style="max-width:820px;">
+            <button type="button" class="btn btn-success btn-sm mr-2" onclick="doExport('excel')">
+                <i class="fas fa-file-excel mr-1"></i> Export Excel
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="doExport('pdf')">
+                <i class="fas fa-file-pdf mr-1"></i> Export PDF
+            </button>
+        </div>
+
         <div class="card shadow" style="border-top:4px solid #0d3b6e; max-width:820px;">
             <div class="card-body p-0">
                 <table class="table table-bordered mb-0" id="tblSaldoBank" style="font-size:12.5px;">
@@ -97,8 +118,6 @@
                         </tr>
                         @endforelse
 
-
-
                         {{-- TOTAL SALDO BANK --}}
                         <tr style="background:#f9e400;">
                             <td colspan="3" class="text-center font-weight-bold align-middle">Saldo Bank</td>
@@ -120,7 +139,94 @@
             Saldo VA dihitung dari total Bank Masuk (Debet) dikurangi Bank Keluar (Kredit) per Sumber Dana.
             &nbsp;|&nbsp; No. Rek dapat diisi manual sesuai data aktual per sumber dana.
         </p>
+
+        {{-- SECTION EDITABLE: TANGGAL & TANDA TANGAN --}}
+        <div class="card shadow mt-3" style="max-width:820px; border-top:3px solid #0d3b6e;">
+            <div class="card-body py-3 px-4">
+                <div class="row align-items-start">
+                    {{-- Kolom kiri: kosong (placeholder tanda tangan kiri jika diperlukan) --}}
+                    <div class="col-md-6">
+                        {{-- Bisa dikembangkan di masa mendatang --}}
+                    </div>
+
+                    {{-- Kolom kanan: Kota, Tanggal, Nama, Jabatan --}}
+                    <div class="col-md-6">
+                        {{-- Kota + Tanggal --}}
+                        <div class="form-group mb-2">
+                            <label class="small font-weight-bold text-muted mb-1">
+                                <i class="fas fa-calendar-alt mr-1"></i>Tanggal Dokumen
+                            </label>
+                            <div class="d-flex align-items-center" style="gap:6px;">
+                                <span class="text-muted" style="white-space:nowrap; font-size:13px;">Pontianak,</span>
+                                {{-- Hari --}}
+                                <select id="selHari" class="form-control form-control-sm" style="width:65px; font-size:12px;">
+                                    @for($h = 1; $h <= 31; $h++)
+                                        <option value="{{ $h }}" {{ $h == $hariIni ? 'selected' : '' }}>{{ $h }}</option>
+                                    @endfor
+                                </select>
+                                {{-- Bulan --}}
+                                <select id="selBulan" class="form-control form-control-sm" style="width:110px; font-size:12px;">
+                                    @foreach($bulanList as $no => $nama)
+                                        <option value="{{ $nama }}" {{ $no == $bulanIni ? 'selected' : '' }}>{{ $nama }}</option>
+                                    @endforeach
+                                </select>
+                                {{-- Tahun --}}
+                                <select id="selTahun" class="form-control form-control-sm" style="width:80px; font-size:12px;">
+                                    @for($y = $tahunIni - 3; $y <= $tahunIni + 2; $y++)
+                                        <option value="{{ $y }}" {{ $y == $tahunIni ? 'selected' : '' }}>{{ $y }}</option>
+                                    @endfor
+                                </select>
+                            </div>
+                        </div>
+
+                        {{-- Nama Penandatangan --}}
+                        <div class="form-group mb-2">
+                            <label class="small font-weight-bold text-muted mb-1">
+                                <i class="fas fa-user mr-1"></i>Nama Penandatangan
+                            </label>
+                            <input type="text" id="inpNama" class="form-control form-control-sm"
+                                   value="Herry Wahyudi"
+                                   style="font-size:12px; max-width:280px;">
+                        </div>
+
+                        {{-- Jabatan --}}
+                        <div class="form-group mb-0">
+                            <label class="small font-weight-bold text-muted mb-1">
+                                <i class="fas fa-id-badge mr-1"></i>Jabatan
+                            </label>
+                            <input type="text" id="inpJabatan" class="form-control form-control-sm"
+                                   value="Kepala Bagian Akuntansi &amp; Keuangan"
+                                   style="font-size:12px; max-width:300px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 </div>
+
+<script>
+    function doExport(type) {
+        var hari    = document.getElementById('selHari').value;
+        var bulan   = document.getElementById('selBulan').value;
+        var tahun   = document.getElementById('selTahun').value;
+        var nama    = document.getElementById('inpNama').value;
+        var jabatan = document.getElementById('inpJabatan').value;
+
+        var tanggal = 'Pontianak, ' + hari + ' ' + bulan + ' ' + tahun;
+
+        var params = new URLSearchParams({
+            tanggal: tanggal,
+            nama: nama,
+            jabatan: jabatan
+        });
+
+        if (type === 'excel') {
+            window.location.href = '{{ route("dashboard.bank.excel") }}?' + params.toString();
+        } else {
+            window.open('{{ route("dashboard.bank.pdf") }}?' + params.toString(), '_blank');
+        }
+    }
+</script>
 
 @endsection

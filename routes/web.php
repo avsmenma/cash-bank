@@ -55,6 +55,12 @@ Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
     Route::get('/dashboard-bank', [dashboardController::class, 'bank'])
         ->name('dashboard.bank.index');
 
+    Route::get('/dashboard-bank/export-excel', [dashboardController::class, 'bankExportExcel'])
+        ->name('dashboard.bank.excel');
+
+    Route::get('/dashboard-bank/export-pdf', [dashboardController::class, 'bankExportPdf'])
+        ->name('dashboard.bank.pdf');
+
 });
 // Route::group(['middleware' => ['auth','check_role:admin']], function(){
 //     Route::get('/dashboard-pembayaran', [DashboardPembayaranController::class, 'index'])

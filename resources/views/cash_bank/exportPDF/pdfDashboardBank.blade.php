@@ -19,7 +19,7 @@
         .footer-section { margin-top: 20px; width: 100%; max-width: 680px; }
         .footer-right { text-align: center; float: right; width: 45%; }
         .signature-name { font-weight: bold; text-decoration: underline; }
-        .signature-title { color: #c0392b; }
+        .signature-title { color: #222; }
         .clearfix::after { content: ''; display: table; clear: both; }
     </style>
 </head>

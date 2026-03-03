@@ -124,6 +124,44 @@
 @include('cash_bank.modal.tambahMasuk')
 @include('cash_bank.modal.importExcelMasuk')
 
+{{-- Modal Konfirmasi Hapus --}}
+<div class="modal fade" id="modalConfirmHapus" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-content" style="border-radius:10px; border:none; box-shadow:0 8px 30px rgba(0,0,0,.15);">
+      <div class="modal-body text-center py-4 px-4">
+        <div style="font-size:3rem; color:#e74c3c; margin-bottom:12px;"><i class="fas fa-exclamation-triangle"></i></div>
+        <h5 class="font-weight-bold mb-1">Konfirmasi Hapus</h5>
+        <p class="text-muted mb-3" style="font-size:13px;">
+          Yakin ingin menghapus <strong id="deleteConfirmCount">0</strong> data yang dipilih?<br>
+          <span style="color:#e74c3c; font-size:11.5px;">Tindakan ini tidak dapat dibatalkan.</span>
+        </p>
+        <div class="d-flex justify-content-center" style="gap:10px;">
+          <button type="button" class="btn btn-sm btn-light px-4" data-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-sm btn-danger px-4" id="btnConfirmHapus">
+            <i class="fas fa-trash mr-1"></i>Ya, Hapus
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{-- Modal Info (sukses / gagal / peringatan) --}}
+<div class="modal fade" id="modalInfo" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-content" style="border-radius:10px; border:none; box-shadow:0 8px 30px rgba(0,0,0,.15);">
+      <div class="modal-body text-center py-4 px-4">
+        <h6 class="font-weight-bold mb-2">
+          <i id="modalInfoIcon" class="fas fa-info-circle text-info mr-2"></i>
+          <span id="modalInfoTitle">Info</span>
+        </h6>
+        <p class="text-muted mb-3" style="font-size:13px;" id="modalInfoMsg"></p>
+        <button type="button" class="btn btn-sm btn-primary px-4" data-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @push('scripts')
 <script>
     $(document).ready(function () {});
@@ -191,21 +229,49 @@
         $('.checkbox_ids').prop('checked', $(this).prop('checked'));
     });
 
+    // Tampung IDs yang akan dihapus
+    var _pendingDeleteIds = [];
+
     $(document).on('click', '#deleteAllSelectedRecord', function (e) {
         e.preventDefault();
-        let all_ids = [];
-        $('.checkbox_ids:checked').each(function () { all_ids.push($(this).val()); });
-        if (all_ids.length === 0) { alert('Pilih data terlebih dahulu!'); return; }
-        if (!confirm(`Yakin ingin menghapus ${all_ids.length} data?`)) return;
+        _pendingDeleteIds = [];
+        $('.checkbox_ids:checked').each(function () { _pendingDeleteIds.push($(this).val()); });
+
+        if (_pendingDeleteIds.length === 0) {
+            $('#modalInfoTitle').text('Perhatian');
+            $('#modalInfoIcon').attr('class', 'fas fa-exclamation-circle text-warning mr-2');
+            $('#modalInfoMsg').text('Pilih minimal satu data terlebih dahulu.');
+            $('#modalInfo').modal('show');
+            return;
+        }
+
+        $('#deleteConfirmCount').text(_pendingDeleteIds.length);
+        $('#modalConfirmHapus').modal('show');
+    });
+
+    $('#btnConfirmHapus').on('click', function () {
+        $('#modalConfirmHapus').modal('hide');
         $.ajax({
             url: "{{ route('bank-masuk.delete') }}",
             type: "DELETE",
-            data: { ids: all_ids, _token: '{{ csrf_token() }}' },
+            contentType: "application/json",
+            data: JSON.stringify({ ids: _pendingDeleteIds, _token: '{{ csrf_token() }}' }),
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
             success: function (res) {
                 $('#example2').DataTable().ajax.reload(null, false);
-                alert(res.success);
+                $('#select_all_ids').prop('checked', false);
+                $('#modalInfoTitle').text('Berhasil');
+                $('#modalInfoIcon').attr('class', 'fas fa-check-circle text-success mr-2');
+                $('#modalInfoMsg').text(res.success);
+                $('#modalInfo').modal('show');
             },
-            error: function () { alert('Gagal menghapus data'); }
+            error: function (xhr) {
+                var msg = (xhr.responseJSON && xhr.responseJSON.error) ? xhr.responseJSON.error : 'Gagal menghapus data.';
+                $('#modalInfoTitle').text('Gagal');
+                $('#modalInfoIcon').attr('class', 'fas fa-times-circle text-danger mr-2');
+                $('#modalInfoMsg').text(msg);
+                $('#modalInfo').modal('show');
+            }
         });
     });
 </script>

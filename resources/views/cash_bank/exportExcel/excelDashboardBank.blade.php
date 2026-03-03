@@ -5,19 +5,6 @@
     <title>Saldo Kas & Bank</title>
 </head>
 <body>
-@php
-    // Helper: parse nama_sumber_dana → pisahkan nama bersih & no rek
-    function parseNamaRek($nama) {
-        $noRek = '';
-        $namaBersih = $nama;
-        if (preg_match('/\*\s*([\d\-\/]+)\s*$/', $nama, $m)) {
-            $noRek = trim($m[1]);
-            $namaBersih = trim(preg_replace('/\s*\*\s*[\d\-\/]+\s*$/', '', $nama));
-        }
-        return [$namaBersih, $noRek];
-    }
-@endphp
-
 <table>
     {{-- HEADER UTAMA --}}
     <tr>
@@ -56,21 +43,25 @@
     {{-- DAFTAR SUMBER DANA --}}
     @forelse($sumberDanaList as $sd)
     @php
-        [$namaBersih, $noRek] = parseNamaRek($sd->nama_sumber_dana);
+        $exNoRek = '';
+        $exNama  = $sd->nama_sumber_dana;
+        if (preg_match('/\*\s*([\d\-\/]+)\s*$/', $sd->nama_sumber_dana, $exM)) {
+            $exNoRek = trim($exM[1]);
+            $exNama  = trim(preg_replace('/\s*\*\s*[\d\-\/]+\s*$/', '', $sd->nama_sumber_dana));
+        }
+        if ($sd->saldo_va < 0) {
+            $exNilai = '(' . number_format(abs($sd->saldo_va), 0, ',', '.') . ')';
+        } elseif ($sd->saldo_va > 0) {
+            $exNilai = number_format($sd->saldo_va, 0, ',', '.');
+        } else {
+            $exNilai = '-';
+        }
     @endphp
     <tr>
         <td style="border:1px solid #ddd;"></td>
-        <td style="border:1px solid #ddd;">- {{ $namaBersih }}</td>
-        <td style="text-align:center; border:1px solid #ddd;">{{ $noRek }}</td>
-        <td style="text-align:right; border:1px solid #ddd; {{ $sd->saldo_va != 0 ? 'font-weight:bold;' : '' }}">
-            @if($sd->saldo_va < 0)
-                ({{ number_format(abs($sd->saldo_va), 0, ',', '.') }})
-            @elseif($sd->saldo_va > 0)
-                {{ number_format($sd->saldo_va, 0, ',', '.') }}
-            @else
-                -
-            @endif
-        </td>
+        <td style="border:1px solid #ddd;">- {{ $exNama }}</td>
+        <td style="text-align:center; border:1px solid #ddd;">{{ $exNoRek }}</td>
+        <td style="text-align:right; border:1px solid #ddd; {{ $sd->saldo_va != 0 ? 'font-weight:bold;' : '' }}">{{ $exNilai }}</td>
     </tr>
     @empty
     <tr>
@@ -80,15 +71,16 @@
     @endforelse
 
     {{-- TOTAL SALDO BANK --}}
+    @php
+        if ($totalSaldoBank < 0) {
+            $exTotal = '(' . number_format(abs($totalSaldoBank), 0, ',', '.') . ')';
+        } else {
+            $exTotal = number_format($totalSaldoBank, 0, ',', '.');
+        }
+    @endphp
     <tr>
         <td colspan="3" style="background-color:#f9e400; font-weight:bold; text-align:center; border:1px solid #bbb;">Saldo Bank</td>
-        <td style="background-color:#f9e400; font-weight:bold; text-align:right; border:1px solid #bbb;">
-            @if($totalSaldoBank < 0)
-                ({{ number_format(abs($totalSaldoBank), 0, ',', '.') }})
-            @else
-                {{ number_format($totalSaldoBank, 0, ',', '.') }}
-            @endif
-        </td>
+        <td style="background-color:#f9e400; font-weight:bold; text-align:right; border:1px solid #bbb;">{{ $exTotal }}</td>
     </tr>
 
     {{-- FOOTER: baris kosong --}}
@@ -117,6 +109,5 @@
         <td colspan="2" style="text-align:center; color:#c0392b;">{{ $jabatan }}</td>
     </tr>
 </table>
-
 </body>
 </html>

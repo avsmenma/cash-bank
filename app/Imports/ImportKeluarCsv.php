@@ -152,9 +152,26 @@ class ImportKeluarCsv
 
                 // Skip baris benar-benar kosong
                 if (empty(array_filter($row))) continue;
-                if (count($row) < count($header)) continue;
 
-                $data = array_combine($header, $row);
+                // Sesuaikan jumlah kolom dengan header (trim jika lebih, skip jika kurang)
+                $headerCount = count($header);
+                $rowCount2 = count($row);
+                if ($rowCount2 < $headerCount) continue;
+                if ($rowCount2 > $headerCount) {
+                    $row = array_slice($row, 0, $headerCount);
+                }
+
+                try {
+                    $data = array_combine($header, $row);
+                } catch (\Throwable $e) {
+                    Log::warning("Row {$rowCount} combine failed: " . $e->getMessage());
+                    $errorCount++;
+                    continue;
+                }
+
+                // Skip baris tanpa tanggal
+                $tanggalVal = trim($data['tanggal'] ?? '');
+                if (empty($tanggalVal)) continue;
 
                 // Process row → build record
                 $record = $this->processRow($data);

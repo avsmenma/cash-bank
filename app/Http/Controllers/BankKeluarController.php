@@ -2056,8 +2056,8 @@ class BankKeluarController extends Controller
             return response()->json(['error' => 'File sementara tidak ditemukan. Silakan upload ulang.'], 422);
         }
 
-        ini_set('memory_limit', '512M');
-        set_time_limit(300);
+        ini_set('memory_limit', '-1');
+        set_time_limit(0);
 
         try {
             $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($tempPath);

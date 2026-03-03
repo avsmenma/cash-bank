@@ -63,20 +63,20 @@
                         {{-- DAFTAR SUMBER DANA --}}
                         @forelse($sumberDanaList as $sd)
                         @php
-                            // Coba ekstrak nomor rekening dari nama sumber dana
-                            $noRek = '-';
-                            if (preg_match('/^([\d\-]+)\/?/', $sd->nama_sumber_dana, $m)) {
-                                $noRek = trim($m[1], '-/ ');
+                            // Ekstrak nomor rekening dari akhir string (pola: "* 146-00-0443935-7")
+                            $noRek = '';
+                            $namaBersih = $sd->nama_sumber_dana;
+                            if (preg_match('/\*\s*([\d\-\/]+)\s*$/', $sd->nama_sumber_dana, $m)) {
+                                $noRek = trim($m[1]);
+                                // Hapus bagian nomor rek dari nama (beserta spasi sebelum *)
+                                $namaBersih = trim(preg_replace('/\s*\*\s*[\d\-\/]+\s*$/', '', $sd->nama_sumber_dana));
                             }
-                            // Ambil nama bank saja (hapus nomor di depan jika ada)
-                            $namaBersih = preg_replace('/^[\d\-]+\s*\/?\s*[-]?\s*/', '', $sd->nama_sumber_dana);
-                            if (empty(trim($namaBersih))) $namaBersih = $sd->nama_sumber_dana;
                         @endphp
                         <tr>
                             <td class="align-middle"></td>
-                            <td class="align-middle">- {{ $sd->nama_sumber_dana }}</td>
+                            <td class="align-middle">- {{ $namaBersih }}</td>
                             <td class="text-center align-middle text-muted" style="font-size:11.5px; white-space:nowrap;">
-                                {{ $noRek !== '-' ? $noRek : '' }}
+                                {{ $noRek }}
                             </td>
                             <td class="text-right align-middle {{ $sd->saldo_va != 0 ? 'font-weight-bold' : 'text-muted' }}">
                                 @if($sd->saldo_va < 0)
@@ -97,38 +97,7 @@
                         </tr>
                         @endforelse
 
-                        {{-- Baris kosong pembatas --}}
-                        <tr><td colspan="4" style="padding:4px;"></td></tr>
 
-                        {{-- III. Valuta Asing --}}
-                        <tr>
-                            <td class="text-center align-middle">III.</td>
-                            <td class="font-weight-bold align-middle" colspan="3">Valuta Asing</td>
-                        </tr>
-                        <tr>
-                            <td class="align-middle"></td>
-                            <td class="align-middle">- PT. Bank Mandiri</td>
-                            <td class="align-middle"></td>
-                            <td class="text-right align-middle text-muted">-</td>
-                        </tr>
-                        <tr>
-                            <td class="align-middle"></td>
-                            <td class="align-middle">- PT. Bank BRI</td>
-                            <td class="text-center align-middle text-muted" style="font-size:11.5px;">007102000017305</td>
-                            <td class="text-right align-middle text-muted">-</td>
-                        </tr>
-
-                        {{-- IV. Deposito --}}
-                        <tr>
-                            <td class="text-center align-middle">IV.</td>
-                            <td class="font-weight-bold align-middle" colspan="3">Deposito Bank DBS</td>
-                        </tr>
-                        <tr>
-                            <td class="align-middle"></td>
-                            <td class="align-middle"></td>
-                            <td class="align-middle"></td>
-                            <td class="text-right align-middle text-muted">-</td>
-                        </tr>
 
                         {{-- TOTAL SALDO BANK --}}
                         <tr style="background:#f9e400;">

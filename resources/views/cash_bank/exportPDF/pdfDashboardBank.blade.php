@@ -21,6 +21,16 @@
         .signature-name { font-weight: bold; text-decoration: underline; }
         .signature-title { color: #222; }
         .clearfix::after { content: ''; display: table; clear: both; }
+
+        /* Hapus header & footer browser saat print (tanggal, judul, URL) */
+        @page {
+            margin: 0;
+        }
+        @media print {
+            body {
+                padding: 15mm 18mm;
+            }
+        }
     </style>
 </head>
 <body>

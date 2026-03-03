@@ -120,7 +120,11 @@ class ImportKeluarCsv
         }
 
         // Baca header
-        $header = fgetcsv($handle, 0, ';');
+        $firstLine = fgets($handle);
+        $delimiter = (substr_count($firstLine, ';') >= substr_count($firstLine, ',')) ? ';' : ',';
+        rewind($handle);
+
+        $header = fgetcsv($handle, 0, $delimiter);
         if (!$header) {
             fclose($handle);
             throw new \Exception('Empty CSV file');
@@ -143,7 +147,7 @@ class ImportKeluarCsv
         DB::beginTransaction();
 
         try {
-            while (($row = fgetcsv($handle, 0, ';')) !== false) {
+            while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
                 $rowCount++;
 
                 // Skip baris benar-benar kosong

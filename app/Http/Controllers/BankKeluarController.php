@@ -1953,15 +1953,21 @@ class BankKeluarController extends Controller
         };
 
         $handle = fopen($fullPath, 'r');
+
+        // Auto-detect delimiter: baca baris pertama, hitung koma vs titik koma
+        $firstLine = fgets($handle);
+        $delimiter = (substr_count($firstLine, ';') >= substr_count($firstLine, ',')) ? ';' : ',';
+        rewind($handle);
+
         // Baca header & normalisasi
-        $header = fgetcsv($handle, 0, ';');
+        $header = fgetcsv($handle, 0, $delimiter);
         $header = array_map(fn($h) => str_replace(' ', '_', strtolower(trim($h))), $header);
 
         $preview  = [];
         $warnings = 0;
         $i = 0;
 
-        while (($row = fgetcsv($handle, 0, ';')) !== false) {
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
             if (count($row) < count($header)) continue;
             $data = array_combine($header, $row);
 

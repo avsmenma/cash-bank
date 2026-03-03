@@ -2,16 +2,28 @@
 @section('content')
     @push('styles')
         <style>
-            #tableDetailVA {
-                table-layout: auto !important;
-                width: 100% !important;
-            }
+        #tableDetailVA {
+            table-layout: fixed !important;
+            width: 100% !important;
+        }
 
-            #tableDetailVA th,
-            #tableDetailVA td {
-                white-space: nowrap;
-                vertical-align: middle;
-            }
+        #tableDetailVA th,
+        #tableDetailVA td {
+            white-space: nowrap;
+            vertical-align: middle;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Kolom Uraian: lebar fix, teks wrap ke bawah */
+        #tableDetailVA th:nth-child(5),
+        #tableDetailVA td:nth-child(5) {
+            white-space: normal !important;
+            word-break: break-word;
+            max-width: 280px;
+            min-width: 160px;
+        }
+
 
             .text-debet {
                 color: #28a745;

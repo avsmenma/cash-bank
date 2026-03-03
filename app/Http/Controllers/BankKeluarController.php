@@ -976,6 +976,7 @@ class BankKeluarController extends Controller
                 ->leftJoin('item_sub_kriteria', 'item_sub_kriteria.id_item_sub_kriteria', '=', 'bank_keluars.id_item_sub_kriteria')
                 ->leftJoin('jenis_pembayarans', 'jenis_pembayarans.id_jenis_pembayaran', '=', 'bank_keluars.id_jenis_pembayaran')
                 ->select(
+                    'bank_keluars.agenda_tahun',
                     'bank_keluars.id_sumber_dana',
                     'sumber_dana.nama_sumber_dana',
                     'bank_keluars.id_bank_tujuan',

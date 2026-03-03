@@ -137,7 +137,6 @@
         <p class="text-muted small mt-2 ml-1">
             <i class="fas fa-info-circle"></i>
             Saldo VA dihitung dari total Bank Masuk (Debet) dikurangi Bank Keluar (Kredit) per Sumber Dana.
-            &nbsp;|&nbsp; No. Rek dapat diisi manual sesuai data aktual per sumber dana.
         </p>
 
         {{-- SECTION EDITABLE: TANGGAL & TANDA TANGAN --}}

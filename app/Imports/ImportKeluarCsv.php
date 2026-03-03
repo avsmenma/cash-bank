@@ -330,13 +330,20 @@ class ImportKeluarCsv
 
     private function parseNilai($val)
     {
-        if (empty($val))
-            return 0;
-        if (is_numeric($val))
-            return (int) $val;
+        if (empty($val)) return 0;
 
-        // Remove thousand separators (dots) and convert comma to dot for decimals
-        $cleaned = str_replace(['.', ','], ['', '.'], (string) $val);
-        return (int) floatval($cleaned);
+        // Bersihkan spasi dan karakter non-numerik kecuali . dan ,
+        $cleaned = trim((string) $val);
+        $cleaned = preg_replace('/[^\d.,]/', '', $cleaned);
+
+        if (empty($cleaned)) return 0;
+
+        // Format Indonesia: titik = pemisah ribuan, koma = desimal
+        // Contoh: "3.500" = 3500, "3.035.315" = 3035315
+        // JANGAN pakai is_numeric karena PHP anggap "3.500" = float 3.5 → (int)3 = SALAH
+        $cleaned = str_replace('.', '', $cleaned);  // hapus pemisah ribuan (titik)
+        $cleaned = str_replace(',', '.', $cleaned); // ubah koma desimal ke titik
+
+        return (float) $cleaned;
     }
 }

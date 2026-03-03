@@ -9,6 +9,14 @@
             white-space: nowrap;
             vertical-align: middle;
         }
+        /* Kolom uraian: lebar fix, teks wrap ke bawah */
+        #example3 td:nth-child(12),
+        #example3 th:nth-child(12) {
+            white-space: normal !important;
+            min-width: 220px;
+            max-width: 350px;
+            word-break: break-word;
+        }
         /* Header navy - harus di sini agar berlaku saat scrollX aktif */
         #example3 thead th,
         .dataTables_scrollHead thead th {

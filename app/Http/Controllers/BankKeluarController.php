@@ -2120,12 +2120,17 @@ class BankKeluarController extends Controller
 
     public function deleteAll(Request $request)
     {
-        $ids = $request->ids;
+        // Support JSON body (untuk menghindari batas max_input_vars PHP saat data ribuan)
+        $ids = $request->json('ids') ?? $request->input('ids');
 
-        BankKeluar::whereIn('id_bank_keluar', $ids)->delete();
+        if (empty($ids) || !is_array($ids)) {
+            return response()->json(['error' => 'Tidak ada data yang dipilih.'], 422);
+        }
+
+        $deleted = BankKeluar::whereIn('id_bank_keluar', $ids)->delete();
 
         return response()->json([
-            'success' => 'Data Bank Keluar Berhasil Dihapus!'
+            'success' => "Berhasil menghapus {$deleted} data Bank Keluar."
         ]);
     }
 

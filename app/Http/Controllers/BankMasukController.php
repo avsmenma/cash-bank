@@ -270,18 +270,8 @@ class BankMasukController extends Controller
         $kategoriMap    = \App\Models\KategoriKriteria::pluck('id_kategori_kriteria', 'nama_kriteria')->toArray();
         $jenisPembMap   = \App\Models\JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran')->toArray();
 
-        // Load existing data fingerprints untuk deteksi duplikat (tanggal+sumber+uraian+debet)
-        $existingMasukKeys = [];
-        \App\Models\BankMasuk::leftJoin('sumber_dana', 'bank_masuk.id_sumber_dana', '=', 'sumber_dana.id_sumber_dana')
-            ->select('bank_masuk.tanggal', 'sumber_dana.nama_sumber_dana', 'bank_masuk.uraian', 'bank_masuk.debet')
-            ->get()->each(function($r) use (&$existingMasukKeys) {
-                $k = md5(($r->tanggal ?? '') . '||' . strtolower(trim($r->nama_sumber_dana ?? '')) . '||' . strtolower(trim($r->uraian ?? '')) . '||' . (int)$r->debet);
-                $existingMasukKeys[$k] = true;
-            });
-
-        $preview    = [];
-        $warnings   = 0;
-        $duplicates = 0;
+        $preview  = [];
+        $warnings = 0;
 
         foreach ($sheetRows as $i => $row) {
             // Ambil nilai kolom utama dulu
@@ -366,21 +356,6 @@ class BankMasukController extends Controller
 
             if ($hasWarning) $warnings++;
 
-            // Cek duplikat: fingerprint tanggal(Y-m-d)+sumber(nama)+uraian+debet
-            $tanggalDb = '';
-            try {
-                if ($tanggalFormatted) {
-                    $tanggalDb = \Carbon\Carbon::createFromFormat('d/m/Y', $tanggalFormatted)->format('Y-m-d');
-                }
-            } catch (\Exception $e) {}
-            $fp = md5($tanggalDb . '||' . strtolower(trim($sumberFound ?? $sumberRaw)) . '||' . strtolower(trim($uraianRaw)) . '||' . (int)$debetNum);
-            $isDuplicate = isset($existingMasukKeys[$fp]);
-            if ($isDuplicate) {
-                $duplicates++;
-            } else {
-                $existingMasukKeys[$fp] = true; // daftarkan agar duplikat dalam 1 file juga terdeteksi
-            }
-
             $preview[] = [
                 'no'        => $i + 1,
                 'agenda'    => $agendaRaw ?: '-',
@@ -393,7 +368,6 @@ class BankMasukController extends Controller
                 'uraian'    => $uraianRaw   ?: '-',
                 'debet'     => number_format($debetNum, 0, ',', '.'),
                 'warning'   => $hasWarning,
-                'duplicate' => $isDuplicate,
                 'warn_sumber'   => $sumberRaw && !$sumberFound,
                 'warn_bank'     => $bankRaw && !$bankFound,
                 'warn_kategori' => $kategoriRaw && !$kategoriFound,
@@ -402,11 +376,9 @@ class BankMasukController extends Controller
         }
 
         return response()->json([
-            'rows'       => $preview,
-            'total'      => count($preview),
-            'warnings'   => $warnings,
-            'duplicates' => $duplicates,
-            'new'        => count($preview) - $duplicates,
+            'rows'     => $preview,
+            'total'    => count($preview),
+            'warnings' => $warnings,
         ]);
     }
 

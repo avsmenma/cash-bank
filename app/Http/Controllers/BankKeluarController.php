@@ -1939,15 +1939,6 @@ class BankKeluarController extends Controller
         $itemSubKritMap   = \App\Models\ItemSubKriteria::pluck('id_item_sub_kriteria', 'nama_item_sub_kriteria')->toArray();
         $jenisPembMap     = \App\Models\JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran')->toArray();
 
-        // Load existing data fingerprints untuk deteksi duplikat (tanggal+sumber+uraian+kredit)
-        $existingKeluarKeys = [];
-        \App\Models\BankKeluar::leftJoin('sumber_dana', 'bank_keluars.id_sumber_dana', '=', 'sumber_dana.id_sumber_dana')
-            ->select('bank_keluars.tanggal', 'sumber_dana.nama_sumber_dana', 'bank_keluars.uraian', 'bank_keluars.kredit')
-            ->get()->each(function($r) use (&$existingKeluarKeys) {
-                $k = md5(($r->tanggal ?? '') . '||' . strtolower(trim($r->nama_sumber_dana ?? '')) . '||' . strtolower(trim($r->uraian ?? '')) . '||' . (int)$r->kredit);
-                $existingKeluarKeys[$k] = true;
-            });
-
         // Helper partial match dengan guard empty
         $findInMap = function($map, $search) {
             if (empty($search)) return null;
@@ -1966,9 +1957,8 @@ class BankKeluarController extends Controller
         $header = fgetcsv($handle, 0, ';');
         $header = array_map(fn($h) => str_replace(' ', '_', strtolower(trim($h))), $header);
 
-        $preview    = [];
-        $warnings   = 0;
-        $duplicates = 0;
+        $preview  = [];
+        $warnings = 0;
         $i = 0;
 
         while (($row = fgetcsv($handle, 0, ';')) !== false) {
@@ -2013,19 +2003,6 @@ class BankKeluarController extends Controller
 
             if ($hasWarning) $warnings++;
 
-            // Cek duplikat: tanggal(Y-m-d)+sumber+uraian+kredit
-            $tanggalNorm = '';
-            try {
-                $tanggalNorm = \Carbon\Carbon::createFromFormat('d/m/Y', str_replace(['-','.'], '/', $tanggalRaw))->format('Y-m-d');
-            } catch (\Exception $e) { $tanggalNorm = $tanggalRaw; }
-            $fp = md5($tanggalNorm . '||' . strtolower(trim($sumberFound ?? $sumberRaw)) . '||' . strtolower(trim($uraianRaw)) . '||' . (int)$kreditNum);
-            $isDuplicate = isset($existingKeluarKeys[$fp]);
-            if ($isDuplicate) {
-                $duplicates++;
-            } else {
-                $existingKeluarKeys[$fp] = true;
-            }
-
             $i++;
             $preview[] = [
                 'no'            => $i,
@@ -2041,7 +2018,6 @@ class BankKeluarController extends Controller
                 'uraian'        => $uraianRaw   ?: '-',
                 'kredit'        => number_format($kreditNum, 0, ',', '.'),
                 'warning'       => $hasWarning,
-                'duplicate'     => $isDuplicate,
                 'warn_sumber'       => $sumberRaw && !$sumberFound,
                 'warn_bank'         => $bankRaw && !$bankFound,
                 'warn_kategori'     => $kategoriRaw && !$kategoriFound,
@@ -2053,11 +2029,9 @@ class BankKeluarController extends Controller
         fclose($handle);
 
         return response()->json([
-            'rows'       => $preview,
-            'total'      => count($preview),
-            'warnings'   => $warnings,
-            'duplicates' => $duplicates,
-            'new'        => count($preview) - $duplicates,
+            'rows'     => $preview,
+            'total'    => count($preview),
+            'warnings' => $warnings,
         ]);
     }
 

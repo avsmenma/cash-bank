@@ -135,7 +135,7 @@
                                 </td>
                                 <td class="rk-td">{{ $row->no_sap ?? '-' }}</td>
                                 <td class="rk-td">{{ $row->nama_sumber_dana ?? '-' }}</td>
-                                <td class="rk-td">{{ $row->penerima ?? '-' }}</td>
+                                <td class="rk-td rk-penerima">{{ $row->penerima ?? '-' }}</td>
                                 <td class="rk-td rk-uraian" title="{{ $row->uraian }}">{{ $row->uraian ?? '-' }}</td>
                                 <td class="text-right rk-td rk-debet">
                                     {{ $row->debet > 0 ? number_format($row->debet, 0, ',', '.') : '' }}
@@ -213,6 +213,12 @@
     vertical-align: middle;
     white-space: nowrap;
     border-color: #d0dce8 !important;
+}
+.rk-penerima {
+    white-space: normal;
+    min-width: 120px;
+    max-width: 180px;
+    word-break: break-word;
 }
 .rk-uraian {
     white-space: normal;

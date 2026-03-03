@@ -205,17 +205,19 @@ class ImportKeluarCsv
      */
     private function processRow($data)
     {
-        $agendaTahun = $this->cleanText($data['agenda_tahun'] ?? '');
+        $agendaTahun = $this->cleanText($data['agenda_tahun'] ?? $data['no_agenda'] ?? '');
         $tanggal = $this->parseTanggal($data['tanggal'] ?? '');
         $sumberDana = $this->cleanText($data['sumber_dana'] ?? '');
         $bankTujuan = $this->cleanText($data['bank_tujuan'] ?? '');
-        $kategori = $this->cleanText($data['kategori'] ?? '');
-        $penerima = $this->cleanText($data['penerima'] ?? '');
-        $uraian = $this->cleanText($data['uraian'] ?? '');
+        // Kategori: support 'kategori', 'kriteria_cf', atau 'kriteria'; strip prefix angka "50. "
+        $kategoriRaw = $this->cleanText($data['kategori'] ?? $data['kriteria_cf'] ?? $data['kriteria'] ?? '');
+        $kategori = preg_replace('/^\d+\.\s*/', '', $kategoriRaw);
+        $penerima = $this->cleanText($data['penerima'] ?? $data['penerima/dari'] ?? '');
+        $uraian = $this->cleanText($data['uraian'] ?? $data['edit_uraian'] ?? '');
         $jenisPembayaran = $this->cleanText($data['jenis_pembayaran'] ?? '');
 
-        // Parse nilai debet → kredit
-        $kredit = $this->parseNilai($data['debet'] ?? 0);
+        // Parse nilai kredit: CSV bank keluar punya kolom 'kredit', fallback ke 'debet'
+        $kredit = $this->parseNilai($data['kredit'] ?? $data['debet'] ?? 0);
 
         // =====================================
         // UPDATE AGENDA ONLINE (hanya 2026)

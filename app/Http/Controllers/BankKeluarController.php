@@ -1971,16 +1971,20 @@ class BankKeluarController extends Controller
             if (count($row) < count($header)) continue;
             $data = array_combine($header, $row);
 
-            $agendaRaw      = trim($data['agenda_tahun'] ?? '');
+            // Ambil nilai dari kolom CSV (support beragam nama header)
+            $agendaRaw      = trim($data['agenda_tahun'] ?? $data['no_agenda'] ?? '');
             $tanggalRaw     = trim($data['tanggal'] ?? '');
             $sumberRaw      = trim($data['sumber_dana'] ?? '');
             $bankRaw        = trim($data['bank_tujuan'] ?? '');
-            $kategoriRaw    = trim($data['kategori'] ?? '');
+            $kategoriRaw    = trim($data['kategori'] ?? $data['kriteria_cf'] ?? $data['kriteria'] ?? '');
+            // Strip prefix angka "50. " dari kategori
+            $kategoriRaw    = preg_replace('/^\d+\.\s*/', '', $kategoriRaw);
             $subKritRaw     = trim($data['sub_kriteria'] ?? '');
             $itemSubKritRaw = trim($data['item_sub_kriteria'] ?? '');
-            $penerimaRaw    = trim($data['penerima'] ?? '');
-            $uraianRaw      = trim($data['uraian'] ?? '');
-            $debetRaw       = trim($data['debet'] ?? '');
+            $penerimaRaw    = trim($data['penerima'] ?? $data['penerima/dari'] ?? '');
+            $uraianRaw      = trim($data['uraian'] ?? $data['edit_uraian'] ?? '');
+            // Kredit: CSV bank keluar punya kolom 'kredit', fallback ke 'debet'
+            $debetRaw       = trim($data['kredit'] ?? $data['debet'] ?? '');
             $jenisRaw       = trim($data['jenis_pembayaran'] ?? '');
 
             // Hitung kredit

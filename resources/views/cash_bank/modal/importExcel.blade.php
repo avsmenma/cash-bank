@@ -191,7 +191,15 @@ $(document).ready(function () {
             },
             error: function (xhr) {
                 btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Konfirmasi Import');
-                var msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'Import gagal.';
+                var msg = 'Import gagal.';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    msg = xhr.responseJSON.error;
+                } else if (xhr.responseText) {
+                    // Coba ekstrak pesan dari HTML error Laravel
+                    var match = xhr.responseText.match(/<title>([^<]+)<\/title>/);
+                    var msgMatch = xhr.responseText.match(/class="exception-message[^"]*"[^>]*>([^<]+)/);
+                    msg = msgMatch ? msgMatch[1] : (match ? match[1] : 'Server error ' + xhr.status);
+                }
                 alert('❌ ' + msg);
             }
         });

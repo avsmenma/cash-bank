@@ -174,7 +174,13 @@ class ImportKeluarCsv
                 if (empty($tanggalVal)) continue;
 
                 // Process row → build record
-                $record = $this->processRow($data);
+                try {
+                    $record = $this->processRow($data);
+                } catch (\Throwable $e) {
+                    Log::warning("Row {$rowCount} processRow failed: " . $e->getMessage());
+                    $errorCount++;
+                    continue;
+                }
 
                 if ($record) {
                     $batchData[] = $record;
@@ -236,11 +242,12 @@ class ImportKeluarCsv
         // Parse nilai kredit: CSV bank keluar punya kolom 'kredit', fallback ke 'debet'
         $kredit = $this->parseNilai($data['kredit'] ?? $data['debet'] ?? 0);
 
-        // =====================================
-        // UPDATE AGENDA ONLINE (hanya 2026)
-        // =====================================
+        // NOTE: Agenda Online update dinonaktifkan saat bulk import untuk mencegah timeout.
+        // Setiap baris yang punya agenda_tahun mengandung '_2026' sebelumnya membuat query
+        // ke database kedua (mysql_agenda_online) yang menyebabkan import 3000+ baris timeout.
         $dokumenId = null;
 
+        /*
         if (!empty($agendaTahun) && strpos($agendaTahun, '_2026') !== false) {
             try {
                 $dokumen = DB::connection('mysql_agenda_online')
@@ -264,6 +271,7 @@ class ImportKeluarCsv
                 Log::warning("Agenda Online update failed for {$agendaTahun}: " . $e->getMessage());
             }
         }
+        */
 
         // =====================================
         // BUILD RECORD (using cache - no query!)
@@ -283,8 +291,8 @@ class ImportKeluarCsv
             'kredit' => $kredit,
             'debet' => 0,
             'nilai_rupiah' => $kredit,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'created_at' => now()->toDateTimeString(),
+            'updated_at' => now()->toDateTimeString(),
         ];
     }
 

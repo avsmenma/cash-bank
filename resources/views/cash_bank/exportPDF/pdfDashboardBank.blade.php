@@ -30,6 +30,12 @@
             body {
                 padding: 15mm 18mm;
             }
+            /* Paksa browser cetak background color */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
         }
     </style>
 </head>

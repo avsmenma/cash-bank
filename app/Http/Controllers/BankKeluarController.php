@@ -2086,10 +2086,12 @@ class BankKeluarController extends Controller
     }
     public function update(Request $request, string $id)
     {
-
         $keluar = bankKeluar::findOrFail($id);
-        $keluar->update($request->all());
+        $keluar->update($request->except(['_method', '_token']));
 
+        if ($request->ajax()) {
+            return response()->json(['success' => 'Data berhasil diperbarui']);
+        }
         return redirect()->route('bank-keluar.index')->with('success', 'Data berhasil diperbarui');
     }
 

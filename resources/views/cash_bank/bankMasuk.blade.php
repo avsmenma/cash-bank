@@ -209,9 +209,43 @@
         $('[name="id_jenis_pembayaran"]').val(jenis).trigger('change');
     });
 
-    $('#formEdit').on('submit', function () {
-        let debetVal = $('#debet').val();
-        $('#debet').val(debetVal.replace(/\./g, ''));
+    $('#formEdit').on('submit', function (e) {
+        e.preventDefault();
+
+        // Bersihkan format rupiah sebelum kirim
+        let debetRaw = $('#debet').val().replace(/\./g, '');
+        $('#debet').val(debetRaw);
+
+        let form = $(this);
+        let actionUrl = form.attr('action');
+        let formData = new FormData(this);
+        formData.set('_method', 'PUT');
+
+        $.ajax({
+            url: actionUrl,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (res) {
+                $('#edit').modal('hide');
+                // Reload DataTable tanpa reset halaman/entries
+                $('#example2').DataTable().ajax.reload(null, false);
+                $('#modalInfoTitle').text('Berhasil');
+                $('#modalInfoIcon').attr('class', 'fas fa-check-circle text-success mr-2');
+                $('#modalInfoMsg').text('Data berhasil diupdate.');
+                $('#modalInfo').modal('show');
+            },
+            error: function (xhr) {
+                // Kembalikan format rupiah jika error
+                $('#debet').val($('#debet').val().replace(/\B(?=(\d{3})+(?!\d))/g, '.'));
+                let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Gagal menyimpan data.';
+                $('#modalInfoTitle').text('Gagal');
+                $('#modalInfoIcon').attr('class', 'fas fa-times-circle text-danger mr-2');
+                $('#modalInfoMsg').text(msg);
+                $('#modalInfo').modal('show');
+            }
+        });
     });
 
     $('#debet').on('input', function () {

@@ -285,8 +285,45 @@
         this.setSelectionRange(cursorPos, cursorPos);
     });
 
-    $('#formEditKeluar').on('submit', function () {
-        $('#edit_keluar_kredit').val($('#edit_keluar_kredit').val().replace(/\./g, ''));
+    $('#formEditKeluar').on('submit', function (e) {
+        e.preventDefault();
+
+        // Bersihkan format rupiah sebelum kirim
+        let kreditRaw = $('#edit_keluar_kredit').val().replace(/\./g, '');
+        $('#edit_keluar_kredit').val(kreditRaw);
+
+        let form = $(this);
+        let actionUrl = form.attr('action');
+        let formData = new FormData(this);
+        // Laravel PUT via FormData perlu override method
+        formData.set('_method', 'PUT');
+
+        $.ajax({
+            url: actionUrl,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (res) {
+                $('#editKeluar').modal('hide');
+                // Reload DataTable tanpa reset halaman/entries
+                $('#example3').DataTable().ajax.reload(null, false);
+                // Tampilkan notifikasi
+                $('#modalInfoTitle').text('Berhasil');
+                $('#modalInfoIcon').attr('class', 'fas fa-check-circle text-success mr-2');
+                $('#modalInfoMsg').text('Data berhasil diupdate.');
+                $('#modalInfo').modal('show');
+            },
+            error: function (xhr) {
+                // Kembalikan nilai kredit jika error
+                $('#edit_keluar_kredit').val($('#edit_keluar_kredit').val().replace(/\B(?=(\d{3})+(?!\d))/g, '.'));
+                let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Gagal menyimpan data.';
+                $('#modalInfoTitle').text('Gagal');
+                $('#modalInfoIcon').attr('class', 'fas fa-times-circle text-danger mr-2');
+                $('#modalInfoMsg').text(msg);
+                $('#modalInfo').modal('show');
+            }
+        });
     });
 
     $(document).on('click', '#select_all_ids', function () {

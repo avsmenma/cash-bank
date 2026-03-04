@@ -34,10 +34,10 @@
     <section class="content">
         {{-- TOMBOL EXPORT --}}
         <div class="mb-3" style="max-width:820px;">
-            <button type="button" class="btn btn-success btn-sm mr-2" onclick="doExport('excel')">
+            <button type="button" class="btn btn-success btn-sm mr-2" onclick="openExportModal('excel')">
                 <i class="fas fa-file-excel mr-1"></i> Export Excel
             </button>
-            <button type="button" class="btn btn-danger btn-sm" onclick="doExport('pdf')">
+            <button type="button" class="btn btn-danger btn-sm" onclick="openExportModal('pdf')">
                 <i class="fas fa-file-pdf mr-1"></i> Export PDF
             </button>
         </div>
@@ -84,12 +84,10 @@
                         {{-- DAFTAR SUMBER DANA --}}
                         @forelse($sumberDanaList as $sd)
                         @php
-                            // Ekstrak nomor rekening dari akhir string (pola: "* 146-00-0443935-7")
                             $noRek = '';
                             $namaBersih = $sd->nama_sumber_dana;
                             if (preg_match('/\*\s*([\d\-\/]+)\s*$/', $sd->nama_sumber_dana, $m)) {
                                 $noRek = trim($m[1]);
-                                // Hapus bagian nomor rek dari nama (beserta spasi sebelum *)
                                 $namaBersih = trim(preg_replace('/\s*\*\s*[\d\-\/]+\s*$/', '', $sd->nama_sumber_dana));
                             }
                         @endphp
@@ -133,75 +131,110 @@
                 </table>
             </div>
         </div>
-
-
-        {{-- SECTION EDITABLE: TANGGAL & TANDA TANGAN --}}
-        <div class="card shadow mt-3" style="max-width:820px; border-top:3px solid #0d3b6e;">
-            <div class="card-body py-3 px-4">
-                <div class="row align-items-start">
-                    {{-- Kolom kiri: kosong (placeholder tanda tangan kiri jika diperlukan) --}}
-                    <div class="col-md-6">
-                        {{-- Bisa dikembangkan di masa mendatang --}}
-                    </div>
-
-                    {{-- Kolom kanan: Kota, Tanggal, Nama, Jabatan --}}
-                    <div class="col-md-6">
-                        {{-- Kota + Tanggal --}}
-                        <div class="form-group mb-2">
-                            <label class="small font-weight-bold text-muted mb-1">
-                                <i class="fas fa-calendar-alt mr-1"></i>Tanggal Dokumen
-                            </label>
-                            <div class="d-flex align-items-center" style="gap:6px;">
-                                <span class="text-muted" style="white-space:nowrap; font-size:13px;">Pontianak,</span>
-                                {{-- Hari --}}
-                                <select id="selHari" class="form-control form-control-sm" style="width:65px; font-size:12px;">
-                                    @for($h = 1; $h <= 31; $h++)
-                                        <option value="{{ $h }}" {{ $h == $hariIni ? 'selected' : '' }}>{{ $h }}</option>
-                                    @endfor
-                                </select>
-                                {{-- Bulan --}}
-                                <select id="selBulan" class="form-control form-control-sm" style="width:110px; font-size:12px;">
-                                    @foreach($bulanList as $no => $nama)
-                                        <option value="{{ $nama }}" {{ $no == $bulanIni ? 'selected' : '' }}>{{ $nama }}</option>
-                                    @endforeach
-                                </select>
-                                {{-- Tahun --}}
-                                <select id="selTahun" class="form-control form-control-sm" style="width:80px; font-size:12px;">
-                                    @for($y = $tahunIni - 3; $y <= $tahunIni + 2; $y++)
-                                        <option value="{{ $y }}" {{ $y == $tahunIni ? 'selected' : '' }}>{{ $y }}</option>
-                                    @endfor
-                                </select>
-                            </div>
-                        </div>
-
-                        {{-- Nama Penandatangan --}}
-                        <div class="form-group mb-2">
-                            <label class="small font-weight-bold text-muted mb-1">
-                                <i class="fas fa-user mr-1"></i>Nama Penandatangan
-                            </label>
-                            <input type="text" id="inpNama" class="form-control form-control-sm"
-                                   value="Herry Wahyudi"
-                                   style="font-size:12px; max-width:280px;">
-                        </div>
-
-                        {{-- Jabatan --}}
-                        <div class="form-group mb-0">
-                            <label class="small font-weight-bold text-muted mb-1">
-                                <i class="fas fa-id-badge mr-1"></i>Jabatan
-                            </label>
-                            <input type="text" id="inpJabatan" class="form-control form-control-sm"
-                                   value="Kepala Bagian Akuntansi &amp; Keuangan"
-                                   style="font-size:12px; max-width:300px;">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </section>
 </div>
 
+{{-- ===================== MODAL EXPORT ===================== --}}
+<div class="modal fade" id="modalExport" tabindex="-1" role="dialog" aria-labelledby="modalExportLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:460px;">
+        <div class="modal-content" style="border-top:4px solid #0d3b6e; border-radius:8px;">
+            <div class="modal-header py-3" style="background:#f8f9fa; border-bottom:1px solid #dee2e6;">
+                <h6 class="modal-title font-weight-bold text-dark mb-0" id="modalExportLabel">
+                    <i class="fas fa-file-export mr-2 text-primary"></i>
+                    <span id="modalExportTitle">Export Dokumen</span>
+                </h6>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Lengkapi data berikut sebelum mengekspor dokumen.
+                </p>
+
+                {{-- Tanggal Dokumen --}}
+                <div class="form-group mb-3">
+                    <label class="small font-weight-bold text-dark mb-1">
+                        <i class="fas fa-calendar-alt mr-1 text-primary"></i>Tanggal Dokumen
+                    </label>
+                    <div class="d-flex align-items-center" style="gap:6px;">
+                        <span class="text-muted" style="white-space:nowrap; font-size:13px;">Pontianak,</span>
+                        {{-- Hari --}}
+                        <select id="selHari" class="form-control form-control-sm" style="width:65px; font-size:12px;">
+                            @for($h = 1; $h <= 31; $h++)
+                                <option value="{{ $h }}" {{ $h == $hariIni ? 'selected' : '' }}>{{ $h }}</option>
+                            @endfor
+                        </select>
+                        {{-- Bulan --}}
+                        <select id="selBulan" class="form-control form-control-sm" style="width:110px; font-size:12px;">
+                            @foreach($bulanList as $no => $nama)
+                                <option value="{{ $nama }}" {{ $no == $bulanIni ? 'selected' : '' }}>{{ $nama }}</option>
+                            @endforeach
+                        </select>
+                        {{-- Tahun --}}
+                        <select id="selTahun" class="form-control form-control-sm" style="width:80px; font-size:12px;">
+                            @for($y = $tahunIni - 3; $y <= $tahunIni + 2; $y++)
+                                <option value="{{ $y }}" {{ $y == $tahunIni ? 'selected' : '' }}>{{ $y }}</option>
+                            @endfor
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Nama Penandatangan --}}
+                <div class="form-group mb-3">
+                    <label class="small font-weight-bold text-dark mb-1">
+                        <i class="fas fa-user mr-1 text-primary"></i>Nama Penandatangan
+                    </label>
+                    <input type="text" id="inpNama" class="form-control form-control-sm"
+                           value="Herry Wahyudi"
+                           style="font-size:12px;">
+                </div>
+
+                {{-- Jabatan --}}
+                <div class="form-group mb-0">
+                    <label class="small font-weight-bold text-dark mb-1">
+                        <i class="fas fa-id-badge mr-1 text-primary"></i>Jabatan
+                    </label>
+                    <input type="text" id="inpJabatan" class="form-control form-control-sm"
+                           value="Kepala Bagian Akuntansi &amp; Keuangan"
+                           style="font-size:12px;">
+                </div>
+            </div>
+            <div class="modal-footer py-2" style="background:#f8f9fa;">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i>Batal
+                </button>
+                <button type="button" class="btn btn-sm" id="btnDoExport" style="min-width:120px;">
+                    <i class="fas fa-download mr-1"></i>
+                    <span id="btnExportLabel">Export</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{{-- ======================================================= --}}
+
 <script>
-    function doExport(type) {
+    var _exportType = 'excel';
+
+    function openExportModal(type) {
+        _exportType = type;
+        if (type === 'excel') {
+            document.getElementById('modalExportTitle').textContent = 'Export Excel';
+            document.getElementById('btnExportLabel').textContent   = 'Export Excel';
+            document.getElementById('btnDoExport').className        = 'btn btn-success btn-sm';
+            document.getElementById('btnDoExport').querySelector('i').className = 'fas fa-file-excel mr-1';
+        } else {
+            document.getElementById('modalExportTitle').textContent = 'Export PDF';
+            document.getElementById('btnExportLabel').textContent   = 'Export PDF';
+            document.getElementById('btnDoExport').className        = 'btn btn-danger btn-sm';
+            document.getElementById('btnDoExport').querySelector('i').className = 'fas fa-file-pdf mr-1';
+        }
+        $('#modalExport').modal('show');
+    }
+
+    document.getElementById('btnDoExport').addEventListener('click', function () {
         var hari    = document.getElementById('selHari').value;
         var bulan   = document.getElementById('selBulan').value;
         var tahun   = document.getElementById('selTahun').value;
@@ -216,12 +249,14 @@
             jabatan: jabatan
         });
 
-        if (type === 'excel') {
+        $('#modalExport').modal('hide');
+
+        if (_exportType === 'excel') {
             window.location.href = '{{ route("dashboard.bank.excel") }}?' + params.toString();
         } else {
             window.open('{{ route("dashboard.bank.pdf") }}?' + params.toString(), '_blank');
         }
-    }
+    });
 </script>
 
 @endsection

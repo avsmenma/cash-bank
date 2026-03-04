@@ -134,10 +134,6 @@
             </div>
         </div>
 
-        <p class="text-muted small mt-2 ml-1">
-            <i class="fas fa-info-circle"></i>
-            Saldo VA dihitung dari total Bank Masuk (Debet) dikurangi Bank Keluar (Kredit) per Sumber Dana.
-        </p>
 
         {{-- SECTION EDITABLE: TANGGAL & TANDA TANGAN --}}
         <div class="card shadow mt-3" style="max-width:820px; border-top:3px solid #0d3b6e;">

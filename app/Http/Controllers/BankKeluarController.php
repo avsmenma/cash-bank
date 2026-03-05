@@ -216,17 +216,60 @@ class BankKeluarController extends Controller
                 $agenda_tahun = $dokumen->nomor_agenda;
                 // $agenda_tahun = $dokumen->nomor_agenda . '_' . $dokumen->tahun;
 
+                // Build sync payload with basic fields
+                $syncPayload = [
+                    'uraian_spp'        => $request->uraian,
+                    'nilai_rupiah'      => $request->nilai_rupiah,
+                    'dibayar'           => $request->nilai_rupiah,
+                    'dibayar_kepada'    => $request->penerima,
+                    'status_pembayaran' => 'sudah_dibayar',
+                    'tanggal_dibayar'   => $request->tanggal,
+                ];
+
+                // Lookup kategori ID → nama
+                if ($request->id_kategori_kriteria) {
+                    $kategori = DB::table('kategori_kriteria')
+                        ->where('id_kategori_kriteria', $request->id_kategori_kriteria)
+                        ->first();
+                    if ($kategori) {
+                        $syncPayload['kategori'] = $kategori->nama_kriteria;
+                    }
+                }
+
+                // Lookup sub_kriteria ID → nama (jenis_dokumen)
+                if ($request->id_sub_kriteria) {
+                    $sub = DB::table('sub_kriteria')
+                        ->where('id_sub_kriteria', $request->id_sub_kriteria)
+                        ->first();
+                    if ($sub) {
+                        $syncPayload['jenis_dokumen'] = $sub->nama_sub_kriteria;
+                    }
+                }
+
+                // Lookup item_sub_kriteria ID → nama (jenis_sub_pekerjaan)
+                if ($request->id_item_sub_kriteria) {
+                    $item = DB::table('item_sub_kriteria')
+                        ->where('id_item_sub_kriteria', $request->id_item_sub_kriteria)
+                        ->first();
+                    if ($item) {
+                        $syncPayload['jenis_sub_pekerjaan'] = $item->nama_item_sub_kriteria;
+                    }
+                }
+
+                // Lookup jenis_pembayaran ID → nama
+                if ($request->id_jenis_pembayaran) {
+                    $jp = DB::table('jenis_pembayarans')
+                        ->where('id_jenis_pembayaran', $request->id_jenis_pembayaran)
+                        ->first();
+                    if ($jp) {
+                        $syncPayload['jenis_pembayaran'] = $jp->nama_jenis_pembayaran;
+                    }
+                }
+
                 DB::connection('mysql_agenda_online')
                     ->table('dokumens')
                     ->where('id', $dokumen->id)
-                    ->update([
-                        'uraian_spp' => $request->uraian,
-                        'nilai_rupiah' => $request->nilai_rupiah,
-                        'dibayar' => $request->nilai_rupiah,
-                        'dibayar_kepada' => $request->penerima,
-                        'status_pembayaran' => 'sudah_dibayar',
-                        'tanggal_dibayar' => $request->tanggal,
-                    ]);
+                    ->update($syncPayload);
             }
         }
         $pakaiSplit = $request->filled('split.kredit');
@@ -2086,8 +2129,90 @@ class BankKeluarController extends Controller
     }
     public function update(Request $request, string $id)
     {
-        $keluar = bankKeluar::findOrFail($id);
-        $keluar->update($request->except(['_method', '_token']));
+        $bankKeluar = bankKeluar::findOrFail($id);
+        $bankKeluar->update($request->except(['_method', '_token']));
+
+        // Refresh model to get the latest values after update
+        $bankKeluar->refresh();
+
+        // === Direct Sync ke Agenda Online ===
+        try {
+            $agendaKey = $bankKeluar->agenda_tahun;
+            if ($agendaKey || $bankKeluar->dokumen_id) {
+                $syncPayload = [];
+
+                // Map basic fields
+                $syncPayload['uraian_spp']       = $bankKeluar->uraian;
+                $syncPayload['nilai_rupiah']      = $bankKeluar->kredit;
+                $syncPayload['dibayar']           = $bankKeluar->kredit;
+                $syncPayload['dibayar_kepada']    = $bankKeluar->penerima;
+                $syncPayload['tanggal_dibayar']   = $bankKeluar->tanggal;
+
+                // Lookup kategori ID → nama
+                if ($bankKeluar->id_kategori_kriteria) {
+                    $kategori = DB::table('kategori_kriteria')
+                        ->where('id_kategori_kriteria', $bankKeluar->id_kategori_kriteria)
+                        ->first();
+                    if ($kategori) {
+                        $syncPayload['kategori'] = $kategori->nama_kriteria;
+                    }
+                }
+
+                // Lookup sub_kriteria ID → nama (jenis_dokumen)
+                if ($bankKeluar->id_sub_kriteria) {
+                    $sub = DB::table('sub_kriteria')
+                        ->where('id_sub_kriteria', $bankKeluar->id_sub_kriteria)
+                        ->first();
+                    if ($sub) {
+                        $syncPayload['jenis_dokumen'] = $sub->nama_sub_kriteria;
+                    }
+                }
+
+                // Lookup item_sub_kriteria ID → nama (jenis_sub_pekerjaan)
+                if ($bankKeluar->id_item_sub_kriteria) {
+                    $item = DB::table('item_sub_kriteria')
+                        ->where('id_item_sub_kriteria', $bankKeluar->id_item_sub_kriteria)
+                        ->first();
+                    if ($item) {
+                        $syncPayload['jenis_sub_pekerjaan'] = $item->nama_item_sub_kriteria;
+                    }
+                }
+
+                // Lookup jenis_pembayaran ID → nama
+                if ($bankKeluar->id_jenis_pembayaran) {
+                    $jp = DB::table('jenis_pembayarans')
+                        ->where('id_jenis_pembayaran', $bankKeluar->id_jenis_pembayaran)
+                        ->first();
+                    if ($jp) {
+                        $syncPayload['jenis_pembayaran'] = $jp->nama_jenis_pembayaran;
+                    }
+                }
+
+                // Update dokumen di Agenda Online
+                $affected = DB::connection('mysql_agenda_online')
+                    ->table('dokumens')
+                    ->where(function ($q) use ($bankKeluar) {
+                        if ($bankKeluar->dokumen_id) {
+                            $q->where('id', $bankKeluar->dokumen_id);
+                        }
+                        if ($bankKeluar->agenda_tahun) {
+                            $q->orWhere('nomor_agenda', $bankKeluar->agenda_tahun);
+                        }
+                    })
+                    ->update($syncPayload);
+
+                \Log::info('[CBSync] Direct sync CB → AO berhasil.', [
+                    'bank_keluar_id' => $bankKeluar->id_bank_keluar,
+                    'agenda_key'     => $agendaKey,
+                    'rows_affected'  => $affected,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Log::error('[CBSync] Direct sync CB → AO GAGAL.', [
+                'bank_keluar_id' => $bankKeluar->id_bank_keluar,
+                'error'          => $e->getMessage(),
+            ]);
+        }
 
         if ($request->ajax()) {
             return response()->json(['success' => 'Data berhasil diperbarui']);

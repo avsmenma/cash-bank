@@ -276,6 +276,59 @@
         });
     });
 
+    // === Cascading dropdown handlers untuk EDIT Keluar modal ===
+    $(document).on('change', '#editKeluar [name="id_kategori_kriteria"]', function () {
+        let kategoriID = $(this).val();
+        let $sub = $('#edit_keluar_sub_kriteria');
+        let $item = $('#edit_keluar_item_sub_kriteria');
+        $sub.html('<option value="">Memuat...</option>').prop('disabled', true);
+        $item.html('<option value="">-- Pilih Item Sub Kriteria --</option>').prop('disabled', true);
+        if ($item.hasClass("select2-hidden-accessible")) $item.select2('destroy');
+        $item.select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
+        if (!kategoriID) {
+            $sub.html('<option value="">-- Pilih Sub Kriteria --</option>').prop('disabled', false);
+            if ($sub.hasClass("select2-hidden-accessible")) $sub.select2('destroy');
+            $sub.select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
+            return;
+        }
+        $.ajax({
+            url: '/get-sub-kriteria/' + kategoriID, method: 'GET',
+            success: function (subs) {
+                let opt = '<option value="">-- Pilih Sub Kriteria --</option>';
+                if (Array.isArray(subs) && subs.length > 0) {
+                    subs.forEach(s => { opt += `<option value="${s.id_sub_kriteria}">${s.nama_sub_kriteria.trim()}</option>`; });
+                }
+                $sub.html(opt).prop('disabled', false);
+                if ($sub.hasClass("select2-hidden-accessible")) $sub.select2('destroy');
+                $sub.select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
+            }
+        });
+    });
+
+    $(document).on('change', '#edit_keluar_sub_kriteria', function () {
+        let subID = $(this).val();
+        let $item = $('#edit_keluar_item_sub_kriteria');
+        $item.html('<option value="">Memuat...</option>').prop('disabled', true);
+        if (!subID) {
+            $item.html('<option value="">-- Pilih Item Sub Kriteria --</option>').prop('disabled', false);
+            if ($item.hasClass("select2-hidden-accessible")) $item.select2('destroy');
+            $item.select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
+            return;
+        }
+        $.ajax({
+            url: '/get-item-sub-kriteria/' + subID, method: 'GET',
+            success: function (items) {
+                let opt = '<option value="">-- Pilih Item Sub Kriteria --</option>';
+                if (Array.isArray(items) && items.length > 0) {
+                    items.forEach(i => { opt += `<option value="${i.id_item_sub_kriteria}">${i.nama_item_sub_kriteria.trim()}</option>`; });
+                }
+                $item.html(opt).prop('disabled', false);
+                if ($item.hasClass("select2-hidden-accessible")) $item.select2('destroy');
+                $item.select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
+            }
+        });
+    });
+
     $('#edit_keluar_kredit').on('input', function () {
         let cursorPos = this.selectionStart, oldLen = this.value.length;
         let raw = this.value.replace(/\D/g, '');

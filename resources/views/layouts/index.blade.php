@@ -163,6 +163,15 @@
                             </a>
                         </li>
 
+                        <!-- RINGKASAN PEMBAYARAN -->
+                        <li class="nav-item">
+                            <a href="{{ route('ringkasan.index') }}"
+                                class="nav-link {{ request()->routeIs('ringkasan.*') ? 'active' : ''}}">
+                                <i class="nav-icon fas fa-chart-bar"></i>
+                                <p>Ringkasan Pembayaran</p>
+                            </a>
+                        </li>
+
 
                         <!-- DAFTAR BANK -->
                         <li

@@ -104,9 +104,9 @@
                                     $nilai = $kategoriData['totals'][$m] ?? 0;
                                     $kategoriRowTotal += $nilai;
                                 @endphp
-                                <td class="text-right">{{ $nilai }}</td>
+                                <td class="text-right">{{ number_format($nilai, 0, ',', '.') }}</td>
                             @endfor
-                            <td class="text-right">{{ $kategoriRowTotal }}</td>
+                            <td class="text-right">{{ number_format($kategoriRowTotal, 0, ',', '.') }}</td>
                         </tr>
                     
 
@@ -122,9 +122,9 @@
                 <tr>
                     <th colspan="2">TOTAL Keseluruhan</th>
                     @for($m = 1; $m <= 12; $m++)
-                        <th class="text-right">{{ $totals[$m]  }}</th>
+                        <th class="text-right">{{ number_format($totals[$m], 0, ',', '.') }}</th>
                     @endfor
-                    <th class="text-right">{{ $grandTotal }}</th>
+                    <th class="text-right">{{ number_format($grandTotal, 0, ',', '.') }}</th>
                 </tr>
             </tfoot>
         </table>

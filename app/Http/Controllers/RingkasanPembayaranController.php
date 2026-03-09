@@ -9,11 +9,13 @@ class RingkasanPembayaranController extends Controller
 {
     /**
      * Halaman utama Ringkasan Pembayaran Hierarki
+     * Menampilkan SEMUA kategori, sub, dan item dari tabel master,
+     * lalu overlay data transaksi dari bank_keluars.
      */
     public function index(Request $request)
     {
-        $tahun      = $request->tahun ?? date('Y');
-        $dariBulan  = $request->dari_bulan ?? 1;
+        $tahun       = $request->tahun ?? date('Y');
+        $dariBulan   = $request->dari_bulan ?? 1;
         $sampaiBulan = $request->sampai_bulan ?? date('n');
 
         $bulanMap = [
@@ -30,101 +32,115 @@ class RingkasanPembayaranController extends Controller
         }
 
         // ======================================================
-        // QUERY: Group bank_keluars by kategori → sub → item,
-        //        pivot by month
+        // LOAD ALL MASTER DATA
         // ======================================================
-        $rows = DB::table('bank_keluars')
-            ->join('kategori_kriteria', 'bank_keluars.id_kategori_kriteria', '=', 'kategori_kriteria.id_kategori_kriteria')
-            ->leftJoin('sub_kriteria', 'bank_keluars.id_sub_kriteria', '=', 'sub_kriteria.id_sub_kriteria')
-            ->leftJoin('item_sub_kriteria', 'bank_keluars.id_item_sub_kriteria', '=', 'item_sub_kriteria.id_item_sub_kriteria')
-            ->whereYear('bank_keluars.tanggal', $tahun)
-            ->whereMonth('bank_keluars.tanggal', '>=', $dariBulan)
-            ->whereMonth('bank_keluars.tanggal', '<=', $sampaiBulan)
-            ->select([
-                'kategori_kriteria.id_kategori_kriteria',
-                'kategori_kriteria.nama_kriteria',
-                'sub_kriteria.id_sub_kriteria',
-                'sub_kriteria.nama_sub_kriteria',
-                'item_sub_kriteria.id_item_sub_kriteria',
-                'item_sub_kriteria.nama_item_sub_kriteria',
-                DB::raw('MONTH(bank_keluars.tanggal) as bulan'),
-                DB::raw('SUM(bank_keluars.kredit) as total_nilai'),
-            ])
-            ->groupBy(
-                'kategori_kriteria.id_kategori_kriteria',
-                'kategori_kriteria.nama_kriteria',
-                'sub_kriteria.id_sub_kriteria',
-                'sub_kriteria.nama_sub_kriteria',
-                'item_sub_kriteria.id_item_sub_kriteria',
-                'item_sub_kriteria.nama_item_sub_kriteria',
-                DB::raw('MONTH(bank_keluars.tanggal)')
-            )
-            ->orderBy('kategori_kriteria.nama_kriteria')
-            ->orderBy('sub_kriteria.nama_sub_kriteria')
-            ->orderBy('item_sub_kriteria.nama_item_sub_kriteria')
+        $allKategori = DB::table('kategori_kriteria')
+            ->where('tipe', 'Keluar')
+            ->orderBy('id_kategori_kriteria')
+            ->get();
+
+        $allSub = DB::table('sub_kriteria')
+            ->whereIn('id_kategori_kriteria', $allKategori->pluck('id_kategori_kriteria'))
+            ->orderBy('id_sub_kriteria')
+            ->get();
+
+        $allItem = DB::table('item_sub_kriteria')
+            ->whereIn('id_sub_kriteria', $allSub->pluck('id_sub_kriteria'))
+            ->orderBy('id_item_sub_kriteria')
             ->get();
 
         // ======================================================
-        // BUILD HIERARCHY:  hierarki[kategori][sub][item][bulan] = nilai
+        // QUERY TRANSACTION SUMS
+        // ======================================================
+        $rows = DB::table('bank_keluars')
+            ->whereYear('tanggal', $tahun)
+            ->whereMonth('tanggal', '>=', $dariBulan)
+            ->whereMonth('tanggal', '<=', $sampaiBulan)
+            ->whereNotNull('id_kategori_kriteria')
+            ->select([
+                'id_kategori_kriteria',
+                'id_sub_kriteria',
+                'id_item_sub_kriteria',
+                DB::raw('MONTH(tanggal) as bulan'),
+                DB::raw('SUM(kredit) as total_nilai'),
+            ])
+            ->groupBy(
+                'id_kategori_kriteria',
+                'id_sub_kriteria',
+                'id_item_sub_kriteria',
+                DB::raw('MONTH(tanggal)')
+            )
+            ->get();
+
+        // Index transaction data for fast lookup: [katId][subId][itemId][bulan] = nilai
+        $txIndex = [];
+        foreach ($rows as $row) {
+            $k = $row->id_kategori_kriteria;
+            $s = $row->id_sub_kriteria ?? 'none';
+            $i = $row->id_item_sub_kriteria ?? 'none';
+            $b = $row->bulan;
+            $txIndex[$k][$s][$i][$b] = ($txIndex[$k][$s][$i][$b] ?? 0) + $row->total_nilai;
+        }
+
+        // ======================================================
+        // BUILD COMPLETE HIERARCHY from master data + overlay tx
         // ======================================================
         $hierarki = [];
 
-        foreach ($rows as $row) {
-            $katId   = $row->id_kategori_kriteria;
-            $katNama = $row->nama_kriteria;
-            $subId   = $row->id_sub_kriteria;
-            $subNama = $row->nama_sub_kriteria ?? '-';
-            $itemId  = $row->id_item_sub_kriteria;
-            $itemNama = $row->nama_item_sub_kriteria ?? '-';
-            $bulan   = $row->bulan;
-            $nilai   = $row->total_nilai ?? 0;
+        foreach ($allKategori as $kat) {
+            $katId = $kat->id_kategori_kriteria;
+            $hierarki[$katId] = [
+                'nama'  => $kat->nama_kriteria,
+                'bulan' => [],
+                'total' => 0,
+                'subs'  => [],
+            ];
 
-            if (!isset($hierarki[$katId])) {
-                $hierarki[$katId] = [
-                    'nama'  => $katNama,
-                    'bulan' => [],
-                    'total' => 0,
-                    'subs'  => [],
-                ];
-            }
-
-            // Sub Kriteria
-            $subKey = $subId ?? 'none';
-            if (!isset($hierarki[$katId]['subs'][$subKey])) {
-                $hierarki[$katId]['subs'][$subKey] = [
+            $subs = $allSub->where('id_kategori_kriteria', $katId);
+            foreach ($subs as $sub) {
+                $subId = $sub->id_sub_kriteria;
+                $hierarki[$katId]['subs'][$subId] = [
                     'id'    => $subId,
-                    'nama'  => $subNama,
+                    'nama'  => trim($sub->nama_sub_kriteria),
                     'bulan' => [],
                     'total' => 0,
                     'items' => [],
                 ];
+
+                $items = $allItem->where('id_sub_kriteria', $subId);
+                foreach ($items as $item) {
+                    $itemId = $item->id_item_sub_kriteria;
+                    $itemBulan = [];
+                    $itemTotal = 0;
+
+                    foreach ($bulanAktif as $bNum => $bName) {
+                        $val = $txIndex[$katId][$subId][$itemId][$bNum] ?? 0;
+                        $itemBulan[$bNum] = $val;
+                        $itemTotal += $val;
+                    }
+
+                    $hierarki[$katId]['subs'][$subId]['items'][$itemId] = [
+                        'id'    => $itemId,
+                        'nama'  => trim($item->nama_item_sub_kriteria),
+                        'bulan' => $itemBulan,
+                        'total' => $itemTotal,
+                    ];
+
+                    // Accumulate to sub level
+                    foreach ($bulanAktif as $bNum => $bName) {
+                        $hierarki[$katId]['subs'][$subId]['bulan'][$bNum] =
+                            ($hierarki[$katId]['subs'][$subId]['bulan'][$bNum] ?? 0) + $itemBulan[$bNum];
+                    }
+                    $hierarki[$katId]['subs'][$subId]['total'] += $itemTotal;
+                }
+
+                // Accumulate to kategori level
+                foreach ($bulanAktif as $bNum => $bName) {
+                    $hierarki[$katId]['bulan'][$bNum] =
+                        ($hierarki[$katId]['bulan'][$bNum] ?? 0) + ($hierarki[$katId]['subs'][$subId]['bulan'][$bNum] ?? 0);
+                }
+                $hierarki[$katId]['total'] += $hierarki[$katId]['subs'][$subId]['total'];
             }
-
-            // Item Sub Kriteria
-            $itemKey = $itemId ?? 'none';
-            if (!isset($hierarki[$katId]['subs'][$subKey]['items'][$itemKey])) {
-                $hierarki[$katId]['subs'][$subKey]['items'][$itemKey] = [
-                    'id'    => $itemId,
-                    'nama'  => $itemNama,
-                    'bulan' => [],
-                    'total' => 0,
-                ];
-            }
-
-            // Item level
-            $hierarki[$katId]['subs'][$subKey]['items'][$itemKey]['bulan'][$bulan] =
-                ($hierarki[$katId]['subs'][$subKey]['items'][$itemKey]['bulan'][$bulan] ?? 0) + $nilai;
-            $hierarki[$katId]['subs'][$subKey]['items'][$itemKey]['total'] += $nilai;
-
-            // Sub level
-            $hierarki[$katId]['subs'][$subKey]['bulan'][$bulan] =
-                ($hierarki[$katId]['subs'][$subKey]['bulan'][$bulan] ?? 0) + $nilai;
-            $hierarki[$katId]['subs'][$subKey]['total'] += $nilai;
-
-            // Kategori level
-            $hierarki[$katId]['bulan'][$bulan] =
-                ($hierarki[$katId]['bulan'][$bulan] ?? 0) + $nilai;
-            $hierarki[$katId]['total'] += $nilai;
         }
 
         // Grand total per bulan
@@ -184,7 +200,7 @@ class RingkasanPembayaranController extends Controller
                 'bank_keluars.uraian',
                 'bank_keluars.penerima as dibayarkan_kepada',
                 'bank_keluars.kredit as nilai',
-                'bank_keluars.no_agenda',
+                'bank_keluars.agenda_tahun as no_agenda',
                 'bank_keluars.keterangan',
                 'kategori_kriteria.nama_kriteria',
                 'sub_kriteria.nama_sub_kriteria',

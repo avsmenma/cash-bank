@@ -242,64 +242,96 @@ class PermintaanController extends Controller
     {
         $tahun = $request->tahun ?? date('Y');
 
-        \Log::info('CashFlow Request - Tahun: ' . $tahun);
-
-        // Get all data permintaan for selected year
-        $data = Permintaan::with(['kategori', 'subKriteria', 'itemSubKriteria'])
-            ->where('tahun', $tahun)
+        // ======================================================
+        // LOAD ALL MASTER DATA
+        // ======================================================
+        $allKategori = DB::table('kategori_kriteria')
+            ->where('tipe', 'Keluar')
             ->orderBy('id_kategori_kriteria')
+            ->get();
+
+        $allSub = DB::table('sub_kriteria')
+            ->whereIn('id_kategori_kriteria', $allKategori->pluck('id_kategori_kriteria'))
             ->orderBy('id_sub_kriteria')
+            ->get();
+
+        $allItem = DB::table('item_sub_kriteria')
+            ->whereIn('id_sub_kriteria', $allSub->pluck('id_sub_kriteria'))
             ->orderBy('id_item_sub_kriteria')
             ->get();
 
-        \Log::info('Total Data Found: ' . $data->count());
+        // ======================================================
+        // QUERY PERMINTAAN DATA — sum M1+M2+M3+M4 per item per bulan
+        // ======================================================
+        $data = Permintaan::where('tahun', $tahun)->get();
 
-        // Debug: return JSON dulu untuk cek data
-        // return response()->json([
-        //     'tahun' => $tahun,
-        //     'count' => $data->count(),
-        //     'data' => $data
-        // ]);
+        $txIndex = [];
+        foreach ($data as $row) {
+            $k = $row->id_kategori_kriteria;
+            $s = $row->id_sub_kriteria;
+            $i = $row->id_item_sub_kriteria;
+            $b = $row->bulan;
+            $val = ($row->M1 ?? 0) + ($row->M2 ?? 0) + ($row->M3 ?? 0) + ($row->M4 ?? 0);
+            $txIndex[$k][$s][$i][$b] = ($txIndex[$k][$s][$i][$b] ?? 0) + $val;
+        }
 
-        // Group data by kategori -> sub -> item
+        // ======================================================
+        // BUILD COMPLETE HIERARCHY
+        // ======================================================
         $result = [];
         $totals = array_fill(1, 12, 0);
         $grandTotal = 0;
 
-        foreach ($data as $row) {
-            $kategoriName = $row->kategori->nama_kriteria ?? 'Tidak ada kategori';
-            $subName = $row->subKriteria->nama_sub_kriteria ?? 'Tidak ada sub';
-            $itemName = $row->itemSubKriteria->nama_item_sub_kriteria ?? 'Tidak ada item';
+        foreach ($allKategori as $kat) {
+            $katId = $kat->id_kategori_kriteria;
+            $kategoriName = $kat->nama_kriteria;
 
-            if (!isset($result[$kategoriName])) {
-                $result[$kategoriName] = [
-                    'subs' => [],
-                    'totals' => array_fill(1, 12, 0)
-                ];
-            }
+            $result[$kategoriName] = [
+                'subs'   => [],
+                'totals' => array_fill(1, 12, 0),
+            ];
 
-            if (!isset($result[$kategoriName]['subs'][$subName])) {
+            $subs = $allSub->where('id_kategori_kriteria', $katId);
+            foreach ($subs as $sub) {
+                $subId = $sub->id_sub_kriteria;
+                $subName = trim($sub->nama_sub_kriteria);
+
                 $result[$kategoriName]['subs'][$subName] = [
-                    'items' => [],
-                    'totals' => array_fill(1, 12, 0)
+                    'items'  => [],
+                    'totals' => array_fill(1, 12, 0),
                 ];
+
+                // Deduplicate items by name
+                $items = $allItem->where('id_sub_kriteria', $subId);
+                $uniqueItems = [];
+                foreach ($items as $item) {
+                    $itemName = trim($item->nama_item_sub_kriteria);
+                    if (!isset($uniqueItems[$itemName])) {
+                        $uniqueItems[$itemName] = [$item->id_item_sub_kriteria];
+                    } else {
+                        $uniqueItems[$itemName][] = $item->id_item_sub_kriteria;
+                    }
+                }
+
+                foreach ($uniqueItems as $itemName => $itemIds) {
+                    if (!isset($result[$kategoriName]['subs'][$subName]['items'][$itemName])) {
+                        $result[$kategoriName]['subs'][$subName]['items'][$itemName] = array_fill(1, 12, 0);
+                    }
+
+                    for ($m = 1; $m <= 12; $m++) {
+                        $val = 0;
+                        foreach ($itemIds as $iid) {
+                            $val += $txIndex[$katId][$subId][$iid][$m] ?? 0;
+                        }
+                        $result[$kategoriName]['subs'][$subName]['items'][$itemName][$m] += $val;
+                        $result[$kategoriName]['subs'][$subName]['totals'][$m] += $val;
+                        $result[$kategoriName]['totals'][$m] += $val;
+                        $totals[$m] += $val;
+                        $grandTotal += $val;
+                    }
+                }
             }
-
-            if (!isset($result[$kategoriName]['subs'][$subName]['items'][$itemName])) {
-                $result[$kategoriName]['subs'][$subName]['items'][$itemName] = array_fill(1, 12, 0);
-            }
-
-            $bulan = $row->bulan;
-            $totalBulan = $row->M1 + $row->M2 + $row->M3 + $row->M4;
-
-            $result[$kategoriName]['subs'][$subName]['items'][$itemName][$bulan] += $totalBulan;
-            $result[$kategoriName]['subs'][$subName]['totals'][$bulan] += $totalBulan;
-            $result[$kategoriName]['totals'][$bulan] += $totalBulan;
-            $totals[$bulan] += $totalBulan;
-            $grandTotal += $totalBulan;
         }
-
-        \Log::info('Result Count: ' . count($result));
 
         return view('cash_bank.pembayaran.cashFlowPermintaan', compact('result', 'tahun', 'totals', 'grandTotal'));
     }

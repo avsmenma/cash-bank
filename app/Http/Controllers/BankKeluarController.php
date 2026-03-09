@@ -105,6 +105,14 @@ class BankKeluarController extends Controller
             'jenisPembayaran:id_jenis_pembayaran,nama_jenis_pembayaran',
         ])->orderBy('tanggal', 'asc');
 
+        // Date range filter from header popup
+        if ($request->filled('filter_tgl_dari')) {
+            $query->where('tanggal', '>=', $request->filter_tgl_dari);
+        }
+        if ($request->filled('filter_tgl_sampai')) {
+            $query->where('tanggal', '<=', $request->filter_tgl_sampai);
+        }
+
         return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('jenis_pembayaran', function ($row) {
@@ -165,6 +173,15 @@ class BankKeluarController extends Controller
             })
             ->editColumn('tanggal', function ($row) {
                 return \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d F Y');
+            })
+            ->filterColumn('tanggal', function ($query, $keyword) {
+                // Support searching by date string (e.g. "2026-01-15" or "01/2026" or "January")
+                $query->whereRaw("DATE_FORMAT(tanggal, '%Y-%m-%d') LIKE ?", ["%{$keyword}%"]);
+            })
+            ->filterColumn('sumber_dana', function ($query, $keyword) {
+                $query->whereHas('sumberDana', function ($q) use ($keyword) {
+                    $q->where('nama_sumber_dana', 'LIKE', "%{$keyword}%");
+                });
             })
             ->rawColumns(['checkbox', 'aksi'])
             ->make(true);

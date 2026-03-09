@@ -81,7 +81,7 @@
         text-align: left;
     }
 
-    /* Level 1 — Kategori (numbered) */
+    /* Level 1 — Kategori */
     .rk-level1 {
         background: #d6e9f8;
         font-weight: 700;
@@ -112,7 +112,7 @@
         transform: rotate(-90deg);
     }
 
-    /* Level 2 — Sub Kategori (lettered) */
+    /* Level 2 — Sub Kategori */
     .rk-level2 {
         background: #eef5fb;
         cursor: pointer;
@@ -127,7 +127,7 @@
         font-size: 12px;
     }
 
-    /* Level 3 — Item Sub Kategori (dashed) */
+    /* Level 3 — Item Sub Kategori */
     .rk-level3 {
         background: #fff;
         cursor: pointer;
@@ -187,7 +187,7 @@
         letter-spacing: -0.3px;
     }
 
-    /* Child row animation */
+    /* Child row toggle */
     .rk-child.rk-hidden { display: none; }
 
     /* Detail hint on hover */
@@ -215,72 +215,6 @@
     }
     .rk-empty i { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
     .rk-empty h5 { color: #666; font-weight: 600; margin-bottom: 6px; }
-
-    /* ============ DRAWER ============ */
-    .rk-drawer-overlay {
-        position: fixed; inset: 0;
-        background: rgba(0,0,0,0.35);
-        z-index: 1050;
-        opacity: 0; pointer-events: none;
-        transition: opacity 0.25s;
-    }
-    .rk-drawer-overlay.active { opacity: 1; pointer-events: all; }
-
-    .rk-drawer {
-        position: fixed; top: 0; right: -650px;
-        width: 650px; height: 100vh;
-        background: #fff; z-index: 1051;
-        box-shadow: -4px 0 20px rgba(0,0,0,0.12);
-        transition: right 0.3s ease;
-        display: flex; flex-direction: column;
-    }
-    .rk-drawer.open { right: 0; }
-
-    .rk-drawer-head {
-        background: #0d3b6e;
-        padding: 18px 22px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        color: #fff;
-        flex-shrink: 0;
-    }
-    .rk-drawer-head h5 { margin: 0; font-size: 15px; font-weight: 700; }
-    .rk-drawer-head .rk-sub { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 3px; }
-    .rk-drawer-close {
-        background: rgba(255,255,255,0.15); border: none; color: #fff;
-        width: 30px; height: 30px; border-radius: 50%;
-        cursor: pointer; font-size: 16px;
-        display: flex; align-items: center; justify-content: center;
-    }
-    .rk-drawer-close:hover { background: rgba(255,255,255,0.3); }
-
-    .rk-drawer-stats {
-        display: grid; grid-template-columns: 1fr 1fr;
-        gap: 1px; background: #e0e0e0;
-        border-bottom: 1px solid #e0e0e0;
-        flex-shrink: 0;
-    }
-    .rk-drawer-stat {
-        background: #f8f9fa; padding: 12px 18px;
-    }
-    .rk-drawer-stat .label { font-size: 10px; color: #888; text-transform: uppercase; font-weight: 600; }
-    .rk-drawer-stat .value { font-size: 17px; font-weight: 800; color: #0d3b6e; font-family: 'Consolas', monospace; }
-
-    .rk-drawer-body { flex: 1; overflow-y: auto; padding: 0; }
-
-    .rk-drawer-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .rk-drawer-tbl thead th {
-        background: #f1f3f5; padding: 8px 12px; text-align: left;
-        font-size: 10px; text-transform: uppercase; color: #666;
-        font-weight: 700; position: sticky; top: 0; z-index: 5;
-        border-bottom: 2px solid #ddd;
-    }
-    .rk-drawer-tbl tbody td {
-        padding: 8px 12px; border-bottom: 1px solid #f0f0f0;
-        vertical-align: top; color: #444;
-    }
-    .rk-drawer-tbl tbody tr:hover td { background: #f8f9fa; }
 </style>
 @endpush
 
@@ -392,17 +326,13 @@
               @foreach($kat['subs'] as $subKey => $sub)
                 @php
                   $subIndex++;
-                  $subLetter = chr(64 + $subIndex); // A, B, C...
+                  $subLetter = chr(64 + $subIndex);
                 @endphp
 
-                {{-- LEVEL 2: Sub Kategori --}}
+                {{-- LEVEL 2: Sub Kategori — click navigates to detail page --}}
                 <tr class="rk-level2 rk-child rk-clickable"
                     data-parent="kat-{{ $katId }}"
-                    data-kategori-id="{{ $katId }}"
-                    data-sub-id="{{ $sub['id'] }}"
-                    data-item-id=""
-                    data-label="{{ $sub['nama'] }}"
-                    data-breadcrumb="{{ $kat['nama'] }}">
+                    data-href="{{ route('ringkasan.detail', ['kategori_id' => $katId, 'sub_kriteria_id' => $sub['id'], 'tahun' => $tahun, 'dari_bulan' => $dariBulan, 'sampai_bulan' => $sampaiBulan]) }}">
                   <td>
                     {{ $subLetter }}.&nbsp;&nbsp;{{ $sub['nama'] }}
                     <span class="rk-detail-hint">→ detail</span>
@@ -418,16 +348,13 @@
                 </tr>
 
                 @foreach($sub['items'] as $itemKey => $item)
-                  {{-- LEVEL 3: Item Sub Kategori --}}
+                  {{-- LEVEL 3: Item Sub Kategori — click navigates to detail page --}}
                   <tr class="rk-level3 rk-child rk-clickable"
                       data-parent="kat-{{ $katId }}"
-                      data-kategori-id="{{ $katId }}"
-                      data-sub-id="{{ $sub['id'] }}"
-                      data-item-id="{{ $item['id'] }}"
-                      data-label="{{ $item['nama'] }}"
-                      data-breadcrumb="{{ $kat['nama'] }} › {{ $sub['nama'] }}">
+                      data-href="{{ route('ringkasan.detail', ['kategori_id' => $katId, 'sub_kriteria_id' => $sub['id'], 'item_sub_kriteria_id' => $item['id'], 'tahun' => $tahun, 'dari_bulan' => $dariBulan, 'sampai_bulan' => $sampaiBulan]) }}">
                     <td>
-                      -{{ $item['nama'] }}
+                      -&nbsp;{{ $item['nama'] }}
+                      <span class="rk-detail-hint">→ detail</span>
                     </td>
                     @foreach($bulanAktif as $bNum => $bName)
                       <td class="rk-nilai">
@@ -494,56 +421,12 @@
 
   </div>
 </section>
-
-{{-- ============ DRAWER DETAIL ============ --}}
-<div class="rk-drawer-overlay" id="rk-overlay"></div>
-<div class="rk-drawer" id="rk-drawer">
-  <div class="rk-drawer-head">
-    <div>
-      <h5 id="rk-drawer-title">Detail Transaksi</h5>
-      <div class="rk-sub" id="rk-drawer-sub"></div>
-    </div>
-    <button class="rk-drawer-close" id="rk-drawer-close">✕</button>
-  </div>
-  <div class="rk-drawer-stats">
-    <div class="rk-drawer-stat">
-      <span class="label">Total Transaksi</span>
-      <span class="value" id="rk-drawer-count">-</span>
-    </div>
-    <div class="rk-drawer-stat">
-      <span class="label">Total Nilai</span>
-      <span class="value" id="rk-drawer-total">-</span>
-    </div>
-  </div>
-  <div class="rk-drawer-body">
-    <table class="rk-drawer-tbl">
-      <thead>
-        <tr>
-          <th style="width:40px;">No</th>
-          <th style="width:90px;">Tanggal</th>
-          <th>Uraian</th>
-          <th>Dibayarkan Kepada</th>
-          <th style="text-align:right; width:130px;">Nilai (Rp)</th>
-        </tr>
-      </thead>
-      <tbody id="rk-drawer-tbody">
-        <tr>
-          <td colspan="5" style="text-align:center; padding:50px; color:#999;">
-            Klik baris sub kategori atau item untuk melihat detail transaksi
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
 @endsection
 
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // =============================================
     // COLLAPSE / EXPAND per Kriteria
-    // =============================================
     $(document).on('click', '.rk-level1', function() {
         const group = $(this).data('toggle-group');
         const $children = $('[data-parent="' + group + '"]');
@@ -560,98 +443,14 @@ $(document).ready(function() {
         }
     });
 
-    // =============================================
-    // DRAWER: Open on row click
-    // =============================================
+    // NAVIGATE to detail page on click
     $(document).on('click', '.rk-clickable', function(e) {
         e.stopPropagation();
-
-        const kategoriId = $(this).data('kategori-id');
-        const subId      = $(this).data('sub-id');
-        const itemId     = $(this).data('item-id');
-        const label      = $(this).data('label');
-        const breadcrumb = $(this).data('breadcrumb');
-
-        $('.rk-clickable').css('outline', 'none');
-        $(this).css('outline', '2px solid #0d3b6e');
-
-        $('#rk-drawer-title').text(label);
-        $('#rk-drawer-sub').text(breadcrumb);
-        $('#rk-drawer').addClass('open');
-        $('#rk-overlay').addClass('active');
-
-        // Loading
-        $('#rk-drawer-tbody').html(
-            '<tr><td colspan="5" style="text-align:center; padding:50px;">' +
-            '<i class="fas fa-spinner fa-spin fa-2x" style="color:#0d3b6e;"></i>' +
-            '<p style="margin-top:10px; color:#999; font-size:12px;">Memuat data...</p></td></tr>'
-        );
-        $('#rk-drawer-count').text('...');
-        $('#rk-drawer-total').text('...');
-
-        $.ajax({
-            url: '{{ route("ringkasan.detail") }}',
-            type: 'GET',
-            data: {
-                kategori_id:          kategoriId,
-                sub_kriteria_id:      subId || '',
-                item_sub_kriteria_id: itemId || '',
-                tahun:                $('#filter-tahun').val(),
-                dari_bulan:           $('#filter-dari-bulan').val(),
-                sampai_bulan:         $('#filter-sampai-bulan').val(),
-            },
-            success: function(data) {
-                const total = data.reduce((s, d) => s + parseFloat(d.nilai || 0), 0);
-                $('#rk-drawer-count').text(data.length.toLocaleString('id-ID') + ' transaksi');
-                $('#rk-drawer-total').text('Rp ' + total.toLocaleString('id-ID', {minimumFractionDigits: 0}));
-
-                if (data.length === 0) {
-                    $('#rk-drawer-tbody').html(
-                        '<tr><td colspan="5" style="text-align:center; padding:50px; color:#999;">' +
-                        '<i class="fas fa-inbox" style="font-size:32px; opacity:0.3;"></i>' +
-                        '<p style="margin-top:10px; font-size:12px;">Tidak ada transaksi</p></td></tr>'
-                    );
-                    return;
-                }
-
-                let html = '';
-                data.forEach((d, idx) => {
-                    const tgl = d.tanggal ? new Date(d.tanggal).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) : '-';
-                    const nilai = parseFloat(d.nilai || 0).toLocaleString('id-ID', {minimumFractionDigits: 0});
-                    html += `<tr>
-                        <td style="color:#999; font-size:11px;">${idx + 1}</td>
-                        <td style="white-space:nowrap;">${tgl}</td>
-                        <td style="max-width:220px;">${d.uraian || '-'}</td>
-                        <td>${d.dibayarkan_kepada || '-'}</td>
-                        <td class="rk-nilai" style="color:#0d3b6e; font-weight:700;">${nilai}</td>
-                    </tr>`;
-                });
-                $('#rk-drawer-tbody').html(html);
-            },
-            error: function() {
-                $('#rk-drawer-tbody').html(
-                    '<tr><td colspan="5" style="text-align:center; padding:50px; color:#c0392b;">' +
-                    '<i class="fas fa-exclamation-triangle" style="font-size:28px;"></i>' +
-                    '<p style="margin-top:10px; font-size:12px;">Gagal memuat data</p></td></tr>'
-                );
-                $('#rk-drawer-count').text('-');
-                $('#rk-drawer-total').text('-');
-            }
-        });
+        const href = $(this).data('href');
+        if (href) {
+            window.location.href = href;
+        }
     });
-
-    // =============================================
-    // DRAWER: Close
-    // =============================================
-    function closeDrawer() {
-        $('#rk-drawer').removeClass('open');
-        $('#rk-overlay').removeClass('active');
-        $('.rk-clickable').css('outline', 'none');
-    }
-
-    $('#rk-drawer-close').on('click', closeDrawer);
-    $('#rk-overlay').on('click', closeDrawer);
-    $(document).on('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
 
     // RESET FILTER
     $('#btn-reset-ringkasan').on('click', function() {

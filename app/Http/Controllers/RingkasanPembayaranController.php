@@ -185,7 +185,7 @@ class RingkasanPembayaranController extends Controller
     }
 
     /**
-     * AJAX endpoint: Detail transaksi untuk drawer
+     * Halaman detail transaksi — navigated from hierarchy table
      */
     public function detail(Request $request)
     {
@@ -196,10 +196,19 @@ class RingkasanPembayaranController extends Controller
         $subId       = $request->sub_kriteria_id;
         $itemId      = $request->item_sub_kriteria_id;
 
+        $bulanMap = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
+            4 => 'April',   5 => 'Mei',      6 => 'Juni',
+            7 => 'Juli',    8 => 'Agustus',  9 => 'September',
+            10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+
         $query = DB::table('bank_keluars')
             ->leftJoin('kategori_kriteria', 'bank_keluars.id_kategori_kriteria', '=', 'kategori_kriteria.id_kategori_kriteria')
             ->leftJoin('sub_kriteria', 'bank_keluars.id_sub_kriteria', '=', 'sub_kriteria.id_sub_kriteria')
             ->leftJoin('item_sub_kriteria', 'bank_keluars.id_item_sub_kriteria', '=', 'item_sub_kriteria.id_item_sub_kriteria')
+            ->leftJoin('bank_tujuan', 'bank_keluars.id_bank_tujuan', '=', 'bank_tujuan.id_bank_tujuan')
+            ->leftJoin('jenis_pembayarans', 'bank_keluars.id_jenis_pembayaran', '=', 'jenis_pembayarans.id_jenis_pembayaran')
             ->whereYear('bank_keluars.tanggal', $tahun)
             ->whereMonth('bank_keluars.tanggal', '>=', $dariBulan)
             ->whereMonth('bank_keluars.tanggal', '<=', $sampaiBulan);
@@ -216,18 +225,53 @@ class RingkasanPembayaranController extends Controller
 
         $transaksi = $query->select([
                 'bank_keluars.tanggal',
+                'bank_keluars.agenda_tahun',
                 'bank_keluars.uraian',
-                'bank_keluars.penerima as dibayarkan_kepada',
-                'bank_keluars.kredit as nilai',
-                'bank_keluars.agenda_tahun as no_agenda',
+                'bank_keluars.penerima',
+                'bank_keluars.kredit',
                 'bank_keluars.keterangan',
+                'bank_keluars.jenis_pembayaran as jenis_pembayaran_str',
                 'kategori_kriteria.nama_kriteria',
                 'sub_kriteria.nama_sub_kriteria',
                 'item_sub_kriteria.nama_item_sub_kriteria',
+                'bank_tujuan.nama_tujuan as kebun',
+                'jenis_pembayarans.nama_jenis_pembayaran',
             ])
             ->orderBy('bank_keluars.tanggal')
             ->get();
 
-        return response()->json($transaksi);
+        // Build label & breadcrumb
+        $label = '';
+        $breadcrumb = '';
+        if ($kategoriId) {
+            $kat = DB::table('kategori_kriteria')->where('id_kategori_kriteria', $kategoriId)->first();
+            $breadcrumb = $kat->nama_kriteria ?? '';
+            $label = $breadcrumb;
+        }
+        if ($subId) {
+            $sub = DB::table('sub_kriteria')->where('id_sub_kriteria', $subId)->first();
+            $label = $sub->nama_sub_kriteria ?? '';
+        }
+        if ($itemId) {
+            $item = DB::table('item_sub_kriteria')->where('id_item_sub_kriteria', $itemId)->first();
+            $label = $item->nama_item_sub_kriteria ?? '';
+        }
+
+        $totalNilai = $transaksi->sum('kredit');
+        $periodeLabel = ($bulanMap[$dariBulan] ?? '') . ' — ' . ($bulanMap[$sampaiBulan] ?? '') . ' ' . $tahun;
+
+        return view('cash_bank.ringkasanDetail', compact(
+            'transaksi',
+            'label',
+            'breadcrumb',
+            'totalNilai',
+            'periodeLabel',
+            'tahun',
+            'dariBulan',
+            'sampaiBulan',
+            'kategoriId',
+            'subId',
+            'itemId'
+        ));
     }
 }

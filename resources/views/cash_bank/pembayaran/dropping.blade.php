@@ -259,7 +259,7 @@
         // Initialize Select2
         $('.select2').select2({
           theme: 'bootstrap4',
-          width: '100%'
+          width: 'resolve'
         });
 
         // Load Sub Kriteria based on Kategori

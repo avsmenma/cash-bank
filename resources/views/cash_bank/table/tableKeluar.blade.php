@@ -100,6 +100,14 @@
                     { data: 'aksi',                width: '70px', orderable: false, searchable: false }
                 ]
             });
+
+            // Double-click pada baris → buka modal edit
+            $('#example3 tbody').on('dblclick', 'tr', function() {
+                var $editBtn = $(this).find('button[data-target="#editKeluar"]');
+                if ($editBtn.length) {
+                    $editBtn.click();
+                }
+            });
         });
     </script>
 @endpush

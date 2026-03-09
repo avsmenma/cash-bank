@@ -85,7 +85,7 @@
         <h1><i class="fas fa-arrow-circle-up mr-2" style="color:#c0392b;"></i>Input Bank Keluar</h1>
         <ol class="breadcrumb mb-0" style="background:none;padding:0;">
           <li class="breadcrumb-item"><a href="{{ route('dashboard.index') }}">Home</a></li>
-          <li class="breadcrumb-item">Daftar Bank</li>
+          <li class="breadcrumb-item">Transaksi Bank</li>
           <li class="breadcrumb-item active">Bank Keluar</li>
         </ol>
       </div>
@@ -102,6 +102,9 @@
       <a href="javascript:void(0)" class="btn btn-success btn-sm" data-toggle="modal" data-target="#ModalCreateKeluar">
         <i class="fas fa-plus mr-1"></i>Tambah Data
       </a>
+      <button type="button" class="btn btn-info btn-sm" id="btnRefreshTable" onclick="$('#example3').DataTable().ajax.reload(null, false);">
+        <i class="fas fa-sync-alt mr-1"></i>Refresh
+      </button>
       <div class="ml-auto d-flex" style="gap:8px;">
         <a href="{{ url('/bank-keluar/view/pdf') }}" target="_blank" class="btn btn-outline-primary btn-sm">
           <i class="fas fa-print mr-1"></i>Download PDF

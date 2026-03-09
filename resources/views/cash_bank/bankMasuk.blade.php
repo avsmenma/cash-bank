@@ -85,7 +85,7 @@
         <h1><i class="fas fa-arrow-circle-down mr-2" style="color:#1a7a3d;"></i>Input Bank Masuk</h1>
         <ol class="breadcrumb mb-0" style="background:none;padding:0;">
           <li class="breadcrumb-item"><a href="{{ route('dashboard.index') }}">Home</a></li>
-          <li class="breadcrumb-item">Daftar Bank</li>
+          <li class="breadcrumb-item">Transaksi Bank</li>
           <li class="breadcrumb-item active">Bank Masuk</li>
         </ol>
       </div>
@@ -102,6 +102,9 @@
       <a href="javascript:void(0)" class="btn btn-success btn-sm" data-toggle="modal" data-target="#ModalCreateMasuk">
         <i class="fas fa-plus mr-1"></i>Tambah Data
       </a>
+      <button type="button" class="btn btn-info btn-sm" id="btnRefreshTable" onclick="$('#example2').DataTable().ajax.reload(null, false);">
+        <i class="fas fa-sync-alt mr-1"></i>Refresh
+      </button>
       <div class="ml-auto d-flex gap-2" style="gap:8px;">
         <a href="{{ url('/bank-masuk/view/pdf') }}" target="_blank" class="btn btn-outline-primary btn-sm">
           <i class="fas fa-print mr-1"></i>Download PDF

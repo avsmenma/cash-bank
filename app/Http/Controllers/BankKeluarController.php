@@ -353,31 +353,37 @@ class BankKeluarController extends Controller
     }
 
     public function getItem($id)
-    {
-        try {
-            \Log::info('getItem called with id: ' . $id);
+{
+    try {
+        \Log::info('getItem called with id: ' . $id);
 
-            // Gunakan Query Builder langsung
-            $itemSubKriteria = DB::table('item_sub_kriteria')
-                ->select('id_item_sub_kriteria', 'nama_item_sub_kriteria', 'id_sub_kriteria')
-                ->where('id_sub_kriteria', $id)
-                ->get();
+        // Gunakan Query Builder langsung, deduplicate by nama
+        $itemSubKriteria = DB::table('item_sub_kriteria')
+            ->select(
+                DB::raw('MIN(id_item_sub_kriteria) as id_item_sub_kriteria'),
+                'nama_item_sub_kriteria',
+                'id_sub_kriteria'
+            )
+            ->where('id_sub_kriteria', $id)
+            ->groupBy('nama_item_sub_kriteria', 'id_sub_kriteria')
+            ->orderBy(DB::raw('MIN(id_item_sub_kriteria)'))
+            ->get();
 
-            \Log::info('getItem result:', ['count' => $itemSubKriteria->count(), 'data' => $itemSubKriteria->toArray()]);
+        \Log::info('getItem result:', ['count' => $itemSubKriteria->count(), 'data' => $itemSubKriteria->toArray()]);
 
-            return response()->json($itemSubKriteria);
+        return response()->json($itemSubKriteria);
 
-        } catch (\Exception $e) {
-            \Log::error('Error getItem: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
+    } catch (\Exception $e) {
+        \Log::error('Error getItem: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
 
-            return response()->json([
-                'error' => $e->getMessage(),
-                'line' => $e->getLine()
-            ], 500);
-        }
+        return response()->json([
+            'error' => $e->getMessage(),
+            'line' => $e->getLine()
+        ], 500);
     }
+}
     public function getDokumenDetail($id)
     {
         try {

@@ -108,20 +108,39 @@ class RingkasanPembayaranController extends Controller
                 ];
 
                 $items = $allItem->where('id_sub_kriteria', $subId);
+
+                // Deduplicate items by nama (same name = same logical item)
+                $uniqueItems = [];
                 foreach ($items as $item) {
-                    $itemId = $item->id_item_sub_kriteria;
+                    $itemName = trim($item->nama_item_sub_kriteria);
+                    if (!isset($uniqueItems[$itemName])) {
+                        $uniqueItems[$itemName] = [
+                            'id'   => $item->id_item_sub_kriteria,
+                            'nama' => $itemName,
+                            'ids'  => [$item->id_item_sub_kriteria], // all IDs for tx lookup
+                        ];
+                    } else {
+                        $uniqueItems[$itemName]['ids'][] = $item->id_item_sub_kriteria;
+                    }
+                }
+
+                foreach ($uniqueItems as $itemName => $uItem) {
                     $itemBulan = [];
                     $itemTotal = 0;
 
                     foreach ($bulanAktif as $bNum => $bName) {
-                        $val = $txIndex[$katId][$subId][$itemId][$bNum] ?? 0;
+                        $val = 0;
+                        // Sum values across all duplicate IDs
+                        foreach ($uItem['ids'] as $iid) {
+                            $val += $txIndex[$katId][$subId][$iid][$bNum] ?? 0;
+                        }
                         $itemBulan[$bNum] = $val;
                         $itemTotal += $val;
                     }
 
-                    $hierarki[$katId]['subs'][$subId]['items'][$itemId] = [
-                        'id'    => $itemId,
-                        'nama'  => trim($item->nama_item_sub_kriteria),
+                    $hierarki[$katId]['subs'][$subId]['items'][$uItem['id']] = [
+                        'id'    => $uItem['id'],
+                        'nama'  => $uItem['nama'],
                         'bulan' => $itemBulan,
                         'total' => $itemTotal,
                     ];

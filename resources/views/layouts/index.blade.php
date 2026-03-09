@@ -180,7 +180,7 @@
                                 class="nav-link {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'rekening-koran.*', 'daftarBank.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-university"></i>
                                 <p>
-                                    Daftar Bank
+                                    Transaksi Bank
                                 </p>
                                 <i class="right fas fa-angle-left"></i>
                             </a>

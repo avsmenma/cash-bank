@@ -69,6 +69,7 @@
                                 <div class="form-group">
                                     <label>Kategori</label>
                                     <select class="select2" name="id_kategori_kriteria">
+                                        <option value="-">-</option>
                                         @foreach($kategoriKriteria as $k)
                                             <option value="{{ $k->id_kategori_kriteria }}">
                                                 {{ $k->nama_kriteria }}

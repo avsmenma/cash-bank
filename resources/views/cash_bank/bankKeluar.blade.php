@@ -260,20 +260,32 @@
         $('[name="id_kategori_kriteria"]', '#editKeluar').val(kategori).trigger('change');
         $('[name="id_jenis_pembayaran"]', '#editKeluar').val(jenis).trigger('change');
 
-        $.get('/get-sub-kriteria/' + kategori, function (subs) {
-            let opt = '<option value="">Pilih Sub</option>';
-            subs.forEach(s => { opt += `<option value="${s.id_sub_kriteria}">${s.nama_sub_kriteria}</option>`; });
-            $('#edit_keluar_sub_kriteria').html(opt).val(sub);
-            if ($('#edit_keluar_sub_kriteria').hasClass("select2-hidden-accessible")) $('#edit_keluar_sub_kriteria').select2('destroy');
-            $('#edit_keluar_sub_kriteria').select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
-            $.get('/get-item-sub-kriteria/' + sub, function (items) {
-                let opt2 = '<option value="">Pilih Item</option>';
-                items.forEach(i => { opt2 += `<option value="${i.id_item_sub_kriteria}">${i.nama_item_sub_kriteria}</option>`; });
-                $('#edit_keluar_item_sub_kriteria').html(opt2).val(item);
-                if ($('#edit_keluar_item_sub_kriteria').hasClass("select2-hidden-accessible")) $('#edit_keluar_item_sub_kriteria').select2('destroy');
-                $('#edit_keluar_item_sub_kriteria').select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
+        if (kategori === '-' || kategori === null || kategori === '') {
+            // Jika kategori "-", set sub dan item juga ke "-"
+            let $sub = $('#edit_keluar_sub_kriteria');
+            let $item = $('#edit_keluar_item_sub_kriteria');
+            $sub.html('<option value="-">-</option>').val('-');
+            if ($sub.hasClass("select2-hidden-accessible")) $sub.select2('destroy');
+            $sub.select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
+            $item.html('<option value="-">-</option>').val('-');
+            if ($item.hasClass("select2-hidden-accessible")) $item.select2('destroy');
+            $item.select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
+        } else {
+            $.get('/get-sub-kriteria/' + kategori, function (subs) {
+                let opt = '<option value="">Pilih Sub</option>';
+                subs.forEach(s => { opt += `<option value="${s.id_sub_kriteria}">${s.nama_sub_kriteria}</option>`; });
+                $('#edit_keluar_sub_kriteria').html(opt).val(sub);
+                if ($('#edit_keluar_sub_kriteria').hasClass("select2-hidden-accessible")) $('#edit_keluar_sub_kriteria').select2('destroy');
+                $('#edit_keluar_sub_kriteria').select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
+                $.get('/get-item-sub-kriteria/' + sub, function (items) {
+                    let opt2 = '<option value="">Pilih Item</option>';
+                    items.forEach(i => { opt2 += `<option value="${i.id_item_sub_kriteria}">${i.nama_item_sub_kriteria}</option>`; });
+                    $('#edit_keluar_item_sub_kriteria').html(opt2).val(item);
+                    if ($('#edit_keluar_item_sub_kriteria').hasClass("select2-hidden-accessible")) $('#edit_keluar_item_sub_kriteria').select2('destroy');
+                    $('#edit_keluar_item_sub_kriteria').select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
+                });
             });
-        });
+        }
     });
 
     // === Cascading dropdown handlers untuk EDIT Keluar modal ===
@@ -281,6 +293,18 @@
         let kategoriID = $(this).val();
         let $sub = $('#edit_keluar_sub_kriteria');
         let $item = $('#edit_keluar_item_sub_kriteria');
+
+        // Jika user memilih "-", reset semua sub kategori dan item sub kategori ke "-"
+        if (kategoriID === '-') {
+            $sub.html('<option value="-">-</option>').val('-').prop('disabled', false);
+            if ($sub.hasClass("select2-hidden-accessible")) $sub.select2('destroy');
+            $sub.select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
+            $item.html('<option value="-">-</option>').val('-').prop('disabled', false);
+            if ($item.hasClass("select2-hidden-accessible")) $item.select2('destroy');
+            $item.select2({ theme: 'bootstrap4', dropdownParent: $('#editKeluar'), width: '100%' });
+            return;
+        }
+
         $sub.html('<option value="">Memuat...</option>').prop('disabled', true);
         $item.html('<option value="">-- Pilih Item Sub Kriteria --</option>').prop('disabled', true);
         if ($item.hasClass("select2-hidden-accessible")) $item.select2('destroy');

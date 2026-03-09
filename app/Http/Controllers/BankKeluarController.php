@@ -2130,7 +2130,27 @@ class BankKeluarController extends Controller
     public function update(Request $request, string $id)
     {
         $bankKeluar = bankKeluar::findOrFail($id);
-        $bankKeluar->update($request->except(['_method', '_token']));
+
+        // Simpan flag apakah user memilih "-" untuk reset kategori
+        $kategoriReset = $request->input('id_kategori_kriteria') === '-';
+
+        // Jika user pilih "-", set kategori, sub, dan item ke null di database
+        $data = $request->except(['_method', '_token']);
+        if ($kategoriReset) {
+            $data['id_kategori_kriteria'] = null;
+            $data['id_sub_kriteria'] = null;
+            $data['id_item_sub_kriteria'] = null;
+        } else {
+            // Jika sub atau item bernilai "-", set ke null juga
+            if (isset($data['id_sub_kriteria']) && $data['id_sub_kriteria'] === '-') {
+                $data['id_sub_kriteria'] = null;
+            }
+            if (isset($data['id_item_sub_kriteria']) && $data['id_item_sub_kriteria'] === '-') {
+                $data['id_item_sub_kriteria'] = null;
+            }
+        }
+
+        $bankKeluar->update($data);
 
         // Refresh model to get the latest values after update
         $bankKeluar->refresh();
@@ -2148,33 +2168,40 @@ class BankKeluarController extends Controller
                 $syncPayload['dibayar_kepada']    = $bankKeluar->penerima;
                 $syncPayload['tanggal_dibayar']   = $bankKeluar->tanggal;
 
-                // Lookup kategori ID → nama
-                if ($bankKeluar->id_kategori_kriteria) {
-                    $kategori = DB::table('kategori_kriteria')
-                        ->where('id_kategori_kriteria', $bankKeluar->id_kategori_kriteria)
-                        ->first();
-                    if ($kategori) {
-                        $syncPayload['kategori'] = $kategori->nama_kriteria;
+                // Jika user reset kategori dengan "-", set semua ke "-"
+                if ($kategoriReset) {
+                    $syncPayload['kategori'] = '-';
+                    $syncPayload['jenis_dokumen'] = '-';
+                    $syncPayload['jenis_sub_pekerjaan'] = '-';
+                } else {
+                    // Lookup kategori ID → nama
+                    if ($bankKeluar->id_kategori_kriteria) {
+                        $kategori = DB::table('kategori_kriteria')
+                            ->where('id_kategori_kriteria', $bankKeluar->id_kategori_kriteria)
+                            ->first();
+                        if ($kategori) {
+                            $syncPayload['kategori'] = $kategori->nama_kriteria;
+                        }
                     }
-                }
 
-                // Lookup sub_kriteria ID → nama (jenis_dokumen)
-                if ($bankKeluar->id_sub_kriteria) {
-                    $sub = DB::table('sub_kriteria')
-                        ->where('id_sub_kriteria', $bankKeluar->id_sub_kriteria)
-                        ->first();
-                    if ($sub) {
-                        $syncPayload['jenis_dokumen'] = $sub->nama_sub_kriteria;
+                    // Lookup sub_kriteria ID → nama (jenis_dokumen)
+                    if ($bankKeluar->id_sub_kriteria) {
+                        $sub = DB::table('sub_kriteria')
+                            ->where('id_sub_kriteria', $bankKeluar->id_sub_kriteria)
+                            ->first();
+                        if ($sub) {
+                            $syncPayload['jenis_dokumen'] = $sub->nama_sub_kriteria;
+                        }
                     }
-                }
 
-                // Lookup item_sub_kriteria ID → nama (jenis_sub_pekerjaan)
-                if ($bankKeluar->id_item_sub_kriteria) {
-                    $item = DB::table('item_sub_kriteria')
-                        ->where('id_item_sub_kriteria', $bankKeluar->id_item_sub_kriteria)
-                        ->first();
-                    if ($item) {
-                        $syncPayload['jenis_sub_pekerjaan'] = $item->nama_item_sub_kriteria;
+                    // Lookup item_sub_kriteria ID → nama (jenis_sub_pekerjaan)
+                    if ($bankKeluar->id_item_sub_kriteria) {
+                        $item = DB::table('item_sub_kriteria')
+                            ->where('id_item_sub_kriteria', $bankKeluar->id_item_sub_kriteria)
+                            ->first();
+                        if ($item) {
+                            $syncPayload['jenis_sub_pekerjaan'] = $item->nama_item_sub_kriteria;
+                        }
                     }
                 }
 

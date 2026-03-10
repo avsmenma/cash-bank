@@ -58,27 +58,27 @@
         }
 
         .kategori-header td {
-            background-color: #ffe0b2;
+            background-color: #4CAF50;
             font-weight: bold;
-            color: #333;
+            color: #ffffff;
         }
 
         .subtotal-row td {
-            background-color: #fff3cd;
+            background-color: #FFD700;
             font-weight: bold;
-            color: #d35400;
+            color: #1a7a1a;
         }
 
         .month-total td {
-            background-color: #ffa500;
+            background-color: #FF8C00;
             font-weight: bold;
-            color: #ffffff;
+            color: #1a7a1a;
         }
 
         .grand-total td {
-            background-color: #ff6600;
+            background-color: #FF8C00;
             font-weight: bold;
-            color: #ffffff;
+            color: #1a7a1a;
         }
     </style>
 </head>

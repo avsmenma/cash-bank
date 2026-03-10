@@ -120,46 +120,51 @@ class penerimaController extends Controller
      */
     public function dataGrouped(Request $request)
     {
-        $tahun = $request->tahun ?? date('Y');
+        try {
+            $tahun = $request->tahun ?? date('Y');
 
-        $query = Penerima::with('kategori')
-            ->whereYear('tanggal', $tahun)
-            ->orderBy('tanggal')
-            ->orderBy('id_kategori_kriteria');
+            $query = Penerima::with('kategori')
+                ->whereYear('tanggal', $tahun)
+                ->orderBy('tanggal')
+                ->orderBy('id_kategori_kriteria');
 
-        if ($request->kategori) {
-            $query->where('id_kategori_kriteria', $request->kategori);
+            if ($request->filled('kategori')) {
+                $query->where('id_kategori_kriteria', $request->kategori);
+            }
+
+            if ($request->filled('bulan_dari') && $request->filled('bulan_sampai')) {
+                $query->whereMonth('tanggal', '>=', $request->bulan_dari)
+                      ->whereMonth('tanggal', '<=', $request->bulan_sampai);
+            } elseif ($request->filled('bulan_dari')) {
+                $query->whereMonth('tanggal', '>=', $request->bulan_dari);
+            } elseif ($request->filled('bulan_sampai')) {
+                $query->whereMonth('tanggal', '<=', $request->bulan_sampai);
+            }
+
+            $allData = $query->get();
+
+            // Group by month -> kategori
+            $grouped = [];
+            foreach ($allData as $row) {
+                $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
+                $kategoriName = $row->kategori->nama_kriteria ?? '-';
+                $grouped[$bulan][$kategoriName][] = $row;
+            }
+
+            // Sort by month
+            ksort($grouped);
+
+            $bulanNames = [
+                1 => 'JANUARI', 2 => 'FEBRUARI', 3 => 'MARET', 4 => 'APRIL',
+                5 => 'MEI', 6 => 'JUNI', 7 => 'JULI', 8 => 'AGUSTUS',
+                9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'
+            ];
+
+            return view('cash_bank.pembayaran.dataPenerima', compact('grouped', 'bulanNames', 'tahun'));
+        } catch (\Exception $e) {
+            \Log::error('dataGrouped error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            return response('<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>', 500);
         }
-
-        if ($request->bulan_dari && $request->bulan_sampai) {
-            $query->whereMonth('tanggal', '>=', $request->bulan_dari)
-                  ->whereMonth('tanggal', '<=', $request->bulan_sampai);
-        } elseif ($request->bulan_dari) {
-            $query->whereMonth('tanggal', '>=', $request->bulan_dari);
-        } elseif ($request->bulan_sampai) {
-            $query->whereMonth('tanggal', '<=', $request->bulan_sampai);
-        }
-
-        $allData = $query->get();
-
-        // Group by month -> kategori
-        $grouped = [];
-        foreach ($allData as $row) {
-            $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
-            $kategoriName = $row->kategori->nama_kriteria ?? '-';
-            $grouped[$bulan][$kategoriName][] = $row;
-        }
-
-        // Sort by month
-        ksort($grouped);
-
-        $bulanNames = [
-            1 => 'JANUARI', 2 => 'FEBRUARI', 3 => 'MARET', 4 => 'APRIL',
-            5 => 'MEI', 6 => 'JUNI', 7 => 'JULI', 8 => 'AGUSTUS',
-            9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'
-        ];
-
-        return view('cash_bank.pembayaran.dataPenerima', compact('grouped', 'bulanNames', 'tahun'));
     }
 
 

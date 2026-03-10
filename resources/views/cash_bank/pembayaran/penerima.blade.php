@@ -127,7 +127,6 @@
                             </div>
 
                         </div>
-                    </div>
                     <!-- /.tab-pane -->
                     <div class="tab-pane" id="timeline">
                         <div class="row no-print mb-3">
@@ -258,8 +257,9 @@
                                 <i class="fas fa-spinner fa-spin"></i> Memuat CashFlow data gabungan rencana & realisasi...
                             </div>
                         </div>
-                        <!-- /.tab-content -->
-                    </div><!-- /.card-body -->
+                    </div><!-- /.tab-pane gabungan -->
+                    </div><!-- /.tab-content -->
+                </div><!-- /.card-body -->
                 </div>
                 <!-- /.card -->
             </div>
@@ -397,7 +397,9 @@
                 }
 
                 // ===== TAB GABUNGAN =====
-                loadGabungan();
+                $('#cashflowGabungan-tab').on('shown.bs.tab', function () {
+                    loadGabungan();
+                });
                 $('#filterGabungan').click(function () { loadGabungan(); });
                 $('#tahunGabungan, #bulanDari, #bulanSampai').keypress(function (e) {
                     if (e.which == 13) loadGabungan();

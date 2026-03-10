@@ -468,6 +468,50 @@ class penerimaController extends Controller
         return Excel::download(new ExportExcelPenerima($tahun), 'penerima-' . $tahun . '.xlsx');
     }
 
+    public function export_pdf(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+
+        $query = Penerima::with('kategori')
+            ->whereYear('tanggal', $tahun)
+            ->orderBy('tanggal')
+            ->orderBy('id_kategori_kriteria');
+
+        if ($request->filled('kategori')) {
+            $query->where('id_kategori_kriteria', $request->kategori);
+        }
+
+        if ($request->filled('bulan_dari') && $request->filled('bulan_sampai')) {
+            $query->whereMonth('tanggal', '>=', $request->bulan_dari)
+                  ->whereMonth('tanggal', '<=', $request->bulan_sampai);
+        } elseif ($request->filled('bulan_dari')) {
+            $query->whereMonth('tanggal', '>=', $request->bulan_dari);
+        } elseif ($request->filled('bulan_sampai')) {
+            $query->whereMonth('tanggal', '<=', $request->bulan_sampai);
+        }
+
+        $allData = $query->get();
+
+        $grouped = [];
+        foreach ($allData as $row) {
+            $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
+            $kategoriName = $row->kategori->nama_kriteria ?? '-';
+            $grouped[$bulan][$kategoriName][] = $row;
+        }
+        ksort($grouped);
+
+        $bulanNames = [
+            1 => 'JANUARI', 2 => 'FEBRUARI', 3 => 'MARET', 4 => 'APRIL',
+            5 => 'MEI', 6 => 'JUNI', 7 => 'JULI', 8 => 'AGUSTUS',
+            9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'
+        ];
+
+        $pdf = Pdf::loadView('cash_bank.exportPDF.pdfPenerima', compact('grouped', 'bulanNames', 'tahun'));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('penerima-' . $tahun . '.pdf');
+    }
+
     public function export_excel_rencana(Request $request)
     {
         $tahun = $request->tahun ?? date('Y');

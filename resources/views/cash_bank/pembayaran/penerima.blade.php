@@ -45,9 +45,19 @@
                                         <a href="javascript:void(0)" class="btn btn-success btn-sm" data-toggle="modal" data-target="#ModalCreatePenerima">
                                             <i class="fas fa-plus"></i> Tambah Data
                                         </a>
-                                        <a href="{{ route('penerima.export_excel') }}" class="btn btn-outline-danger btn-sm" id="btnDownloadExcel">
-                                            <i class="nav-icon fas fa-file-excel"></i> Download Excel
-                                        </a>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <i class="fas fa-file-export"></i> Export
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item" href="{{ route('penerima.export_pdf') }}" id="btnDownloadPdf">
+                                                    <i class="fas fa-file-pdf text-danger"></i> Export PDF
+                                                </a>
+                                                <a class="dropdown-item" href="{{ route('penerima.export_excel') }}" id="btnDownloadExcel">
+                                                    <i class="fas fa-file-excel text-success"></i> Export Excel
+                                                </a>
+                                            </div>
+                                        </div>
                                         <a href="javascript:void(0)" class="btn btn-info btn-sm" data-toggle="modal" data-target="#ModalImportPenerima">
                                             <i class="fas fa-file-import"></i> Import Data
                                         </a>
@@ -292,13 +302,15 @@
                     let bulanDari  = $('#filterBulanDariRealisasi').val();
                     let bulanSampai = $('#filterBulanSampaiRealisasi').val();
 
-                    // Update download link
-                    let baseUrl = "{{ route('penerima.export_excel') }}";
+                    // Update download links
+                    let baseUrlExcel = "{{ route('penerima.export_excel') }}";
+                    let baseUrlPdf   = "{{ route('penerima.export_pdf') }}";
                     let params = '?tahun=' + tahun;
                     if (kategori) params += '&kategori=' + kategori;
                     if (bulanDari) params += '&bulan_dari=' + bulanDari;
                     if (bulanSampai) params += '&bulan_sampai=' + bulanSampai;
-                    $('#btnDownloadExcel').attr('href', baseUrl + params);
+                    $('#btnDownloadExcel').attr('href', baseUrlExcel + params);
+                    $('#btnDownloadPdf').attr('href', baseUrlPdf + params);
 
                     $('#realisasi-content').html('<div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2 text-muted">Memuat data...</p></div>');
 

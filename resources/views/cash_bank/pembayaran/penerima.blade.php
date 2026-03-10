@@ -500,6 +500,28 @@
                     });
                 });
 
+                // ===== FORMAT ANGKA HELPERS =====
+                function formatRibuan(val) {
+                    if (val === null || val === undefined || val === '') return '0';
+                    let num = parseFloat(String(val).replace(/\./g, '').replace(/,/g, '.'));
+                    if (isNaN(num)) return '0';
+                    // Bulatkan dulu, lalu format dengan titik ribuan
+                    return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                }
+                function unformatRibuan(str) {
+                    if (!str || str === '') return 0;
+                    return str.replace(/\./g, '');
+                }
+
+                // Auto-format .edit-angka fields on input
+                $(document).on('input', '.edit-angka', function () {
+                    let raw = $(this).val().replace(/\./g, '');
+                    if (raw === '' || raw === '-') return;
+                    // Hapus karakter non-digit
+                    raw = raw.replace(/[^\d]/g, '');
+                    $(this).val(formatRibuan(raw));
+                });
+
                 // ===== MODAL EDIT =====
                 $(document).on('click', '[data-target="#editPenerima"]', function (e) {
                     e.preventDefault();
@@ -507,14 +529,16 @@
                     let id = button.data('id');
                     $('#formEditPenerima').attr('action', '/penerima/' + id);
                     $('#edit_pembeli').val(button.data('pembeli'));
-                    $('#edit_ppn').val(button.data('ppn'));
-                    $('#edit_potppn').val(button.data('potppn'));
                     $('#edit_no_reg').val(button.data('no_reg'));
                     $('#edit_kontrak').val(button.data('kontrak'));
-                    $('#edit_volume').val(button.data('volume'));
-                    $('#edit_nilai').val(button.data('nilai'));
-                    $('#edit_harga').val(button.data('harga'));
-                    $('#edit_nilai_inc_ppn').val(button.data('nilai_inc_ppn') || '');
+
+                    // Format angka dengan titik ribuan
+                    $('#edit_volume').val(formatRibuan(button.data('volume')));
+                    $('#edit_harga').val(formatRibuan(button.data('harga')));
+                    $('#edit_nilai').val(formatRibuan(button.data('nilai')));
+                    $('#edit_ppn').val(formatRibuan(button.data('ppn')));
+                    $('#edit_potppn').val(formatRibuan(button.data('potppn')));
+                    $('#edit_nilai_inc_ppn').val(formatRibuan(button.data('nilai_inc_ppn') || 0));
 
                     if (!$('#edit_reservationdate').data('datetimepicker')) {
                         $('#edit_reservationdate').datetimepicker({ format: 'YYYY-MM-DD' });
@@ -536,9 +560,25 @@
                     e.preventDefault();
                     let $form = $(this);
                     let actionUrl = $form.attr('action');
-                    let formData = $form.serialize();
                     let $btn = $form.find('button[type="submit"]');
                     $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
+                    // Build data with unformatted numbers
+                    let formData = {
+                        _token: $form.find('input[name="_token"]').val(),
+                        _method: 'PUT',
+                        id_kategori_kriteria: $('#edit_kategori').val(),
+                        kontrak: $('#edit_kontrak').val(),
+                        pembeli: $('#edit_pembeli').val(),
+                        tanggal: $form.find('input[name="tanggal"]').val(),
+                        no_reg: $('#edit_no_reg').val(),
+                        volume: unformatRibuan($('#edit_volume').val()),
+                        harga: unformatRibuan($('#edit_harga').val()),
+                        nilai: unformatRibuan($('#edit_nilai').val()),
+                        ppn: unformatRibuan($('#edit_ppn').val()),
+                        potppn: unformatRibuan($('#edit_potppn').val()),
+                        nilai_inc_ppn: unformatRibuan($('#edit_nilai_inc_ppn').val()),
+                    };
 
                     $.ajax({
                         url: actionUrl,

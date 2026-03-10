@@ -66,13 +66,13 @@
         .subtotal-row td {
             background-color: #FFD700;
             font-weight: bold;
-            color: #1a7a1a;
+            color: #000000ff;
         }
 
         .month-total td {
             background-color: #FF8C00;
             font-weight: bold;
-            color: #1a7a1a;
+            color: #000000ff;
         }
 
         .grand-total td {

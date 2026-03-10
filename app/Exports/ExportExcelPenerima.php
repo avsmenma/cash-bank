@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Penerima;
+use App\Models\KategoriKriteria;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 
@@ -17,25 +18,29 @@ class ExportExcelPenerima implements FromView
 
     public function view(): View
     {
-        $data = Penerima::select(
-            'id_penerima',
-            'kontrak',
-            'id_kategori_kriteria',
-            'pembeli',
-            'no_reg',
-            'tanggal',
-            'volume',
-            'harga',
-            'nilai',
-            'ppn',
-            'potppn'
-        )
-            ->with(['kategori:id_kategori_kriteria,nama_kriteria'])
+        $query = Penerima::with('kategori')
             ->whereYear('tanggal', $this->tahun)
-            ->orderBy('tanggal', 'asc')
-            ->orderBy('id_penerima')
+            ->orderBy('tanggal')
+            ->orderBy('id_kategori_kriteria')
             ->get();
 
-        return view('cash_bank.exportExcel.excelPenerima', compact('data'));
+        // Group by month -> kategori
+        $grouped = [];
+        foreach ($query as $row) {
+            $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
+            $kategoriName = $row->kategori->nama_kriteria ?? '-';
+            $grouped[$bulan][$kategoriName][] = $row;
+        }
+        ksort($grouped);
+
+        $bulanNames = [
+            1 => 'JANUARI', 2 => 'FEBRUARI', 3 => 'MARET', 4 => 'APRIL',
+            5 => 'MEI', 6 => 'JUNI', 7 => 'JULI', 8 => 'AGUSTUS',
+            9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'
+        ];
+
+        $tahun = $this->tahun;
+
+        return view('cash_bank.exportExcel.excelPenerima', compact('grouped', 'bulanNames', 'tahun'));
     }
 }

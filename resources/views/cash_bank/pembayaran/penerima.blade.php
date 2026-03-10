@@ -119,7 +119,12 @@
 
 
 
-                            @include('cash_bank.pembayaran.dataPenerima')
+                            <div id="realisasi-content">
+                                <div class="text-center p-5">
+                                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                    <p class="mt-2 text-muted">Memuat data...</p>
+                                </div>
+                            </div>
 
                         </div>
                     </div>
@@ -274,60 +279,89 @@
                         theme: 'bootstrap4',
                         width: '100%'
                     });
-                    // Filter selects — pakai lebar elemen asli (tidak 100%)
                     $('.filter-select2').select2({
                         theme: 'bootstrap4',
                         width: 'resolve'
                     });
                 }
-            $('#filterTahunRealisasi').on('change', function () {
-                    updateDownloadExcelLink();
+
+                // ===== REALISASI / DROPPING TAB =====
+                function loadRealisasi() {
+                    let tahun      = $('#filterTahunRealisasi').val();
+                    let kategori   = $('#filterKategoriRealisasi').val();
+                    let bulanDari  = $('#filterBulanDariRealisasi').val();
+                    let bulanSampai = $('#filterBulanSampaiRealisasi').val();
+
+                    // Update download link
+                    let baseUrl = "{{ route('penerima.export_excel') }}";
+                    let params = '?tahun=' + tahun;
+                    if (kategori) params += '&kategori=' + kategori;
+                    if (bulanDari) params += '&bulan_dari=' + bulanDari;
+                    if (bulanSampai) params += '&bulan_sampai=' + bulanSampai;
+                    $('#btnDownloadExcel').attr('href', baseUrl + params);
+
+                    $('#realisasi-content').html('<div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2 text-muted">Memuat data...</p></div>');
+
+                    $.ajax({
+                        url: "{{ route('penerima.data-grouped') }}",
+                        method: 'GET',
+                        data: {
+                            tahun: tahun,
+                            kategori: kategori,
+                            bulan_dari: bulanDari,
+                            bulan_sampai: bulanSampai
+                        },
+                        success: function (response) {
+                            $('#realisasi-content').html(response);
+                        },
+                        error: function (xhr) {
+                            console.error('Realisasi error:', xhr);
+                            $('#realisasi-content').html('<div class="alert alert-danger">Gagal memuat data realisasi</div>');
+                        }
+                    });
+                }
+
+                // Load on page load
+                loadRealisasi();
+
+                // Terapkan filter
+                $('#terapkanFilterRealisasi').on('click', function () {
+                    loadRealisasi();
                 });
 
-                // Initialize and update download excel link with year parameter
-                function updateDownloadExcelLink() {
-                    let tahun = $('#filterTahunRealisasi').val();
-                    let baseUrl = "{{ route('penerima.export_excel') }}";
-                    $('#btnDownloadExcel').attr('href', baseUrl + '?tahun=' + tahun);
-                }
-                
-                // Initialize download link on page load
-                updateDownloadExcelLink();
-
+                // Reset Filter
+                $('#resetFilterRealisasi').on('click', function () {
+                    $('#filterTahunRealisasi').val({{ date('Y') }}).trigger('change');
+                    $('#filterKategoriRealisasi').val('').trigger('change');
+                    $('#filterBulanDariRealisasi').val('');
+                    $('#filterBulanSampaiRealisasi').val('');
+                    loadRealisasi();
+                });
 
                 // ===== TAB CASHFLOW =====
                 $('#cashflow-tab').on('shown.bs.tab', function () {
-                    console.log('Cashflow tab shown');
                     loadCashflow();
                 });
 
                 $('#tahunCashflow').on('change', function () {
-                    console.log('Tahun cashflow changed:', $(this).val());
                     loadCashflow();
                 });
 
                 function loadCashflow() {
                     const tahun = $('#tahunCashflow').val();
-                    console.log('Loading cashflow for year:', tahun);
-                    
-                    // Update export links for CashFlow Realisasi
                     let baseUrlExcel = "{{ route('penerima.export_excel_cashFlow') }}";
                     let baseUrlPdf = "{{ route('penerima.export_pdf_cashFlow') }}";
                     $('#btnDownloadExcelCashFlow').attr('href', baseUrlExcel + '?tahun=' + tahun);
                     $('#btnDownloadPdfCashFlow').attr('href', baseUrlPdf + '?tahun=' + tahun);
-
                     $('#cashflow-content').html('<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>');
-
                     $.ajax({
                         url: "{{ route('penerima.cashflow') }}",
                         method: 'GET',
                         data: { tahun: tahun },
                         success: function (response) {
-                            console.log('Cashflow loaded successfully');
                             $('#cashflow-content').html(response);
                         },
                         error: function (xhr) {
-                            console.error('Cashflow error:', xhr);
                             $('#cashflow-content').html('<div class="alert alert-danger">Gagal memuat data cashflow</div>');
                         }
                     });
@@ -335,94 +369,61 @@
 
                 // ===== TAB RENCANA =====
                 $('#rencana-tab').on('shown.bs.tab', function () {
-                    console.log('Rencana tab shown');
                     loadRencana();
                 });
 
                 $('#tahunRencana').on('change', function () {
-                    console.log('Tahun rencana changed:', $(this).val());
                     loadRencana();
                 });
 
                 function loadRencana() {
                     const tahun = $('#tahunRencana').val();
-                    console.log('Loading rencana for year:', tahun);
-                    
-                    // Update export links
                     let baseUrlExcel = "{{ route('penerima.export_excel_rencana') }}";
                     let baseUrlPdf = "{{ route('penerima.export_pdf_rencana') }}";
                     $('#btnDownloadExcelRencana').attr('href', baseUrlExcel + '?tahun=' + tahun);
                     $('#btnDownloadPdfRencana').attr('href', baseUrlPdf + '?tahun=' + tahun);
-
                     $('#rencana-content').html('<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>');
-
                     $.ajax({
                         url: "{{ route('penerima.rencana') }}",
                         method: 'GET',
                         data: { tahun: tahun },
                         success: function (response) {
-                            console.log('Rencana loaded successfully');
                             $('#rencana-content').html(response);
                         },
                         error: function (xhr) {
-                            console.error('Rencana error:', xhr);
-                            console.error('Response:', xhr.responseText);
                             $('#rencana-content').html('<div class="alert alert-danger">Gagal memuat data rencana: ' + xhr.statusText + '</div>');
                         }
                     });
                 }
 
-                // Load data pertama kali
+                // ===== TAB GABUNGAN =====
                 loadGabungan();
-
-                // Filter button click
-                $('#filterGabungan').click(function () {
-                    loadGabungan();
-                });
-
-
-                // Enter key pada select
+                $('#filterGabungan').click(function () { loadGabungan(); });
                 $('#tahunGabungan, #bulanDari, #bulanSampai').keypress(function (e) {
-                    if (e.which == 13) {
-                        loadGabungan();
-                    }
+                    if (e.which == 13) loadGabungan();
                 });
 
                 function loadGabungan() {
                     var tahun = $('#tahunGabungan').val();
                     var bulanDari = $('#bulanDari').val();
                     var bulanSampai = $('#bulanSampai').val();
-
-                    // Validasi bulan
                     if (parseInt(bulanDari) > parseInt(bulanSampai)) {
                         alert('Bulan dari tidak boleh lebih besar dari bulan sampai');
                         return;
                     }
-
                     $('#gabungan-content').html('<div class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>');
-
                     $.ajax({
                         url: '{{ route("penerima.gabungan") }}',
                         type: 'GET',
-                        data: {
-                            tahun: tahun,
-                            bulan_dari: bulanDari,
-                            bulan_sampai: bulanSampai
-                        },
-                        success: function (response) {
-                            $('#gabungan-content').html(response);
-                        },
-                        error: function () {
-                            $('#gabungan-content').html('<div class="alert alert-danger">Gagal memuat data</div>');
-                        }
+                        data: { tahun: tahun, bulan_dari: bulanDari, bulan_sampai: bulanSampai },
+                        success: function (response) { $('#gabungan-content').html(response); },
+                        error: function () { $('#gabungan-content').html('<div class="alert alert-danger">Gagal memuat data</div>'); }
                     });
                 }
 
                 // ===== SAVE CELL RENCANA =====
                 $(document).on('blur', '.cell', function () {
                     const $cell = $(this);
-                    console.log('Cell blur - saving data');
-
                     $.ajax({
                         url: "{{ route('penerima.rencana.save') }}",
                         method: 'POST',
@@ -435,22 +436,15 @@
                             nilai: $cell.text().replace(/\./g, '').replace(/,/g, '').trim()
                         },
                         success: function (response) {
-                            if (response.success) {
-
-                                console.log('Data saved successfully');
-                                $cell.data('id', response.id);
-                            }
-                            // Reload table to update totals
-                            setTimeout(() => {
-                                loadRencana();
-                            }, 500);
+                            if (response.success) $cell.data('id', response.id);
+                            setTimeout(() => { loadRencana(); }, 500);
                         },
                         error: function (xhr) {
-                            console.error('Save error:', xhr);
                             alert('Gagal menyimpan data');
                         }
                     });
                 });
+
                 // ===== SELECT ALL & DELETE ALL =====
                 $(document).on('click', '#select_all_ids', function () {
                     $('.checkbox_ids').prop('checked', $(this).prop('checked'));
@@ -458,38 +452,28 @@
 
                 $(document).on('click', '#deleteAllSelectedRecord', function (e) {
                     e.preventDefault();
-
                     let all_ids = [];
                     $('.checkbox_ids:checked').each(function () {
                         all_ids.push($(this).val());
                     });
-
                     if (all_ids.length === 0) {
                         alert('Pilih data terlebih dahulu!');
                         return;
                     }
-
                     if (!confirm('Yakin ingin menghapus ' + all_ids.length + ' data?')) return;
-
                     $.ajax({
                         url: "{{ route('penerima.delete') }}",
                         type: "DELETE",
-                        data: {
-                            ids: all_ids,
-                            _token: '{{ csrf_token() }}'
-                        },
+                        data: { ids: all_ids, _token: '{{ csrf_token() }}' },
                         success: function (res) {
                             alert(res.success);
-                            location.reload();
+                            loadRealisasi();
                         },
-                        error: function () {
-                            alert('Gagal menghapus data');
-                        }
+                        error: function () { alert('Gagal menghapus data'); }
                     });
                 });
 
                 // ===== MODAL CREATE =====
-
                 $('#ModalCreatePenerima').on('shown.bs.modal', function () {
                     $('#importExcel')[0].reset();
                     if (!$('#create_reservationdate').data('datetimepicker')) {
@@ -503,45 +487,31 @@
                 });
 
                 // ===== MODAL EDIT =====
-
-                $('#editPenerima').on('shown.bs.modal', function (event) {
-                    let button = $(event.relatedTarget);
+                $(document).on('click', '[data-target="#editPenerima"]', function () {
+                    let button = $(this);
                     let id = button.data('id');
-                    let kategori = button.data('kategori');
-                    let pembeli = button.data('pembeli');
-                    let tanggal = button.data('tanggal');
-                    let no_reg = button.data('no_reg');
-                    let kontrak = button.data('kontrak');
-                    let volume = button.data('volume');
-                    let harga = button.data('harga');
-                    let nilai = button.data('nilai');
-                    let ppn = button.data('ppn');
-                    let potppn = button.data('potppn');
-
                     $('#formEditPenerima').attr('action', '/penerima/' + id);
-                    $('#edit_pembeli').val(pembeli);
-                    $('#edit_ppn').val(ppn);
-                    $('#edit_potppn').val(potppn);
-                    $('#edit_no_reg').val(no_reg);
-                    $('#edit_kontrak').val(kontrak);
-                    $('#edit_volume').val(volume);
-                    $('#edit_nilai').val(nilai);
-                    $('#edit_harga').val(harga);
-
+                    $('#edit_pembeli').val(button.data('pembeli'));
+                    $('#edit_ppn').val(button.data('ppn'));
+                    $('#edit_potppn').val(button.data('potppn'));
+                    $('#edit_no_reg').val(button.data('no_reg'));
+                    $('#edit_kontrak').val(button.data('kontrak'));
+                    $('#edit_volume').val(button.data('volume'));
+                    $('#edit_nilai').val(button.data('nilai'));
+                    $('#edit_harga').val(button.data('harga'));
                     $('#edit_nilai_inc_ppn').val(button.data('nilai_inc_ppn') || '');
 
                     if (!$('#edit_reservationdate').data('datetimepicker')) {
                         $('#edit_reservationdate').datetimepicker({ format: 'YYYY-MM-DD' });
                     }
-                    $('#edit_reservationdate').datetimepicker('date', tanggal);
+                    $('#edit_reservationdate').datetimepicker('date', button.data('tanggal'));
 
-                    $(this).find('.select2').select2({
+                    $('#editPenerima').find('.select2').select2({
                         theme: 'bootstrap4',
                         dropdownParent: $('#editPenerima'),
                         width: '100%'
                     });
-
-                    $('#edit_kategori').val(kategori).trigger('change');
+                    $('#edit_kategori').val(button.data('kategori')).trigger('change');
                 });
 
                 // ===== MODAL IMPORT =====
@@ -553,16 +523,13 @@
                     });
                 });
 
-                // Parse angka format Indonesia (titik = ribuan, koma = desimal)
                 function parseAngkaID(str) {
                     if (!str || str.trim() === '') return 0;
-                    // Hapus titik (ribuan), ganti koma jadi titik (desimal)
                     let cleaned = str.trim().replace(/\./g, '').replace(/,/g, '.');
                     let val = parseFloat(cleaned);
                     return isNaN(val) ? 0 : val;
                 }
 
-                // Parse tanggal "02 Jan 2026" -> "2026-01-02"
                 function parseTanggalID(str) {
                     if (!str || str.trim() === '') return '';
                     let bulanMap = {
@@ -578,101 +545,55 @@
                         let year = parts[2];
                         return year + '-' + month + '-' + day;
                     }
-                    // Coba parse langsung jika format lain
                     return str.trim();
                 }
 
                 function parseImportData() {
                     let text = $('#import_data_text').val().trim();
                     if (!text) return [];
-
                     let lines = text.split('\n');
                     let rows = [];
-
                     for (let i = 0; i < lines.length; i++) {
                         let line = lines[i].trim();
                         if (!line) continue;
-
                         let cols = line.split('\t');
-
-                        // Minimal harus punya beberapa kolom
                         if (cols.length < 3) continue;
-
-                        // Pastikan 10 kolom (pad jika kurang)
                         while (cols.length < 10) cols.push('');
-
                         rows.push({
-                            kontrak:    cols[0].trim(),
-                            pembeli:    cols[1].trim(),
-                            tanggal:    parseTanggalID(cols[2]),
-                            no_reg:     cols[3].trim(),
-                            volume:     parseAngkaID(cols[4]),
-                            harga:      parseAngkaID(cols[5]),
-                            nilai:      parseAngkaID(cols[6]),
-                            ppn:        parseAngkaID(cols[7]),
-                            potppn:     parseAngkaID(cols[8]),
-                            nilai_inc_ppn: parseAngkaID(cols[9]),
+                            kontrak: cols[0].trim(), pembeli: cols[1].trim(),
+                            tanggal: parseTanggalID(cols[2]), no_reg: cols[3].trim(),
+                            volume: parseAngkaID(cols[4]), harga: parseAngkaID(cols[5]),
+                            nilai: parseAngkaID(cols[6]), ppn: parseAngkaID(cols[7]),
+                            potppn: parseAngkaID(cols[8]), nilai_inc_ppn: parseAngkaID(cols[9]),
                         });
                     }
-
                     return rows;
                 }
 
-                // Preview
                 $('#btnPreviewImport').on('click', function () {
                     let rows = parseImportData();
                     if (rows.length === 0) {
-                        alert('Tidak ada data yang bisa di-parse. Pastikan data sudah di-paste dengan benar.');
+                        alert('Tidak ada data yang bisa di-parse.');
                         return;
                     }
-
                     let tbody = $('#import_preview_table tbody');
                     tbody.empty();
                     let fmt = (n) => n.toLocaleString('id-ID');
-
                     rows.forEach(function (r, i) {
-                        tbody.append(`
-                            <tr>
-                                <td>${i + 1}</td>
-                                <td>${r.kontrak}</td>
-                                <td>${r.pembeli}</td>
-                                <td>${r.tanggal}</td>
-                                <td>${r.no_reg}</td>
-                                <td class="text-right">${fmt(r.volume)}</td>
-                                <td class="text-right">${fmt(r.harga)}</td>
-                                <td class="text-right">${fmt(r.nilai)}</td>
-                                <td class="text-right">${fmt(r.ppn)}</td>
-                                <td class="text-right">${fmt(r.potppn)}</td>
-                                <td class="text-right">${fmt(r.nilai_inc_ppn)}</td>
-                            </tr>
-                        `);
+                        tbody.append(`<tr><td>${i+1}</td><td>${r.kontrak}</td><td>${r.pembeli}</td><td>${r.tanggal}</td><td>${r.no_reg}</td><td class="text-right">${fmt(r.volume)}</td><td class="text-right">${fmt(r.harga)}</td><td class="text-right">${fmt(r.nilai)}</td><td class="text-right">${fmt(r.ppn)}</td><td class="text-right">${fmt(r.potppn)}</td><td class="text-right">${fmt(r.nilai_inc_ppn)}</td></tr>`);
                     });
-
                     $('#import_row_count').text(rows.length);
                     $('#import_preview_area').show();
                 });
 
-                // Submit Import
                 $('#btnSubmitImport').on('click', function () {
                     let kategori = $('#import_kategori').val();
-                    if (!kategori) {
-                        alert('Pilih kategori terlebih dahulu!');
-                        return;
-                    }
-
+                    if (!kategori) { alert('Pilih kategori terlebih dahulu!'); return; }
                     let rows = parseImportData();
-                    if (rows.length === 0) {
-                        alert('Tidak ada data yang bisa diimport. Paste data terlebih dahulu.');
-                        return;
-                    }
-
-                    if (!confirm('Yakin ingin mengimport ' + rows.length + ' baris data?')) {
-                        return;
-                    }
-
+                    if (rows.length === 0) { alert('Tidak ada data yang bisa diimport.'); return; }
+                    if (!confirm('Yakin ingin mengimport ' + rows.length + ' baris data?')) return;
                     let $btn = $(this);
                     $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengimport...');
-
                     $.ajax({
                         url: "{{ route('penerima.import') }}",
                         method: 'POST',
@@ -686,10 +607,9 @@
                             $('#ModalImportPenerima').modal('hide');
                             $('#import_data_text').val('');
                             $('#import_preview_area').hide();
-                            location.reload();
+                            loadRealisasi();
                         },
                         error: function (xhr) {
-                            console.error('Import error:', xhr);
                             alert('Gagal mengimport data: ' + (xhr.responseJSON?.message || xhr.statusText));
                         },
                         complete: function () {

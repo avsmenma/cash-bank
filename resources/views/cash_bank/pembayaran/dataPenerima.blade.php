@@ -1,198 +1,245 @@
 @push('styles')
     <style>
-        #example {
-            table-layout: auto !important;
-            width: 100% !important;
+        .penerima-grouped-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
         }
-
-        #example th,
-        #example td {
+        .penerima-grouped-table th,
+        .penerima-grouped-table td {
+            border: 1px solid #bbb;
+            padding: 4px 8px;
             white-space: nowrap;
-            /* biar kolom melebar */
             vertical-align: middle;
         }
 
-        /* Warna bergantian per bulan dalam tiap kategori */
-        #example tbody tr.month-shade-a {
-            background-color: #ffffff !important;
+        /* Month title row */
+        .row-month-title td {
+            background-color: #1a5632 !important;
+            color: #fff;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 8px 10px !important;
         }
-        #example tbody tr.month-shade-b {
-            background-color: #dce8f5 !important;
+        /* Column header row */
+        .row-header th {
+            background-color: #2d7a4a !important;
+            color: #fff;
+            font-weight: bold;
+            text-align: center;
+            padding: 6px 8px !important;
         }
-        #example tbody tr.month-shade-a:hover,
-        #example tbody tr.month-shade-b:hover {
-            background-color: #c8dff0 !important;
+        /* Kategori header row */
+        .row-kategori-header td {
+            background-color: #e8f5e9 !important;
+            color: #1a5632;
+            font-weight: bold;
+            font-size: 13px;
+            padding: 6px 10px !important;
+        }
+        /* Subtotal row per kategori */
+        .row-subtotal td {
+            background-color: #fff3cd !important;
+            font-weight: bold;
+            border-top: 2px solid #c9a825;
+        }
+        /* Grand total row per month */
+        .row-grand-total td {
+            background-color: #1a5632 !important;
+            color: #fff;
+            font-weight: bold;
+            font-size: 13px;
+            border-top: 2px solid #0d3b1f;
+        }
+        /* Data rows hover */
+        .penerima-grouped-table tbody tr.row-data:hover {
+            background-color: #e3f0e8 !important;
+        }
+        /* Alternating data rows */
+        .penerima-grouped-table tbody tr.row-data:nth-child(even) {
+            background-color: #f9fdf9;
+        }
+
+        /* Empty state */
+        .penerima-empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+        }
+        .penerima-empty-state i {
+            font-size: 40px;
+            margin-bottom: 10px;
+            display: block;
         }
     </style>
 @endpush
 
-<div class="row">
-    <div class="col-12 table-responsive">
-        <table id="example" class="table table-bordered table-hover">
-            <thead class="bg-navy">
-                <tr id="employee_ids">
-                    <th><input type="checkbox" id="select_all_ids"></th>
-                    <th>No</th>
-                    <th>Penerimaan</th>
-                    <th>No Rekening Penerima</th>
-                    <th>Pembeli</th>
-                    <th>Tanggal</th>
-                    <th>Kontrak</th>
-                    <th>Volume (Kg)</th>
-                    <th>Harga (Rp)</th>
-                    <th>Nilai</th>
-                    <th>PPN</th>
-                    <th>Pot PPN</th>
-                    <th>Nilai Inc. PPN</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-        </table>
-    </div>
-</div>
+<div id="data-penerima-content">
+    @if(isset($grouped) && count($grouped) > 0)
+        <div class="table-responsive">
+            <table class="penerima-grouped-table">
+                @php $globalNo = 1; @endphp
 
+                @foreach($grouped as $bulanNum => $kategoriGroup)
+                    {{-- Month title row --}}
+                    <tbody>
+                        <tr class="row-month-title">
+                            <td colspan="14">
+                                <i class="fas fa-calendar-alt mr-2"></i>
+                                PENERIMAAN ATAS PENJUALAN CPO, KERNEL, SIR 20, TBS, KSO & LAINNYA — {{ $bulanNames[$bulanNum] ?? '' }} {{ $tahun }}
+                            </td>
+                        </tr>
+                        {{-- Column header row --}}
+                        <tr class="row-header">
+                            <th style="width:30px;"><input type="checkbox" class="select-all-month" data-month="{{ $bulanNum }}"></th>
+                            <th style="width:30px;">No</th>
+                            <th>Penerimaan</th>
+                            <th>Kontrak</th>
+                            <th>Pembeli</th>
+                            <th>Tgl. Diterima</th>
+                            <th>No. Rekg. Penerima</th>
+                            <th>Volume (Kg)</th>
+                            <th>Harga (Rp)</th>
+                            <th>Nilai</th>
+                            <th>PPN</th>
+                            <th>Pot PPh</th>
+                            <th>Nilai Inc. PPN</th>
+                            <th style="width:90px;">Aksi</th>
+                        </tr>
 
-@push('scripts')
+                        @php
+                            $monthTotalVolume = 0;
+                            $monthTotalNilai = 0;
+                            $monthTotalPpn = 0;
+                            $monthTotalPotppn = 0;
+                            $monthTotalInc = 0;
+                            $catNo = 1;
+                        @endphp
 
-    <script>
-        var table = null;
-        var tableReady = false;
-        $(document).ready(function () {
-            // Format angka Indonesia: 250000 -> 250.000 (tanpa desimal)
-            function fmtAngka(val) {
-                let num = parseFloat(val);
-                if (isNaN(num)) return '0';
-                return Math.round(num).toLocaleString('id-ID');
-            }
+                        @foreach($kategoriGroup as $kategoriName => $rows)
+                            {{-- Kategori header row --}}
+                            <tr class="row-kategori-header">
+                                <td colspan="14">
+                                    <i class="fas fa-layer-group mr-1"></i>{{ strtoupper($kategoriName) }}
+                                </td>
+                            </tr>
 
-            table = $('#example').DataTable({
-                processing: true,
-                serverSide: true,
-                ordering: false,
-                autoWidth: false,
-                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Semua"]],
-                ajax: {
-                    url: "{{ route('penerima.data') }}",
-                    data: function (d) {
-                        d.tahun    = $('#filterTahunRealisasi').val();
-                        d.kategori = $('#filterKategoriRealisasi').val();
-                        d.bulan_dari   = $('#filterBulanDariRealisasi').val();
-                        d.bulan_sampai = $('#filterBulanSampaiRealisasi').val();
-                    }
-                },
-                columns: [
-                    { data: 'checkbox', orderable: false, searchable: false },
-                    {
-                        data: 'DT_RowIndex',
-                        orderable: false,
-                        searchable: false,
-                        title: 'No', className: 'text-center',
-                    },
-                    // {data: 'id_ka'},
-                    { data: 'kategori_kriteria', className: 'text-center', },
-                    { data: 'no_reg', className: 'text-center', },
-                    { data: 'pembeli', className: 'text-center', },
-                    { data: 'tanggal', className: 'text-center', },
-                    { data: 'kontrak', className: 'text-center', },
-                    { data: 'volume', className: 'text-right', render: function (data) { return fmtAngka(data); } },
-                    { data: 'harga', className: 'text-right', render: function (data) { return fmtAngka(data); } },
-                    { data: 'nilai', className: 'text-right', render: function (data) { return fmtAngka(data); } },
-                    { data: 'ppn', className: 'text-right', render: function (data) { return fmtAngka(data); } },
-                    { data: 'potppn', className: 'text-right', render: function (data) { return fmtAngka(data); } },
-                    { data: 'nilai_inc_ppn', className: 'text-right', render: function (data) { return fmtAngka(data); } },
-                    { data: 'aksi', orderable: false, searchable: false },
-                    { data: 'bulan_num', visible: false, searchable: false },
-                ],
-                drawCallback: function (settings) {
-                    drawTotalPerKategori.call(this, settings);
-                }
-            });
+                            @php
+                                $subVolume = 0;
+                                $subNilai = 0;
+                                $subPpn = 0;
+                                $subPotppn = 0;
+                                $subInc = 0;
+                            @endphp
 
-            // Terapkan filter — reload DataTable hanya saat tombol diklik
-            $('#terapkanFilterRealisasi').on('click', function () {
-                if (table) table.ajax.reload();
-            });
+                            @foreach($rows as $row)
+                                @php
+                                    $nilaiIncPpn = $row->nilai_inc_ppn ?? 0;
+                                    $subVolume += $row->volume;
+                                    $subNilai += $row->nilai;
+                                    $subPpn += $row->ppn;
+                                    $subPotppn += $row->potppn;
+                                    $subInc += $nilaiIncPpn;
+                                @endphp
+                                <tr class="row-data">
+                                    <td class="text-center">
+                                        <input type="checkbox" class="checkbox_ids" name="ids[]" value="{{ $row->id_penerima }}">
+                                    </td>
+                                    <td class="text-center">{{ $catNo++ }}</td>
+                                    <td>{{ $kategoriName }}</td>
+                                    <td>{{ $row->kontrak }}</td>
+                                    <td>{{ $row->pembeli }}</td>
+                                    <td class="text-center">{{ \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d M Y') }}</td>
+                                    <td>{{ $row->no_reg }}</td>
+                                    <td class="text-right">{{ number_format($row->volume, 0, ',', '.') }}</td>
+                                    <td class="text-right">{{ number_format($row->harga, 0, ',', '.') }}</td>
+                                    <td class="text-right">{{ number_format($row->nilai, 0, ',', '.') }}</td>
+                                    <td class="text-right">{{ number_format($row->ppn, 0, ',', '.') }}</td>
+                                    <td class="text-right">{{ number_format($row->potppn, 0, ',', '.') }}</td>
+                                    <td class="text-right">{{ number_format($nilaiIncPpn, 0, ',', '.') }}</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-warning btn-xs"
+                                            data-toggle="modal"
+                                            data-target="#editPenerima"
+                                            data-id="{{ $row->id_penerima }}"
+                                            data-pembeli="{{ $row->pembeli }}"
+                                            data-kontrak="{{ $row->kontrak }}"
+                                            data-no_reg="{{ $row->no_reg }}"
+                                            data-harga="{{ $row->harga }}"
+                                            data-tanggal="{{ $row->tanggal }}"
+                                            data-volume="{{ $row->volume }}"
+                                            data-nilai="{{ $row->nilai }}"
+                                            data-kategori="{{ $row->id_kategori_kriteria }}"
+                                            data-ppn="{{ $row->ppn }}"
+                                            data-potppn="{{ $row->potppn }}"
+                                            data-nilai_inc_ppn="{{ $row->nilai_inc_ppn ?? 0 }}"
+                                            ><i class="fas fa-edit"></i></button>
+                                        <form action="{{ route('penerima.destroy', $row->id_penerima) }}" method="POST" style="display:inline;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-xs btn-danger"
+                                                onclick="return confirm('Yakin ingin menghapus?')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endforeach
 
-            // Reset Filter
-            $('#resetFilterRealisasi').on('click', function () {
-                $('#filterTahunRealisasi').val({{ date('Y') }}).trigger('change');
-                $('#filterKategoriRealisasi').val('').trigger('change');
-                $('#filterBulanDariRealisasi').val('');
-                $('#filterBulanSampaiRealisasi').val('');
-                if (table) table.ajax.reload();
-            });
-
-            tableReady = true;
-            console.log('TABLE SIAP');
-        });
-        function drawTotalPerKategori(settings) {
-
-            let api = this.api();
-            let rows = api.rows({ page: 'current' }).nodes();
-            let data = api.rows({ page: 'current' }).data();
-
-            let lastKategori = null;
-            let lastBulan = null;
-            let shadeToggle = 0; // 0 = shade-a, 1 = shade-b
-            let total = {
-                volume: 0, nilai: 0, ppn: 0, potppn: 0, inc: 0
-            };
-
-            data.each(function (row, i) {
-
-                if (lastKategori !== null && row.kategori_kriteria !== lastKategori) {
-                    insertTotalRow(rows, i - 1, lastKategori, total);
-                    resetTotal(total);
-                    // Reset shade saat ganti kategori
-                    shadeToggle = 0;
-                    lastBulan = null;
-                }
-
-                // Toggle shade saat bulan berubah dalam kategori yang sama
-                if (lastBulan !== null && row.bulan_num !== lastBulan) {
-                    shadeToggle = shadeToggle === 0 ? 1 : 0;
-                }
-
-                // Terapkan class warna ke baris
-                let $tr = $(rows).eq(i);
-                $tr.removeClass('month-shade-a month-shade-b');
-                $tr.addClass(shadeToggle === 0 ? 'month-shade-a' : 'month-shade-b');
-
-                total.volume += Number(row.volume || 0);
-                total.nilai += Number(row.nilai || 0);
-                total.ppn += Number(row.ppn || 0);
-                total.potppn += Number(row.potppn || 0);
-                total.inc += Number(row.nilai_inc_ppn || 0);
-
-                lastKategori = row.kategori_kriteria;
-                lastBulan = row.bulan_num;
-            });
-
-            if (lastKategori !== null) {
-                insertTotalRow(rows, rows.length - 1, lastKategori, total);
-            }
-        }
-
-        function insertTotalRow(rows, index, kategori, total) {
-            let hargaRata = total.volume > 0 ? total.nilai / total.volume : 0;
-
-            $(rows).eq(index).after(`
-                            <tr class="table-warning font-weight-bold text-right">
-                        <td colspan="7" class="text-left">TOTAL ${kategori}</td>
-                                <td>${Math.round(total.volume).toLocaleString('id-ID')}</td>
-                                <td>${Math.round(hargaRata).toLocaleString('id-ID')}</td>
-                                <td>${Math.round(total.nilai).toLocaleString('id-ID')}</td>
-                                <td>${Math.round(total.ppn).toLocaleString('id-ID')}</td>
-                                <td>${Math.round(total.potppn).toLocaleString('id-ID')}</td>
-                                <td>${Math.round(total.inc).toLocaleString('id-ID')}</td>
+                            {{-- Subtotal row per kategori --}}
+                            @php
+                                $monthTotalVolume += $subVolume;
+                                $monthTotalNilai += $subNilai;
+                                $monthTotalPpn += $subPpn;
+                                $monthTotalPotppn += $subPotppn;
+                                $monthTotalInc += $subInc;
+                            @endphp
+                            <tr class="row-subtotal">
+                                <td colspan="7" class="text-left">JUMLAH {{ strtoupper($kategoriName) }}</td>
+                                <td class="text-right">{{ number_format($subVolume, 0, ',', '.') }}</td>
+                                <td class="text-right"></td>
+                                <td class="text-right">{{ number_format($subNilai, 0, ',', '.') }}</td>
+                                <td class="text-right">{{ number_format($subPpn, 0, ',', '.') }}</td>
+                                <td class="text-right">{{ number_format($subPotppn, 0, ',', '.') }}</td>
+                                <td class="text-right">{{ number_format($subInc, 0, ',', '.') }}</td>
                                 <td></td>
                             </tr>
-                        `);
-        }
+                        @endforeach
 
-        function resetTotal(total) {
-            Object.keys(total).forEach(k => total[k] = 0);
-        }
+                        {{-- Grand total row for this month --}}
+                        <tr class="row-grand-total">
+                            <td colspan="7" class="text-left">TOTAL {{ $bulanNames[$bulanNum] ?? '' }}</td>
+                            <td class="text-right">{{ number_format($monthTotalVolume, 0, ',', '.') }}</td>
+                            <td class="text-right"></td>
+                            <td class="text-right">{{ number_format($monthTotalNilai, 0, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($monthTotalPpn, 0, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($monthTotalPotppn, 0, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($monthTotalInc, 0, ',', '.') }}</td>
+                            <td></td>
+                        </tr>
+
+                        {{-- Spacer row between months --}}
+                        <tr><td colspan="14" style="border:none; height:16px; background:#f0f0f0;"></td></tr>
+                    </tbody>
+                @endforeach
+            </table>
+        </div>
+    @else
+        <div class="penerima-empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>Tidak ada data penerima untuk periode ini.</p>
+        </div>
+    @endif
+</div>
+
+@push('scripts')
+    <script>
+        // Select all checkboxes within a month
+        $(document).on('click', '.select-all-month', function () {
+            var month = $(this).data('month');
+            var isChecked = $(this).prop('checked');
+            $(this).closest('tbody').find('.checkbox_ids').prop('checked', isChecked);
+        });
     </script>
 @endpush
 @include('cash_bank.modal.modalPenerima.editPenerima')

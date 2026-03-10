@@ -78,7 +78,7 @@
         .grand-total td {
             background-color: #FF8C00;
             font-weight: bold;
-            color: #1a7a1a;
+            color: #000000ff;
         }
     </style>
 </head>

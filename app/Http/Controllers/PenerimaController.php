@@ -465,7 +465,10 @@ class penerimaController extends Controller
     public function export_excel(Request $request)
     {
         $tahun = $request->tahun ?? date('Y');
-        return Excel::download(new ExportExcelPenerima($tahun), 'penerima-' . $tahun . '.xlsx');
+        $kategori = $request->kategori;
+        $bulanDari = $request->bulan_dari;
+        $bulanSampai = $request->bulan_sampai;
+        return Excel::download(new ExportExcelPenerima($tahun, $kategori, $bulanDari, $bulanSampai), 'penerima-' . $tahun . '.xlsx');
     }
 
     public function export_pdf(Request $request)

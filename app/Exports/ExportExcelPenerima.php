@@ -10,10 +10,16 @@ use Maatwebsite\Excel\Concerns\FromView;
 class ExportExcelPenerima implements FromView
 {
     protected $tahun;
+    protected $kategori;
+    protected $bulanDari;
+    protected $bulanSampai;
 
-    public function __construct($tahun = null)
+    public function __construct($tahun = null, $kategori = null, $bulanDari = null, $bulanSampai = null)
     {
         $this->tahun = $tahun ?? date('Y');
+        $this->kategori = $kategori;
+        $this->bulanDari = $bulanDari;
+        $this->bulanSampai = $bulanSampai;
     }
 
     public function view(): View
@@ -21,12 +27,26 @@ class ExportExcelPenerima implements FromView
         $query = Penerima::with('kategori')
             ->whereYear('tanggal', $this->tahun)
             ->orderBy('tanggal')
-            ->orderBy('id_kategori_kriteria')
-            ->get();
+            ->orderBy('id_kategori_kriteria');
+
+        if ($this->kategori) {
+            $query->where('id_kategori_kriteria', $this->kategori);
+        }
+
+        if ($this->bulanDari && $this->bulanSampai) {
+            $query->whereMonth('tanggal', '>=', $this->bulanDari)
+                  ->whereMonth('tanggal', '<=', $this->bulanSampai);
+        } elseif ($this->bulanDari) {
+            $query->whereMonth('tanggal', '>=', $this->bulanDari);
+        } elseif ($this->bulanSampai) {
+            $query->whereMonth('tanggal', '<=', $this->bulanSampai);
+        }
+
+        $allData = $query->get();
 
         // Group by month -> kategori
         $grouped = [];
-        foreach ($query as $row) {
+        foreach ($allData as $row) {
             $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
             $kategoriName = $row->kategori->nama_kriteria ?? '-';
             $grouped[$bulan][$kategoriName][] = $row;

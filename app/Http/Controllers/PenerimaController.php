@@ -269,6 +269,10 @@ class penerimaController extends Controller
             'nilai_inc_ppn' => $request->nilai_inc_ppn ?? 0,
         ]);
 
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Data berhasil diperbarui']);
+        }
+
         return redirect()->route('penerima.index')->with('success', 'Data berhasil diperbarui');
     }
 

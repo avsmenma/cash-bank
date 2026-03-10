@@ -501,7 +501,8 @@
                 });
 
                 // ===== MODAL EDIT =====
-                $(document).on('click', '[data-target="#editPenerima"]', function () {
+                $(document).on('click', '[data-target="#editPenerima"]', function (e) {
+                    e.preventDefault();
                     let button = $(this);
                     let id = button.data('id');
                     $('#formEditPenerima').attr('action', '/penerima/' + id);
@@ -526,6 +527,40 @@
                         width: '100%'
                     });
                     $('#edit_kategori').val(button.data('kategori')).trigger('change');
+
+                    $('#editPenerima').modal('show');
+                });
+
+                // Handle edit form submission via AJAX
+                $(document).on('submit', '#formEditPenerima', function (e) {
+                    e.preventDefault();
+                    let $form = $(this);
+                    let actionUrl = $form.attr('action');
+                    let formData = $form.serialize();
+                    let $btn = $form.find('button[type="submit"]');
+                    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
+                    $.ajax({
+                        url: actionUrl,
+                        type: 'POST',
+                        data: formData,
+                        success: function (response) {
+                            $('#editPenerima').modal('hide');
+                            loadRealisasi();
+                            alert('Data berhasil diperbarui!');
+                        },
+                        error: function (xhr) {
+                            let msg = 'Gagal menyimpan data.';
+                            if (xhr.responseJSON && xhr.responseJSON.errors) {
+                                let errors = xhr.responseJSON.errors;
+                                msg = Object.values(errors).flat().join('\n');
+                            }
+                            alert(msg);
+                        },
+                        complete: function () {
+                            $btn.prop('disabled', false).html('Save changes');
+                        }
+                    });
                 });
 
                 // ===== MODAL IMPORT =====
@@ -636,5 +671,6 @@
     @endpush
 
     @include('cash_bank.modal.modalPenerima.createPenerima')
+    @include('cash_bank.modal.modalPenerima.editPenerima')
     @include('cash_bank.modal.modalPenerima.importPenerima')
 @endsection

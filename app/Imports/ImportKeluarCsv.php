@@ -153,9 +153,23 @@ class ImportKeluarCsv
                 // Skip baris benar-benar kosong
                 if (empty(array_filter($row))) continue;
 
-                // Sesuaikan jumlah kolom dengan header (trim jika lebih, skip jika kurang)
+                // Sesuaikan jumlah kolom dengan header
                 $headerCount = count($header);
                 $rowCount2 = count($row);
+
+                // Google Sheets kadang membungkus seluruh baris dalam 1 pasang double-quote
+                // ketika ada field yang mengandung koma. fgetcsv() akan menganggap
+                // seluruh isi baris sebagai 1 field tunggal.
+                // Deteksi dan re-parse jika kolom jauh lebih sedikit dari header.
+                if ($rowCount2 < $headerCount) {
+                    $reparsed = str_getcsv(implode($delimiter, $row), $delimiter);
+                    if (count($reparsed) > $rowCount2) {
+                        $row = $reparsed;
+                        $rowCount2 = count($row);
+                    }
+                }
+
+                // Jika kolom masih kurang dari header, padding dengan string kosong
                 if ($rowCount2 < $headerCount) {
                     $row = array_pad($row, $headerCount, '');
                 }

@@ -2039,7 +2039,19 @@ class BankKeluarController extends Controller
             $headerCount = count($header);
             $rowColCount = count($row);
 
-            // Jika kolom kurang dari header, padding dengan string kosong
+            // Google Sheets kadang membungkus seluruh baris dalam 1 pasang double-quote
+            // ketika ada field yang mengandung koma. fgetcsv() akan menganggap
+            // seluruh isi baris sebagai 1 field tunggal.
+            // Deteksi dan re-parse jika kolom jauh lebih sedikit dari header.
+            if ($rowColCount < $headerCount) {
+                $reparsed = str_getcsv(implode($delimiter, $row), $delimiter);
+                if (count($reparsed) > $rowColCount) {
+                    $row = $reparsed;
+                    $rowColCount = count($row);
+                }
+            }
+
+            // Jika kolom masih kurang dari header, padding dengan string kosong
             if ($rowColCount < $headerCount) {
                 $row = array_pad($row, $headerCount, '');
             }

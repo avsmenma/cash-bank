@@ -156,7 +156,9 @@ class ImportKeluarCsv
                 // Sesuaikan jumlah kolom dengan header (trim jika lebih, skip jika kurang)
                 $headerCount = count($header);
                 $rowCount2 = count($row);
-                if ($rowCount2 < $headerCount) continue;
+                if ($rowCount2 < $headerCount) {
+                    $row = array_pad($row, $headerCount, '');
+                }
                 if ($rowCount2 > $headerCount) {
                     $row = array_slice($row, 0, $headerCount);
                 }

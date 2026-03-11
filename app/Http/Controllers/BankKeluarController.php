@@ -2033,8 +2033,26 @@ class BankKeluarController extends Controller
         $i = 0;
 
         while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-            if (count($row) < count($header)) continue;
-            $data = array_combine($header, $row);
+            // Skip baris benar-benar kosong
+            if (empty(array_filter($row))) continue;
+
+            $headerCount = count($header);
+            $rowColCount = count($row);
+
+            // Jika kolom kurang dari header, padding dengan string kosong
+            if ($rowColCount < $headerCount) {
+                $row = array_pad($row, $headerCount, '');
+            }
+            // Jika kolom lebih dari header, potong kelebihan
+            if ($rowColCount > $headerCount) {
+                $row = array_slice($row, 0, $headerCount);
+            }
+
+            try {
+                $data = array_combine($header, $row);
+            } catch (\Throwable $e) {
+                continue;
+            }
 
             // Ambil nilai dari kolom CSV (support beragam nama header)
             $agendaRaw      = trim($data['agenda_tahun'] ?? $data['no_agenda'] ?? '');
@@ -2058,8 +2076,8 @@ class BankKeluarController extends Controller
                 $kreditNum = (float) str_replace(['.', ','], ['', '.'], $debetRaw);
             }
 
-            // Skip baris kosong: wajib punya tanggal DAN (kredit > 0 ATAU sumber_dana tidak kosong)
-            if (empty($tanggalRaw) || ($kreditNum <= 0 && empty($sumberRaw))) continue;
+            // Skip baris tanpa tanggal — satu-satunya syarat wajib
+            if (empty($tanggalRaw)) continue;
 
             // Lookup referensi
             $sumberFound      = $findInMap($sumberDanaMap, $sumberRaw);

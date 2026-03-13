@@ -300,6 +300,8 @@
     <script src="{{ asset('adminLTE/plugins/bs-custom-file-input/bs-custom-file-input.min.js') }}"></script>
     <script src="{{ asset('adminLTE/plugins/chart.js/Chart.min.js')}}"></script>
 
+    @yield('modals')
+
     @stack('scripts')
 
 </body>

@@ -30,7 +30,7 @@ class ExportExcelPenerima implements FromView
                   ->orWhereNull('tanggal')
                   ->orWhere('tanggal', '0000-00-00');
             })
-            ->orderByRaw('(tanggal IS NULL OR tanggal = "0000-00-00") ASC, tanggal ASC')
+            ->orderByRaw('(tanggal IS NULL OR tanggal = ?) ASC, tanggal ASC', ['0000-00-00'])
             ->orderBy('id_kategori_kriteria');
 
         if ($this->kategori) {

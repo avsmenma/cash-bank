@@ -268,14 +268,10 @@
                             </div>
                         </div>
                     </div><!-- /.tab-pane gabungan -->
-                    </div><!-- /.tab-content -->
-                </div><!-- /.card-body -->
-                </div>
-                <!-- /.card -->
-            </div>
+                </div><!-- /.tab-content -->
+            </div><!-- /.card-body -->
         </div>
-    </div>
-    </div>
+        <!-- /.card -->
     </div>
 
     @include('cash_bank.modal.modalPenerima.createPenerima')

@@ -278,6 +278,10 @@
     </div>
     </div>
 
+    @include('cash_bank.modal.modalPenerima.createPenerima')
+    @include('cash_bank.modal.modalPenerima.editPenerima')
+    @include('cash_bank.modal.modalPenerima.importPenerima')
+
     @push('scripts')
         <script>
             $(document).ready(function () {
@@ -710,10 +714,4 @@
         </script>
     @endpush
 
-@endsection
-
-@section('modals')
-    @include('cash_bank.modal.modalPenerima.createPenerima')
-    @include('cash_bank.modal.modalPenerima.editPenerima')
-    @include('cash_bank.modal.modalPenerima.importPenerima')
 @endsection

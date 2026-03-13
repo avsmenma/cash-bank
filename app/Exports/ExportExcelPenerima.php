@@ -27,9 +27,10 @@ class ExportExcelPenerima implements FromView
         $query = Penerima::with('kategori')
             ->where(function ($q) {
                 $q->whereYear('tanggal', $this->tahun)
-                  ->orWhereNull('tanggal');
+                  ->orWhereNull('tanggal')
+                  ->orWhere('tanggal', '0000-00-00');
             })
-            ->orderByRaw('tanggal IS NULL, tanggal ASC')
+            ->orderByRaw('(tanggal IS NULL OR tanggal = "0000-00-00") ASC, tanggal ASC')
             ->orderBy('id_kategori_kriteria');
 
         if ($this->kategori) {
@@ -41,17 +42,17 @@ class ExportExcelPenerima implements FromView
                 $q->where(function ($q2) {
                     $q2->whereMonth('tanggal', '>=', $this->bulanDari)
                        ->whereMonth('tanggal', '<=', $this->bulanSampai);
-                })->orWhereNull('tanggal');
+                })->orWhereNull('tanggal')->orWhere('tanggal', '0000-00-00');
             });
         } elseif ($this->bulanDari) {
             $query->where(function ($q) {
                 $q->whereMonth('tanggal', '>=', $this->bulanDari)
-                  ->orWhereNull('tanggal');
+                  ->orWhereNull('tanggal')->orWhere('tanggal', '0000-00-00');
             });
         } elseif ($this->bulanSampai) {
             $query->where(function ($q) {
                 $q->whereMonth('tanggal', '<=', $this->bulanSampai)
-                  ->orWhereNull('tanggal');
+                  ->orWhereNull('tanggal')->orWhere('tanggal', '0000-00-00');
             });
         }
 
@@ -60,7 +61,7 @@ class ExportExcelPenerima implements FromView
         // Group by month -> kategori (0 = no date)
         $grouped = [];
         foreach ($allData as $row) {
-            if ($row->tanggal) {
+            if ($row->tanggal && $row->tanggal !== '0000-00-00') {
                 $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
             } else {
                 $bulan = 0;

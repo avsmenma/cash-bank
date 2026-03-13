@@ -126,9 +126,10 @@ class penerimaController extends Controller
             $query = Penerima::with('kategori')
                 ->where(function ($q) use ($tahun) {
                     $q->whereYear('tanggal', $tahun)
-                      ->orWhereNull('tanggal');
+                      ->orWhereNull('tanggal')
+                      ->orWhere('tanggal', '0000-00-00');
                 })
-                ->orderByRaw('tanggal IS NULL, tanggal ASC')
+                ->orderByRaw('(tanggal IS NULL OR tanggal = "0000-00-00") ASC, tanggal ASC')
                 ->orderBy('id_kategori_kriteria');
 
             if ($request->filled('kategori')) {
@@ -140,17 +141,17 @@ class penerimaController extends Controller
                     $q->where(function ($q2) use ($request) {
                         $q2->whereMonth('tanggal', '>=', $request->bulan_dari)
                            ->whereMonth('tanggal', '<=', $request->bulan_sampai);
-                    })->orWhereNull('tanggal');
+                    })->orWhereNull('tanggal')->orWhere('tanggal', '0000-00-00');
                 });
             } elseif ($request->filled('bulan_dari')) {
                 $query->where(function ($q) use ($request) {
                     $q->whereMonth('tanggal', '>=', $request->bulan_dari)
-                      ->orWhereNull('tanggal');
+                      ->orWhereNull('tanggal')->orWhere('tanggal', '0000-00-00');
                 });
             } elseif ($request->filled('bulan_sampai')) {
                 $query->where(function ($q) use ($request) {
                     $q->whereMonth('tanggal', '<=', $request->bulan_sampai)
-                      ->orWhereNull('tanggal');
+                      ->orWhereNull('tanggal')->orWhere('tanggal', '0000-00-00');
                 });
             }
 
@@ -159,7 +160,7 @@ class penerimaController extends Controller
             // Group by month -> kategori (0 = no date)
             $grouped = [];
             foreach ($allData as $row) {
-                if ($row->tanggal) {
+                if ($row->tanggal && $row->tanggal !== '0000-00-00') {
                     $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
                 } else {
                     $bulan = 0; // special key for rows without date
@@ -212,7 +213,7 @@ class penerimaController extends Controller
             'id_kategori_kriteria' => $validated['id_kategori_kriteria'],
             'pembeli' => $validated['pembeli'],
             'no_reg' => $validated['no_reg'] ?? null,
-            'tanggal' => $validated['tanggal'],
+            'tanggal' => !empty($validated['tanggal']) ? $validated['tanggal'] : null,
             'volume' => $validated['volume'],
             'harga' => $validated['harga'],
             'nilai' => $validated['nilai'] ?? 0,
@@ -505,9 +506,10 @@ class penerimaController extends Controller
         $query = Penerima::with('kategori')
             ->where(function ($q) use ($tahun) {
                 $q->whereYear('tanggal', $tahun)
-                  ->orWhereNull('tanggal');
+                  ->orWhereNull('tanggal')
+                  ->orWhere('tanggal', '0000-00-00');
             })
-            ->orderByRaw('tanggal IS NULL, tanggal ASC')
+            ->orderByRaw('(tanggal IS NULL OR tanggal = "0000-00-00") ASC, tanggal ASC')
             ->orderBy('id_kategori_kriteria');
 
         if ($request->filled('kategori')) {
@@ -519,17 +521,17 @@ class penerimaController extends Controller
                 $q->where(function ($q2) use ($request) {
                     $q2->whereMonth('tanggal', '>=', $request->bulan_dari)
                        ->whereMonth('tanggal', '<=', $request->bulan_sampai);
-                })->orWhereNull('tanggal');
+                })->orWhereNull('tanggal')->orWhere('tanggal', '0000-00-00');
             });
         } elseif ($request->filled('bulan_dari')) {
             $query->where(function ($q) use ($request) {
                 $q->whereMonth('tanggal', '>=', $request->bulan_dari)
-                  ->orWhereNull('tanggal');
+                  ->orWhereNull('tanggal')->orWhere('tanggal', '0000-00-00');
             });
         } elseif ($request->filled('bulan_sampai')) {
             $query->where(function ($q) use ($request) {
                 $q->whereMonth('tanggal', '<=', $request->bulan_sampai)
-                  ->orWhereNull('tanggal');
+                  ->orWhereNull('tanggal')->orWhere('tanggal', '0000-00-00');
             });
         }
 
@@ -537,7 +539,7 @@ class penerimaController extends Controller
 
         $grouped = [];
         foreach ($allData as $row) {
-            if ($row->tanggal) {
+            if ($row->tanggal && $row->tanggal !== '0000-00-00') {
                 $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
             } else {
                 $bulan = 0;

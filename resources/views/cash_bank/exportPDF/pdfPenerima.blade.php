@@ -86,6 +86,7 @@
 <body>
     @php
         $bulanLabels = [
+            0 => 'TANPA TANGGAL',
             1 => 'JANUARI', 2 => 'FEBRUARI', 3 => 'MARET', 4 => 'APRIL',
             5 => 'MEI', 6 => 'JUNI', 7 => 'JULI', 8 => 'AGUSTUS',
             9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'
@@ -164,7 +165,7 @@
                             <td>{{ $kategoriName }}</td>
                             <td>{{ $row->kontrak }}</td>
                             <td>{{ $row->pembeli }}</td>
-                            <td>{{ \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d M Y') }}</td>
+                            <td>{{ $row->tanggal ? \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d M Y') : '-' }}</td>
                             <td>{{ $row->no_reg }}</td>
                             <td>{{ number_format($row->volume, 0, ',', '.') }}</td>
                             <td>{{ number_format($row->harga, 0, ',', '.') }}</td>

@@ -124,8 +124,11 @@ class penerimaController extends Controller
             $tahun = $request->tahun ?? date('Y');
 
             $query = Penerima::with('kategori')
-                ->whereYear('tanggal', $tahun)
-                ->orderBy('tanggal')
+                ->where(function ($q) use ($tahun) {
+                    $q->whereYear('tanggal', $tahun)
+                      ->orWhereNull('tanggal');
+                })
+                ->orderByRaw('tanggal IS NULL, tanggal ASC')
                 ->orderBy('id_kategori_kriteria');
 
             if ($request->filled('kategori')) {
@@ -133,28 +136,48 @@ class penerimaController extends Controller
             }
 
             if ($request->filled('bulan_dari') && $request->filled('bulan_sampai')) {
-                $query->whereMonth('tanggal', '>=', $request->bulan_dari)
-                      ->whereMonth('tanggal', '<=', $request->bulan_sampai);
+                $query->where(function ($q) use ($request) {
+                    $q->where(function ($q2) use ($request) {
+                        $q2->whereMonth('tanggal', '>=', $request->bulan_dari)
+                           ->whereMonth('tanggal', '<=', $request->bulan_sampai);
+                    })->orWhereNull('tanggal');
+                });
             } elseif ($request->filled('bulan_dari')) {
-                $query->whereMonth('tanggal', '>=', $request->bulan_dari);
+                $query->where(function ($q) use ($request) {
+                    $q->whereMonth('tanggal', '>=', $request->bulan_dari)
+                      ->orWhereNull('tanggal');
+                });
             } elseif ($request->filled('bulan_sampai')) {
-                $query->whereMonth('tanggal', '<=', $request->bulan_sampai);
+                $query->where(function ($q) use ($request) {
+                    $q->whereMonth('tanggal', '<=', $request->bulan_sampai)
+                      ->orWhereNull('tanggal');
+                });
             }
 
             $allData = $query->get();
 
-            // Group by month -> kategori
+            // Group by month -> kategori (0 = no date)
             $grouped = [];
             foreach ($allData as $row) {
-                $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
+                if ($row->tanggal) {
+                    $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
+                } else {
+                    $bulan = 0; // special key for rows without date
+                }
                 $kategoriName = $row->kategori->nama_kriteria ?? '-';
                 $grouped[$bulan][$kategoriName][] = $row;
             }
 
-            // Sort by month
+            // Sort by month (0 = no date will come first, move to end)
             ksort($grouped);
+            if (isset($grouped[0])) {
+                $noDateGroup = $grouped[0];
+                unset($grouped[0]);
+                $grouped[0] = $noDateGroup;
+            }
 
             $bulanNames = [
+                0 => 'TANPA TANGGAL',
                 1 => 'JANUARI', 2 => 'FEBRUARI', 3 => 'MARET', 4 => 'APRIL',
                 5 => 'MEI', 6 => 'JUNI', 7 => 'JULI', 8 => 'AGUSTUS',
                 9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'
@@ -171,7 +194,7 @@ class penerimaController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'tanggal' => 'required|date',
+            'tanggal' => 'nullable|date',
             'harga' => 'required|numeric',
             'volume' => 'required|numeric',
             'pembeli' => 'required|string',
@@ -480,8 +503,11 @@ class penerimaController extends Controller
         $tahun = $request->tahun ?? date('Y');
 
         $query = Penerima::with('kategori')
-            ->whereYear('tanggal', $tahun)
-            ->orderBy('tanggal')
+            ->where(function ($q) use ($tahun) {
+                $q->whereYear('tanggal', $tahun)
+                  ->orWhereNull('tanggal');
+            })
+            ->orderByRaw('tanggal IS NULL, tanggal ASC')
             ->orderBy('id_kategori_kriteria');
 
         if ($request->filled('kategori')) {
@@ -489,25 +515,45 @@ class penerimaController extends Controller
         }
 
         if ($request->filled('bulan_dari') && $request->filled('bulan_sampai')) {
-            $query->whereMonth('tanggal', '>=', $request->bulan_dari)
-                  ->whereMonth('tanggal', '<=', $request->bulan_sampai);
+            $query->where(function ($q) use ($request) {
+                $q->where(function ($q2) use ($request) {
+                    $q2->whereMonth('tanggal', '>=', $request->bulan_dari)
+                       ->whereMonth('tanggal', '<=', $request->bulan_sampai);
+                })->orWhereNull('tanggal');
+            });
         } elseif ($request->filled('bulan_dari')) {
-            $query->whereMonth('tanggal', '>=', $request->bulan_dari);
+            $query->where(function ($q) use ($request) {
+                $q->whereMonth('tanggal', '>=', $request->bulan_dari)
+                  ->orWhereNull('tanggal');
+            });
         } elseif ($request->filled('bulan_sampai')) {
-            $query->whereMonth('tanggal', '<=', $request->bulan_sampai);
+            $query->where(function ($q) use ($request) {
+                $q->whereMonth('tanggal', '<=', $request->bulan_sampai)
+                  ->orWhereNull('tanggal');
+            });
         }
 
         $allData = $query->get();
 
         $grouped = [];
         foreach ($allData as $row) {
-            $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
+            if ($row->tanggal) {
+                $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
+            } else {
+                $bulan = 0;
+            }
             $kategoriName = $row->kategori->nama_kriteria ?? '-';
             $grouped[$bulan][$kategoriName][] = $row;
         }
         ksort($grouped);
+        if (isset($grouped[0])) {
+            $noDateGroup = $grouped[0];
+            unset($grouped[0]);
+            $grouped[0] = $noDateGroup;
+        }
 
         $bulanNames = [
+            0 => 'TANPA TANGGAL',
             1 => 'JANUARI', 2 => 'FEBRUARI', 3 => 'MARET', 4 => 'APRIL',
             5 => 'MEI', 6 => 'JUNI', 7 => 'JULI', 8 => 'AGUSTUS',
             9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'

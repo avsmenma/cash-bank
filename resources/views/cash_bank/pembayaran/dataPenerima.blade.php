@@ -132,7 +132,7 @@
                                 <td>{{ $kategoriName }}</td>
                                 <td>{{ $row->kontrak }}</td>
                                 <td>{{ $row->pembeli }}</td>
-                                <td class="text-center">{{ \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d M Y') }}</td>
+                                <td class="text-center">{{ $row->tanggal ? \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d M Y') : '-' }}</td>
                                 <td>{{ $row->no_reg }}</td>
                                 <td class="text-right">{{ number_format($row->volume, 0, ',', '.') }}</td>
                                 <td class="text-right">{{ number_format($row->harga, 0, ',', '.') }}</td>

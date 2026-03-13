@@ -25,8 +25,11 @@ class ExportExcelPenerima implements FromView
     public function view(): View
     {
         $query = Penerima::with('kategori')
-            ->whereYear('tanggal', $this->tahun)
-            ->orderBy('tanggal')
+            ->where(function ($q) {
+                $q->whereYear('tanggal', $this->tahun)
+                  ->orWhereNull('tanggal');
+            })
+            ->orderByRaw('tanggal IS NULL, tanggal ASC')
             ->orderBy('id_kategori_kriteria');
 
         if ($this->kategori) {
@@ -34,26 +37,46 @@ class ExportExcelPenerima implements FromView
         }
 
         if ($this->bulanDari && $this->bulanSampai) {
-            $query->whereMonth('tanggal', '>=', $this->bulanDari)
-                  ->whereMonth('tanggal', '<=', $this->bulanSampai);
+            $query->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->whereMonth('tanggal', '>=', $this->bulanDari)
+                       ->whereMonth('tanggal', '<=', $this->bulanSampai);
+                })->orWhereNull('tanggal');
+            });
         } elseif ($this->bulanDari) {
-            $query->whereMonth('tanggal', '>=', $this->bulanDari);
+            $query->where(function ($q) {
+                $q->whereMonth('tanggal', '>=', $this->bulanDari)
+                  ->orWhereNull('tanggal');
+            });
         } elseif ($this->bulanSampai) {
-            $query->whereMonth('tanggal', '<=', $this->bulanSampai);
+            $query->where(function ($q) {
+                $q->whereMonth('tanggal', '<=', $this->bulanSampai)
+                  ->orWhereNull('tanggal');
+            });
         }
 
         $allData = $query->get();
 
-        // Group by month -> kategori
+        // Group by month -> kategori (0 = no date)
         $grouped = [];
         foreach ($allData as $row) {
-            $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
+            if ($row->tanggal) {
+                $bulan = (int) \Carbon\Carbon::parse($row->tanggal)->format('n');
+            } else {
+                $bulan = 0;
+            }
             $kategoriName = $row->kategori->nama_kriteria ?? '-';
             $grouped[$bulan][$kategoriName][] = $row;
         }
         ksort($grouped);
+        if (isset($grouped[0])) {
+            $noDateGroup = $grouped[0];
+            unset($grouped[0]);
+            $grouped[0] = $noDateGroup;
+        }
 
         $bulanNames = [
+            0 => 'TANPA TANGGAL',
             1 => 'JANUARI', 2 => 'FEBRUARI', 3 => 'MARET', 4 => 'APRIL',
             5 => 'MEI', 6 => 'JUNI', 7 => 'JULI', 8 => 'AGUSTUS',
             9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'

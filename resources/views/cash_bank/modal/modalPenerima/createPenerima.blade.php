@@ -71,7 +71,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="create_volume">Volume</label>
-                                        <input type="number" id="create_volume" name="volume" class="form-control"
+                                        <input type="text" id="create_volume" name="volume" class="form-control edit-angka"
                                             placeholder="0">
                                     </div>
                                 </div>
@@ -80,14 +80,14 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="create_harga">Harga</label>
-                                        <input type="number" id="create_harga" name="harga" class="form-control"
+                                        <input type="text" id="create_harga" name="harga" class="form-control edit-angka"
                                             placeholder="0">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="create_nilai">Nilai</label>
-                                        <input type="number" id="create_nilai" name="nilai" class="form-control"
+                                        <input type="text" id="create_nilai" name="nilai" class="form-control edit-angka"
                                             placeholder="0">
                                     </div>
                                 </div>
@@ -96,14 +96,14 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="create_ppn">PPN</label>
-                                        <input type="number" id="create_ppn" name="ppn" class="form-control"
+                                        <input type="text" id="create_ppn" name="ppn" class="form-control edit-angka"
                                             placeholder="0">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="create_potppn">Pot PPN</label>
-                                        <input type="number" id="create_potppn" name="potppn" class="form-control"
+                                        <input type="text" id="create_potppn" name="potppn" class="form-control edit-angka"
                                             placeholder="0">
                                     </div>
                                 </div>
@@ -111,8 +111,8 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="create_nilai_inc_ppn">Nilai Inc PPN</label>
-                                    <input type="number" id="create_nilai_inc_ppn" name="nilai_inc_ppn"
-                                        class="form-control" placeholder="0">
+                                    <input type="text" id="create_nilai_inc_ppn" name="nilai_inc_ppn"
+                                        class="form-control edit-angka" placeholder="0">
                                 </div>
                             </div>
                         </div>

@@ -500,6 +500,51 @@
                     });
                 });
 
+                // Handle create form submission via AJAX
+                $(document).on('submit', '#importExcel', function (e) {
+                    e.preventDefault();
+                    let $form = $(this);
+                    let $btn = $form.find('button[type="submit"]');
+                    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
+                    let formData = {
+                        _token: $form.find('input[name="_token"]').val(),
+                        id_kategori_kriteria: $('#create_kategori').val(),
+                        kontrak: $('#create_kontrak').val(),
+                        pembeli: $('#create_pembeli').val(),
+                        tanggal: $form.find('input[name="tanggal"]').val(),
+                        no_reg: $('#create_no_reg').val(),
+                        volume: unformatRibuan($('#create_volume').val()),
+                        harga: unformatRibuan($('#create_harga').val()),
+                        nilai: unformatRibuan($('#create_nilai').val()),
+                        ppn: unformatRibuan($('#create_ppn').val()),
+                        potppn: unformatRibuan($('#create_potppn').val()),
+                        nilai_inc_ppn: unformatRibuan($('#create_nilai_inc_ppn').val()),
+                    };
+
+                    $.ajax({
+                        url: $form.attr('action'),
+                        type: 'POST',
+                        data: formData,
+                        success: function (response) {
+                            $('#ModalCreatePenerima').modal('hide');
+                            loadRealisasi();
+                            alert('Data berhasil disimpan!');
+                        },
+                        error: function (xhr) {
+                            let msg = 'Gagal menyimpan data.';
+                            if (xhr.responseJSON && xhr.responseJSON.errors) {
+                                let errors = xhr.responseJSON.errors;
+                                msg = Object.values(errors).flat().join('\n');
+                            }
+                            alert(msg);
+                        },
+                        complete: function () {
+                            $btn.prop('disabled', false).html('Save changes');
+                        }
+                    });
+                });
+
                 // ===== FORMAT ANGKA HELPERS =====
                 function formatRibuan(val) {
                     if (val === null || val === undefined || val === '') return '0';

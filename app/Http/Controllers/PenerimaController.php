@@ -222,6 +222,10 @@ class penerimaController extends Controller
             'nilai_inc_ppn' => $validated['nilai_inc_ppn'] ?? 0,
         ]);
 
+        if ($request->ajax()) {
+            return response()->json(['success' => 'Data berhasil disimpan']);
+        }
+
         return back()->with('success', 'Data berhasil disimpan');
     }
 

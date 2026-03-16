@@ -356,6 +356,16 @@
         });
     });
 
+    // Auto-fill penerima ketika memilih MPN di dropdown jenis pembayaran
+    $(document).on('change', '#editKeluar [name="id_jenis_pembayaran"]', function () {
+        let selectedText = $(this).find('option:selected').text().trim();
+        let $penerimaField = $('#edit_keluar_penerima');
+        
+        if (selectedText === 'MPN') {
+            $penerimaField.val('Modul Penerimaan Negara (MPN)');
+        }
+    });
+
     $('#edit_keluar_kredit').on('input', function () {
         let cursorPos = this.selectionStart, oldLen = this.value.length;
         let raw = this.value.replace(/\D/g, '');

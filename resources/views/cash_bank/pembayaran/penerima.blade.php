@@ -280,6 +280,12 @@
 
     @push('scripts')
         <script>
+            // Move modals to body level to prevent z-index/overflow issues with AdminLTE content-wrapper
+            $(document).ready(function() {
+                $('#ModalCreatePenerima, #editPenerima, #ModalImportPenerima').appendTo('body');
+            });
+        </script>
+        <script>
             $(document).ready(function () {
                 console.log('=== SCRIPT LOADED ===');
 

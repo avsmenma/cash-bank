@@ -62,7 +62,7 @@
 @if(isset($grouped) && count($grouped) > 0)
     <div class="table-responsive">
         <table class="penerima-grouped-table">
-            @php $catNo = 1; @endphp
+
 
             @foreach($grouped as $bulanNum => $kategoriGroup)
                 <tbody>
@@ -108,6 +108,7 @@
                         </tr>
 
                         @php
+                            $catNo = 1;
                             $subVolume = 0;
                             $subNilai = 0;
                             $subPpn = 0;

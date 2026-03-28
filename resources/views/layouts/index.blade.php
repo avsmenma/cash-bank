@@ -308,31 +308,39 @@
         function enableDragScroll(el) {
             if (el._dragScrollEnabled) return;
             el._dragScrollEnabled = true;
-            var isDown = false, startX, scrollLeft;
+            var isDown = false, startX, scrollLeft, rafId = null;
 
             el.addEventListener('mousedown', function(e) {
-                // Ignore clicks on interactive elements
                 if (e.target.closest('a, button, input, select, textarea, label, .btn, .checkbox_ids, .select2')) return;
                 isDown = true;
                 el.classList.add('drag-scrolling');
-                startX = e.pageX - el.offsetLeft;
+                startX = e.pageX - el.getBoundingClientRect().left - window.scrollX;
                 scrollLeft = el.scrollLeft;
                 e.preventDefault();
             });
+
             el.addEventListener('mouseleave', function() {
                 isDown = false;
                 el.classList.remove('drag-scrolling');
+                if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
             });
+
             el.addEventListener('mouseup', function() {
                 isDown = false;
                 el.classList.remove('drag-scrolling');
+                if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
             });
+
             el.addEventListener('mousemove', function(e) {
                 if (!isDown) return;
                 e.preventDefault();
-                var x = e.pageX - el.offsetLeft;
+                var x = e.pageX - el.getBoundingClientRect().left - window.scrollX;
                 var walk = (x - startX) * 1.5;
-                el.scrollLeft = scrollLeft - walk;
+                if (rafId) cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(function() {
+                    el.scrollLeft = scrollLeft - walk;
+                    rafId = null;
+                });
             });
         }
 
@@ -340,15 +348,18 @@
             document.querySelectorAll('.table-responsive, .drag-scroll, .dataTables_scrollBody').forEach(enableDragScroll);
         }
 
-        // On DOM ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initAll);
         } else {
             initAll();
         }
 
-        // Watch for dynamically loaded content (AJAX table loads)
-        var observer = new MutationObserver(function() { initAll(); });
+        // Debounced MutationObserver — only fires initAll after DOM settles
+        var debounceTimer = null;
+        var observer = new MutationObserver(function() {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(initAll, 300);
+        });
         observer.observe(document.body, { childList: true, subtree: true });
     })();
     </script>

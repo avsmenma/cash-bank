@@ -33,7 +33,7 @@
 
     <section class="content">
         {{-- TOMBOL EXPORT --}}
-        <div class="mb-3" style="max-width:820px;">
+        <div class="mb-3">
             <button type="button" class="btn btn-success btn-sm mr-2" onclick="openExportModal('excel')">
                 <i class="fas fa-file-excel mr-1"></i> Export Excel
             </button>
@@ -42,95 +42,153 @@
             </button>
         </div>
 
-        <div class="card shadow" style="border-top:4px solid #0d3b6e; max-width:820px;">
-            <div class="card-body p-0">
-                <table class="table table-bordered mb-0" id="tblSaldoBank" style="font-size:12.5px;">
-                    {{-- HEADER UTAMA --}}
-                    <thead>
-                        <tr style="background:#bdc3c7;">
-                            <th colspan="2" class="text-center font-weight-bold" style="padding:10px 8px;">Saldo Kas &amp; Bank</th>
-                            <th class="text-center font-weight-bold" style="padding:10px 8px; min-width:150px;">Tanggal</th>
-                            <th class="text-center font-weight-bold" style="padding:10px 8px; min-width:170px;">Nilai (Rp)</th>
-                        </tr>
-                        <tr style="background:#ecf0f1;">
-                            <th class="text-center" style="width:40px;">No.</th>
-                            <th>Uraian</th>
-                            <th class="text-center">No. Rek</th>
-                            <th class="text-center">Nilai (Rp)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{-- BARIS A. SALDO --}}
-                        <tr style="background:#f9e400;">
-                            <td class="font-weight-bold text-center align-middle">A.</td>
-                            <td class="font-weight-bold align-middle" colspan="2">SALDO</td>
-                            <td class="align-middle"></td>
-                        </tr>
+        {{-- LAYOUT BERSEBELAHAN --}}
+        <div class="d-flex flex-wrap" style="gap:20px;">
 
-                        {{-- I. Saldo Kas --}}
-                        <tr>
-                            <td class="text-center align-middle">I.</td>
-                            <td class="align-middle">Saldo Kas</td>
-                            <td class="align-middle"></td>
-                            <td class="text-right align-middle">-</td>
-                        </tr>
+            {{-- ====== TABEL SALDO KAS & BANK (KIRI) ====== --}}
+            <div class="card shadow" style="border-top:4px solid #0d3b6e; flex:1; min-width:380px;">
+                <div class="card-body p-0">
+                    <table class="table table-bordered mb-0" id="tblSaldoBank" style="font-size:12.5px;">
+                        {{-- HEADER UTAMA --}}
+                        <thead>
+                            <tr style="background:#bdc3c7;">
+                                <th colspan="2" class="text-center font-weight-bold" style="padding:10px 8px;">Saldo Kas &amp; Bank</th>
+                                <th class="text-center font-weight-bold" style="padding:10px 8px; min-width:150px;">Tanggal</th>
+                                <th class="text-center font-weight-bold" style="padding:10px 8px; min-width:170px;">Nilai (Rp)</th>
+                            </tr>
+                            <tr style="background:#ecf0f1;">
+                                <th class="text-center" style="width:40px;">No.</th>
+                                <th>Uraian</th>
+                                <th class="text-center">No. Rek</th>
+                                <th class="text-center">Nilai (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{-- BARIS A. SALDO --}}
+                            <tr style="background:#f9e400;">
+                                <td class="font-weight-bold text-center align-middle">A.</td>
+                                <td class="font-weight-bold align-middle" colspan="2">SALDO</td>
+                                <td class="align-middle"></td>
+                            </tr>
 
-                        {{-- II. Saldo Bank --}}
-                        <tr>
-                            <td class="text-center align-middle">II.</td>
-                            <td class="font-weight-bold align-middle" colspan="3">Saldo Bank :</td>
-                        </tr>
+                            {{-- I. Saldo Kas --}}
+                            <tr>
+                                <td class="text-center align-middle">I.</td>
+                                <td class="align-middle">Saldo Kas</td>
+                                <td class="align-middle"></td>
+                                <td class="text-right align-middle">-</td>
+                            </tr>
 
-                        {{-- DAFTAR SUMBER DANA --}}
-                        @forelse($sumberDanaList as $sd)
-                        @php
-                            $noRek = '';
-                            $namaBersih = $sd->nama_sumber_dana;
-                            if (preg_match('/\*\s*([\d\-\/]+)\s*$/', $sd->nama_sumber_dana, $m)) {
-                                $noRek = trim($m[1]);
-                                $namaBersih = trim(preg_replace('/\s*\*\s*[\d\-\/]+\s*$/', '', $sd->nama_sumber_dana));
-                            }
-                        @endphp
-                        <tr>
-                            <td class="align-middle"></td>
-                            <td class="align-middle">- {{ $namaBersih }}</td>
-                            <td class="text-center align-middle text-muted" style="font-size:11.5px; white-space:nowrap;">
-                                {{ $noRek }}
-                            </td>
-                            <td class="text-right align-middle {{ $sd->saldo_va != 0 ? 'font-weight-bold' : 'text-muted' }}">
-                                @if($sd->saldo_va < 0)
-                                    ({{ number_format(abs($sd->saldo_va), 0, ',', '.') }})
-                                @elseif($sd->saldo_va > 0)
-                                    {{ number_format($sd->saldo_va, 0, ',', '.') }}
-                                @else
-                                    -
-                                @endif
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td></td>
-                            <td colspan="3" class="text-center text-muted py-3">
-                                Tidak ada data sumber dana
-                            </td>
-                        </tr>
-                        @endforelse
+                            {{-- II. Saldo Bank --}}
+                            <tr>
+                                <td class="text-center align-middle">II.</td>
+                                <td class="font-weight-bold align-middle" colspan="3">Saldo Bank :</td>
+                            </tr>
 
-                        {{-- TOTAL SALDO BANK --}}
-                        <tr style="background:#f9e400;">
-                            <td colspan="3" class="text-center font-weight-bold align-middle">Saldo Bank</td>
-                            <td class="text-right font-weight-bold align-middle">
-                                @if($totalSaldoBank < 0)
-                                    ({{ number_format(abs($totalSaldoBank), 0, ',', '.') }})
-                                @else
-                                    {{ number_format($totalSaldoBank, 0, ',', '.') }}
-                                @endif
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            {{-- DAFTAR SUMBER DANA --}}
+                            @forelse($sumberDanaList as $sd)
+                            @php
+                                $noRek = '';
+                                $namaBersih = $sd->nama_sumber_dana;
+                                if (preg_match('/\*\s*([\d\-\/]+)\s*$/', $sd->nama_sumber_dana, $m)) {
+                                    $noRek = trim($m[1]);
+                                    $namaBersih = trim(preg_replace('/\s*\*\s*[\d\-\/]+\s*$/', '', $sd->nama_sumber_dana));
+                                }
+                            @endphp
+                            <tr>
+                                <td class="align-middle"></td>
+                                <td class="align-middle">- {{ $namaBersih }}</td>
+                                <td class="text-center align-middle text-muted" style="font-size:11.5px; white-space:nowrap;">
+                                    {{ $noRek }}
+                                </td>
+                                <td class="text-right align-middle {{ $sd->saldo_va != 0 ? 'font-weight-bold' : 'text-muted' }}">
+                                    @if($sd->saldo_va < 0)
+                                        ({{ number_format(abs($sd->saldo_va), 0, ',', '.') }})
+                                    @elseif($sd->saldo_va > 0)
+                                        {{ number_format($sd->saldo_va, 0, ',', '.') }}
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td></td>
+                                <td colspan="3" class="text-center text-muted py-3">
+                                    Tidak ada data sumber dana
+                                </td>
+                            </tr>
+                            @endforelse
+
+                            {{-- TOTAL SALDO BANK --}}
+                            <tr style="background:#f9e400;">
+                                <td colspan="3" class="text-center font-weight-bold align-middle">Saldo Bank</td>
+                                <td class="text-right font-weight-bold align-middle">
+                                    @if($totalSaldoBank < 0)
+                                        ({{ number_format(abs($totalSaldoBank), 0, ',', '.') }})
+                                    @else
+                                        {{ number_format($totalSaldoBank, 0, ',', '.') }}
+                                    @endif
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+
+            {{-- ====== TABEL BANK VIRTUAL ACCOUNT (KANAN) ====== --}}
+            <div class="card shadow" style="border-top:4px solid #1a5276; flex:1; min-width:380px;">
+                <div class="card-body p-0">
+                    <table class="table table-bordered mb-0" id="tblSaldoVA" style="font-size:12.5px;">
+                        <thead>
+                            <tr style="background:#1a5276;">
+                                <th class="text-center font-weight-bold text-white" style="padding:10px 8px; width:40px;">No.</th>
+                                <th class="font-weight-bold text-white" style="padding:10px 8px;">Nama Bank / VA</th>
+                                <th class="text-center font-weight-bold text-white" style="padding:10px 8px; min-width:160px;">Saldo Akhir (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($bankVAList as $index => $va)
+                            <tr>
+                                <td class="text-center align-middle">{{ $index + 1 }}.</td>
+                                <td class="align-middle">{{ $va->nama_tujuan }}</td>
+                                <td class="text-right align-middle {{ $va->saldo != 0 ? 'font-weight-bold' : 'text-muted' }}">
+                                    @if($va->saldo < 0)
+                                        <span style="color:#c0392b;">({{ number_format(abs($va->saldo), 0, ',', '.') }})</span>
+                                    @elseif($va->saldo > 0)
+                                        {{ number_format($va->saldo, 0, ',', '.') }}
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">
+                                    Tidak ada data Bank Virtual Account
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                        <tfoot>
+                            <tr style="background:#1a5276;">
+                                <td colspan="2" class="text-center font-weight-bold text-white align-middle" style="padding:10px 8px;">
+                                    Total Saldo VA
+                                </td>
+                                <td class="text-right font-weight-bold text-white align-middle" style="padding:10px 8px;">
+                                    @if($totalSaldoVA < 0)
+                                        ({{ number_format(abs($totalSaldoVA), 0, ',', '.') }})
+                                    @else
+                                        {{ number_format($totalSaldoVA, 0, ',', '.') }}
+                                    @endif
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+        </div>{{-- end d-flex --}}
     </section>
 </div>
 

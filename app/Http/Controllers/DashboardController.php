@@ -760,9 +760,25 @@ class dashboardController extends Controller
 
         $totalSaldoBank = $sumberDanaList->sum('saldo_va');
 
+        // Ambil saldo per Bank Virtual Account (bank_tujuan)
+        $bankVAList = DB::table('bank_tujuan')
+            ->select('bank_tujuan.id_bank_tujuan', 'bank_tujuan.nama_tujuan')
+            ->selectRaw('COALESCE((SELECT SUM(debet) FROM bank_masuk WHERE bank_masuk.id_bank_tujuan = bank_tujuan.id_bank_tujuan), 0) as total_masuk')
+            ->selectRaw('COALESCE((SELECT SUM(kredit) FROM bank_keluars WHERE bank_keluars.id_bank_tujuan = bank_tujuan.id_bank_tujuan), 0) as total_keluar')
+            ->orderBy('bank_tujuan.nama_tujuan')
+            ->get()
+            ->map(function ($va) {
+                $va->saldo = (float) $va->total_masuk - (float) $va->total_keluar;
+                return $va;
+            });
+
+        $totalSaldoVA = $bankVAList->sum('saldo');
+
         return view('cash_bank.dashboardBank', compact(
             'sumberDanaList',
-            'totalSaldoBank'
+            'totalSaldoBank',
+            'bankVAList',
+            'totalSaldoVA'
         ));
     }
     public function bankExportExcel(Request $request)

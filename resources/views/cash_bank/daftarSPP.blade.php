@@ -25,22 +25,24 @@
                         <div class="row no-print">
                             <div class="col-12">
                                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-                                    {{-- Status Buttons --}}
+                                    {{-- Status Buttons (toggle: klik lagi untuk deselect) --}}
                                     <button class="btn btn-sm spp-status-btn" data-status="belum"
+                                        data-active-bg="#ffc107" data-active-color="#fff"
+                                        data-inactive-border="#ffc107" data-inactive-color="#856404"
                                         style="border:1px solid #ffc107; color:#856404; background:#fff;">
                                         <i class="fas fa-clock mr-1"></i> Belum Siap Bayar
                                     </button>
                                     <button class="btn btn-sm spp-status-btn" data-status="siap"
+                                        data-active-bg="#007bff" data-active-color="#fff"
+                                        data-inactive-border="#007bff" data-inactive-color="#004085"
                                         style="border:1px solid #007bff; color:#004085; background:#fff;">
                                         <i class="fas fa-check-circle mr-1"></i> Siap Bayar
                                     </button>
                                     <button class="btn btn-sm spp-status-btn" data-status="sudah"
+                                        data-active-bg="#28a745" data-active-color="#fff"
+                                        data-inactive-border="#28a745" data-inactive-color="#155724"
                                         style="border:1px solid #28a745; color:#155724; background:#fff;">
                                         <i class="fas fa-check-double mr-1"></i> Sudah Dibayar
-                                    </button>
-                                    <button class="btn btn-sm spp-status-btn active" data-status=""
-                                        style="border:1px solid #343a40; color:#fff; background:#343a40;">
-                                        <i class="fas fa-list mr-1"></i> Semua
                                     </button>
 
                                     {{-- Separator --}}
@@ -196,22 +198,35 @@
             }, 400);
         });
 
-        // Status button clicks
+        // Status button clicks (toggle behavior)
         $('.spp-status-btn').on('click', function () {
-            $('.spp-status-btn').each(function () {
-                $(this).css({ 'background': '#fff', 'color': $(this).css('border-color') });
-            });
             var $btn = $(this);
-            currentStatus = $btn.data('status');
+            var clickedStatus = $btn.data('status');
 
-            if (currentStatus === 'belum') {
-                $btn.css({ 'background': '#ffc107', 'color': '#fff' });
-            } else if (currentStatus === 'siap') {
-                $btn.css({ 'background': '#007bff', 'color': '#fff' });
-            } else if (currentStatus === 'sudah') {
-                $btn.css({ 'background': '#28a745', 'color': '#fff' });
+            // Toggle: if already active, deselect (show all)
+            if (currentStatus === clickedStatus) {
+                currentStatus = '';
             } else {
-                $btn.css({ 'background': '#343a40', 'color': '#fff' });
+                currentStatus = clickedStatus;
+            }
+
+            // Reset all buttons to inactive
+            $('.spp-status-btn').each(function () {
+                var $b = $(this);
+                $b.css({
+                    'background': '#fff',
+                    'color': $b.data('inactive-color'),
+                    'border-color': $b.data('inactive-border')
+                });
+            });
+
+            // Highlight active button
+            if (currentStatus) {
+                var $active = $('.spp-status-btn[data-status="' + currentStatus + '"]');
+                $active.css({
+                    'background': $active.data('active-bg'),
+                    'color': $active.data('active-color')
+                });
             }
 
             loadSPP(1);
@@ -230,9 +245,13 @@
             $('#sppSearch').val('');
             currentStatus = '';
             $('.spp-status-btn').each(function () {
-                $(this).css({ 'background': '#fff', 'color': $(this).css('border-color') });
+                var $b = $(this);
+                $b.css({
+                    'background': '#fff',
+                    'color': $b.data('inactive-color'),
+                    'border-color': $b.data('inactive-border')
+                });
             });
-            $('.spp-status-btn[data-status=""]').css({ 'background': '#343a40', 'color': '#fff' });
             loadSPP(1);
         });
     });

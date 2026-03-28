@@ -89,8 +89,8 @@ class daftarSPPController extends Controller
                 });
             }
 
-            // Get total count before pagination
-            $totalRecords = $query->count();
+            // Get total count before pagination (clone to avoid modifying query)
+            $totalRecords = (clone $query)->count();
 
             // Handle "show all"
             if ($perPage === -1) {

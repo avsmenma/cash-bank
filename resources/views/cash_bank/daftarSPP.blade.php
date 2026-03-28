@@ -100,6 +100,25 @@
                             </div>
                         </div>
 
+                        {{-- Show Entries & Search Bar --}}
+                        <div class="d-flex justify-content-between align-items-center flex-wrap mb-2" style="gap:10px;">
+                            <div class="d-flex align-items-center" style="gap:6px; font-size:13px; color:#444; font-weight:500;">
+                                Show
+                                <select class="form-control form-control-sm" id="sppPerPage" style="width:70px; display:inline-block;">
+                                    <option value="10" selected>10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                    <option value="-1">Semua</option>
+                                </select>
+                                entries
+                            </div>
+                            <div>
+                                <input type="text" class="form-control form-control-sm" id="sppSearch"
+                                    placeholder="Search..." style="width:220px; display:inline-block;">
+                            </div>
+                        </div>
+
                         {{-- Content Area --}}
                         <div id="spp-content">
                             <div class="text-center p-5">
@@ -118,11 +137,18 @@
 <script>
     $(document).ready(function () {
         var currentStatus = '';
+        var currentPage = 1;
+        var searchTimer = null;
 
-        function loadSPP() {
+        function loadSPP(page) {
+            page = page || 1;
+            currentPage = page;
+
             var tahun = $('#filterTahunSPP').val();
             var bulanDari = $('#filterBulanDariSPP').val();
             var bulanSampai = $('#filterBulanSampaiSPP').val();
+            var perPage = $('#sppPerPage').val();
+            var search = $('#sppSearch').val();
 
             $('#spp-content').html('<div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2 text-muted">Memuat data...</p></div>');
 
@@ -133,7 +159,10 @@
                     tahun: tahun,
                     status: currentStatus,
                     bulan_dari: bulanDari,
-                    bulan_sampai: bulanSampai
+                    bulan_sampai: bulanSampai,
+                    per_page: perPage,
+                    page: page,
+                    search: search
                 },
                 success: function (response) {
                     $('#spp-content').html(response);
@@ -146,7 +175,26 @@
         }
 
         // Load on page load
-        loadSPP();
+        loadSPP(1);
+
+        // Pagination clicks (delegated)
+        $(document).on('click', '.spp-page-btn:not(:disabled)', function () {
+            var page = $(this).data('page');
+            if (page) loadSPP(page);
+        });
+
+        // Per page change
+        $('#sppPerPage').on('change', function () {
+            loadSPP(1);
+        });
+
+        // Search with debounce
+        $('#sppSearch').on('input', function () {
+            if (searchTimer) clearTimeout(searchTimer);
+            searchTimer = setTimeout(function () {
+                loadSPP(1);
+            }, 400);
+        });
 
         // Status button clicks
         $('.spp-status-btn').on('click', function () {
@@ -166,12 +214,12 @@
                 $btn.css({ 'background': '#343a40', 'color': '#fff' });
             }
 
-            loadSPP();
+            loadSPP(1);
         });
 
         // Terapkan filter
         $('#terapkanFilterSPP').on('click', function () {
-            loadSPP();
+            loadSPP(1);
         });
 
         // Reset filter
@@ -179,12 +227,13 @@
             $('#filterTahunSPP').val({{ date('Y') }});
             $('#filterBulanDariSPP').val('');
             $('#filterBulanSampaiSPP').val('');
+            $('#sppSearch').val('');
             currentStatus = '';
             $('.spp-status-btn').each(function () {
                 $(this).css({ 'background': '#fff', 'color': $(this).css('border-color') });
             });
             $('.spp-status-btn[data-status=""]').css({ 'background': '#343a40', 'color': '#fff' });
-            loadSPP();
+            loadSPP(1);
         });
     });
 </script>

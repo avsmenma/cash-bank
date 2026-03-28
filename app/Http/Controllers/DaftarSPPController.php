@@ -45,17 +45,19 @@ class daftarSPPController extends Controller
     }
 
     /**
-     * Return server-rendered HTML grouped by month
+     * Return server-rendered HTML with pagination
      */
     public function dataGrouped(Request $request)
     {
         try {
             $tahun = $request->tahun ?? date('Y');
             $filterStatus = $request->status;
+            $perPage = (int) ($request->per_page ?? 10);
+            $page = (int) ($request->page ?? 1);
+            $search = $request->search;
 
             $query = DB::connection('mysql_agenda_online')
                 ->table('dokumens')
-                ->select('*')
                 ->whereYear('tanggal_masuk', $tahun)
                 ->orderBy('tanggal_masuk');
 
@@ -76,25 +78,34 @@ class daftarSPPController extends Controller
                 $query->whereMonth('tanggal_masuk', '<=', $request->bulan_sampai);
             }
 
-            $allData = $query->get();
-
-            // Group by month
-            $grouped = [];
-            foreach ($allData as $row) {
-                if ($row->tanggal_masuk) {
-                    $bulan = (int) \Carbon\Carbon::parse($row->tanggal_masuk)->format('n');
-                } else {
-                    $bulan = 0;
-                }
-                $grouped[$bulan][] = $row;
+            // Search across multiple columns
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('nomor_agenda', 'like', "%{$search}%")
+                      ->orWhere('nomor_spp', 'like', "%{$search}%")
+                      ->orWhere('uraian_spp', 'like', "%{$search}%")
+                      ->orWhere('dibayar_kepada', 'like', "%{$search}%")
+                      ->orWhere('current_handler', 'like', "%{$search}%");
+                });
             }
 
-            ksort($grouped);
-            if (isset($grouped[0])) {
-                $noDateGroup = $grouped[0];
-                unset($grouped[0]);
-                $grouped[0] = $noDateGroup;
+            // Get total count before pagination
+            $totalRecords = $query->count();
+
+            // Handle "show all"
+            if ($perPage === -1) {
+                $allData = $query->get();
+                $totalPages = 1;
+                $page = 1;
+            } else {
+                $totalPages = max(1, (int) ceil($totalRecords / $perPage));
+                $page = min($page, $totalPages);
+                $offset = ($page - 1) * $perPage;
+                $allData = $query->skip($offset)->take($perPage)->get();
             }
+
+            // Calculate global start index for numbering
+            $startIndex = ($perPage === -1) ? 0 : ($page - 1) * $perPage;
 
             $bulanNames = [
                 0 => 'TANPA TANGGAL',
@@ -103,7 +114,16 @@ class daftarSPPController extends Controller
                 9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'
             ];
 
-            return view('cash_bank.dataSPP', compact('grouped', 'bulanNames', 'tahun'));
+            $pagination = [
+                'current_page' => $page,
+                'total_pages' => $totalPages,
+                'per_page' => $perPage,
+                'total_records' => $totalRecords,
+                'from' => $totalRecords > 0 ? $startIndex + 1 : 0,
+                'to' => $totalRecords > 0 ? min($startIndex + ($perPage === -1 ? $totalRecords : $perPage), $totalRecords) : 0,
+            ];
+
+            return view('cash_bank.dataSPP', compact('allData', 'bulanNames', 'tahun', 'pagination', 'startIndex'));
         } catch (\Exception $e) {
             \Log::error('SPP dataGrouped error: ' . $e->getMessage());
             return response('<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>', 500);

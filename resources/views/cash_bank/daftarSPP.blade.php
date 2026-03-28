@@ -1,25 +1,11 @@
 @extends('layouts/index')
 @section('content')
-@push('styles')
-<style>
-    #example2 {
-    table-layout: auto !important;
-    width: 100% !important;
-    }
-
-    #example2 th,
-    #example2 td {
-        white-space: nowrap;        /* biar kolom melebar */
-        vertical-align: middle;
-    }
-</style>
     <section class="content-header">
       <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1>Daftar SPP</h1>
             </div>
-         
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
               <li class="breadcrumb-item"><a href="{{ route('dashboard.index') }}">Home</a></li>
@@ -27,103 +13,180 @@
             </ol>
           </div>
         </div>
-      </div><!-- /.container-fluid -->
+      </div>
     </section>
     <section class="content">
-        <div class="container-fluid ">
+        <div class="container-fluid">
             <div class="row">
-            <div class="col-12 ">
-                <!-- Main content -->
-                <div class="invoice p-3 mb-3">
-                    
-                <!-- title row -->
-                    <div class="row no-print">
-                        <div class="col-12 gap-4">
-                            <a href="?status=belum"
-                                    class="btn {{ request('status') == 'belum' ? 'bg-warning text-white' : 'btn-outline-warning' }}">
-                                        Belum Siap Bayar
-                                    </a>
+                <div class="col-12">
+                    <div class="invoice p-3 mb-3">
 
-                                    <a href="?status=siap"
-                                    class="btn {{ request('status') == 'siap' ? 'bg-primary text-white' : 'btn-outline-primary' }}">
-                                        Siap Bayar
-                                    </a>
+                        {{-- Filter Bar --}}
+                        <div class="row no-print">
+                            <div class="col-12">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                                    {{-- Status Buttons --}}
+                                    <button class="btn btn-sm spp-status-btn" data-status="belum"
+                                        style="border:1px solid #ffc107; color:#856404; background:#fff;">
+                                        <i class="fas fa-clock mr-1"></i> Belum Siap Bayar
+                                    </button>
+                                    <button class="btn btn-sm spp-status-btn" data-status="siap"
+                                        style="border:1px solid #007bff; color:#004085; background:#fff;">
+                                        <i class="fas fa-check-circle mr-1"></i> Siap Bayar
+                                    </button>
+                                    <button class="btn btn-sm spp-status-btn" data-status="sudah"
+                                        style="border:1px solid #28a745; color:#155724; background:#fff;">
+                                        <i class="fas fa-check-double mr-1"></i> Sudah Dibayar
+                                    </button>
+                                    <button class="btn btn-sm spp-status-btn active" data-status=""
+                                        style="border:1px solid #343a40; color:#fff; background:#343a40;">
+                                        <i class="fas fa-list mr-1"></i> Semua
+                                    </button>
 
-                                    <a href="?status=sudah"
-                                    class="btn {{ request('status') == 'sudah' ? 'bg-success text-white' : 'btn-outline-success' }}">
-                                        Sudah Dibayar
-                                    </a>
+                                    {{-- Separator --}}
+                                    <div style="width:1px;height:28px;background:#ccc;margin:0 4px;"></div>
 
-                                    <a href="?status="
-                                    class="btn {{ request('status') == null ? 'bg-dark text-white' : 'btn-light' }}">
-                                        Semua
-                                    </a>
+                                    {{-- Filter Tahun --}}
+                                    <select class="form-control form-control-sm" id="filterTahunSPP" style="width:90px;">
+                                        @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
+                                            <option value="{{ $t }}" {{ $t == date('Y') ? 'selected' : '' }}>{{ $t }}</option>
+                                        @endfor
+                                    </select>
+
+                                    {{-- Filter Dari Bulan --}}
+                                    <select class="form-control form-control-sm" id="filterBulanDariSPP" style="width:115px;">
+                                        <option value="">Dari Bulan</option>
+                                        <option value="1">Januari</option>
+                                        <option value="2">Februari</option>
+                                        <option value="3">Maret</option>
+                                        <option value="4">April</option>
+                                        <option value="5">Mei</option>
+                                        <option value="6">Juni</option>
+                                        <option value="7">Juli</option>
+                                        <option value="8">Agustus</option>
+                                        <option value="9">September</option>
+                                        <option value="10">Oktober</option>
+                                        <option value="11">November</option>
+                                        <option value="12">Desember</option>
+                                    </select>
+
+                                    {{-- Filter Sampai Bulan --}}
+                                    <select class="form-control form-control-sm" id="filterBulanSampaiSPP" style="width:115px;">
+                                        <option value="">Sampai Bulan</option>
+                                        <option value="1">Januari</option>
+                                        <option value="2">Februari</option>
+                                        <option value="3">Maret</option>
+                                        <option value="4">April</option>
+                                        <option value="5">Mei</option>
+                                        <option value="6">Juni</option>
+                                        <option value="7">Juli</option>
+                                        <option value="8">Agustus</option>
+                                        <option value="9">September</option>
+                                        <option value="10">Oktober</option>
+                                        <option value="11">November</option>
+                                        <option value="12">Desember</option>
+                                    </select>
+
+                                    {{-- Tombol Terapkan --}}
+                                    <button class="btn btn-primary btn-sm" id="terapkanFilterSPP">
+                                        <i class="fas fa-filter"></i> Terapkan
+                                    </button>
+
+                                    {{-- Tombol Reset --}}
+                                    <button class="btn btn-secondary btn-sm" id="resetFilterSPP">
+                                        <i class="fas fa-times"></i> Reset
+                                    </button>
+                                </div>
+                            </div>
                         </div>
+
+                        {{-- Content Area --}}
+                        <div id="spp-content">
+                            <div class="text-center p-5">
+                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                <p class="mt-2 text-muted">Memuat data...</p>
+                            </div>
+                        </div>
+
                     </div>
-                    <hr>
-                     <div class="row">
-                        <div class="col-12 table-responsive">
-                            <table id="example2" class="table table-bordered table-hover">
-                                <thead>
-                                    <tr id="employee_ids">
-                                        <th>No</th>
-                                        <th>No Agenda</th>
-                                        <th>Tanggal Masuk</th>
-                                        <th>No SPP</th>
-                                        <th>Tanggal SPP</th>
-                                        <th>Uraian SPP</th>
-                                        <th>Tanggal SPK</th>
-                                        <th>Tanggal Berakhir SPK</th>
-                                        <th>Tanggal BA</th>
-                                        <th>Dibayar Kepada</th>
-                                        <th>Nilai Rupiah</th>
-                                        <th>Posisi Dokumen</th>
-                                        <th>Status Pembayaran</th>
-                                    </tr>
-                                </thead>
-                            </table>
-                        </div>
-                        <!-- /.col -->
-                    </div> 
                 </div>
-                
-                <!-- /.invoice -->
             </div>
-            </div>
-            
         </div>
     </section>
+
 @push('scripts')
 <script>
-   $(function () {
-    let table = $('#example2').DataTable({
-        processing: true,
-        serverSide: true,
-        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Semua']],
-        ajax: {
-            url: "{{ route('daftar-spp.data') }}",
-            data: function (d) {
-                d.status = '{{ request("status") }}';
+    $(document).ready(function () {
+        var currentStatus = '';
+
+        function loadSPP() {
+            var tahun = $('#filterTahunSPP').val();
+            var bulanDari = $('#filterBulanDariSPP').val();
+            var bulanSampai = $('#filterBulanSampaiSPP').val();
+
+            $('#spp-content').html('<div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2 text-muted">Memuat data...</p></div>');
+
+            $.ajax({
+                url: "{{ route('daftar-spp.data-grouped') }}",
+                method: 'GET',
+                data: {
+                    tahun: tahun,
+                    status: currentStatus,
+                    bulan_dari: bulanDari,
+                    bulan_sampai: bulanSampai
+                },
+                success: function (response) {
+                    $('#spp-content').html(response);
+                },
+                error: function (xhr) {
+                    console.error('SPP error:', xhr);
+                    $('#spp-content').html('<div class="alert alert-danger">Gagal memuat data SPP</div>');
+                }
+            });
+        }
+
+        // Load on page load
+        loadSPP();
+
+        // Status button clicks
+        $('.spp-status-btn').on('click', function () {
+            $('.spp-status-btn').each(function () {
+                $(this).css({ 'background': '#fff', 'color': $(this).css('border-color') });
+            });
+            var $btn = $(this);
+            currentStatus = $btn.data('status');
+
+            if (currentStatus === 'belum') {
+                $btn.css({ 'background': '#ffc107', 'color': '#fff' });
+            } else if (currentStatus === 'siap') {
+                $btn.css({ 'background': '#007bff', 'color': '#fff' });
+            } else if (currentStatus === 'sudah') {
+                $btn.css({ 'background': '#28a745', 'color': '#fff' });
+            } else {
+                $btn.css({ 'background': '#343a40', 'color': '#fff' });
             }
-        },
-        columns: [
-            { data: 'DT_RowIndex',orderable:false, searchable:false  },
-            { data: 'nomor_agenda' },
-            { data: 'tanggal_masuk' },
-            { data: 'nomor_spp' },
-            { data: 'tanggal_spp' },
-            { data: 'uraian_spp' },
-            { data: 'tanggal_spk' },
-            { data: 'tanggal_berakhir_spk' },
-            { data: 'tanggal_berita_acara' },
-            { data: 'dibayar_kepada' },
-            { data: 'nilai_rupiah' },
-            { data: 'current_handler' },
-            { data: 'status_pembayaran' },
-            
-        ]
+
+            loadSPP();
+        });
+
+        // Terapkan filter
+        $('#terapkanFilterSPP').on('click', function () {
+            loadSPP();
+        });
+
+        // Reset filter
+        $('#resetFilterSPP').on('click', function () {
+            $('#filterTahunSPP').val({{ date('Y') }});
+            $('#filterBulanDariSPP').val('');
+            $('#filterBulanSampaiSPP').val('');
+            currentStatus = '';
+            $('.spp-status-btn').each(function () {
+                $(this).css({ 'background': '#fff', 'color': $(this).css('border-color') });
+            });
+            $('.spp-status-btn[data-status=""]').css({ 'background': '#343a40', 'color': '#fff' });
+            loadSPP();
+        });
     });
-});
 </script>
 @endpush
 @endsection

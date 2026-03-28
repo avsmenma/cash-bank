@@ -78,6 +78,7 @@ Route::group(['middleware' => ['auth', 'check_role:vendor']], function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/daftar-spp', [daftarSPPController::class, 'index'])->name('daftar-spp.index');
     Route::get('/daftar-spp/data', [daftarSPPController::class, 'datatable'])->name('daftar-spp.data');
+    Route::get('/daftar-spp/data-grouped', [daftarSPPController::class, 'dataGrouped'])->name('daftar-spp.data-grouped');
     Route::get('/user-sap/export_excel', [UserSAPController::class, 'export_excel']);
     Route::get('/user-sap/view/pdf', [UserSAPController::class, 'view_pdf']);
     Route::put('/user-sap/{id}', [UserSAPController::class, 'update']);

@@ -302,6 +302,61 @@
 
     @yield('modals')
 
+    {{-- Global drag-to-scroll for horizontal table containers --}}
+    <script>
+    (function() {
+        function enableDragScroll(el) {
+            if (el._dragScrollEnabled) return;
+            el._dragScrollEnabled = true;
+            var isDown = false, startX, scrollLeft;
+
+            el.addEventListener('mousedown', function(e) {
+                // Ignore clicks on interactive elements
+                if (e.target.closest('a, button, input, select, textarea, label, .btn, .checkbox_ids, .select2')) return;
+                isDown = true;
+                el.classList.add('drag-scrolling');
+                startX = e.pageX - el.offsetLeft;
+                scrollLeft = el.scrollLeft;
+                e.preventDefault();
+            });
+            el.addEventListener('mouseleave', function() {
+                isDown = false;
+                el.classList.remove('drag-scrolling');
+            });
+            el.addEventListener('mouseup', function() {
+                isDown = false;
+                el.classList.remove('drag-scrolling');
+            });
+            el.addEventListener('mousemove', function(e) {
+                if (!isDown) return;
+                e.preventDefault();
+                var x = e.pageX - el.offsetLeft;
+                var walk = (x - startX) * 1.5;
+                el.scrollLeft = scrollLeft - walk;
+            });
+        }
+
+        function initAll() {
+            document.querySelectorAll('.table-responsive, .drag-scroll, .dataTables_scrollBody').forEach(enableDragScroll);
+        }
+
+        // On DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAll);
+        } else {
+            initAll();
+        }
+
+        // Watch for dynamically loaded content (AJAX table loads)
+        var observer = new MutationObserver(function() { initAll(); });
+        observer.observe(document.body, { childList: true, subtree: true });
+    })();
+    </script>
+    <style>
+        .drag-scrolling { cursor: grabbing !important; user-select: none; }
+        .table-responsive, .drag-scroll, .dataTables_scrollBody { cursor: grab; }
+    </style>
+
     @stack('scripts')
 
 </body>

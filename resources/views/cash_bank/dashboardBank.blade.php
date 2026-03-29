@@ -45,8 +45,9 @@
         {{-- LAYOUT BERSEBELAHAN --}}
         <div class="d-flex flex-wrap" style="gap:20px;">
 
-            {{-- ====== TABEL SALDO KAS & BANK (KIRI) ====== --}}
-            <div class="card shadow" style="border-top:4px solid #0d3b6e; flex:1; min-width:380px;">
+            {{-- ====== KOLOM KIRI (TABEL + INFO) ====== --}}
+            <div style="flex:1; min-width:380px; align-self:flex-start;">
+            <div class="card shadow" style="border-top:4px solid #0d3b6e;">
                 <div class="card-body p-0">
                     <table class="table table-bordered mb-0" id="tblSaldoBank" style="font-size:12.5px;">
                         {{-- HEADER UTAMA --}}
@@ -134,59 +135,60 @@
                         </tbody>
                     </table>
                 </div>
+            </div>{{-- end card --}}
 
-                {{-- INFO RINGKASAN SALDO --}}
-                <div class="mt-3" style="
-                    background: #f8fafc;
-                    border: 1px solid #d5dfe8;
-                    border-left: 4px solid #0d3b6e;
-                    border-radius: 6px;
-                    padding: 14px 18px;
-                    font-size: 13px;
-                    line-height: 1.8;
-                ">
-                    <div class="font-weight-bold mb-2" style="color:#0d3b6e; font-size:13.5px;">
-                        <i class="fas fa-info-circle mr-1"></i> Informasi Saldo
-                    </div>
-                    <table style="width:100%; font-size:13px;">
-                        <tr>
-                            <td style="padding:3px 0; white-space:nowrap;">Saldo Rek {{ $digitAkhirRek }}<span class="text-muted" style="font-size:11.5px;"> ({{ $noRek408 }})</span></td>
-                            <td style="padding:3px 8px; width:20px; text-align:center;">:</td>
-                            <td style="padding:3px 0; text-align:right; font-weight:600;">
-                                @if($saldoRek408 < 0)
-                                    <span style="color:#c0392b;">{{ number_format(abs($saldoRek408), 0, ',', '.') }}</span>
-                                @else
-                                    {{ number_format($saldoRek408, 0, ',', '.') }}
-                                @endif
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding:3px 0;">Saldo Virtual Account (VA) Unit</td>
-                            <td style="padding:3px 8px; text-align:center;">:</td>
-                            <td style="padding:3px 0; text-align:right; font-weight:600;">
-                                @if($totalSaldoVA < 0)
-                                    <span style="color:#c0392b;">{{ number_format(abs($totalSaldoVA), 0, ',', '.') }}</span>
-                                @else
-                                    {{ number_format($totalSaldoVA, 0, ',', '.') }}
-                                @endif
-                            </td>
-                        </tr>
-                        <tr style="border-top:2px solid #0d3b6e;">
-                            <td style="padding:6px 0 3px; font-weight:700; color:#0d3b6e;">
-                                Saldo Rek {{ $digitAkhirRek }} yg digunakan Region
-                            </td>
-                            <td style="padding:6px 8px 3px; text-align:center; font-weight:700;">:</td>
-                            <td style="padding:6px 0 3px; text-align:right; font-weight:700; color:#0d3b6e; font-size:14px;">
-                                @if($saldoRegion < 0)
-                                    <span style="color:#c0392b;">{{ number_format(abs($saldoRegion), 0, ',', '.') }}</span>
-                                @else
-                                    {{ number_format($saldoRegion, 0, ',', '.') }}
-                                @endif
-                            </td>
-                        </tr>
-                    </table>
+            {{-- INFO RINGKASAN SALDO --}}
+            <div class="mt-3" style="
+                background: #f8fafc;
+                border: 1px solid #d5dfe8;
+                border-left: 4px solid #0d3b6e;
+                border-radius: 6px;
+                padding: 14px 18px;
+                font-size: 13px;
+                line-height: 1.8;
+            ">
+                <div class="font-weight-bold mb-2" style="color:#0d3b6e; font-size:13.5px;">
+                    <i class="fas fa-info-circle mr-1"></i> Informasi Saldo
                 </div>
+                <table style="width:100%; font-size:13px;">
+                    <tr>
+                        <td style="padding:3px 0; white-space:nowrap;">Saldo Rek {{ $digitAkhirRek }}<span class="text-muted" style="font-size:11.5px;"> ({{ $noRek408 }})</span></td>
+                        <td style="padding:3px 8px; width:20px; text-align:center;">:</td>
+                        <td style="padding:3px 0; text-align:right; font-weight:600;">
+                            @if($saldoRek408 < 0)
+                                <span style="color:#c0392b;">{{ number_format(abs($saldoRek408), 0, ',', '.') }}</span>
+                            @else
+                                {{ number_format($saldoRek408, 0, ',', '.') }}
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:3px 0;">Saldo Virtual Account (VA) Unit</td>
+                        <td style="padding:3px 8px; text-align:center;">:</td>
+                        <td style="padding:3px 0; text-align:right; font-weight:600;">
+                            @if($totalSaldoVA < 0)
+                                <span style="color:#c0392b;">{{ number_format(abs($totalSaldoVA), 0, ',', '.') }}</span>
+                            @else
+                                {{ number_format($totalSaldoVA, 0, ',', '.') }}
+                            @endif
+                        </td>
+                    </tr>
+                    <tr style="border-top:2px solid #0d3b6e;">
+                        <td style="padding:6px 0 3px; font-weight:700; color:#0d3b6e;">
+                            Saldo Rek {{ $digitAkhirRek }} yg digunakan Region
+                        </td>
+                        <td style="padding:6px 8px 3px; text-align:center; font-weight:700;">:</td>
+                        <td style="padding:6px 0 3px; text-align:right; font-weight:700; color:#0d3b6e; font-size:14px;">
+                            @if($saldoRegion < 0)
+                                <span style="color:#c0392b;">{{ number_format(abs($saldoRegion), 0, ',', '.') }}</span>
+                            @else
+                                {{ number_format($saldoRegion, 0, ',', '.') }}
+                            @endif
+                        </td>
+                    </tr>
+                </table>
             </div>
+            </div>{{-- end kolom kiri --}}
 
             {{-- ====== TABEL BANK VIRTUAL ACCOUNT (KANAN) ====== --}}
             <div class="card shadow" style="border-top:4px solid #1a5276; flex:1; min-width:380px;">

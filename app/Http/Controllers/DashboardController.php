@@ -774,11 +774,41 @@ class dashboardController extends Controller
 
         $totalSaldoVA = $bankVAList->sum('saldo');
 
+        // Cari saldo Rek 408 (Bank Mandiri OPEX, no. rek mengandung '9702740-8')
+        $saldoRek408 = 0;
+        $noRek408 = '';
+        $namaRek408 = '';
+        foreach ($sumberDanaList as $sd) {
+            if (preg_match('/9702740/', $sd->nama_sumber_dana)) {
+                $saldoRek408 = $sd->saldo_va;
+                // Ambil no rek dari nama_sumber_dana
+                if (preg_match('/\*\s*([\d\-\/]+)\s*$/', $sd->nama_sumber_dana, $m)) {
+                    $noRek408 = trim($m[1]);
+                }
+                $namaRek408 = $sd->nama_sumber_dana;
+                break;
+            }
+        }
+
+        // 3 digit terakhir dari no. rek (misal: 146-00-9702740-8 → 408)
+        $digitAkhirRek = '';
+        if ($noRek408) {
+            $angkaSaja = preg_replace('/[^0-9]/', '', $noRek408);
+            $digitAkhirRek = substr($angkaSaja, -3);
+        }
+
+        // Saldo Rek 408 yang digunakan region = Saldo Rek 408 - Total Saldo VA
+        $saldoRegion = $saldoRek408 - $totalSaldoVA;
+
         return view('cash_bank.dashboardBank', compact(
             'sumberDanaList',
             'totalSaldoBank',
             'bankVAList',
-            'totalSaldoVA'
+            'totalSaldoVA',
+            'saldoRek408',
+            'noRek408',
+            'digitAkhirRek',
+            'saldoRegion'
         ));
     }
     public function bankExportExcel(Request $request)

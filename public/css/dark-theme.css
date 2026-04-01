@@ -232,12 +232,16 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
 }
 
-/* Keep table text dark for readability */
+/* Keep table body text dark for readability */
 .content-wrapper .card-body,
 .content-wrapper .card-body td,
-.content-wrapper .card-body th,
-.content-wrapper table {
+.content-wrapper table td {
     color: #333 !important;
+}
+
+/* Table headers: only override if no explicit color is set via inline/local style */
+.content-wrapper table th:not([style*="color"]) {
+    color: #333;
 }
 
 /* =============================================

@@ -15,72 +15,43 @@
   <link rel="stylesheet" href="{{ asset('adminLTE/dist/css/adminlte.min.css') }}">
 
 <style>
-  .bubbles img{
-    width: 50px;
-    animation: bubble 7s linear infinite;
-  }
-
-  .bubbles{
+  /* Video background fullscreen */
+  #bg-video {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    position: absolute;
-    bottom:0;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
   }
 
-  @keyframes bubble{
-    0%{
-      transform: translateY(0);
-      opacity:0;
-    }
-    50%{
-      opacity:1;
-    }
-    70%{
-      
-      opacity:1;
-    }
-    100%{
-      transform: translateY(-50vh);
-      opacity:0;
-    }
+  /* Dark overlay for readability */
+  body.login-page::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.30);
+    z-index: -1;
   }
 
-  .bubbles img:nth-child(1){
-    animation-delay: 2s;
+  body.login-page {
+    background: #111 !important;
+    background-image: none !important;
   }
-  .bubbles img:nth-child(2){
-    animation-delay: 1s;
+
+  .login-box {
+    position: relative;
+    z-index: 1;
   }
-  .bubbles img:nth-child(3){
-    animation-delay: 3s;
-  }
-  .bubbles img:nth-child(4){
-    animation-delay: 4.5s;
-  }
-  .bubbles img:nth-child(5){
-    animation-delay: 3s;
-  }
-  .bubbles img:nth-child(6){
-    animation-delay: 6s;
-  }
-  .bubbles img:nth-child(7){
-    animation-delay: 7s;
-  }
-  
 </style>
 
-<body class="hold-transition login-page" style="background-image: url('{{ asset('images/background.png') }}')">
-<div class="bubbles">
-            <img src="{{ asset('images/bubble.png') }}">
-            <img src="{{ asset('images/bubble.png') }}">
-            <img src="{{ asset('images/bubble.png') }}">
-            <img src="{{ asset('images/bubble.png') }}">
-            <img src="{{ asset('images/bubble.png') }}">
-            <img src="{{ asset('images/bubble.png') }}">
-            <img src="{{ asset('images/bubble.png') }}">
-          </div>
+<body class="hold-transition login-page">
+
+<!-- Video Background -->
+<video autoplay muted loop playsinline id="bg-video">
+    <source src="{{ asset('images/animasi_login_page.mp4') }}" type="video/mp4">
+</video>
 <div class="login-box">
   <div class="card card-outline card-success">
     <div class="card-header text-center">

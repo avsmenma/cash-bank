@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="{{ asset('adminLTE/plugins/daterangepicker/daterangepicker.css') }}">
     <link rel="stylesheet" href="{{ asset('adminLTE/plugins/fontawesome-free/css/all.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminLTE/dist/css/adminlte.min.css') }}">
+    <!-- Dark Theme Override -->
+    <link rel="stylesheet" href="{{ asset('css/dark-theme.css') }}">
     <!-- overlayScrollbars -->
     <link rel="stylesheet" href="{{ asset('adminLTE/plugins/overlayScrollbars/css/OverlayScrollbars.min.css') }}">
     <!-- AdminLTE -->
@@ -52,7 +54,7 @@
 <body class="hold-transition sidebar-mini layout-fixed">
     <div class="wrapper">
         <!-- NAVBAR -->
-        <nav class="main-header navbar navbar-expand navbar-light">
+        <nav class="main-header navbar navbar-expand navbar-dark">
             <ul class="navbar-nav">
                 <li class="nav-item">
                     <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
@@ -70,14 +72,14 @@
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
                     <button type="submit" class="btn border-0">
-                        <i class=" fa fa-compress-arrows-alt"></i> Logout
+                        <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
                 </form>
 
                 <!-- Messages Dropdown Menu -->
 
         </nav>
-        <aside class="main-sidebar sidebar-light-green elevation-2">
+        <aside class="main-sidebar sidebar-dark-green elevation-4">
             <!-- Brand Logo -->
             <a href="#" class="brand-link">
                 <img src="{{ asset('images/logoPTPNNew.png') }}" alt="PTPN Logo" class="align-center"

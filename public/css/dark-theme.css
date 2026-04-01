@@ -297,7 +297,9 @@ tr.row-month-title td,
 tr.row-grand-total th,
 tr.row-grand-total td,
 tr.header-row th,
-tr.header-row td {
+tr.header-row td,
+tr.spp-row-header th,
+tr.spp-row-header td {
     color: #ffffff !important;
 }
 

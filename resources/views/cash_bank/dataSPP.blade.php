@@ -13,7 +13,7 @@
     }
     .spp-row-header th {
         background-color: #2c5282 !important;
-        color: #fff;
+        color: #fff !important;
         font-weight: bold;
         text-align: center;
         padding: 6px 8px !important;

@@ -232,34 +232,72 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
 }
 
-/* Keep table body text dark for readability */
-.content-wrapper .card-body,
-.content-wrapper .card-body td,
-.content-wrapper table td {
-    color: #333 !important;
+/* Keep table body text dark for readability (no !important — allows component overrides) */
+.content-wrapper .card-body {
+    color: #333;
 }
 
-/* Table headers: only override if no explicit color is set via inline/local style */
+.content-wrapper table td {
+    color: #333;
+}
+
+/* Table headers without explicit color */
 .content-wrapper table th:not([style*="color"]) {
     color: #333;
 }
 
-/* ---- Penerima table: force white text on colored header rows ---- */
-.content-wrapper table .row-header th,
-.content-wrapper .row-header th,
-tr.row-header th {
+/* ---- Force white text on ALL dark-background header rows ---- */
+
+/* Bootstrap dark table classes */
+.content-wrapper .table-dark th,
+.content-wrapper .table-dark td,
+.content-wrapper .table-dark thead th,
+.content-wrapper thead.table-dark th,
+.content-wrapper .thead-dark th {
     color: #ffffff !important;
 }
 
-.content-wrapper table .row-month-title td,
-.content-wrapper .row-month-title td,
-tr.row-month-title td {
+/* AdminLTE bg-navy (navy blue headers) */
+.content-wrapper .bg-navy th,
+.content-wrapper .bg-navy td,
+.content-wrapper thead.bg-navy th,
+.content-wrapper thead.bg-navy td {
     color: #ffffff !important;
 }
 
-.content-wrapper table .row-grand-total td,
-.content-wrapper .row-grand-total td,
-tr.row-grand-total td {
+/* bg-dark headers */
+.content-wrapper .bg-dark th,
+.content-wrapper .bg-dark td,
+.content-wrapper thead.bg-dark th,
+.content-wrapper thead.bg-dark td {
+    color: #ffffff !important;
+}
+
+/* bg-primary headers */
+.content-wrapper .bg-primary th,
+.content-wrapper .bg-primary td,
+.content-wrapper thead.bg-primary th,
+.content-wrapper thead.bg-primary td {
+    color: #ffffff !important;
+}
+
+/* bg-success / bg-green headers */
+.content-wrapper .bg-success th,
+.content-wrapper .bg-success td,
+.content-wrapper thead.bg-success th,
+.content-wrapper thead.bg-success td {
+    color: #ffffff !important;
+}
+
+/* Custom row classes in penerima/grouped tables */
+tr.row-header th,
+tr.row-header td,
+tr.row-month-title th,
+tr.row-month-title td,
+tr.row-grand-total th,
+tr.row-grand-total td,
+tr.header-row th,
+tr.header-row td {
     color: #ffffff !important;
 }
 

@@ -13,33 +13,34 @@
     }
     .row-month-title td {
         background-color: #1a5632 !important;
-        color: #fff;
+        color: #fff !important;
         font-weight: bold;
         font-size: 14px;
         padding: 8px 10px !important;
     }
     .row-header th {
         background-color: #2d7a4a !important;
-        color: #fff;
+        color: #fff !important;
         font-weight: bold;
         text-align: center;
         padding: 6px 8px !important;
     }
     .row-kategori-header td {
         background-color: #e8f5e9 !important;
-        color: #1a5632;
+        color: #1a5632 !important;
         font-weight: bold;
         font-size: 13px;
         padding: 6px 10px !important;
     }
     .row-subtotal td {
         background-color: #fff3cd !important;
+        color: #333 !important;
         font-weight: bold;
         border-top: 2px solid #c9a825;
     }
     .row-grand-total td {
         background-color: #1a5632 !important;
-        color: #fff;
+        color: #fff !important;
         font-weight: bold;
         font-size: 13px;
         border-top: 2px solid #0d3b1f;

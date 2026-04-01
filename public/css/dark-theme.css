@@ -244,6 +244,25 @@
     color: #333;
 }
 
+/* ---- Penerima table: force white text on colored header rows ---- */
+.content-wrapper table .row-header th,
+.content-wrapper .row-header th,
+tr.row-header th {
+    color: #ffffff !important;
+}
+
+.content-wrapper table .row-month-title td,
+.content-wrapper .row-month-title td,
+tr.row-month-title td {
+    color: #ffffff !important;
+}
+
+.content-wrapper table .row-grand-total td,
+.content-wrapper .row-grand-total td,
+tr.row-grand-total td {
+    color: #ffffff !important;
+}
+
 /* =============================================
    4. FOOTER (if present)
    ============================================= */

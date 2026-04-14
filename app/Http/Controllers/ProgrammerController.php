@@ -15,7 +15,6 @@ use App\Models\RencanaPenerima;
 use App\Models\SaldoAwal;
 use App\Models\DaftarBank;
 use App\Models\DaftarRekening;
-use App\Models\Dokumen;
 
 class ProgrammerController extends Controller
 {
@@ -102,13 +101,6 @@ class ProgrammerController extends Controller
                 'color' => '#7f8c8d',
                 'primary_key' => 'id',
             ],
-            'dokumen' => [
-                'model' => Dokumen::class,
-                'name' => 'Dokumen',
-                'icon' => 'fas fa-file-alt',
-                'color' => '#c0392b',
-                'primary_key' => 'id',
-            ],
         ];
     }
 
@@ -121,11 +113,16 @@ class ProgrammerController extends Controller
         $stats = [];
 
         foreach ($tableMap as $key => $info) {
+            try {
+                $count = $info['model']::count();
+            } catch (\Exception $e) {
+                $count = 0;
+            }
             $stats[$key] = [
                 'name' => $info['name'],
                 'icon' => $info['icon'],
                 'color' => $info['color'],
-                'count' => $info['model']::count(),
+                'count' => $count,
             ];
         }
 

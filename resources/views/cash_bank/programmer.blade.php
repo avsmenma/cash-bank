@@ -521,7 +521,7 @@
 </div>
 @endsection
 
-@section('script')
+@push('scripts')
 <script>
     // ===== STATE =====
     let currentTable = null;
@@ -860,4 +860,4 @@
         }
     }
 </script>
-@endsection
+@endpush

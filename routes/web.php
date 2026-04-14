@@ -22,6 +22,7 @@ use App\Http\Controllers\DashboardPembayaranController;
 use App\Http\Controllers\DetaiControllerCashFlowController;
 use App\Http\Controllers\VADashboardController;
 use App\Http\Controllers\RingkasanPembayaranController;
+use App\Http\Controllers\ProgrammerController;
 
 // Route::post('/logout',[AuthController::class, 'logout']);
 // Route::get('/login',fn()=> view('auth.login'))->name('login');
@@ -442,4 +443,13 @@ Route::group(['middleware' => ['auth', 'check_role:va'], 'prefix' => 'va'], func
 Route::middleware(['auth'])->prefix('ringkasan-pembayaran')->name('ringkasan.')->group(function () {
     Route::get('/', [RingkasanPembayaranController::class, 'index'])->name('index');
     Route::get('/detail', [RingkasanPembayaranController::class, 'detail'])->name('detail');
+});
+
+// PROGRAMMER PANEL — Data Management
+Route::group(['middleware' => ['auth', 'check_role:programmer'], 'prefix' => 'programmer'], function () {
+    Route::get('/', [ProgrammerController::class, 'index'])->name('programmer.index');
+    Route::get('/data/{table}', [ProgrammerController::class, 'getData'])->name('programmer.data');
+    Route::delete('/delete/{table}/{id}', [ProgrammerController::class, 'deleteRecord'])->name('programmer.delete');
+    Route::delete('/bulk-delete/{table}', [ProgrammerController::class, 'bulkDelete'])->name('programmer.bulkDelete');
+    Route::delete('/truncate/{table}', [ProgrammerController::class, 'truncateTable'])->name('programmer.truncate');
 });

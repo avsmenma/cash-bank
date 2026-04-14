@@ -53,6 +53,10 @@ class AuthController extends Controller
     {
         $role = Auth::user()->role;
 
+        if ($role === 'programmer') {
+            return redirect('/programmer');
+        }
+
         if ($role === 'va') {
             return redirect('/va/dashboard');
         }

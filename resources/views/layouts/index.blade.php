@@ -313,7 +313,7 @@
             var isDown = false, startX, scrollLeft, rafId = null;
 
             el.addEventListener('mousedown', function(e) {
-                if (e.target.closest('a, button, input, select, textarea, label, .btn, .checkbox_ids, .select2')) return;
+                if (e.target.closest('a, button, input, select, textarea, label, .btn, .checkbox_ids, .select2, [contenteditable]')) return;
                 isDown = true;
                 el.classList.add('drag-scrolling');
                 startX = e.pageX - el.getBoundingClientRect().left - window.scrollX;

@@ -1979,7 +1979,32 @@ class BankKeluarController extends Controller
      */
     public function previewImport(Request $request)
     {
-        $request->validate(['fileExcel' => 'required|file']);
+        // ── Cek error upload PHP sebelum validasi Laravel ──
+        if ($request->hasFile('fileExcel')) {
+            $uploadError = $request->file('fileExcel')->getError();
+            if ($uploadError !== UPLOAD_ERR_OK) {
+                $phpMessages = [
+                    UPLOAD_ERR_INI_SIZE   => 'File terlalu besar (melebihi upload_max_filesize=' . ini_get('upload_max_filesize') . '). Hubungi admin server untuk menaikkan limit.',
+                    UPLOAD_ERR_FORM_SIZE  => 'File terlalu besar (melebihi MAX_FILE_SIZE form).',
+                    UPLOAD_ERR_PARTIAL    => 'File hanya ter-upload sebagian. Coba lagi.',
+                    UPLOAD_ERR_NO_FILE    => 'Tidak ada file yang di-upload.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Folder temporary tidak ditemukan di server.',
+                    UPLOAD_ERR_CANT_WRITE => 'Gagal menulis file ke disk server.',
+                    UPLOAD_ERR_EXTENSION  => 'Upload dihentikan oleh extension PHP.',
+                ];
+                $msg = $phpMessages[$uploadError] ?? "Upload gagal (kode error: {$uploadError}).";
+                return response()->json(['message' => $msg], 422);
+            }
+        } elseif (!$request->hasFile('fileExcel')) {
+            // File sama sekali tidak ada — kemungkinan post_max_size terlampaui
+            $postMax = ini_get('post_max_size');
+            $uploadMax = ini_get('upload_max_filesize');
+            return response()->json([
+                'message' => "File gagal di-upload. Kemungkinan ukuran file melebihi batas server (post_max_size={$postMax}, upload_max_filesize={$uploadMax}). Hubungi admin server untuk menaikkan limit, atau kompres file Anda."
+            ], 422);
+        }
+
+        $request->validate(['fileExcel' => 'required|file|max:51200']); // max 50MB
         $ext = strtolower($request->file('fileExcel')->getClientOriginalExtension());
         if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
             return response()->json(['message' => 'File harus berformat xlsx, xls, atau csv.'], 422);
@@ -1995,6 +2020,28 @@ class BankKeluarController extends Controller
         session(['keluar_import_temp' => $tempPath]);
 
         $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($tempPath);
+
+        // ── Jika file xlsx/xls, konversi ke CSV sementara via PhpSpreadsheet ──
+        $csvPath = $fullPath;
+        if (in_array($ext, ['xlsx', 'xls'])) {
+            try {
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($fullPath);
+                $csvPath = $fullPath . '.csv';
+                $writer = new \PhpOffice\PhpSpreadsheet\Writer\Csv($spreadsheet);
+                $writer->setDelimiter(';');
+                $writer->setEnclosure('"');
+                $writer->setLineEnding("\r\n");
+                $writer->setSheetIndex(0);
+                $writer->save($csvPath);
+                $spreadsheet->disconnectWorksheets();
+                unset($spreadsheet);
+            } catch (\Throwable $e) {
+                \Log::error('previewImport xlsx->csv conversion failed: ' . $e->getMessage());
+                return response()->json([
+                    'message' => 'Gagal membaca file Excel: ' . $e->getMessage()
+                ], 422);
+            }
+        }
 
         // Load cache referensi (1x query saja)
         $sumberDanaMap    = \App\Models\SumberDana::pluck('id_sumber_dana', 'nama_sumber_dana')->toArray();
@@ -2017,16 +2064,27 @@ class BankKeluarController extends Controller
             return null;
         };
 
-        $handle = fopen($fullPath, 'r');
+        $handle = fopen($csvPath, 'r');
+        if (!$handle) {
+            return response()->json(['message' => 'Gagal membaca file. Pastikan file tidak corrupt.'], 422);
+        }
 
         // Auto-detect delimiter: baca baris pertama, hitung koma vs titik koma
         $firstLine = fgets($handle);
+        if ($firstLine === false) {
+            fclose($handle);
+            return response()->json(['message' => 'File kosong atau tidak dapat dibaca.'], 422);
+        }
         $delimiter = (substr_count($firstLine, ';') >= substr_count($firstLine, ',')) ? ';' : ',';
         rewind($handle);
 
         // Baca header & normalisasi
         $header = fgetcsv($handle, 0, $delimiter);
-        $header = array_map(fn($h) => str_replace(' ', '_', strtolower(trim($h))), $header);
+        if (!$header || empty(array_filter($header))) {
+            fclose($handle);
+            return response()->json(['message' => 'Header file tidak valid atau kosong.'], 422);
+        }
+        $header = array_map(fn($h) => str_replace(' ', '_', strtolower(trim($h ?? ''))), $header);
 
         $preview  = [];
         $warnings = 0;

@@ -241,14 +241,38 @@ class BankMasukController extends Controller
      */
     public function previewImport(Request $request)
     {
-        $request->validate(['fileExcel' => 'required|file']);
+        // ── Cek error upload PHP sebelum validasi Laravel ──
+        if ($request->hasFile('fileExcel')) {
+            $uploadError = $request->file('fileExcel')->getError();
+            if ($uploadError !== UPLOAD_ERR_OK) {
+                $phpMessages = [
+                    UPLOAD_ERR_INI_SIZE   => 'File terlalu besar (melebihi upload_max_filesize=' . ini_get('upload_max_filesize') . '). Hubungi admin server untuk menaikkan limit.',
+                    UPLOAD_ERR_FORM_SIZE  => 'File terlalu besar (melebihi MAX_FILE_SIZE form).',
+                    UPLOAD_ERR_PARTIAL    => 'File hanya ter-upload sebagian. Coba lagi.',
+                    UPLOAD_ERR_NO_FILE    => 'Tidak ada file yang di-upload.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Folder temporary tidak ditemukan di server.',
+                    UPLOAD_ERR_CANT_WRITE => 'Gagal menulis file ke disk server.',
+                    UPLOAD_ERR_EXTENSION  => 'Upload dihentikan oleh extension PHP.',
+                ];
+                $msg = $phpMessages[$uploadError] ?? "Upload gagal (kode error: {$uploadError}).";
+                return response()->json(['message' => $msg], 422);
+            }
+        } else {
+            $postMax = ini_get('post_max_size');
+            $uploadMax = ini_get('upload_max_filesize');
+            return response()->json([
+                'message' => "File gagal di-upload. Kemungkinan ukuran file melebihi batas server (post_max_size={$postMax}, upload_max_filesize={$uploadMax}). Hubungi admin server untuk menaikkan limit, atau kompres file Anda."
+            ], 422);
+        }
+
+        $request->validate(['fileExcel' => 'required|file|max:51200']); // max 50MB
         $ext = strtolower($request->file('fileExcel')->getClientOriginalExtension());
         if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
             return response()->json(['message' => 'File harus berformat xlsx, xls, atau csv.'], 422);
         }
 
-        ini_set('memory_limit', '-1');
-        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
 
         $file = $request->file('fileExcel');
 

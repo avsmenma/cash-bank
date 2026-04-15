@@ -1,17 +1,43 @@
 
 <style>
+    /* ============================================================
+       PROFESSIONAL PVD TABLE — Corporate Palette (matches PD tab)
+       ============================================================ */
     #cashflow-table-pvd {
         table-layout: auto !important;
-        font-size: 10px;
-    }
-
-    #cashflow-table-pvd td.text-right {
-    white-space: nowrap;
-    }
-    #cashflow-table-pvd {
-        table-layout: fixed;
+        font-size: 10.5px;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 1px 2px rgba(16, 24, 40, .04);
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         width: 100%;
-        align: center;
+    }
+    #cashflow-table-pvd td.text-right {
+        white-space: nowrap;
+    }
+    #cashflow-table-pvd thead th {
+        background: linear-gradient(180deg, #1e3a5f 0%, #162d4a 100%) !important;
+        color: #f0f4f8 !important;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .3px;
+        font-size: 10px;
+        border-color: #0f2137 !important;
+        vertical-align: middle;
+    }
+    #cashflow-table-pvd th,
+    #cashflow-table-pvd td {
+        border-color: #e4e7ec;
+        padding: 6px 8px;
+    }
+    #cashflow-table-pvd tbody tr {
+        transition: background-color .15s ease;
+    }
+    #cashflow-table-pvd tbody tr.item-row:hover td {
+        background-color: #f8fafc;
     }
     .col-permintaan,
     .col-dropping,
@@ -20,7 +46,54 @@
         max-width: 100px;
     }
 
-   
+    /* Kategori header row */
+    #cashflow-table-pvd tr.bg-yellow td,
+    #cashflow-table-pvd tr.bg-yellow {
+        background: #f0f4f8 !important;
+        color: #1e3a5f !important;
+        font-weight: 700;
+        border-left: 3px solid #3b82f6;
+    }
+
+    /* Sub kategori row */
+    #cashflow-table-pvd tr.sub-kategori-row td {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        font-style: italic;
+    }
+
+    /* Item row */
+    #cashflow-table-pvd tr.item-row td {
+        background-color: #fff;
+        color: #344054;
+    }
+
+    /* Sub total row — replaces bg-orange */
+    #cashflow-table-pvd tr.bg-orange td,
+    #cashflow-table-pvd tr.table-info.bg-orange td {
+        background: #eef2f7 !important;
+        color: #1e3a5f !important;
+        font-weight: 600;
+        border-top: 1px solid #cbd5e1;
+    }
+
+    /* Kategori total row — replaces bg-navy */
+    #cashflow-table-pvd tbody tr.bg-navy td {
+        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%) !important;
+        color: #fff !important;
+        font-weight: 700;
+        border-top: 2px solid #1e40af;
+    }
+
+    /* Grand total row */
+    #cashflow-table-pvd tr.total-section td {
+        background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%) !important;
+        color: #fff !important;
+        font-weight: 700;
+        font-size: 11px;
+        border-top: 2px solid #0d9488;
+    }
 </style>
 @php
     $bulanColors = [

@@ -1,31 +1,165 @@
 <style>
+    /* ============================================================
+       PROFESSIONAL DASHBOARD TABLE — Refined Corporate Palette
+       ============================================================ */
     #cashflow-table {
         table-layout: auto !important;
-        font-size: 11px;
+        font-size: 11.5px;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 1px 2px rgba(16, 24, 40, .04);
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
-    #cashflow-table th, #cashflow-table td {
+    #cashflow-table thead th {
+        background: linear-gradient(180deg, #1e3a5f 0%, #162d4a 100%);
+        color: #f0f4f8;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        font-size: 10.5px;
+        border-bottom: 2px solid #0f2137;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+    #cashflow-table th,
+    #cashflow-table td {
         white-space: nowrap;
         vertical-align: middle;
-        padding: 5px 8px;
+        padding: 7px 10px;
+        border-color: #e4e7ec;
     }
-    .sec-penerimaan { background-color: #FFD966; font-weight: bold; }
-    .sec-dropping   { background-color: #9DC3E6; font-weight: bold; }
-    .sec-pembayaran { background-color: #F4B183; font-weight: bold; }
-    .row-kat-header td { background-color: #D6E4F0; font-weight: bold; }
-    .row-item td    { background-color: #fff; }
-    .row-sub-total td { background-color: #BDD7EE; font-weight: bold; }
-    .row-total-dropping td, .row-total-pembayaran td { background-color: #70AD47; color:#fff; font-weight: bold; }
-    .row-total-penerimaan td { background-color: #70AD47; color:#fff; font-weight: bold; text-align: right; }
-    .row-selisih-pdn-drop td { background-color: #92D050; font-weight: bold; }
-    .row-selisih-pay-pdn td  { background-color: #FFD966; font-weight: bold; }
-    .row-selisih-pay-drop td { background-color: #FFD966; font-weight: bold; }
-    .row-summary-cpo td  { background-color: #FFD966; font-weight: bold; }
-    .row-summary-dtbs td { background-color: #FFD966; font-weight: bold; }
-    .row-summary-ptbs td { background-color: #FFD966; font-weight: bold; }
-    .row-gaji-group td  { font-weight: bold; }
+    #cashflow-table tbody tr {
+        transition: background-color .15s ease;
+    }
+    #cashflow-table tbody tr:hover {
+        filter: brightness(.97);
+    }
+
+    /* ---------- SECTION HEADERS ---------- */
+    .sec-penerimaan {
+        background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);
+        color: #fff;
+        font-weight: 700;
+        font-size: 11.5px;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        border-bottom: 2px solid #0d9488;
+    }
+    .sec-dropping {
+        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
+        color: #fff;
+        font-weight: 700;
+        font-size: 11.5px;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        border-bottom: 2px solid #1e40af;
+    }
+    .sec-pembayaran {
+        background: linear-gradient(90deg, #9333ea 0%, #a855f7 100%);
+        color: #fff;
+        font-weight: 700;
+        font-size: 11.5px;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        border-bottom: 2px solid #7e22ce;
+    }
+
+    /* ---------- ROW TYPES ---------- */
+    .row-kat-header td {
+        background-color: #f0f4f8;
+        font-weight: 700;
+        color: #1e3a5f;
+        border-left: 3px solid #3b82f6;
+        font-size: 11px;
+    }
+    .row-item td {
+        background-color: #ffffff;
+        color: #344054;
+    }
+    .row-item:hover td {
+        background-color: #f8fafc;
+    }
+    .row-sub-total td {
+        background-color: #eef2f7;
+        font-weight: 600;
+        color: #1e3a5f;
+        border-top: 1px solid #cbd5e1;
+    }
+    .row-gaji-group td {
+        background-color: #f0f4f8;
+        font-weight: 700;
+        color: #1e3a5f;
+    }
+
+    /* ---------- TOTAL ROWS ---------- */
+    .row-total-penerimaan td {
+        background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);
+        color: #fff;
+        font-weight: 700;
+        text-align: right;
+        border-top: 2px solid #0d9488;
+    }
+    .row-total-dropping td {
+        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
+        color: #fff;
+        font-weight: 700;
+        border-top: 2px solid #1e40af;
+    }
+    .row-total-pembayaran td {
+        background: linear-gradient(90deg, #9333ea 0%, #a855f7 100%);
+        color: #fff;
+        font-weight: 700;
+        border-top: 2px solid #7e22ce;
+    }
+
+    /* ---------- SELISIH / DIFF ROWS ---------- */
+    .row-selisih-pdn-drop td {
+        background-color: #fef3c7;
+        font-weight: 600;
+        color: #92400e;
+        border-left: 3px solid #f59e0b;
+    }
+    .row-selisih-pay-pdn td {
+        background-color: #fef3c7;
+        font-weight: 600;
+        color: #92400e;
+        border-left: 3px solid #f59e0b;
+    }
+    .row-selisih-pay-drop td {
+        background-color: #fef3c7;
+        font-weight: 600;
+        color: #92400e;
+        border-left: 3px solid #f59e0b;
+    }
+
+    /* ---------- SUMMARY ROWS ---------- */
+    .row-summary-cpo td,
+    .row-summary-dtbs td,
+    .row-summary-ptbs td {
+        background-color: #f1f5f9;
+        font-weight: 600;
+        color: #334155;
+        border-top: 1px solid #cbd5e1;
+    }
+
+    /* ---------- VALUE & TOTAL COLUMN ---------- */
     .val { text-align: right; }
-    /* Nilai negatif / dalam kurung berwarna merah */
-    .neg { color: #c00000; }
+    .neg { color: #dc2626; font-weight: 600; }
+
+    .kolom-total {
+        background: linear-gradient(180deg, #1e3a5f 0%, #162d4a 100%) !important;
+        color: #f0f4f8 !important;
+    }
+
+    /* ---------- SPACER ROWS ---------- */
+    #cashflow-table tr td[colspan] {
+        border-left: none;
+        border-right: none;
+    }
 </style>
 
 @php
@@ -190,16 +324,16 @@
 
 <div class="row">
 <div class="col-12 table-responsive">
-<table border="1" class="table table-bordered table-sm" id="cashflow-table">
+<table class="table table-bordered table-sm" id="cashflow-table">
     <thead class="text-center">
         <tr>
-            <th rowspan="2" class="table-warning" style="min-width:260px;vertical-align:middle;">URAIAN</th>
-            <th colspan="{{ count($bulanListFiltered) }}" class="table-primary">TAHUN {{ $tahun }}</th>
+            <th rowspan="2" style="min-width:260px;vertical-align:middle;">URAIAN</th>
+            <th colspan="{{ count($bulanListFiltered) }}">TAHUN {{ $tahun }}</th>
             <th rowspan="2" class="kolom-total" style="min-width:120px;vertical-align:middle;">Sd {{ collect($bulanListFiltered)->last() }} Tahun {{ $tahun }}</th>
         </tr>
         <tr>
             @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                <th class="table-primary" style="min-width:120px;">{{ $namaBulan }}</th>
+                <th style="min-width:120px;">{{ $namaBulan }}</th>
             @endforeach
         </tr>
     </thead>

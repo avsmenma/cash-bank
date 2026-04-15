@@ -14,8 +14,8 @@
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
     #cashflow-table thead th {
-        background: linear-gradient(180deg, #1e3a5f 0%, #162d4a 100%);
-        color: #f0f4f8;
+        background: linear-gradient(180deg, #1e3a5f 0%, #162d4a 100%) !important;
+        color: #f0f4f8 !important;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: .4px;
@@ -41,8 +41,8 @@
 
     /* ---------- SECTION HEADERS ---------- */
     .sec-penerimaan {
-        background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);
-        color: #fff;
+        background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%) !important;
+        color: #ffffff !important;
         font-weight: 700;
         font-size: 11.5px;
         letter-spacing: .5px;
@@ -50,8 +50,8 @@
         border-bottom: 2px solid #0d9488;
     }
     .sec-dropping {
-        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
-        color: #fff;
+        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%) !important;
+        color: #ffffff !important;
         font-weight: 700;
         font-size: 11.5px;
         letter-spacing: .5px;
@@ -59,8 +59,8 @@
         border-bottom: 2px solid #1e40af;
     }
     .sec-pembayaran {
-        background: linear-gradient(90deg, #9333ea 0%, #a855f7 100%);
-        color: #fff;
+        background: linear-gradient(90deg, #9333ea 0%, #a855f7 100%) !important;
+        color: #ffffff !important;
         font-weight: 700;
         font-size: 11.5px;
         letter-spacing: .5px;
@@ -70,85 +70,100 @@
 
     /* ---------- ROW TYPES ---------- */
     .row-kat-header td {
-        background-color: #f0f4f8;
+        background-color: #f0f4f8 !important;
         font-weight: 700;
-        color: #1e3a5f;
+        color: #1e3a5f !important;
         border-left: 3px solid #3b82f6;
         font-size: 11px;
     }
     .row-item td {
-        background-color: #ffffff;
-        color: #344054;
+        background-color: #ffffff !important;
+        color: #344054 !important;
     }
     .row-item:hover td {
-        background-color: #f8fafc;
+        background-color: #f8fafc !important;
     }
     .row-sub-total td {
-        background-color: #eef2f7;
+        background-color: #eef2f7 !important;
         font-weight: 600;
-        color: #1e3a5f;
+        color: #1e3a5f !important;
         border-top: 1px solid #cbd5e1;
     }
     .row-gaji-group td {
-        background-color: #f0f4f8;
+        background-color: #f0f4f8 !important;
         font-weight: 700;
-        color: #1e3a5f;
+        color: #1e3a5f !important;
     }
 
-    /* ---------- TOTAL ROWS ---------- */
-    .row-total-penerimaan td {
-        background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);
-        color: #fff;
+    /* ---------- TOTAL ROWS (dark bg → white text) ---------- */
+    .row-total-penerimaan td,
+    .row-total-penerimaan td strong {
+        background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%) !important;
+        color: #ffffff !important;
         font-weight: 700;
         text-align: right;
         border-top: 2px solid #0d9488;
     }
-    .row-total-dropping td {
-        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
-        color: #fff;
+    .row-total-dropping td,
+    .row-total-dropping td strong {
+        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%) !important;
+        color: #ffffff !important;
         font-weight: 700;
         border-top: 2px solid #1e40af;
     }
-    .row-total-pembayaran td {
-        background: linear-gradient(90deg, #9333ea 0%, #a855f7 100%);
-        color: #fff;
+    .row-total-pembayaran td,
+    .row-total-pembayaran td strong {
+        background: linear-gradient(90deg, #9333ea 0%, #a855f7 100%) !important;
+        color: #ffffff !important;
         font-weight: 700;
         border-top: 2px solid #7e22ce;
     }
 
-    /* ---------- SELISIH / DIFF ROWS ---------- */
-    .row-selisih-pdn-drop td {
-        background-color: #fef3c7;
+    /* ---------- SELISIH / DIFF ROWS (light bg → dark text) ---------- */
+    .row-selisih-pdn-drop td,
+    .row-selisih-pdn-drop td strong {
+        background-color: #fef3c7 !important;
         font-weight: 600;
-        color: #92400e;
+        color: #1a1a1a !important;
         border-left: 3px solid #f59e0b;
     }
-    .row-selisih-pay-pdn td {
-        background-color: #fef3c7;
+    .row-selisih-pay-pdn td,
+    .row-selisih-pay-pdn td strong {
+        background-color: #fef3c7 !important;
         font-weight: 600;
-        color: #92400e;
+        color: #1a1a1a !important;
         border-left: 3px solid #f59e0b;
     }
-    .row-selisih-pay-drop td {
-        background-color: #fef3c7;
+    .row-selisih-pay-drop td,
+    .row-selisih-pay-drop td strong {
+        background-color: #fef3c7 !important;
         font-weight: 600;
-        color: #92400e;
+        color: #1a1a1a !important;
         border-left: 3px solid #f59e0b;
+    }
+    /* Negative values in selisih rows stay red for emphasis */
+    .row-selisih-pdn-drop td.neg,
+    .row-selisih-pay-pdn td.neg,
+    .row-selisih-pay-drop td.neg {
+        color: #dc2626 !important;
     }
 
-    /* ---------- SUMMARY ROWS ---------- */
+    /* ---------- SUMMARY ROWS (light bg → dark text) ---------- */
     .row-summary-cpo td,
+    .row-summary-cpo td strong,
     .row-summary-dtbs td,
-    .row-summary-ptbs td {
-        background-color: #f1f5f9;
+    .row-summary-dtbs td strong,
+    .row-summary-ptbs td,
+    .row-summary-ptbs td strong {
+        background-color: #f1f5f9 !important;
         font-weight: 600;
-        color: #334155;
+        color: #1a1a1a !important;
         border-top: 1px solid #cbd5e1;
     }
 
     /* ---------- VALUE & TOTAL COLUMN ---------- */
     .val { text-align: right; }
-    .neg { color: #dc2626; font-weight: 600; }
+    .neg { color: #dc2626 !important; font-weight: 600; }
 
     .kolom-total {
         background: linear-gradient(180deg, #1e3a5f 0%, #162d4a 100%) !important;

@@ -20,7 +20,7 @@
     }
     #cashflow-table-pvd thead th {
         background: linear-gradient(180deg, #1e3a5f 0%, #162d4a 100%) !important;
-        color: #f0f4f8 !important;
+        color: #ffffff !important;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: .3px;
@@ -37,7 +37,7 @@
         transition: background-color .15s ease;
     }
     #cashflow-table-pvd tbody tr.item-row:hover td {
-        background-color: #f8fafc;
+        background-color: #f8fafc !important;
     }
     .col-permintaan,
     .col-dropping,
@@ -46,50 +46,55 @@
         max-width: 100px;
     }
 
-    /* Kategori header row */
+    /* Kategori header row (light bg → dark text) */
     #cashflow-table-pvd tr.bg-yellow td,
+    #cashflow-table-pvd tr.bg-yellow td strong,
     #cashflow-table-pvd tr.bg-yellow {
         background: #f0f4f8 !important;
-        color: #1e3a5f !important;
+        color: #1a1a1a !important;
         font-weight: 700;
         border-left: 3px solid #3b82f6;
     }
 
-    /* Sub kategori row */
+    /* Sub kategori row (light bg → dark text) */
     #cashflow-table-pvd tr.sub-kategori-row td {
-        background-color: #f8fafc;
-        color: #475569;
+        background-color: #f8fafc !important;
+        color: #1a1a1a !important;
         font-weight: 600;
         font-style: italic;
     }
 
     /* Item row */
     #cashflow-table-pvd tr.item-row td {
-        background-color: #fff;
-        color: #344054;
+        background-color: #ffffff !important;
+        color: #344054 !important;
     }
 
-    /* Sub total row — replaces bg-orange */
+    /* Sub total row (light bg → dark text) */
     #cashflow-table-pvd tr.bg-orange td,
-    #cashflow-table-pvd tr.table-info.bg-orange td {
+    #cashflow-table-pvd tr.bg-orange td strong,
+    #cashflow-table-pvd tr.table-info.bg-orange td,
+    #cashflow-table-pvd tr.table-info.bg-orange td strong {
         background: #eef2f7 !important;
-        color: #1e3a5f !important;
+        color: #1a1a1a !important;
         font-weight: 600;
         border-top: 1px solid #cbd5e1;
     }
 
-    /* Kategori total row — replaces bg-navy */
-    #cashflow-table-pvd tbody tr.bg-navy td {
+    /* Kategori total row (dark bg → white text) */
+    #cashflow-table-pvd tbody tr.bg-navy td,
+    #cashflow-table-pvd tbody tr.bg-navy td strong {
         background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%) !important;
-        color: #fff !important;
+        color: #ffffff !important;
         font-weight: 700;
         border-top: 2px solid #1e40af;
     }
 
-    /* Grand total row */
-    #cashflow-table-pvd tr.total-section td {
+    /* Grand total row (dark bg → white text) */
+    #cashflow-table-pvd tr.total-section td,
+    #cashflow-table-pvd tr.total-section td strong {
         background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%) !important;
-        color: #fff !important;
+        color: #ffffff !important;
         font-weight: 700;
         font-size: 11px;
         border-top: 2px solid #0d9488;

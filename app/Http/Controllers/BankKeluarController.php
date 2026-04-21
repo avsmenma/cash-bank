@@ -235,12 +235,12 @@ class BankKeluarController extends Controller
 
                 // Build sync payload with basic fields
                 $syncPayload = [
-                    'uraian_spp'        => $request->uraian,
-                    'nilai_rupiah'      => $request->nilai_rupiah,
-                    'dibayar'           => $request->nilai_rupiah,
-                    'dibayar_kepada'    => $request->penerima,
+                    'uraian_spp' => $request->uraian,
+                    'nilai_rupiah' => $request->nilai_rupiah,
+                    'dibayar' => $request->nilai_rupiah,
+                    'dibayar_kepada' => $request->penerima,
                     'status_pembayaran' => 'sudah_dibayar',
-                    'tanggal_dibayar'   => $request->tanggal,
+                    'tanggal_dibayar' => $request->tanggal,
                 ];
 
                 // Lookup kategori ID → nama
@@ -370,37 +370,37 @@ class BankKeluarController extends Controller
     }
 
     public function getItem($id)
-{
-    try {
-        \Log::info('getItem called with id: ' . $id);
+    {
+        try {
+            \Log::info('getItem called with id: ' . $id);
 
-        // Gunakan Query Builder langsung, deduplicate by nama
-        $itemSubKriteria = DB::table('item_sub_kriteria')
-            ->select(
-                DB::raw('MIN(id_item_sub_kriteria) as id_item_sub_kriteria'),
-                'nama_item_sub_kriteria',
-                'id_sub_kriteria'
-            )
-            ->where('id_sub_kriteria', $id)
-            ->groupBy('nama_item_sub_kriteria', 'id_sub_kriteria')
-            ->orderBy(DB::raw('MIN(id_item_sub_kriteria)'))
-            ->get();
+            // Gunakan Query Builder langsung, deduplicate by nama
+            $itemSubKriteria = DB::table('item_sub_kriteria')
+                ->select(
+                    DB::raw('MIN(id_item_sub_kriteria) as id_item_sub_kriteria'),
+                    'nama_item_sub_kriteria',
+                    'id_sub_kriteria'
+                )
+                ->where('id_sub_kriteria', $id)
+                ->groupBy('nama_item_sub_kriteria', 'id_sub_kriteria')
+                ->orderBy(DB::raw('MIN(id_item_sub_kriteria)'))
+                ->get();
 
-        \Log::info('getItem result:', ['count' => $itemSubKriteria->count(), 'data' => $itemSubKriteria->toArray()]);
+            \Log::info('getItem result:', ['count' => $itemSubKriteria->count(), 'data' => $itemSubKriteria->toArray()]);
 
-        return response()->json($itemSubKriteria);
+            return response()->json($itemSubKriteria);
 
-    } catch (\Exception $e) {
-        \Log::error('Error getItem: ' . $e->getMessage(), [
-            'trace' => $e->getTraceAsString()
-        ]);
+        } catch (\Exception $e) {
+            \Log::error('Error getItem: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
 
-        return response()->json([
-            'error' => $e->getMessage(),
-            'line' => $e->getLine()
-        ], 500);
+            return response()->json([
+                'error' => $e->getMessage(),
+                'line' => $e->getLine()
+            ], 500);
+        }
     }
-}
     public function getDokumenDetail($id)
     {
         try {
@@ -1984,13 +1984,13 @@ class BankKeluarController extends Controller
             $uploadError = $request->file('fileExcel')->getError();
             if ($uploadError !== UPLOAD_ERR_OK) {
                 $phpMessages = [
-                    UPLOAD_ERR_INI_SIZE   => 'File terlalu besar (melebihi upload_max_filesize=' . ini_get('upload_max_filesize') . '). Hubungi admin server untuk menaikkan limit.',
-                    UPLOAD_ERR_FORM_SIZE  => 'File terlalu besar (melebihi MAX_FILE_SIZE form).',
-                    UPLOAD_ERR_PARTIAL    => 'File hanya ter-upload sebagian. Coba lagi.',
-                    UPLOAD_ERR_NO_FILE    => 'Tidak ada file yang di-upload.',
+                    UPLOAD_ERR_INI_SIZE => 'File terlalu besar (melebihi upload_max_filesize=' . ini_get('upload_max_filesize') . '). Hubungi admin server untuk menaikkan limit.',
+                    UPLOAD_ERR_FORM_SIZE => 'File terlalu besar (melebihi MAX_FILE_SIZE form).',
+                    UPLOAD_ERR_PARTIAL => 'File hanya ter-upload sebagian. Coba lagi.',
+                    UPLOAD_ERR_NO_FILE => 'Tidak ada file yang di-upload.',
                     UPLOAD_ERR_NO_TMP_DIR => 'Folder temporary tidak ditemukan di server.',
                     UPLOAD_ERR_CANT_WRITE => 'Gagal menulis file ke disk server.',
-                    UPLOAD_ERR_EXTENSION  => 'Upload dihentikan oleh extension PHP.',
+                    UPLOAD_ERR_EXTENSION => 'Upload dihentikan oleh extension PHP.',
                 ];
                 $msg = $phpMessages[$uploadError] ?? "Upload gagal (kode error: {$uploadError}).";
                 return response()->json(['message' => $msg], 422);
@@ -2044,16 +2044,17 @@ class BankKeluarController extends Controller
         }
 
         // Load cache referensi (1x query saja)
-        $sumberDanaMap    = \App\Models\SumberDana::pluck('id_sumber_dana', 'nama_sumber_dana')->toArray();
-        $bankTujuanMap    = \App\Models\BankTujuan::pluck('id_bank_tujuan', 'nama_tujuan')->toArray();
-        $kategoriMap      = \App\Models\KategoriKriteria::pluck('id_kategori_kriteria', 'nama_kriteria')->toArray();
-        $subKriteriaMap   = \App\Models\SubKriteria::pluck('id_sub_kriteria', 'nama_sub_kriteria')->toArray();
-        $itemSubKritMap   = \App\Models\ItemSubKriteria::pluck('id_item_sub_kriteria', 'nama_item_sub_kriteria')->toArray();
-        $jenisPembMap     = \App\Models\JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran')->toArray();
+        $sumberDanaMap = \App\Models\SumberDana::pluck('id_sumber_dana', 'nama_sumber_dana')->toArray();
+        $bankTujuanMap = \App\Models\BankTujuan::pluck('id_bank_tujuan', 'nama_tujuan')->toArray();
+        $kategoriMap = \App\Models\KategoriKriteria::pluck('id_kategori_kriteria', 'nama_kriteria')->toArray();
+        $subKriteriaMap = \App\Models\SubKriteria::pluck('id_sub_kriteria', 'nama_sub_kriteria')->toArray();
+        $itemSubKritMap = \App\Models\ItemSubKriteria::pluck('id_item_sub_kriteria', 'nama_item_sub_kriteria')->toArray();
+        $jenisPembMap = \App\Models\JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran')->toArray();
 
         // Helper partial match dengan guard empty
-        $findInMap = function($map, $search) {
-            if (empty($search)) return null;
+        $findInMap = function ($map, $search) {
+            if (empty($search))
+                return null;
             $sl = strtolower(trim($search));
             foreach ($map as $nama => $id) {
                 $nl = strtolower($nama);
@@ -2086,13 +2087,14 @@ class BankKeluarController extends Controller
         }
         $header = array_map(fn($h) => str_replace(' ', '_', strtolower(trim($h ?? ''))), $header);
 
-        $preview  = [];
+        $preview = [];
         $warnings = 0;
         $i = 0;
 
         while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
             // Skip baris benar-benar kosong
-            if (empty(array_filter($row))) continue;
+            if (empty(array_filter($row)))
+                continue;
 
             $headerCount = count($header);
             $rowColCount = count($row);
@@ -2125,20 +2127,20 @@ class BankKeluarController extends Controller
             }
 
             // Ambil nilai dari kolom CSV (support beragam nama header)
-            $agendaRaw      = trim($data['agenda_tahun'] ?? $data['no_agenda'] ?? '');
-            $tanggalRaw     = trim($data['tanggal'] ?? '');
-            $sumberRaw      = trim($data['sumber_dana'] ?? '');
-            $bankRaw        = trim($data['bank_tujuan'] ?? '');
-            $kategoriRaw    = trim($data['kategori'] ?? $data['kriteria_cf'] ?? $data['kriteria'] ?? '');
+            $agendaRaw = trim($data['agenda_tahun'] ?? $data['no_agenda'] ?? '');
+            $tanggalRaw = trim($data['tanggal'] ?? '');
+            $sumberRaw = trim($data['sumber_dana'] ?? '');
+            $bankRaw = trim($data['bank_tujuan'] ?? '');
+            $kategoriRaw = trim($data['kategori'] ?? $data['kriteria_cf'] ?? $data['kriteria'] ?? '');
             // Strip prefix angka "50. " dari kategori
-            $kategoriRaw    = preg_replace('/^\d+\.\s*/', '', $kategoriRaw);
-            $subKritRaw     = trim($data['sub_kriteria'] ?? '');
+            $kategoriRaw = preg_replace('/^\d+\.\s*/', '', $kategoriRaw);
+            $subKritRaw = trim($data['sub_kriteria'] ?? '');
             $itemSubKritRaw = trim($data['item_sub_kriteria'] ?? '');
-            $penerimaRaw    = trim($data['penerima'] ?? $data['penerima/dari'] ?? '');
-            $uraianRaw      = trim($data['uraian'] ?? $data['edit_uraian'] ?? '');
+            $penerimaRaw = trim($data['penerima'] ?? $data['penerima/dari'] ?? '');
+            $uraianRaw = trim($data['uraian'] ?? $data['edit_uraian'] ?? '');
             // Kredit: CSV bank keluar punya kolom 'kredit', fallback ke 'debet'
-            $debetRaw       = trim($data['kredit'] ?? $data['debet'] ?? '');
-            $jenisRaw       = trim($data['jenis_pembayaran'] ?? '');
+            $debetRaw = trim($data['kredit'] ?? $data['debet'] ?? '');
+            $jenisRaw = trim($data['jenis_pembayaran'] ?? '');
 
             // Hitung kredit
             $kreditNum = 0;
@@ -2147,53 +2149,55 @@ class BankKeluarController extends Controller
             }
 
             // Skip baris tanpa tanggal — satu-satunya syarat wajib
-            if (empty($tanggalRaw)) continue;
+            if (empty($tanggalRaw))
+                continue;
 
             // Lookup referensi
-            $sumberFound      = $findInMap($sumberDanaMap, $sumberRaw);
-            $bankFound        = $findInMap($bankTujuanMap, $bankRaw);
-            $kategoriFound    = $findInMap($kategoriMap, $kategoriRaw);
-            $subKritFound     = $findInMap($subKriteriaMap, $subKritRaw);
+            $sumberFound = $findInMap($sumberDanaMap, $sumberRaw);
+            $bankFound = $findInMap($bankTujuanMap, $bankRaw);
+            $kategoriFound = $findInMap($kategoriMap, $kategoriRaw);
+            $subKritFound = $findInMap($subKriteriaMap, $subKritRaw);
             $itemSubKritFound = $findInMap($itemSubKritMap, $itemSubKritRaw);
-            $jenisFound       = $findInMap($jenisPembMap, $jenisRaw);
+            $jenisFound = $findInMap($jenisPembMap, $jenisRaw);
 
             $hasWarning = ($sumberRaw && !$sumberFound)
-                       || ($bankRaw && !$bankFound)
-                       || ($kategoriRaw && !$kategoriFound)
-                       || ($subKritRaw && !$subKritFound)
-                       || ($itemSubKritRaw && !$itemSubKritFound)
-                       || ($jenisRaw && !$jenisFound);
+                || ($bankRaw && !$bankFound)
+                || ($kategoriRaw && !$kategoriFound)
+                || ($subKritRaw && !$subKritFound)
+                || ($itemSubKritRaw && !$itemSubKritFound)
+                || ($jenisRaw && !$jenisFound);
 
-            if ($hasWarning) $warnings++;
+            if ($hasWarning)
+                $warnings++;
 
             $i++;
             $preview[] = [
-                'no'            => $i,
-                'agenda'        => $agendaRaw ?: '-',
-                'tanggal'       => $tanggalRaw,
-                'sumber'        => $sumberFound      ?? ($sumberRaw   ?: '-'),
-                'bank'          => $bankFound         ?? ($bankRaw     ?: '-'),
-                'kategori'      => $kategoriFound     ?? ($kategoriRaw ?: '-'),
-                'sub_kriteria'  => $subKritFound      ?? ($subKritRaw  ?: '-'),
-                'item_sub_krit' => $itemSubKritFound  ?? ($itemSubKritRaw ?: '-'),
-                'jenis'         => $jenisFound        ?? ($jenisRaw    ?: '-'),
-                'penerima'      => $penerimaRaw ?: '-',
-                'uraian'        => $uraianRaw   ?: '-',
-                'kredit'        => number_format($kreditNum, 0, ',', '.'),
-                'warning'       => $hasWarning,
-                'warn_sumber'       => $sumberRaw && !$sumberFound,
-                'warn_bank'         => $bankRaw && !$bankFound,
-                'warn_kategori'     => $kategoriRaw && !$kategoriFound,
-                'warn_sub_krit'     => $subKritRaw && !$subKritFound,
-                'warn_item_sub'     => $itemSubKritRaw && !$itemSubKritFound,
-                'warn_jenis'        => $jenisRaw && !$jenisFound,
+                'no' => $i,
+                'agenda' => $agendaRaw ?: '-',
+                'tanggal' => $tanggalRaw,
+                'sumber' => $sumberFound ?? ($sumberRaw ?: '-'),
+                'bank' => $bankFound ?? ($bankRaw ?: '-'),
+                'kategori' => $kategoriFound ?? ($kategoriRaw ?: '-'),
+                'sub_kriteria' => $subKritFound ?? ($subKritRaw ?: '-'),
+                'item_sub_krit' => $itemSubKritFound ?? ($itemSubKritRaw ?: '-'),
+                'jenis' => $jenisFound ?? ($jenisRaw ?: '-'),
+                'penerima' => $penerimaRaw ?: '-',
+                'uraian' => $uraianRaw ?: '-',
+                'kredit' => number_format($kreditNum, 0, ',', '.'),
+                'warning' => $hasWarning,
+                'warn_sumber' => $sumberRaw && !$sumberFound,
+                'warn_bank' => $bankRaw && !$bankFound,
+                'warn_kategori' => $kategoriRaw && !$kategoriFound,
+                'warn_sub_krit' => $subKritRaw && !$subKritFound,
+                'warn_item_sub' => $itemSubKritRaw && !$itemSubKritFound,
+                'warn_jenis' => $jenisRaw && !$jenisFound,
             ];
         }
         fclose($handle);
 
         return response()->json([
-            'rows'     => $preview,
-            'total'    => count($preview),
+            'rows' => $preview,
+            'total' => count($preview),
             'warnings' => $warnings,
         ]);
     }
@@ -2223,7 +2227,7 @@ class BankKeluarController extends Controller
 
             return response()->json([
                 'success' => "Data berhasil diimport! {$result['success']} baris tersimpan.",
-                'total'   => $result['success'],
+                'total' => $result['success'],
             ]);
 
         } catch (\Exception $e) {
@@ -2273,11 +2277,11 @@ class BankKeluarController extends Controller
                 $syncPayload = [];
 
                 // Map basic fields
-                $syncPayload['uraian_spp']       = $bankKeluar->uraian;
-                $syncPayload['nilai_rupiah']      = $bankKeluar->kredit;
-                $syncPayload['dibayar']           = $bankKeluar->kredit;
-                $syncPayload['dibayar_kepada']    = $bankKeluar->penerima;
-                $syncPayload['tanggal_dibayar']   = $bankKeluar->tanggal;
+                $syncPayload['uraian_spp'] = $bankKeluar->uraian;
+                $syncPayload['nilai_rupiah'] = $bankKeluar->kredit;
+                $syncPayload['dibayar'] = $bankKeluar->kredit;
+                $syncPayload['dibayar_kepada'] = $bankKeluar->penerima;
+                $syncPayload['tanggal_dibayar'] = $bankKeluar->tanggal;
 
                 // Jika user reset kategori dengan "-", set semua ke "-"
                 if ($kategoriReset) {
@@ -2341,14 +2345,14 @@ class BankKeluarController extends Controller
 
                 \Log::info('[CBSync] Direct sync CB → AO berhasil.', [
                     'bank_keluar_id' => $bankKeluar->id_bank_keluar,
-                    'agenda_key'     => $agendaKey,
-                    'rows_affected'  => $affected,
+                    'agenda_key' => $agendaKey,
+                    'rows_affected' => $affected,
                 ]);
             }
         } catch (\Throwable $e) {
             \Log::error('[CBSync] Direct sync CB → AO GAGAL.', [
                 'bank_keluar_id' => $bankKeluar->id_bank_keluar,
-                'error'          => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
 

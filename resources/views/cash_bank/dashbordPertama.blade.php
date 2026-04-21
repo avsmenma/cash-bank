@@ -14,7 +14,7 @@
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
     #cashflow-table thead th {
-        background: linear-gradient(180deg, #1e3a5f 0%, #162d4a 100%) !important;
+        background: #1e3a5f !important;
         color: #f0f4f8 !important;
         font-weight: 600;
         text-transform: uppercase;
@@ -41,25 +41,25 @@
 
     /* ---------- SECTION HEADERS ---------- */
     .sec-penerimaan {
-        background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%) !important;
+        background: #0d9488 !important;
         color: #ffffff !important;
         font-weight: 700;
         font-size: 11.5px;
         letter-spacing: .5px;
         text-transform: uppercase;
-        border-bottom: 2px solid #0d9488;
+        border-bottom: 2px solid #0b7c73;
     }
     .sec-dropping {
-        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%) !important;
+        background: #1e40af !important;
         color: #ffffff !important;
         font-weight: 700;
         font-size: 11.5px;
         letter-spacing: .5px;
         text-transform: uppercase;
-        border-bottom: 2px solid #1e40af;
+        border-bottom: 2px solid #1a369a;
     }
     .sec-pembayaran {
-        background: linear-gradient(90deg, #9333ea 0%, #a855f7 100%) !important;
+        background: #9333ea !important;
         color: #ffffff !important;
         font-weight: 700;
         font-size: 11.5px;
@@ -98,22 +98,22 @@
     /* ---------- TOTAL ROWS (dark bg → white text) ---------- */
     .row-total-penerimaan td,
     .row-total-penerimaan td strong {
-        background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%) !important;
+        background: #0d9488 !important;
         color: #ffffff !important;
         font-weight: 700;
         text-align: right;
-        border-top: 2px solid #0d9488;
+        border-top: 2px solid #0b7c73;
     }
     .row-total-dropping td,
     .row-total-dropping td strong {
-        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%) !important;
+        background: #1e40af !important;
         color: #ffffff !important;
         font-weight: 700;
-        border-top: 2px solid #1e40af;
+        border-top: 2px solid #1a369a;
     }
     .row-total-pembayaran td,
     .row-total-pembayaran td strong {
-        background: linear-gradient(90deg, #9333ea 0%, #a855f7 100%) !important;
+        background: #9333ea !important;
         color: #ffffff !important;
         font-weight: 700;
         border-top: 2px solid #7e22ce;
@@ -166,7 +166,7 @@
     .neg { color: #dc2626 !important; font-weight: 600; }
 
     .kolom-total {
-        background: linear-gradient(180deg, #1e3a5f 0%, #162d4a 100%) !important;
+        background: #1e3a5f !important;
         color: #f0f4f8 !important;
     }
 
@@ -176,6 +176,7 @@
         border-right: none;
     }
 </style>
+
 
 @php
     /**

@@ -36,6 +36,23 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])
     ->name('logout')
     ->middleware('auth');
+
+// ===== ROUTE DIAGNOSTIK SEMENTARA - HAPUS SETELAH SELESAI =====
+Route::get('/debug-server-config', function () {
+    return response()->json([
+        'php_version'         => phpversion(),
+        'upload_max_filesize' => ini_get('upload_max_filesize'),
+        'post_max_size'       => ini_get('post_max_size'),
+        'max_execution_time'  => ini_get('max_execution_time'),
+        'memory_limit'        => ini_get('memory_limit'),
+        'max_file_uploads'    => ini_get('max_file_uploads'),
+        'loaded_php_ini'      => php_ini_loaded_file(),
+        'web_server'          => $_SERVER['SERVER_SOFTWARE'] ?? 'unknown',
+        'sapi_name'           => php_sapi_name(),
+    ]);
+});
+// ==============================================================
+
 Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
     Route::get('/dashboard-cash-bank', [dashboardController::class, 'index'])
         ->name('dashboard.index');

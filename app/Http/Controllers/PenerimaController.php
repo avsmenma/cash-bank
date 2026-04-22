@@ -366,45 +366,57 @@ class penerimaController extends Controller
         try {
             $tahun = $request->tahun ?? date('Y');
 
+            // Konversi tahun ke format DATE agar kompatibel dengan kolom DATE di MySQL strict mode
+            $tahunDate = $tahun . '-01-01';
+
             $kategori = KategoriKriteria::where('tipe', 'Penerima')->get();
 
-            $data = RencanaPenerima::where('tahun', $tahun)
+            // Query menggunakan YEAR() agar bisa filter berdasarkan tahun saja
+            $data = RencanaPenerima::whereYear('tahun', $tahun)
                 ->get()
                 ->keyBy('id_kategori_kriteria');
-
-            // Debugging
-            \Log::info('Rencana Data:', [
-                'tahun' => $tahun,
-                'kategori_count' => $kategori->count(),
-                'data_count' => $data->count()
-            ]);
 
             return view('cash_bank.pembayaran.rencanaPenerima', compact('kategori', 'data', 'tahun'));
 
         } catch (\Exception $e) {
             \Log::error('Error in rencana(): ' . $e->getMessage());
-            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return response('<div class="alert alert-danger">Terjadi kesalahan: ' . $e->getMessage() . '</div>', 500);
         }
     }
+
     public function save(Request $request)
     {
         try {
-            // Cari data berdasarkan kategori dan tahun (bukan id_rencana)
-            $rencana = RencanaPenerima::firstOrNew([
-                'id_kategori_kriteria' => $request->kategori,
-                'tahun' => $request->tahun,
-            ]);
+            $tahun    = $request->kategori_tahun ?? $request->tahun;
+            $kategori = $request->kategori;
+            $bulan    = $request->bulan;
+            $nilai    = $request->nilai;
 
-            // Update hanya bulan yang diedit, bulan lain tetap dipertahankan
-            $rencana->{$request->bulan} = $request->nilai;
+            // Kolom tahun di DB bertipe DATE — simpan sebagai YYYY-01-01
+            $tahunDate = $tahun . '-01-01';
+
+            // Cari data berdasarkan kategori dan tahun
+            $rencana = RencanaPenerima::where('id_kategori_kriteria', $kategori)
+                ->whereYear('tahun', $tahun)
+                ->first();
+
+            if (!$rencana) {
+                $rencana = new RencanaPenerima();
+                $rencana->id_kategori_kriteria = $kategori;
+                $rencana->tahun = $tahunDate;
+            }
+
+            // Update hanya bulan yang diedit
+            $rencana->{$bulan} = $nilai;
             $rencana->save();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Data berhasil disimpan',
-                'id' => $rencana->id_rencana_penerima
+                'id'      => $rencana->id_rencana_penerima
             ]);
         } catch (\Exception $e) {
+            \Log::error('Error in save(): ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menyimpan data: ' . $e->getMessage()
@@ -414,84 +426,70 @@ class penerimaController extends Controller
 
     public function gabungan(Request $request)
     {
-        $tahun = $request->tahun ?? date('Y');
-        $bulanDari = $request->bulan_dari ?? 1; // filter bulan dari
-        $bulanSampai = $request->bulan_sampai ?? 12; // filter bulan sampai
+        try {
+            $tahun = $request->tahun ?? date('Y');
+            $bulanDari = $request->bulan_dari ?? 1;
+            $bulanSampai = $request->bulan_sampai ?? 12;
 
-        $bulanList = [
-            'januari' => 1,
-            'februari' => 2,
-            'maret' => 3,
-            'april' => 4,
-            'mei' => 5,
-            'juni' => 6,
-            'juli' => 7,
-            'agustus' => 8,
-            'september' => 9,
-            'oktober' => 10,
-            'november' => 11,
-            'desember' => 12,
-        ];
+            $bulanList = [
+                'januari' => 1, 'februari' => 2, 'maret' => 3, 'april' => 4,
+                'mei' => 5, 'juni' => 6, 'juli' => 7, 'agustus' => 8,
+                'september' => 9, 'oktober' => 10, 'november' => 11, 'desember' => 12,
+            ];
 
-        // Filter bulan sesuai range yang dipilih
-        $bulanListFiltered = array_filter($bulanList, function ($noBulan) use ($bulanDari, $bulanSampai) {
-            return $noBulan >= $bulanDari && $noBulan <= $bulanSampai;
-        });
+            $bulanListFiltered = array_filter($bulanList, function ($noBulan) use ($bulanDari, $bulanSampai) {
+                return $noBulan >= $bulanDari && $noBulan <= $bulanSampai;
+            });
 
-        $kategori = KategoriKriteria::where('tipe', 'Penerima')->get();
-        $data = [];
-        $bulanAktif = []; // untuk tracking bulan yang punya data
+            $kategori = KategoriKriteria::where('tipe', 'Penerima')->get();
+            $data = [];
+            $bulanAktif = [];
 
-        foreach ($kategori as $k) {
-            foreach ($bulanListFiltered as $namaBulan => $noBulan) {
+            foreach ($kategori as $k) {
+                foreach ($bulanListFiltered as $namaBulan => $noBulan) {
 
-                // RENCANA
-                $rencana = DB::table('rencana_penerimas')
-                    ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
-                    ->where('tahun', $tahun)
-                    ->sum($namaBulan);
+                    // RENCANA — gunakan whereYear() agar kompatibel dengan kolom DATE
+                    $rencana = DB::table('rencana_penerimas')
+                        ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
+                        ->whereYear('tahun', $tahun)
+                        ->sum($namaBulan);
 
-                // REALISASI (DARI TABEL penerimas)
-                $nilai = DB::table('penerimas')
-                    ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
-                    ->whereYear('tanggal', $tahun)
-                    ->whereMonth('tanggal', $noBulan)
-                    ->sum('nilai');
-                $ppn = DB::table('penerimas')
-                    ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
-                    ->whereYear('tanggal', $tahun)
-                    ->whereMonth('tanggal', $noBulan)
-                    ->sum('ppn');
-                $potppn = DB::table('penerimas')
-                    ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
-                    ->whereYear('tanggal', $tahun)
-                    ->whereMonth('tanggal', $noBulan)
-                    ->sum('potppn');
-                $realisasi = $nilai + $ppn - $potppn;
+                    // REALISASI
+                    $nilaiRow = DB::table('penerimas')
+                        ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
+                        ->whereYear('tanggal', $tahun)
+                        ->whereMonth('tanggal', $noBulan)
+                        ->selectRaw('COALESCE(SUM(nilai),0) as nilai, COALESCE(SUM(ppn),0) as ppn, COALESCE(SUM(potppn),0) as potppn')
+                        ->first();
 
-                // Tandai bulan yang punya data
-                if ($rencana > 0 || $realisasi > 0) {
-                    $bulanAktif[$namaBulan] = true;
+                    $realisasi = ($nilaiRow->nilai ?? 0) + ($nilaiRow->ppn ?? 0) - ($nilaiRow->potppn ?? 0);
+
+                    if ($rencana > 0 || $realisasi > 0) {
+                        $bulanAktif[$namaBulan] = true;
+                    }
+
+                    $selisih = $realisasi - $rencana;
+                    $persen = $rencana > 0 ? ($realisasi / $rencana) * 100 : 0;
+
+                    $data[$k->nama_kriteria][$namaBulan] = [
+                        'rencana'   => $rencana,
+                        'realisasi' => $realisasi,
+                        'selisih'   => $selisih,
+                        'persen'    => $persen
+                    ];
                 }
-
-                $selisih = $realisasi - $rencana;
-                $persen = $rencana > 0 ? ($realisasi / $rencana) * 100 : 0;
-
-                $data[$k->nama_kriteria][$namaBulan] = [
-                    'rencana' => $rencana,
-                    'realisasi' => $realisasi,
-                    'selisih' => $selisih,
-                    'persen' => $persen
-                ];
             }
+
+            $bulanListFiltered = array_filter($bulanListFiltered, function ($namaBulan) use ($bulanAktif) {
+                return isset($bulanAktif[$namaBulan]);
+            }, ARRAY_FILTER_USE_KEY);
+
+            return view('cash_bank.pembayaran.cashFlowGabunganPenerima', compact('data', 'bulanListFiltered', 'tahun', 'bulanDari', 'bulanSampai'));
+
+        } catch (\Exception $e) {
+            \Log::error('Error in gabungan(): ' . $e->getMessage());
+            return response('<div class="alert alert-danger">Gagal memuat data: ' . $e->getMessage() . '</div>', 500);
         }
-
-        // Filter hanya bulan yang punya data
-        $bulanListFiltered = array_filter($bulanListFiltered, function ($namaBulan) use ($bulanAktif) {
-            return isset($bulanAktif[$namaBulan]);
-        }, ARRAY_FILTER_USE_KEY);
-
-        return view('cash_bank.pembayaran.cashFlowGabunganPenerima', compact('data', 'bulanListFiltered', 'tahun', 'bulanDari', 'bulanSampai'));
     }
 
     public function export_excel(Request $request)

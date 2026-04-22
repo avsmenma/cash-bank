@@ -178,6 +178,10 @@
                                             @endfor
                                         </select>
                                     </div>
+                                    {{-- Tombol Simpan --}}
+                                    <button type="button" class="btn btn-success" id="btnSimpanRencana">
+                                        <i class="fas fa-save"></i> Simpan
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -441,26 +445,63 @@
                     });
                 }
 
-                // ===== SAVE CELL RENCANA =====
-                $(document).on('blur', '.cell', function () {
-                    const $cell = $(this);
+                // ===== TOMBOL SIMPAN RENCANA (menggantikan auto-save) =====
+                $('#btnSimpanRencana').on('click', function () {
+                    var tahun = $('#tahunRencana').val();
+                    var rows  = [];
+
+                    // Kumpulkan semua cell dalam tabel
+                    $('#rencana-content .cell-rencana').each(function () {
+                        var $cell = $(this);
+                        var rawText = $cell.text().replace(/\./g, '').trim();
+                        var nilai   = parseInt(rawText) || 0;
+                        rows.push({
+                            kategori : $cell.data('kategori'),
+                            bulan    : $cell.data('bulan'),
+                            nilai    : nilai
+                        });
+                    });
+
+                    if (rows.length === 0) {
+                        alert('Tidak ada data untuk disimpan.');
+                        return;
+                    }
+
+                    var $btn = $(this);
+                    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
                     $.ajax({
-                        url: "{{ route('penerima.rencana.save') }}",
-                        method: 'POST',
-                        data: {
-                            _token: "{{ csrf_token() }}",
-                            id: $cell.data('id'),
-                            kategori: $cell.data('kategori'),
-                            bulan: $cell.data('bulan'),
-                            tahun: $cell.data('tahun'),
-                            nilai: $cell.text().replace(/\./g, '').replace(/,/g, '').trim()
+                        url    : "{{ route('penerima.rencana.saveBatch') }}",
+                        method : 'POST',
+                        data   : {
+                            _token : "{{ csrf_token() }}",
+                            tahun  : tahun,
+                            rows   : rows
                         },
                         success: function (response) {
-                            if (response.success) $cell.data('id', response.id);
-                            setTimeout(() => { loadRencana(); }, 500);
+                            if (response.success) {
+                                // Hapus semua highlight setelah simpan berhasil
+                                $('#rencana-content .cell-rencana').each(function () {
+                                    $(this).removeClass('cell-changed');
+                                    $(this).attr('data-original', $(this).text().trim());
+                                });
+                                // Tampilkan notif sukses sementara
+                                $btn.removeClass('btn-success').addClass('btn-outline-success')
+                                    .html('<i class="fas fa-check"></i> Tersimpan');
+                                setTimeout(function () {
+                                    $btn.prop('disabled', false)
+                                        .removeClass('btn-outline-success').addClass('btn-success')
+                                        .html('<i class="fas fa-save"></i> Simpan');
+                                }, 2000);
+                            } else {
+                                alert('Gagal menyimpan: ' + (response.message || 'Unknown error'));
+                                $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Simpan');
+                            }
                         },
                         error: function (xhr) {
-                            alert('Gagal menyimpan data');
+                            var msg = xhr.responseJSON ? xhr.responseJSON.message : 'Server error';
+                            alert('Gagal menyimpan data: ' + msg);
+                            $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Simpan');
                         }
                     });
                 });

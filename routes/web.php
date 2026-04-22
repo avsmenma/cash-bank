@@ -328,6 +328,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/penerima/save', [PenerimaController::class, 'save'])
         ->name('penerima.rencana.save');
 
+    Route::post('/penerima/save-batch', [PenerimaController::class, 'saveBatch'])
+        ->name('penerima.rencana.saveBatch');
+
     Route::get('/penerima/data-grouped', [PenerimaController::class, 'dataGrouped'])
         ->name('penerima.data-grouped');
 

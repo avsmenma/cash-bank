@@ -19,7 +19,7 @@ class ExportExcelRencanaPenerima implements FromView
     public function view(): View
     {
         $kategori = KategoriKriteria::where('tipe', 'Penerima')->get();
-        $data = RencanaPenerima::where('tahun', $this->tahun)
+        $data = RencanaPenerima::whereYear('tahun', $this->tahun)
             ->get()
             ->keyBy('id_kategori_kriteria');
 

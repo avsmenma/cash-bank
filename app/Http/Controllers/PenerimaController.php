@@ -580,7 +580,7 @@ class penerimaController extends Controller
         $tahun = $request->tahun ?? date('Y');
 
         $kategori = KategoriKriteria::where('tipe', 'Penerima')->get();
-        $data = RencanaPenerima::where('tahun', $tahun)
+        $data = RencanaPenerima::whereYear('tahun', $tahun)
             ->get()
             ->keyBy('id_kategori_kriteria');
 
@@ -690,7 +690,7 @@ class penerimaController extends Controller
             foreach ($bulanListFiltered as $namaBulan => $noBulan) {
                 $rencana = DB::table('rencana_penerimas')
                     ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
-                    ->where('tahun', $tahun)
+                    ->whereYear('tahun', $tahun)
                     ->sum($namaBulan);
 
                 $nilai = DB::table('penerimas')

@@ -22,7 +22,7 @@ class penerimaController extends Controller
     {
         $result = [];
         return view('cash_bank.pembayaran.penerima', [
-            'kategoriKriteria' => KategoriKriteria::where('tipe', 'penerima')->get(),
+            'kategoriKriteria' => KategoriKriteria::where('tipe', 'Penerima')->get(),
             'result' => $result
         ]);
     }
@@ -438,7 +438,7 @@ class penerimaController extends Controller
             return $noBulan >= $bulanDari && $noBulan <= $bulanSampai;
         });
 
-        $kategori = KategoriKriteria::where('tipe', 'penerima')->get();
+        $kategori = KategoriKriteria::where('tipe', 'Penerima')->get();
         $data = [];
         $bulanAktif = []; // untuk tracking bulan yang punya data
 
@@ -684,7 +684,7 @@ class penerimaController extends Controller
             return $noBulan >= $bulanDari && $noBulan <= $bulanSampai;
         });
 
-        $kategori = KategoriKriteria::where('tipe', 'penerima')->get();
+        $kategori = KategoriKriteria::where('tipe', 'Penerima')->get();
         $data = [];
         $bulanAktif = [];
 

@@ -418,6 +418,66 @@ class penerimaController extends Controller
         }
     }
 
+    /**
+     * Simpan semua baris tabel Permintaan sekaligus (batch save).
+     * Dipanggil saat user klik tombol "Simpan" di tab Permintaan.
+     */
+    public function saveBatch(Request $request)
+    {
+        try {
+            $tahun = $request->tahun;
+            $rows  = $request->rows; // [{kategori, bulan, nilai}, ...]
+
+            if (empty($rows) || !is_array($rows)) {
+                return response()->json(['success' => false, 'message' => 'Tidak ada data yang dikirim'], 422);
+            }
+
+            $bulanValid = [
+                'januari','februari','maret','april','mei','juni',
+                'juli','agustus','september','oktober','november','desember'
+            ];
+
+            \DB::beginTransaction();
+
+            foreach ($rows as $row) {
+                $kategoriId = $row['kategori'] ?? null;
+                $bulan      = $row['bulan']    ?? null;
+                $nilai      = $row['nilai']    ?? 0;
+
+                if (!$kategoriId || !in_array($bulan, $bulanValid)) continue;
+
+                $rencana = RencanaPenerima::where('id_kategori_kriteria', $kategoriId)
+                    ->where('tahun', $tahun)
+                    ->first();
+
+                if (!$rencana) {
+                    $rencana = new RencanaPenerima();
+                    $rencana->id_kategori_kriteria = $kategoriId;
+                    $rencana->tahun = (int) $tahun; // kolom smallint
+                }
+
+                $rencana->{$bulan} = is_numeric($nilai) ? $nilai : 0;
+                $rencana->save();
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data permintaan berhasil disimpan',
+                'count'   => count($rows),
+            ]);
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Error in saveBatch(): ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function gabungan(Request $request)
     {
         try {

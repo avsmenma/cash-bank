@@ -366,13 +366,10 @@ class penerimaController extends Controller
         try {
             $tahun = $request->tahun ?? date('Y');
 
-            // Konversi tahun ke format DATE agar kompatibel dengan kolom DATE di MySQL strict mode
-            $tahunDate = $tahun . '-01-01';
-
             $kategori = KategoriKriteria::where('tipe', 'Penerima')->get();
 
             // Query menggunakan YEAR() agar bisa filter berdasarkan tahun saja
-            $data = RencanaPenerima::whereYear('tahun', $tahun)
+            $data = RencanaPenerima::where('tahun', \$tahun)
                 ->get()
                 ->keyBy('id_kategori_kriteria');
 
@@ -392,18 +389,15 @@ class penerimaController extends Controller
             $bulan    = $request->bulan;
             $nilai    = $request->nilai;
 
-            // Kolom tahun di DB bertipe DATE — simpan sebagai YYYY-01-01
-            $tahunDate = $tahun . '-01-01';
-
             // Cari data berdasarkan kategori dan tahun
             $rencana = RencanaPenerima::where('id_kategori_kriteria', $kategori)
-                ->whereYear('tahun', $tahun)
+                ->where('tahun', $tahun)
                 ->first();
 
             if (!$rencana) {
                 $rencana = new RencanaPenerima();
                 $rencana->id_kategori_kriteria = $kategori;
-                $rencana->tahun = $tahunDate;
+                $rencana->tahun = (int) $tahun; // simpan sebagai integer (kolom smallint)
             }
 
             // Update hanya bulan yang diedit
@@ -452,13 +446,13 @@ class penerimaController extends Controller
                 if (!$kategoriId || !in_array($bulan, $bulanValid)) continue;
 
                 $rencana = RencanaPenerima::where('id_kategori_kriteria', $kategoriId)
-                    ->whereYear('tahun', $tahun)
+                    ->where('tahun', $tahun)
                     ->first();
 
                 if (!$rencana) {
                     $rencana = new RencanaPenerima();
                     $rencana->id_kategori_kriteria = $kategoriId;
-                    $rencana->tahun = $tahunDate;
+                    $rencana->tahun = (int) $tahun; // kolom smallint — simpan integer
                 }
 
                 $rencana->{$bulan} = is_numeric($nilai) ? $nilai : 0;
@@ -510,7 +504,7 @@ class penerimaController extends Controller
                     // RENCANA — gunakan whereYear() agar kompatibel dengan kolom DATE
                     $rencana = DB::table('rencana_penerimas')
                         ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
-                        ->whereYear('tahun', $tahun)
+                        ->where('tahun', \$tahun)
                         ->sum($namaBulan);
 
                     // REALISASI
@@ -639,7 +633,7 @@ class penerimaController extends Controller
         $tahun = $request->tahun ?? date('Y');
 
         $kategori = KategoriKriteria::where('tipe', 'Penerima')->get();
-        $data = RencanaPenerima::whereYear('tahun', $tahun)
+        $data = RencanaPenerima::where('tahun', \$tahun)
             ->get()
             ->keyBy('id_kategori_kriteria');
 
@@ -749,7 +743,7 @@ class penerimaController extends Controller
             foreach ($bulanListFiltered as $namaBulan => $noBulan) {
                 $rencana = DB::table('rencana_penerimas')
                     ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
-                    ->whereYear('tahun', $tahun)
+                    ->where('tahun', \$tahun)
                     ->sum($namaBulan);
 
                 $nilai = DB::table('penerimas')

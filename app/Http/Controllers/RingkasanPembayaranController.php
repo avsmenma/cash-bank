@@ -52,23 +52,22 @@ class RingkasanPembayaranController extends Controller
         // ======================================================
         // QUERY TRANSACTION SUMS
         // ======================================================
-        $rows = DB::table('bank_keluars')
-            ->whereYear('tanggal', $tahun)
-            ->whereMonth('tanggal', '>=', $dariBulan)
-            ->whereMonth('tanggal', '<=', $sampaiBulan)
+        $rows = DB::table('droppings')
+            ->where('tahun', $tahun)
+            ->whereBetween('bulan', [$dariBulan, $sampaiBulan])
             ->whereNotNull('id_kategori_kriteria')
             ->select([
                 'id_kategori_kriteria',
                 'id_sub_kriteria',
                 'id_item_sub_kriteria',
-                DB::raw('MONTH(tanggal) as bulan'),
-                DB::raw('SUM(kredit) as total_nilai'),
+                'bulan',
+                DB::raw('SUM(COALESCE(M1, 0) + COALESCE(M2, 0) + COALESCE(M3, 0) + COALESCE(M4, 0)) as total_nilai'),
             ])
             ->groupBy(
                 'id_kategori_kriteria',
                 'id_sub_kriteria',
                 'id_item_sub_kriteria',
-                DB::raw('MONTH(tanggal)')
+                'bulan'
             )
             ->get();
 

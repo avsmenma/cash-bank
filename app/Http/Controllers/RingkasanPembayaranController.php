@@ -202,42 +202,61 @@ class RingkasanPembayaranController extends Controller
             10 => 'Oktober', 11 => 'November', 12 => 'Desember',
         ];
 
-        $query = DB::table('bank_keluars')
-            ->leftJoin('kategori_kriteria', 'bank_keluars.id_kategori_kriteria', '=', 'kategori_kriteria.id_kategori_kriteria')
-            ->leftJoin('sub_kriteria', 'bank_keluars.id_sub_kriteria', '=', 'sub_kriteria.id_sub_kriteria')
-            ->leftJoin('item_sub_kriteria', 'bank_keluars.id_item_sub_kriteria', '=', 'item_sub_kriteria.id_item_sub_kriteria')
-            ->leftJoin('bank_tujuan', 'bank_keluars.id_bank_tujuan', '=', 'bank_tujuan.id_bank_tujuan')
-            ->leftJoin('jenis_pembayarans', 'bank_keluars.id_jenis_pembayaran', '=', 'jenis_pembayarans.id_jenis_pembayaran')
-            ->whereYear('bank_keluars.tanggal', $tahun)
-            ->whereMonth('bank_keluars.tanggal', '>=', $dariBulan)
-            ->whereMonth('bank_keluars.tanggal', '<=', $sampaiBulan);
+        $query = DB::table('droppings')
+            ->leftJoin('kategori_kriteria', 'droppings.id_kategori_kriteria', '=', 'kategori_kriteria.id_kategori_kriteria')
+            ->leftJoin('sub_kriteria', 'droppings.id_sub_kriteria', '=', 'sub_kriteria.id_sub_kriteria')
+            ->leftJoin('item_sub_kriteria', 'droppings.id_item_sub_kriteria', '=', 'item_sub_kriteria.id_item_sub_kriteria')
+            ->where('droppings.tahun', $tahun)
+            ->whereBetween('droppings.bulan', [$dariBulan, $sampaiBulan]);
 
         if ($kategoriId) {
-            $query->where('bank_keluars.id_kategori_kriteria', $kategoriId);
+            $query->where('droppings.id_kategori_kriteria', $kategoriId);
         }
         if ($subId) {
-            $query->where('bank_keluars.id_sub_kriteria', $subId);
+            $query->where('droppings.id_sub_kriteria', $subId);
         }
         if ($itemId) {
-            $query->where('bank_keluars.id_item_sub_kriteria', $itemId);
+            $query->where('droppings.id_item_sub_kriteria', $itemId);
         }
 
-        $transaksi = $query->select([
-                'bank_keluars.tanggal',
-                'bank_keluars.agenda_tahun',
-                'bank_keluars.uraian',
-                'bank_keluars.penerima',
-                'bank_keluars.kredit',
-                'bank_keluars.keterangan',
-                'bank_keluars.jenis_pembayaran as jenis_pembayaran_str',
-                'kategori_kriteria.nama_kriteria',
-                'sub_kriteria.nama_sub_kriteria',
-                'item_sub_kriteria.nama_item_sub_kriteria',
-                'bank_tujuan.nama_tujuan as kebun',
-                'jenis_pembayarans.nama_jenis_pembayaran',
-            ])
-            ->orderBy('bank_keluars.tanggal')
-            ->get();
+        $droppingsData = $query->get();
+        
+        $transaksiArr = [];
+        $totalNilai = 0;
+
+        foreach ($droppingsData as $d) {
+            $bulanName = $bulanMap[$d->bulan] ?? '';
+            
+            for ($i = 1; $i <= 4; $i++) {
+                $m = "M$i";
+                $nilai = $d->$m ?? 0;
+                
+                if ($nilai > 0) {
+                    $tanggal = $d->tahun . '-' . str_pad($d->bulan, 2, '0', STR_PAD_LEFT) . '-01';
+                    $transaksiArr[] = (object) [
+                        'tanggal' => $tanggal,
+                        'uraian' => 'Realisasi ' . $bulanName . ' - Minggu ke ' . $i,
+                        'penerima' => '-',
+                        'kredit' => $nilai,
+                        'keterangan' => '',
+                        'jenis_pembayaran_str' => '-',
+                        'nama_kriteria' => $d->nama_kriteria,
+                        'nama_sub_kriteria' => $d->nama_sub_kriteria,
+                        'nama_item_sub_kriteria' => $d->nama_item_sub_kriteria,
+                        'kebun' => '-',
+                        'nama_jenis_pembayaran' => '-',
+                        'sort_date' => $d->tahun . str_pad($d->bulan, 2, '0', STR_PAD_LEFT) . $i
+                    ];
+                    $totalNilai += $nilai;
+                }
+            }
+        }
+
+        usort($transaksiArr, function($a, $b) {
+            return strcmp($a->sort_date, $b->sort_date);
+        });
+
+        $transaksi = collect($transaksiArr);
 
         // Build label & breadcrumb
         $label = '';
@@ -256,7 +275,6 @@ class RingkasanPembayaranController extends Controller
             $label = $item->nama_item_sub_kriteria ?? '';
         }
 
-        $totalNilai = $transaksi->sum('kredit');
         $periodeLabel = ($bulanMap[$dariBulan] ?? '') . ' — ' . ($bulanMap[$sampaiBulan] ?? '') . ' ' . $tahun;
 
         return view('cash_bank.ringkasanDetail', compact(

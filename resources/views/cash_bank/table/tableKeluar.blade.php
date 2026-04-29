@@ -272,6 +272,7 @@
                 'id_item_sub_kriteria',
                 'id_jenis_pembayaran'
             ];
+            var selectedInlineIds = {};
             var inlineOptions = {
                 bankTujuan: @json($bankTujuan->map(fn($row) => ['value' => (string) $row->id_bank_tujuan, 'label' => $row->nama_tujuan])->values()),
                 sumberDana: @json($sumberDana->map(fn($row) => ['value' => (string) $row->id_sumber_dana, 'label' => $row->nama_sumber_dana])->values()),
@@ -394,7 +395,35 @@
                 }
             }
 
-            table.on('draw', ensureActiveCell);
+            table.on('draw', function () {
+                reapplyCheckedRows();
+                ensureActiveCell();
+            });
+
+            $(document).on('change', '.checkbox_ids', function () {
+                var id = String($(this).val());
+                if (this.checked) {
+                    selectedInlineIds[id] = true;
+                } else {
+                    delete selectedInlineIds[id];
+                }
+                syncSelectAllCheckbox();
+            });
+
+            $(document).on('click', '#select_all_ids', function () {
+                var checked = this.checked;
+                setTimeout(function () {
+                    $('.checkbox_ids').each(function () {
+                        var id = String($(this).val());
+                        if (checked) {
+                            selectedInlineIds[id] = true;
+                        } else {
+                            delete selectedInlineIds[id];
+                        }
+                    });
+                    reapplyCheckedRows();
+                }, 0);
+            });
 
             $('#example3 tbody').on('click', 'td.cb-spreadsheet-cell', function (e) {
                 if ($(e.target).is('input, select, textarea, button, a')) return;
@@ -654,10 +683,35 @@
                 return payload;
             }
 
+            function syncSelectAllCheckbox() {
+                var $boxes = $('.checkbox_ids');
+                var total = $boxes.length;
+                var checked = $boxes.filter(':checked').length;
+                $('#select_all_ids').prop('checked', total > 0 && checked === total);
+            }
+
+            function rememberCheckedRowsFromDom() {
+                $('.checkbox_ids').each(function () {
+                    var id = String($(this).val());
+                    if (this.checked) {
+                        selectedInlineIds[id] = true;
+                    } else {
+                        delete selectedInlineIds[id];
+                    }
+                });
+                syncSelectAllCheckbox();
+            }
+
+            function reapplyCheckedRows() {
+                $('.checkbox_ids').each(function () {
+                    this.checked = !!selectedInlineIds[String($(this).val())];
+                });
+                syncSelectAllCheckbox();
+            }
+
             function selectedRowIds() {
-                return $('.checkbox_ids:checked').map(function () {
-                    return String($(this).val());
-                }).get();
+                rememberCheckedRowsFromDom();
+                return Object.keys(selectedInlineIds);
             }
 
             function targetIdsForInlineSave(rowData, field) {
@@ -741,7 +795,11 @@
                 if (meta.field === 'keterangan') rowData.keterangan = value;
 
                 table.row($cell.closest('tr')).data(rowData);
-                setActiveCell($cell.closest('tr').children('td').eq(cellColumn($cell)));
+                reapplyCheckedRows();
+
+                var $newCell = findCellByRowId(rowData.id_bank_keluar, cellColumn($cell));
+                setActiveCell($newCell.length ? $newCell : $cell);
+                return $newCell.length ? $newCell : $cell;
             }
 
             function saveInlineCell($cell, meta, rowData, value) {
@@ -778,17 +836,19 @@
                 });
 
                 $.when.apply($, ajaxCalls).done(function () {
+                    var updatedCells = [];
                     visibleTargets.forEach(function (target) {
-                        applyInlineSaveToRow(target.cell, meta, target.rowData, value, target.payload);
-                        target.cell.removeClass('cb-saving-cell cb-error-cell').addClass('cb-saved-cell');
+                        var $updatedTargetCell = applyInlineSaveToRow(target.cell, meta, target.rowData, value, target.payload);
+                        $updatedTargetCell.removeClass('cb-saving-cell cb-error-cell').addClass('cb-saved-cell');
+                        updatedCells.push($updatedTargetCell);
                     });
 
                     var $updatedCell = findCellByRowId(rowData.id_bank_keluar, col);
                     if ($updatedCell.length) setActiveCell($updatedCell);
 
                     setTimeout(function () {
-                        visibleTargets.forEach(function (target) {
-                            target.cell.removeClass('cb-saved-cell');
+                        updatedCells.forEach(function ($updatedTargetCell) {
+                            $updatedTargetCell.removeClass('cb-saved-cell');
                         });
                     }, 900);
                 }).fail(function (xhr) {

@@ -355,6 +355,7 @@
 
             var activeCell = null;
             var restoreActive = null;
+            var shiftSelectAnchorCell = null;
 
             function cellColumn($cell) {
                 return parseInt($cell.attr('data-col-index'), 10);
@@ -368,6 +369,28 @@
                 if (activeCell[0] && activeCell[0].scrollIntoView) {
                     activeCell[0].scrollIntoView({ block: 'nearest', inline: 'nearest' });
                 }
+            }
+
+            function selectRowsBetweenCells($fromCell, $toCell) {
+                var $rows = $('#example3 tbody tr');
+                var start = $rows.index($fromCell.closest('tr'));
+                var end = $rows.index($toCell.closest('tr'));
+
+                if (start < 0 || end < 0) return;
+                if (start > end) {
+                    var tmp = start;
+                    start = end;
+                    end = tmp;
+                }
+
+                $rows.slice(start, end + 1).each(function () {
+                    var rowData = table.row(this).data();
+                    if (!rowData || !rowData.id_bank_keluar) return;
+                    var id = String(rowData.id_bank_keluar);
+                    selectedInlineIds[id] = true;
+                    $(this).find('.checkbox_ids').prop('checked', true);
+                });
+                syncSelectAllCheckbox();
             }
 
             function findCellByRowId(rowId, colIndex) {
@@ -427,6 +450,7 @@
 
             $('#example3 tbody').on('click', 'td.cb-spreadsheet-cell', function (e) {
                 if ($(e.target).is('input, select, textarea, button, a')) return;
+                shiftSelectAnchorCell = $(this);
                 setActiveCell($(this));
             });
 
@@ -448,6 +472,22 @@
                 var $row = $cell.closest('tr');
                 var $target = $();
 
+                if (e.shiftKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+                    e.preventDefault();
+                    if (!shiftSelectAnchorCell || !shiftSelectAnchorCell.length || !$.contains(document, shiftSelectAnchorCell[0])) {
+                        shiftSelectAnchorCell = $cell;
+                    }
+                    $target = e.key === 'ArrowDown'
+                        ? $row.next('tr').children('td').eq(col)
+                        : $row.prev('tr').children('td').eq(col);
+
+                    if ($target.length && $target.hasClass('cb-spreadsheet-cell')) {
+                        selectRowsBetweenCells(shiftSelectAnchorCell, $target);
+                        setActiveCell($target);
+                    }
+                    return;
+                }
+
                 if (e.key === 'ArrowRight' || e.key === 'Tab') {
                     e.preventDefault();
                     $target = $row.children('td').eq(col + 1);
@@ -462,7 +502,10 @@
                     $target = $row.prev('tr').children('td').eq(col);
                 }
 
-                if ($target.length && $target.hasClass('cb-spreadsheet-cell')) setActiveCell($target);
+                if ($target.length && $target.hasClass('cb-spreadsheet-cell')) {
+                    shiftSelectAnchorCell = $target;
+                    setActiveCell($target);
+                }
             });
 
             function getCellRawValue(rowData, meta) {

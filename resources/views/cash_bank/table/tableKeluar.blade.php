@@ -157,11 +157,13 @@
             white-space: normal;
         }
         textarea.cb-inline-editor-wide {
-            width: 320px;
-            max-width: 48vw;
+            width: 100%;
+            max-width: 100%;
             min-height: 72px;
             line-height: 1.35;
             box-shadow: 0 4px 18px rgba(15, 23, 42, .14);
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
         #example3 .select2-container--bootstrap4 .select2-selection {
             border: 1px solid #1f8ef1;

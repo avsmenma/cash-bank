@@ -482,7 +482,7 @@
                 keepOptionInView($option);
             }
 
-            function bindInlineDropdownKeyboard($select) {
+            function bindInlineDropdownKeyboard($select, chooseHighlighted, cancelEdit) {
                 $(document).off('keydown.cbInlineSelect2').on('keydown.cbInlineSelect2', function (e) {
                     if (!$('.select2-container--open').length) return;
 
@@ -510,14 +510,32 @@
                         e.stopImmediatePropagation();
                         var $highlighted = $('.select2-container--open .select2-results__option--highlighted').first();
                         if (!$highlighted.length) $highlighted = $options.first();
-                        $highlighted.trigger('mouseup');
+                        var selectedData = $highlighted.data('data');
+                        var selectedValue = selectedData && selectedData.id !== undefined
+                            ? selectedData.id
+                            : null;
+
+                        if (selectedValue === null) {
+                            var selectedText = $.trim($highlighted.text());
+                            $select.find('option').each(function () {
+                                if ($.trim($(this).text()) === selectedText) {
+                                    selectedValue = $(this).val();
+                                    return false;
+                                }
+                            });
+                        }
+
+                        if (selectedValue !== null) {
+                            $select.val(String(selectedValue)).trigger('change.select2');
+                        }
+                        chooseHighlighted();
                         return false;
                     }
 
                     if (e.key === 'Escape') {
                         e.preventDefault();
                         e.stopImmediatePropagation();
-                        $select.select2('close');
+                        cancelEdit();
                         return false;
                     }
                 });
@@ -669,7 +687,16 @@
                             });
                             setTimeout(function () {
                                 $select.select2('open');
-                                bindInlineDropdownKeyboard($select);
+                                bindInlineDropdownKeyboard(
+                                    $select,
+                                    function () {
+                                        selectionMade = true;
+                                        finishEdit($select, true);
+                                    },
+                                    function () {
+                                        finishEdit($select, false);
+                                    }
+                                );
                                 var $options = $('.select2-container--open .select2-results__option[role="option"]').not('[aria-disabled="true"]');
                                 var selectedIndex = Math.max(0, $options.index($('.select2-container--open .select2-results__option[aria-selected="true"]').first()));
                                 highlightInlineOption($options, selectedIndex);

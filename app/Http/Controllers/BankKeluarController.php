@@ -171,6 +171,37 @@ class BankKeluarController extends Controller
                     $q->where('nama_sumber_dana', 'LIKE', "%{$keyword}%");
                 });
             })
+            ->filterColumn('bank_tujuan', function ($query, $keyword) {
+                $query->whereHas('bankTujuan', function ($q) use ($keyword) {
+                    $q->where('nama_tujuan', 'LIKE', "%{$keyword}%");
+                });
+            })
+            ->filterColumn('kategori_kriteria', function ($query, $keyword) {
+                $query->whereHas('kategori', function ($q) use ($keyword) {
+                    $q->where('nama_kriteria', 'LIKE', "%{$keyword}%");
+                });
+            })
+            ->filterColumn('sub_kriteria', function ($query, $keyword) {
+                $query->whereHas('subKriteria', function ($q) use ($keyword) {
+                    $q->where('nama_sub_kriteria', 'LIKE', "%{$keyword}%");
+                });
+            })
+            ->filterColumn('item_sub_kriteria', function ($query, $keyword) {
+                $query->whereHas('itemSubKriteria', function ($q) use ($keyword) {
+                    $q->where('nama_item_sub_kriteria', 'LIKE', "%{$keyword}%");
+                });
+            })
+            ->filterColumn('jenis_pembayaran', function ($query, $keyword) {
+                $query->whereHas('jenisPembayaran', function ($q) use ($keyword) {
+                    $q->where('nama_jenis_pembayaran', 'LIKE', "%{$keyword}%");
+                });
+            })
+            ->filterColumn('kredit', function ($query, $keyword) {
+                $normalized = preg_replace('/[^\d]/', '', $keyword);
+                if ($normalized !== '') {
+                    $query->where('kredit', 'LIKE', "%{$normalized}%");
+                }
+            })
             ->rawColumns(['checkbox'])
             ->make(true);
     }

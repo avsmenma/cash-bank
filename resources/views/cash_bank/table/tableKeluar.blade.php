@@ -16,10 +16,10 @@
         #example3 th:nth-child(6),
         #example3 td:nth-child(7),  /* Bank Tujuan */
         #example3 th:nth-child(7),
-        #example3 td:nth-child(11), /* Penerima */
-        #example3 th:nth-child(11),
-        #example3 td:nth-child(12), /* Uraian */
+        #example3 td:nth-child(12), /* Penerima */
         #example3 th:nth-child(12),
+        #example3 td:nth-child(13), /* Uraian */
+        #example3 th:nth-child(13),
         #example3 td:nth-child(15), /* Keterangan */
         #example3 th:nth-child(15) {
             white-space: normal !important;
@@ -187,19 +187,19 @@
         <tr>
             <th><input type="checkbox" id="select_all_ids"></th>
             <th>No</th>
-            <th>Agenda</th>
+            <th><span class="th-filter-link" data-filter-key="agenda">Agenda <i class="fas fa-search"></i></span></th>
             <th>No Bukti</th>
-            <th><span class="th-filter-link" id="th-tanggal-click">Tanggal <i class="fas fa-calendar-alt"></i></span></th>
-            <th><span class="th-filter-link" id="th-sumber-click">Sumber Dana <i class="fas fa-filter"></i></span></th>
-            <th>Bank Tujuan</th>
-            <th>Kriteria</th>
-            <th>Sub Kriteria</th>
-            <th>Item Sub Kriteria</th>
-            <th>Jenis Pembayaran</th>
-            <th>Penerima</th>
-            <th><span class="th-filter-link" id="th-uraian-click">Uraian <i class="fas fa-search"></i></span></th>
-            <th>Kredit</th>
-            <th>Keterangan</th>
+            <th><span class="th-filter-link" data-filter-key="tanggal">Tanggal <i class="fas fa-calendar-alt"></i></span></th>
+            <th><span class="th-filter-link" data-filter-key="sumber">Sumber Dana <i class="fas fa-filter"></i></span></th>
+            <th><span class="th-filter-link" data-filter-key="bank">Bank Tujuan <i class="fas fa-filter"></i></span></th>
+            <th><span class="th-filter-link" data-filter-key="kategori">Kriteria <i class="fas fa-filter"></i></span></th>
+            <th><span class="th-filter-link" data-filter-key="sub">Sub Kriteria <i class="fas fa-filter"></i></span></th>
+            <th><span class="th-filter-link" data-filter-key="item">Item Sub Kriteria <i class="fas fa-filter"></i></span></th>
+            <th><span class="th-filter-link" data-filter-key="jenis">Jenis Pembayaran <i class="fas fa-filter"></i></span></th>
+            <th><span class="th-filter-link" data-filter-key="penerima">Penerima <i class="fas fa-search"></i></span></th>
+            <th><span class="th-filter-link" data-filter-key="uraian">Uraian <i class="fas fa-search"></i></span></th>
+            <th><span class="th-filter-link" data-filter-key="kredit">Kredit <i class="fas fa-search"></i></span></th>
+            <th><span class="th-filter-link" data-filter-key="keterangan">Keterangan <i class="fas fa-search"></i></span></th>
         </tr>
     </thead>
 </table>
@@ -258,6 +258,19 @@
     </div>
 </div>
 
+{{-- ============ POPUP: Generic Column Filter ============ --}}
+<div class="col-search-popup" id="popup-generic-filter">
+    <div class="popup-title" id="generic-filter-title"><i class="fas fa-filter"></i>Filter</div>
+    <div id="generic-filter-body"></div>
+    <button class="btn-cari" id="btn-apply-generic-filter" style="width:100%; margin-top:10px;">
+        <i class="fas fa-filter mr-1"></i>Terapkan
+    </button>
+    <div class="popup-footer">
+        <button class="btn-reset-col" id="btn-reset-generic-filter"><i class="fas fa-times mr-1"></i>Reset</button>
+        <button class="btn-close-col" id="btn-close-generic-filter">Tutup</button>
+    </div>
+</div>
+
 @push('scripts')
     <script>
         $(document).ready(function () {
@@ -280,6 +293,29 @@
                 kategori: @json($kategoriKriteria->map(fn($row) => ['value' => (string) $row->id_kategori_kriteria, 'label' => $row->nama_kriteria])->values()),
                 jenisPembayaran: @json($jenisPembayaran->map(fn($row) => ['value' => (string) $row->id_jenis_pembayaran, 'label' => $row->nama_jenis_pembayaran])->values())
             };
+            var filterOptions = {
+                sumber: @json($sumberDana->map(fn($row) => ['value' => $row->nama_sumber_dana, 'label' => $row->nama_sumber_dana])->values()),
+                bank: @json($bankTujuan->map(fn($row) => ['value' => $row->nama_tujuan, 'label' => $row->nama_tujuan])->values()),
+                kategori: @json($kategoriKriteria->map(fn($row) => ['value' => $row->nama_kriteria, 'label' => $row->nama_kriteria])->values()),
+                sub: @json($subKriteria->map(fn($row) => ['value' => $row->nama_sub_kriteria, 'label' => $row->nama_sub_kriteria])->values()),
+                item: @json($itemSubKriteria->map(fn($row) => ['value' => $row->nama_item_sub_kriteria, 'label' => $row->nama_item_sub_kriteria])->unique('value')->values()),
+                jenis: @json($jenisPembayaran->map(fn($row) => ['value' => $row->nama_jenis_pembayaran, 'label' => $row->nama_jenis_pembayaran])->values())
+            };
+            var columnFilters = {
+                agenda: { label: 'Agenda', col: 2, type: 'text', icon: 'fas fa-search' },
+                tanggal: { label: 'Tanggal', col: 4, type: 'date', icon: 'fas fa-calendar-alt' },
+                sumber: { label: 'Sumber Dana', col: 5, type: 'select', icon: 'fas fa-filter', options: filterOptions.sumber },
+                bank: { label: 'Bank Tujuan', col: 6, type: 'select', icon: 'fas fa-filter', options: filterOptions.bank },
+                kategori: { label: 'Kriteria', col: 7, type: 'select', icon: 'fas fa-filter', options: filterOptions.kategori },
+                sub: { label: 'Sub Kriteria', col: 8, type: 'select', icon: 'fas fa-filter', options: filterOptions.sub },
+                item: { label: 'Item Sub Kriteria', col: 9, type: 'select', icon: 'fas fa-filter', options: filterOptions.item },
+                jenis: { label: 'Jenis Pembayaran', col: 10, type: 'select', icon: 'fas fa-filter', options: filterOptions.jenis },
+                penerima: { label: 'Penerima', col: 11, type: 'text', icon: 'fas fa-search' },
+                uraian: { label: 'Uraian', col: 12, type: 'text', icon: 'fas fa-search' },
+                kredit: { label: 'Kredit', col: 13, type: 'text', icon: 'fas fa-search' },
+                keterangan: { label: 'Keterangan', col: 14, type: 'text', icon: 'fas fa-search' }
+            };
+            var currentGenericFilterKey = null;
             inlineOptions.kategori.unshift({ value: '-', label: '-' });
             var editableColumns = {
                 2:  { field: 'agenda_tahun', type: 'text' },
@@ -1123,6 +1159,174 @@
                 table.draw();
                 updateFilterBar();
             });
+
+            function filterLabelValue(key, value) {
+                var config = columnFilters[key];
+                if (!config) return value || '';
+                if (config.type === 'date') return value || '';
+                return value ? String(value) : '';
+            }
+
+            updateFilterBar = function () {
+                var $bar = $('#active-filters-bar');
+                var html = '';
+                var hasFilter = false;
+
+                Object.keys(activeFilters).forEach(function (key) {
+                    var filter = activeFilters[key];
+                    var config = columnFilters[key];
+                    if (!filter || !config) return;
+                    hasFilter = true;
+                    html += '<span class="filter-badge"><i class="' + config.icon + '"></i> ' +
+                        escapeHtml(config.label) + ': ' + escapeHtml(filter.label) +
+                        ' <span class="remove-filter" data-filter="' + key + '">x</span></span>';
+                });
+
+                if (hasFilter) {
+                    html += '<button class="btn-clear-all" id="btn-clear-all-filters"><i class="fas fa-times mr-1"></i>Hapus Semua Filter</button>';
+                    $bar.html(html).slideDown(150);
+                } else {
+                    $bar.slideUp(150);
+                }
+
+                $('.th-filter-link').each(function () {
+                    var key = $(this).data('filter-key');
+                    $(this).toggleClass('th-filter-active', !!activeFilters[key]);
+                });
+            };
+
+            function clearColumnFilter(key) {
+                var config = columnFilters[key];
+                if (!config) return;
+
+                if (config.type === 'date') {
+                    $('#filter-tgl-dari').val('');
+                    $('#filter-tgl-sampai').val('');
+                    delete activeFilters[key];
+                    table.draw();
+                    return;
+                }
+
+                delete activeFilters[key];
+                table.column(config.col).search('').draw();
+            }
+
+            function buildGenericFilterControl(key) {
+                var config = columnFilters[key];
+                var current = activeFilters[key] ? activeFilters[key].value : '';
+
+                if (config.type === 'date') {
+                    return '<div class="mb-2">' +
+                        '<label style="font-size:11px; color:#666; font-weight:600;">Dari Tanggal</label>' +
+                        '<input type="date" class="form-control form-control-sm" id="generic-date-from" value="' + escapeHtml($('#filter-tgl-dari').val()) + '">' +
+                        '</div>' +
+                        '<div class="mb-2">' +
+                        '<label style="font-size:11px; color:#666; font-weight:600;">Sampai Tanggal</label>' +
+                        '<input type="date" class="form-control form-control-sm" id="generic-date-to" value="' + escapeHtml($('#filter-tgl-sampai').val()) + '">' +
+                        '</div>';
+                }
+
+                if (config.type === 'select') {
+                    var html = '<select class="form-control form-control-sm" id="generic-filter-input">' +
+                        '<option value="">-- Semua ' + escapeHtml(config.label) + ' --</option>';
+                    (config.options || []).forEach(function (opt) {
+                        var selected = String(current) === String(opt.value) ? ' selected' : '';
+                        html += '<option value="' + escapeHtml(opt.value) + '"' + selected + '>' + escapeHtml(opt.label) + '</option>';
+                    });
+                    return html + '</select>';
+                }
+
+                return '<div class="input-group">' +
+                    '<input type="text" class="form-control form-control-sm" id="generic-filter-input" ' +
+                    'placeholder="Ketik kata kunci" autocomplete="off" value="' + escapeHtml(current) + '" style="border-radius:4px 0 0 4px;">' +
+                    '<div class="input-group-append">' +
+                    '<button class="btn-cari" id="btn-apply-generic-filter-icon" type="button" style="border-radius:0 4px 4px 0;">' +
+                    '<i class="fas fa-search"></i>' +
+                    '</button>' +
+                    '</div>' +
+                    '</div>';
+            }
+
+            function openGenericFilter(key, $trigger) {
+                var config = columnFilters[key];
+                if (!config) return;
+
+                currentGenericFilterKey = key;
+                $('#generic-filter-title').html('<i class="' + config.icon + '"></i>' +
+                    (config.type === 'text' ? 'Cari ' : 'Filter ') + escapeHtml(config.label));
+                $('#generic-filter-body').html(buildGenericFilterControl(key));
+                openPopup($('#popup-generic-filter'), $trigger);
+                $('#generic-filter-input, #generic-date-from').first().focus();
+            }
+
+            function applyGenericFilter() {
+                var key = currentGenericFilterKey;
+                var config = columnFilters[key];
+                if (!config) return;
+
+                if (config.type === 'date') {
+                    var dari = $('#generic-date-from').val();
+                    var sampai = $('#generic-date-to').val();
+                    $('#filter-tgl-dari').val(dari);
+                    $('#filter-tgl-sampai').val(sampai);
+
+                    if (dari || sampai) {
+                        var label = dari && sampai ? dari + ' s/d ' + sampai : (dari ? 'dari ' + dari : 's/d ' + sampai);
+                        activeFilters[key] = { label: label, value: label };
+                    } else {
+                        delete activeFilters[key];
+                    }
+                    table.draw();
+                } else {
+                    var value = ($('#generic-filter-input').val() || '').trim();
+                    if (value) {
+                        activeFilters[key] = { label: filterLabelValue(key, value), value: value };
+                    } else {
+                        delete activeFilters[key];
+                    }
+                    table.column(config.col).search(value).draw();
+                }
+
+                updateFilterBar();
+                closeAllPopups();
+            }
+
+            $(document).off('click', '.remove-filter').on('click', '.remove-filter', function () {
+                clearColumnFilter($(this).data('filter'));
+                updateFilterBar();
+            });
+
+            $(document).off('click', '#btn-clear-all-filters').on('click', '#btn-clear-all-filters', function () {
+                $('#filter-tgl-dari').val('');
+                $('#filter-tgl-sampai').val('');
+                Object.keys(columnFilters).forEach(function (key) {
+                    var config = columnFilters[key];
+                    if (config.type !== 'date') table.column(config.col).search('');
+                });
+                activeFilters = {};
+                table.draw();
+                updateFilterBar();
+            });
+
+            $(document).on('click', '.th-filter-link', function (e) {
+                e.stopPropagation();
+                openGenericFilter($(this).data('filter-key'), $(this));
+            });
+
+            $('#btn-apply-generic-filter').on('click', applyGenericFilter);
+            $('#generic-filter-body').on('click', '#btn-apply-generic-filter-icon', applyGenericFilter);
+            $('#generic-filter-body').on('keydown', '#generic-filter-input', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyGenericFilter();
+                }
+            });
+            $('#btn-reset-generic-filter').on('click', function () {
+                clearColumnFilter(currentGenericFilterKey);
+                updateFilterBar();
+                closeAllPopups();
+            });
+            $('#btn-close-generic-filter').on('click', closeAllPopups);
 
             // =============================================
             // TANGGAL FILTER

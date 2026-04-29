@@ -265,6 +265,13 @@
             var COL_TANGGAL = 4;
             var COL_SUMBER  = 5;
             var COL_URAIAN  = 12;
+            var BULK_EDIT_FIELDS = [
+                'id_sumber_dana',
+                'id_kategori_kriteria',
+                'id_sub_kriteria',
+                'id_item_sub_kriteria',
+                'id_jenis_pembayaran'
+            ];
             var inlineOptions = {
                 bankTujuan: @json($bankTujuan->map(fn($row) => ['value' => (string) $row->id_bank_tujuan, 'label' => $row->nama_tujuan])->values()),
                 sumberDana: @json($sumberDana->map(fn($row) => ['value' => (string) $row->id_sumber_dana, 'label' => $row->nama_sumber_dana])->values()),
@@ -619,6 +626,62 @@
                 return payload;
             }
 
+            function buildFieldPayload(field, value) {
+                var payload = {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    _method: 'PUT'
+                };
+
+                if (field === 'kredit') payload.kredit = currencyToNumber(value);
+                else payload[field] = value || '';
+
+                if (field === 'id_kategori_kriteria') {
+                    payload.id_kategori_kriteria = value || '-';
+                    payload.id_sub_kriteria = '-';
+                    payload.id_item_sub_kriteria = '-';
+                }
+                if (field === 'id_sub_kriteria') {
+                    payload.id_sub_kriteria = value || '-';
+                    payload.id_item_sub_kriteria = '-';
+                }
+                if (field === 'id_item_sub_kriteria') {
+                    payload.id_item_sub_kriteria = value || '-';
+                }
+                if (field === 'id_jenis_pembayaran' && optionLabel(inlineOptions.jenisPembayaran, value) === 'MPN') {
+                    payload.penerima = 'Modul Penerimaan Negara (MPN)';
+                }
+
+                return payload;
+            }
+
+            function selectedRowIds() {
+                return $('.checkbox_ids:checked').map(function () {
+                    return String($(this).val());
+                }).get();
+            }
+
+            function targetIdsForInlineSave(rowData, field) {
+                var selectedIds = selectedRowIds();
+                var currentId = String(rowData.id_bank_keluar);
+                var canBulk = BULK_EDIT_FIELDS.indexOf(field) !== -1 && selectedIds.indexOf(currentId) !== -1;
+
+                return canBulk && selectedIds.length > 1 ? selectedIds : [currentId];
+            }
+
+            function rowAndCellById(rowId, colIndex) {
+                var result = null;
+                table.rows({ page: 'current' }).every(function () {
+                    var data = this.data();
+                    if (String(data.id_bank_keluar) === String(rowId)) {
+                        result = {
+                            rowData: data,
+                            cell: $(this.node()).children('td').eq(colIndex)
+                        };
+                    }
+                });
+                return result;
+            }
+
             function formatTanggalDisplay(value) {
                 if (!value) return '-';
                 if (typeof moment !== 'undefined') {
@@ -643,8 +706,8 @@
                 var display = inlineDisplayValue(meta, value, payload, $cell);
 
                 rowData[meta.field] = payload[meta.field];
-                rowData.tanggal_raw = payload.tanggal;
-                rowData.kredit_raw = payload.kredit;
+                if (Object.prototype.hasOwnProperty.call(payload, 'tanggal')) rowData.tanggal_raw = payload.tanggal;
+                if (Object.prototype.hasOwnProperty.call(payload, 'kredit')) rowData.kredit_raw = payload.kredit;
 
                 if (meta.field === 'tanggal') rowData.tanggal = display;
                 if (meta.field === 'kredit') rowData.kredit = display;
@@ -668,7 +731,7 @@
                 if (meta.field === 'id_item_sub_kriteria') rowData.item_sub_kriteria = display;
                 if (meta.field === 'id_jenis_pembayaran') {
                     rowData.jenis_pembayaran = display;
-                    if (payload.penerima !== rowData.penerima) {
+                    if (Object.prototype.hasOwnProperty.call(payload, 'penerima') && payload.penerima !== rowData.penerima) {
                         rowData.penerima = payload.penerima;
                         $cell.closest('tr').children('td').eq(11).text(payload.penerima || '-');
                     }
@@ -683,32 +746,62 @@
 
             function saveInlineCell($cell, meta, rowData, value) {
                 var col = cellColumn($cell);
-                var payload = buildPayload(rowData, meta.field, value);
-                $cell.removeClass('cb-error-cell cb-saved-cell').addClass('cb-saving-cell');
+                var targetIds = targetIdsForInlineSave(rowData, meta.field);
+                var selectedLabel = $cell.data('selected-label');
+                var ajaxCalls = [];
+                var visibleTargets = [];
 
-                $.ajax({
-                    url: '/bank-keluar/' + rowData.id_bank_keluar,
-                    type: 'POST',
-                    data: payload,
-                    success: function () {
-                        applyInlineSaveToRow($cell, meta, rowData, value, payload);
-                        var $updatedCell = findCellByRowId(rowData.id_bank_keluar, col);
-                        $updatedCell.removeClass('cb-saving-cell cb-error-cell').addClass('cb-saved-cell');
-                        setActiveCell($updatedCell);
-                        setTimeout(function () {
-                            $updatedCell.removeClass('cb-saved-cell');
-                        }, 900);
-                    },
-                    error: function (xhr) {
-                        $cell.removeClass('cb-saving-cell').addClass('cb-error-cell');
-                        var msg = (xhr.responseJSON && (xhr.responseJSON.message || xhr.responseJSON.error))
-                            ? (xhr.responseJSON.message || xhr.responseJSON.error)
-                            : 'Gagal menyimpan perubahan sel.';
-                        $('#modalInfoTitle').text('Gagal');
-                        $('#modalInfoIcon').attr('class', 'fas fa-times-circle text-danger mr-2');
-                        $('#modalInfoMsg').text(msg);
-                        $('#modalInfo').modal('show');
+                targetIds.forEach(function (id) {
+                    var target = rowAndCellById(id, col);
+                    var payload = targetIds.length > 1
+                        ? buildFieldPayload(meta.field, value)
+                        : buildPayload(rowData, meta.field, value);
+
+                    if (target && target.cell.length) {
+                        target.cell
+                            .data('selected-label', selectedLabel)
+                            .removeClass('cb-error-cell cb-saved-cell')
+                            .addClass('cb-saving-cell');
+                        visibleTargets.push({
+                            id: id,
+                            payload: payload,
+                            rowData: target.rowData,
+                            cell: target.cell
+                        });
                     }
+
+                    ajaxCalls.push($.ajax({
+                        url: '/bank-keluar/' + id,
+                        type: 'POST',
+                        data: payload
+                    }));
+                });
+
+                $.when.apply($, ajaxCalls).done(function () {
+                    visibleTargets.forEach(function (target) {
+                        applyInlineSaveToRow(target.cell, meta, target.rowData, value, target.payload);
+                        target.cell.removeClass('cb-saving-cell cb-error-cell').addClass('cb-saved-cell');
+                    });
+
+                    var $updatedCell = findCellByRowId(rowData.id_bank_keluar, col);
+                    if ($updatedCell.length) setActiveCell($updatedCell);
+
+                    setTimeout(function () {
+                        visibleTargets.forEach(function (target) {
+                            target.cell.removeClass('cb-saved-cell');
+                        });
+                    }, 900);
+                }).fail(function (xhr) {
+                    visibleTargets.forEach(function (target) {
+                        target.cell.removeClass('cb-saving-cell').addClass('cb-error-cell');
+                    });
+                    var msg = (xhr.responseJSON && (xhr.responseJSON.message || xhr.responseJSON.error))
+                        ? (xhr.responseJSON.message || xhr.responseJSON.error)
+                        : 'Gagal menyimpan perubahan sel.';
+                    $('#modalInfoTitle').text('Gagal');
+                    $('#modalInfoIcon').attr('class', 'fas fa-times-circle text-danger mr-2');
+                    $('#modalInfoMsg').text(msg);
+                    $('#modalInfo').modal('show');
                 });
             }
 

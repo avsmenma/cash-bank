@@ -242,19 +242,28 @@
     $katOrder = [
         'Kebutuhan Gaji, Upah dan Tunjangan'           => 1,
         'Kebutuhan Pembayaran Aktivitas Ekploitasi'     => 2,
+        'Payment Requirement for Exploitation Activity' => 2,
         'Kebutuhan Pekerjaan Aktivitas Investasi'       => 3,
+        'Kebutuhan Pembayaran Pekerjaan Aktivitas Investasi' => 3,
     ];
-    // Kategori yang DIGRUP (ditampilkan sebagai 1 baris total saja)
-    $groupedKat = ['Kebutuhan Gaji, Upah dan Tunjangan'];
+    // Kategori yang digrup ditampilkan sebagai 1 baris total saja.
+    // Gaji harus dibuka detailnya supaya Karyawan Pimpinan, Karyawan Pelaksana,
+    // dan Gaji Honor dari menu Dropping tampil seperti kategori lainnya.
+    $groupedKat = [];
 
     // Urutan sub_kriteria dalam tiap kategori
     $subOrder = [
-        'Pembelian TBS'              => 1,
-        'Operasional Produksi'       => 2,
-        'Biaya Usaha dan lainnya'    => 3,
-        'Pajak'                      => 4,
-        'Investasi On Farm'          => 1,
-        'Investasi Off Farm'         => 2,
+        'Karyawan Pimpinan'           => 1,
+        'Karyawan Pelaksana'          => 2,
+        'Gaji Honor'                  => 3,
+        'Pembelian TBS'               => 1,
+        'Purchase Volume'             => 1,
+        'Operasional Produksi'        => 2,
+        'Biaya Usaha dan Lainnya'     => 3,
+        'Biaya Usaha dan lainnya'     => 3,
+        'Pajak'                       => 4,
+        'Investasi On Farm'           => 1,
+        'Investasi Off Farm'          => 2,
         'Pembayaran investasi lainnya'=> 3,
     ];
 

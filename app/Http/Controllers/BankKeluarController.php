@@ -145,28 +145,16 @@ class BankKeluarController extends Controller
                     ? $row->sumberDana->nama_sumber_dana
                     : '-';
             })
+            ->addColumn('tanggal_raw', function ($row) {
+                return $row->tanggal
+                    ? \Carbon\Carbon::parse($row->tanggal)->format('Y-m-d')
+                    : '';
+            })
+            ->addColumn('kredit_raw', function ($row) {
+                return (float) $row->kredit;
+            })
             ->addColumn('checkbox', function ($row) {
                 return '<input type="checkbox" class="checkbox_ids" name="ids[]" value="' . $row->id_bank_keluar . '">';
-            })
-            ->addColumn('aksi', function ($row) {
-                return '
-                <button class="btn btn-warning btn-sm" 
-                    data-toggle="modal"
-                        data-target="#editKeluar"
-                        data-id="' . $row->id_bank_keluar . '"
-                        data-agenda="' . $row->agenda_tahun . '"
-                        data-penerima="' . $row->penerima . '"
-                        data-uraian="' . $row->uraian . '"
-                        data-tanggal="' . $row->tanggal . '"
-                        data-bank="' . $row->id_bank_tujuan . '"
-                        data-sumber="' . $row->id_sumber_dana . '"
-                        data-kategori="' . $row->id_kategori_kriteria . '"
-                        data-sub="' . $row->id_sub_kriteria . '"
-                        data-item="' . $row->id_item_sub_kriteria . '"
-                        data-jenis="' . $row->id_jenis_pembayaran . '"
-                        data-keterangan="' . $row->keterangan . '"
-                        data-kredit="' . $row->kredit . '">Edit</button>
-                ';
             })
             ->editColumn('kredit', function ($row) {
                 return number_format((float) $row->kredit, 0, ',', '.');
@@ -183,7 +171,7 @@ class BankKeluarController extends Controller
                     $q->where('nama_sumber_dana', 'LIKE', "%{$keyword}%");
                 });
             })
-            ->rawColumns(['checkbox', 'aksi'])
+            ->rawColumns(['checkbox'])
             ->make(true);
     }
 

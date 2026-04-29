@@ -101,6 +101,61 @@
             font-size: 11px; color: #c0392b; cursor: pointer; text-decoration: underline;
             background: none; border: none; padding: 0; margin-left: 6px;
         }
+        #example3 td.cb-spreadsheet-cell {
+            cursor: cell;
+            outline: none;
+            position: relative;
+        }
+        #example3 td.cb-editable-cell::after {
+            content: '';
+            position: absolute;
+            right: 4px;
+            bottom: 4px;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-bottom: 5px solid rgba(13, 59, 110, .35);
+            opacity: 0;
+        }
+        #example3 td.cb-editable-cell:hover::after,
+        #example3 td.cb-active-cell::after {
+            opacity: 1;
+        }
+        #example3 td.cb-active-cell {
+            box-shadow: inset 0 0 0 2px #1f8ef1;
+            background: #eef7ff !important;
+        }
+        #example3 td.cb-editing-cell {
+            padding: 2px !important;
+            overflow: visible;
+        }
+        #example3 td.cb-saving-cell {
+            background: #fff8df !important;
+        }
+        #example3 td.cb-saved-cell {
+            background: #e9f8ef !important;
+        }
+        #example3 td.cb-error-cell {
+            background: #fdecec !important;
+            box-shadow: inset 0 0 0 2px #dc3545;
+        }
+        .cb-inline-editor {
+            width: 100%;
+            min-width: 100%;
+            height: 100%;
+            border: 1px solid #1f8ef1;
+            border-radius: 0;
+            padding: 5px 7px;
+            font-size: 12px;
+            background: #fff;
+            color: #1f2d3d;
+            outline: none;
+        }
+        textarea.cb-inline-editor {
+            min-height: 58px;
+            resize: vertical;
+            white-space: normal;
+        }
     </style>
 @endpush
 
@@ -125,7 +180,6 @@
             <th>Jenis Pembayaran</th>
             <th>Kredit</th>
             <th>Keterangan</th>
-            <th>Aksi</th>
         </tr>
     </thead>
 </table>
@@ -191,6 +245,27 @@
             var COL_TANGGAL = 4;
             var COL_SUMBER  = 5;
             var COL_URAIAN  = 11;
+            var inlineOptions = {
+                bankTujuan: @json($bankTujuan->map(fn($row) => ['value' => (string) $row->id_bank_tujuan, 'label' => $row->nama_tujuan])->values()),
+                sumberDana: @json($sumberDana->map(fn($row) => ['value' => (string) $row->id_sumber_dana, 'label' => $row->nama_sumber_dana])->values()),
+                kategori: @json($kategoriKriteria->map(fn($row) => ['value' => (string) $row->id_kategori_kriteria, 'label' => $row->nama_kriteria])->values()),
+                jenisPembayaran: @json($jenisPembayaran->map(fn($row) => ['value' => (string) $row->id_jenis_pembayaran, 'label' => $row->nama_jenis_pembayaran])->values())
+            };
+            inlineOptions.kategori.unshift({ value: '-', label: '-' });
+            var editableColumns = {
+                2:  { field: 'agenda_tahun', type: 'text' },
+                4:  { field: 'tanggal', type: 'date' },
+                5:  { field: 'id_sumber_dana', type: 'select', source: 'sumberDana' },
+                6:  { field: 'id_bank_tujuan', type: 'select', source: 'bankTujuan' },
+                7:  { field: 'id_kategori_kriteria', type: 'select', source: 'kategori' },
+                8:  { field: 'id_sub_kriteria', type: 'select', source: 'subKriteria' },
+                9:  { field: 'id_item_sub_kriteria', type: 'select', source: 'itemSubKriteria' },
+                10: { field: 'penerima', type: 'text' },
+                11: { field: 'uraian', type: 'textarea' },
+                12: { field: 'id_jenis_pembayaran', type: 'select', source: 'jenisPembayaran' },
+                13: { field: 'kredit', type: 'currency' },
+                14: { field: 'keterangan', type: 'textarea' }
+            };
 
             var table = $('#example3').DataTable({
                 processing: true,
@@ -229,16 +304,321 @@
                             return data;
                         }
                     },
-                    { data: 'keterangan',          width: '180px' },
-                    { data: 'aksi',                width: '70px', orderable: false, searchable: false }
+                    { data: 'keterangan',          width: '180px' }
+                ],
+                columnDefs: [
+                    {
+                        targets: '_all',
+                        createdCell: function (td, cellData, rowData, row, col) {
+                            if (col === 0) return;
+                            $(td)
+                                .addClass('cb-spreadsheet-cell')
+                                .attr('tabindex', '0')
+                                .attr('data-col-index', col);
+                            if (editableColumns[col]) {
+                                $(td)
+                                    .addClass('cb-editable-cell')
+                                    .attr('data-field', editableColumns[col].field);
+                            }
+                        }
+                    }
                 ]
             });
 
-            // Double-click pada baris → buka modal edit
-            $('#example3 tbody').on('dblclick', 'tr', function() {
-                var $editBtn = $(this).find('button[data-target="#editKeluar"]');
-                if ($editBtn.length) $editBtn.click();
+            var activeCell = null;
+            var restoreActive = null;
+
+            function cellColumn($cell) {
+                return parseInt($cell.attr('data-col-index'), 10);
+            }
+
+            function setActiveCell($cell) {
+                if (!$cell || !$cell.length || $cell.hasClass('cb-editing-cell')) return;
+                $('#example3 tbody td.cb-active-cell').removeClass('cb-active-cell');
+                activeCell = $cell;
+                activeCell.addClass('cb-active-cell').focus();
+                if (activeCell[0] && activeCell[0].scrollIntoView) {
+                    activeCell[0].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                }
+            }
+
+            function findCellByRowId(rowId, colIndex) {
+                var found = $();
+                table.rows({ page: 'current' }).every(function () {
+                    var data = this.data();
+                    if (String(data.id_bank_keluar) === String(rowId)) {
+                        found = $(this.node()).children('td').eq(colIndex);
+                    }
+                });
+                return found;
+            }
+
+            function ensureActiveCell() {
+                if (restoreActive) {
+                    var $restored = findCellByRowId(restoreActive.id, restoreActive.col);
+                    restoreActive = null;
+                    if ($restored.length) {
+                        setActiveCell($restored);
+                        return;
+                    }
+                }
+                if (!activeCell || !activeCell.length || !$.contains(document, activeCell[0])) {
+                    setActiveCell($('#example3 tbody td.cb-editable-cell:visible').first());
+                }
+            }
+
+            table.on('draw', ensureActiveCell);
+
+            $('#example3 tbody').on('click', 'td.cb-spreadsheet-cell', function (e) {
+                if ($(e.target).is('input, select, textarea, button, a')) return;
+                setActiveCell($(this));
             });
+
+            $('#example3 tbody').on('dblclick', 'td.cb-editable-cell', function () {
+                beginInlineEdit($(this));
+            });
+
+            $('#example3 tbody').on('keydown', 'td.cb-spreadsheet-cell', function (e) {
+                var $cell = $(this);
+                if ($cell.hasClass('cb-editing-cell')) return;
+
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    beginInlineEdit($cell);
+                    return;
+                }
+
+                var col = cellColumn($cell);
+                var $row = $cell.closest('tr');
+                var $target = $();
+
+                if (e.key === 'ArrowRight' || e.key === 'Tab') {
+                    e.preventDefault();
+                    $target = $row.children('td').eq(col + 1);
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    $target = $row.children('td').eq(col - 1);
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    $target = $row.next('tr').children('td').eq(col);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    $target = $row.prev('tr').children('td').eq(col);
+                }
+
+                if ($target.length && $target.hasClass('cb-spreadsheet-cell')) setActiveCell($target);
+            });
+
+            function getCellRawValue(rowData, meta) {
+                var value = rowData[meta.field];
+                if (meta.field === 'tanggal') value = rowData.tanggal_raw || '';
+                if (meta.field === 'kredit') value = rowData.kredit_raw || rowData.kredit || 0;
+                if (value === null || value === undefined || value === '') {
+                    return (meta.field === 'id_kategori_kriteria' || meta.field === 'id_sub_kriteria' || meta.field === 'id_item_sub_kriteria')
+                        ? '-'
+                        : '';
+                }
+                return value;
+            }
+
+            function escapeHtml(value) {
+                return $('<div>').text(value === null || value === undefined ? '' : value).html();
+            }
+
+            function formatRupiah(value) {
+                var raw = String(value || '').replace(/\D/g, '');
+                return raw ? raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '0';
+            }
+
+            function currencyToNumber(value) {
+                return String(value || '').replace(/\D/g, '') || '0';
+            }
+
+            function optionLabel(options, value) {
+                var match = (options || []).find(function (opt) {
+                    return String(opt.value) === String(value);
+                });
+                return match ? match.label : '-';
+            }
+
+            function resolvedOptions(options) {
+                var deferred = $.Deferred();
+                deferred.resolve(options);
+                return deferred.promise();
+            }
+
+            function getSelectOptions(meta, rowData) {
+                if (meta.source === 'subKriteria') {
+                    var kategori = rowData.id_kategori_kriteria || '-';
+                    if (kategori === '-') return resolvedOptions([{ value: '-', label: '-' }]);
+                    return $.get('/get-sub-kriteria/' + kategori).then(function (rows) {
+                        var options = [{ value: '-', label: '-' }];
+                        (rows || []).forEach(function (row) {
+                            options.push({ value: String(row.id_sub_kriteria), label: row.nama_sub_kriteria });
+                        });
+                        return options;
+                    });
+                }
+
+                if (meta.source === 'itemSubKriteria') {
+                    var sub = rowData.id_sub_kriteria || '-';
+                    if (sub === '-') return resolvedOptions([{ value: '-', label: '-' }]);
+                    return $.get('/get-item-sub-kriteria/' + sub).then(function (rows) {
+                        var options = [{ value: '-', label: '-' }];
+                        (rows || []).forEach(function (row) {
+                            options.push({ value: String(row.id_item_sub_kriteria), label: row.nama_item_sub_kriteria });
+                        });
+                        return options;
+                    });
+                }
+
+                return resolvedOptions(inlineOptions[meta.source] || []);
+            }
+
+            function buildPayload(rowData, field, value) {
+                var payload = {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    _method: 'PUT',
+                    agenda_tahun: rowData.agenda_tahun || '',
+                    tanggal: rowData.tanggal_raw || '',
+                    id_bank_tujuan: rowData.id_bank_tujuan || '',
+                    id_sumber_dana: rowData.id_sumber_dana || '',
+                    id_kategori_kriteria: rowData.id_kategori_kriteria || '-',
+                    id_sub_kriteria: rowData.id_sub_kriteria || '-',
+                    id_item_sub_kriteria: rowData.id_item_sub_kriteria || '-',
+                    id_jenis_pembayaran: rowData.id_jenis_pembayaran || '',
+                    penerima: rowData.penerima || '',
+                    uraian: rowData.uraian || '',
+                    kredit: rowData.kredit_raw || currencyToNumber(rowData.kredit),
+                    keterangan: rowData.keterangan || ''
+                };
+
+                if (field === 'tanggal') payload.tanggal = value || '';
+                else if (field === 'kredit') payload.kredit = currencyToNumber(value);
+                else payload[field] = value || '';
+
+                if (field === 'id_kategori_kriteria') {
+                    payload.id_kategori_kriteria = value || '-';
+                    payload.id_sub_kriteria = '-';
+                    payload.id_item_sub_kriteria = '-';
+                }
+                if (field === 'id_sub_kriteria') {
+                    payload.id_sub_kriteria = value || '-';
+                    payload.id_item_sub_kriteria = '-';
+                }
+                if (field === 'id_item_sub_kriteria') {
+                    payload.id_item_sub_kriteria = value || '-';
+                }
+                if (field === 'id_jenis_pembayaran' && optionLabel(inlineOptions.jenisPembayaran, value) === 'MPN') {
+                    payload.penerima = 'Modul Penerimaan Negara (MPN)';
+                }
+
+                return payload;
+            }
+
+            function saveInlineCell($cell, meta, rowData, value) {
+                var col = cellColumn($cell);
+                $cell.removeClass('cb-error-cell cb-saved-cell').addClass('cb-saving-cell');
+
+                $.ajax({
+                    url: '/bank-keluar/' + rowData.id_bank_keluar,
+                    type: 'POST',
+                    data: buildPayload(rowData, meta.field, value),
+                    success: function () {
+                        $cell.removeClass('cb-saving-cell').addClass('cb-saved-cell');
+                        restoreActive = { id: rowData.id_bank_keluar, col: col };
+                        setTimeout(function () {
+                            table.ajax.reload(null, false);
+                        }, 120);
+                    },
+                    error: function (xhr) {
+                        $cell.removeClass('cb-saving-cell').addClass('cb-error-cell');
+                        var msg = (xhr.responseJSON && (xhr.responseJSON.message || xhr.responseJSON.error))
+                            ? (xhr.responseJSON.message || xhr.responseJSON.error)
+                            : 'Gagal menyimpan perubahan sel.';
+                        $('#modalInfoTitle').text('Gagal');
+                        $('#modalInfoIcon').attr('class', 'fas fa-times-circle text-danger mr-2');
+                        $('#modalInfoMsg').text(msg);
+                        $('#modalInfo').modal('show');
+                    }
+                });
+            }
+
+            function beginInlineEdit($cell) {
+                var col = cellColumn($cell);
+                var meta = editableColumns[col];
+                if (!meta || $cell.hasClass('cb-editing-cell')) return;
+
+                var rowData = table.row($cell.closest('tr')).data();
+                if (!rowData || !rowData.id_bank_keluar) return;
+
+                var originalHtml = $cell.html();
+                var currentValue = getCellRawValue(rowData, meta);
+                $cell.addClass('cb-editing-cell').removeClass('cb-saved-cell cb-error-cell').empty();
+
+                function finishEdit($editor, shouldSave) {
+                    if (!$cell.hasClass('cb-editing-cell')) return;
+                    var nextValue = $editor.val();
+                    $cell.removeClass('cb-editing-cell').html(originalHtml);
+                    setActiveCell($cell);
+                    if (shouldSave && String(nextValue) !== String(currentValue)) {
+                        saveInlineCell($cell, meta, rowData, nextValue);
+                    }
+                }
+
+                if (meta.type === 'select') {
+                    var $select = $('<select class="cb-inline-editor"></select>').prop('disabled', true);
+                    $select.append('<option value="">Memuat...</option>');
+                    $cell.append($select);
+                    getSelectOptions(meta, rowData).done(function (options) {
+                        $select.empty();
+                        (options || []).forEach(function (opt) {
+                            $select.append('<option value="' + escapeHtml(opt.value) + '">' + escapeHtml(opt.label) + '</option>');
+                        });
+                        $select.val(String(currentValue)).prop('disabled', false).focus();
+                    });
+                    $select.on('change', function () { finishEdit($select, true); });
+                    $select.on('keydown', function (e) {
+                        if (e.key === 'Enter') { e.preventDefault(); finishEdit($select, true); }
+                        if (e.key === 'Escape') { e.preventDefault(); finishEdit($select, false); }
+                    });
+                    return;
+                }
+
+                var $editor;
+                if (meta.type === 'textarea') {
+                    $editor = $('<textarea class="cb-inline-editor"></textarea>').val(currentValue);
+                } else {
+                    var inputType = meta.type === 'date' ? 'date' : 'text';
+                    $editor = $('<input class="cb-inline-editor">').attr('type', inputType);
+                    $editor.val(meta.type === 'currency' ? formatRupiah(currentValue) : currentValue);
+                    if (meta.type === 'currency') {
+                        $editor.on('input', function () {
+                            this.value = formatRupiah(this.value);
+                        });
+                    }
+                }
+
+                $cell.append($editor);
+                $editor.focus().select();
+                $editor.on('keydown', function (e) {
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        finishEdit($editor, false);
+                    } else if (e.key === 'Enter' && meta.type !== 'textarea') {
+                        e.preventDefault();
+                        finishEdit($editor, true);
+                    } else if (e.key === 'Enter' && e.ctrlKey) {
+                        e.preventDefault();
+                        finishEdit($editor, true);
+                    }
+                });
+                $editor.on('blur', function () {
+                    finishEdit($editor, true);
+                });
+            }
+
+            ensureActiveCell();
 
             // =============================================
             // POPUP HELPERS

@@ -47,6 +47,12 @@ class dashboardController extends Controller
         ->whereBetween('bulan', [$bulanDari, $bulanSampai])
         ->get();
 
+    // ========== PERMINTAAN ==========
+    $permintaan = Permintaan::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+        ->where('tahun', $tahun)
+        ->whereBetween('bulan', [$bulanDari, $bulanSampai])
+        ->get();
+
     // ========== PEMBAYARAN (BANK KELUAR) ==========
     $pembayaran = BankKeluar::with(['kategori', 'subKriteria', 'itemSubKriteria'])
         ->select(
@@ -70,6 +76,7 @@ class dashboardController extends Controller
     // Struktur data hasil
     $result = [
         'penerima' => [],
+        'permintaan' => [],
         'dropping' => [],
         'pembayaran' => []
     ];
@@ -89,6 +96,32 @@ class dashboardController extends Controller
         }
 
         $result['penerima'][$kategori][$bulan] += $p->total;
+        $bulanAktif[$bulan] = true;
+    }
+
+    // ========== PROSES PERMINTAAN ==========
+    foreach ($permintaan as $p) {
+        $kategori = $p->kategori->nama_kriteria ?? '-';
+        $subKriteria = $p->subKriteria->nama_sub_kriteria ?? '-';
+        $itemKriteria = $p->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+        $bulan = $p->bulan;
+
+        $key = $kategori . '|' . $subKriteria . '|' . $itemKriteria;
+
+        if (!isset($result['permintaan'][$key])) {
+            $result['permintaan'][$key] = [
+                'kategori' => $kategori,
+                'sub_kriteria' => $subKriteria,
+                'item_kriteria' => $itemKriteria,
+                'data' => []
+            ];
+            for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+                $result['permintaan'][$key]['data'][$b] = 0;
+            }
+        }
+
+        $total = $p->M1 + $p->M2 + $p->M3 + $p->M4;
+        $result['permintaan'][$key]['data'][$bulan] += $total;
         $bulanAktif[$bulan] = true;
     }
 
@@ -356,8 +389,15 @@ class dashboardController extends Controller
             ->get();
     }
 
-    public function export_excel(){
-        return Excel::download(new ExcelPd, 'Rekapan-PD .xlsx');
+    public function export_excel(Request $request){
+        return Excel::download(
+            new ExcelPd(
+                $request->tahun,
+                $request->bulan_dari,
+                $request->bulan_sampai
+            ),
+            'Rekapan-PD .xlsx'
+        );
     }
    public function export_excelPvd(Request $request)
     {

@@ -58,6 +58,15 @@
         text-transform: uppercase;
         border-bottom: 2px solid #1a369a;
     }
+    .sec-permintaan {
+        background: #c2410c !important;
+        color: #ffffff !important;
+        font-weight: 700;
+        font-size: 11.5px;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        border-bottom: 2px solid #9a3412;
+    }
     .sec-pembayaran {
         background: #9333ea !important;
         color: #ffffff !important;
@@ -103,6 +112,13 @@
         font-weight: 700;
         text-align: right;
         border-top: 2px solid #0b7c73;
+    }
+    .row-total-permintaan td,
+    .row-total-permintaan td strong {
+        background: #c2410c !important;
+        color: #ffffff !important;
+        font-weight: 700;
+        border-top: 2px solid #9a3412;
     }
     .row-total-dropping td,
     .row-total-dropping td strong {
@@ -218,8 +234,16 @@
     });
 
     // ================================================================
-    // Aggregate Dropping & Pembayaran ke level [kategori][sub_kriteria][bulan]
+    // Aggregate Permintaan, Dropping & Pembayaran ke level [kategori][sub_kriteria][bulan]
     // ================================================================
+    $permAgg = [];
+    foreach (($result['permintaan'] ?? []) as $item) {
+        $kat = $item['kategori']; $sub = $item['sub_kriteria'];
+        foreach ($bulanListFiltered as $b => $n) {
+            $permAgg[$kat][$sub][$b] = ($permAgg[$kat][$sub][$b] ?? 0) + ($item['data'][$b] ?? 0);
+        }
+    }
+
     $dropAgg = [];
     foreach ($result['dropping'] as $item) {
         $kat = $item['kategori']; $sub = $item['sub_kriteria'];
@@ -237,7 +261,7 @@
     }
 
     // ================================================================
-    // Urutan kategori untuk Dropping & Pembayaran
+    // Urutan kategori untuk Permintaan, Dropping & Pembayaran
     // ================================================================
     $katOrder = [
         'Kebutuhan Gaji, Upah dan Tunjangan'           => 1,
@@ -268,7 +292,7 @@
     ];
 
     // Sort kategori
-    foreach ([&$dropAgg, &$payAgg] as &$agg) {
+    foreach ([&$permAgg, &$dropAgg, &$payAgg] as &$agg) {
         uksort($agg, function($a,$b) use($katOrder){
             return ($katOrder[$a] ?? 99) <=> ($katOrder[$b] ?? 99);
         });
@@ -305,6 +329,12 @@
     $totalPenerima  = []; foreach ($bulanListFiltered as $b => $n) $totalPenerima[$b] = 0;
     foreach ($result['penerima'] as $kat => $bData) {
         foreach ($bulanListFiltered as $b => $n) $totalPenerima[$b] += ($bData[$b] ?? 0);
+    }
+    $totalPermAll   = []; foreach ($bulanListFiltered as $b => $n) $totalPermAll[$b] = 0;
+    foreach ($permAgg as $kat => $subs) {
+        foreach ($subs as $sub => $bData) {
+            foreach ($bulanListFiltered as $b => $n) $totalPermAll[$b] += ($bData[$b] ?? 0);
+        }
     }
     $totalDropAll   = []; foreach ($bulanListFiltered as $b => $n) $totalDropAll[$b] = 0;
     foreach ($dropAgg as $kat => $subs) {
@@ -394,6 +424,66 @@
                 @php $gTP += $totalPenerima[$b]; @endphp
             @endforeach
             <td class="val">{{ fmtBold($gTP) }}</td>
+        </tr>
+
+        <tr><td colspan="{{ $nCol }}" style="background:#f5f5f5;height:6px;"></td></tr>
+
+        {{-- ================================================================
+             PERMINTAAN
+             ================================================================ --}}
+        <tr>
+            <td colspan="{{ $nCol }}" class="sec-permintaan">PERMINTAAN</td>
+        </tr>
+
+        @foreach($permAgg as $kat => $subs)
+            @php $katTotPerBulanPerm = $sumKat($permAgg, $kat, $bulanListFiltered); @endphp
+
+            @if(in_array($kat, $groupedKat))
+                @php $gKatPerm = 0; @endphp
+                <tr class="row-gaji-group">
+                    <td><strong>{{ $kat }}</strong></td>
+                    @foreach($bulanListFiltered as $b => $nm)
+                        <td class="val">{{ fmtBold($katTotPerBulanPerm[$b]) }}</td>
+                        @php $gKatPerm += $katTotPerBulanPerm[$b]; @endphp
+                    @endforeach
+                    <td class="val">{{ fmtBold($gKatPerm) }}</td>
+                </tr>
+            @else
+                <tr class="row-kat-header">
+                    <td colspan="{{ $nCol }}">{{ $kat }}</td>
+                </tr>
+                @php $subTotAllPerm = 0; $subTotPerBulanPerm = []; foreach($bulanListFiltered as $b=>$n) $subTotPerBulanPerm[$b]=0; @endphp
+                @foreach($subs as $sub => $bData)
+                    @php $rowTotPerm = 0; @endphp
+                    <tr class="row-item">
+                        <td>- {{ $sub }}</td>
+                        @foreach($bulanListFiltered as $b => $nm)
+                            @php $v = $bData[$b] ?? 0; $rowTotPerm += $v; $subTotPerBulanPerm[$b] += $v; @endphp
+                            <td class="val">{{ fmtDash($v) }}</td>
+                        @endforeach
+                        @php $subTotAllPerm += $rowTotPerm; @endphp
+                        <td class="val font-weight-bold">{{ fmtBold($rowTotPerm) }}</td>
+                    </tr>
+                @endforeach
+                <tr class="row-sub-total">
+                    <td>Jumlah {{ $kat }}</td>
+                    @foreach($bulanListFiltered as $b => $nm)
+                        <td class="val">{{ fmtBold($subTotPerBulanPerm[$b]) }}</td>
+                    @endforeach
+                    <td class="val">{{ fmtBold($subTotAllPerm) }}</td>
+                </tr>
+            @endif
+        @endforeach
+
+        {{-- TOTAL PERMINTAAN --}}
+        <tr class="row-total-permintaan">
+            <td class="text-right"><strong>TOTAL PERMINTAAN</strong></td>
+            @php $gTPerm = 0; @endphp
+            @foreach($bulanListFiltered as $b => $nm)
+                <td class="val">{{ fmtBold($totalPermAll[$b]) }}</td>
+                @php $gTPerm += $totalPermAll[$b]; @endphp
+            @endforeach
+            <td class="val">{{ fmtBold($gTPerm) }}</td>
         </tr>
 
         <tr><td colspan="{{ $nCol }}" style="background:#f5f5f5;height:6px;"></td></tr>

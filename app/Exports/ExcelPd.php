@@ -5,12 +5,24 @@ namespace App\Exports;
 use App\Models\Dropping;
 use App\Models\Penerima;
 use App\Models\BankKeluar;
+use App\Models\Permintaan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 
 class ExcelPd implements FromView
 {
+    protected $tahun;
+    protected $bulanDari;
+    protected $bulanSampai;
+
+    public function __construct($tahun = null, $bulanDari = null, $bulanSampai = null)
+    {
+        $this->tahun = $tahun ?? date('Y');
+        $this->bulanDari = $bulanDari ?? 1;
+        $this->bulanSampai = $bulanSampai ?? 12;
+    }
+
     /**
     * @return \Illuminate\Support\View
     */
@@ -22,9 +34,9 @@ class ExcelPd implements FromView
             9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'
         ];
         
-        $tahun = $request->tahun ?? date('Y');
-        $bulanDari = $request->bulan_dari ?? 1;
-        $bulanSampai = $request->bulan_sampai ?? 12;
+        $tahun = $this->tahun;
+        $bulanDari = $this->bulanDari;
+        $bulanSampai = $this->bulanSampai;
 
         // ========== PENERIMA ==========
         $penerima = Penerima::with('kategori')
@@ -40,6 +52,12 @@ class ExcelPd implements FromView
 
         // ========== DROPPING ==========
         $dropping = Dropping::with(['kategori', 'subKriteria', 'itemSubKriteria'])
+            ->where('tahun', $tahun)
+            ->whereBetween('bulan', [$bulanDari, $bulanSampai])
+            ->get();
+
+        // ========== PERMINTAAN ==========
+        $permintaan = Permintaan::with(['kategori', 'subKriteria', 'itemSubKriteria'])
             ->where('tahun', $tahun)
             ->whereBetween('bulan', [$bulanDari, $bulanSampai])
             ->get();
@@ -67,6 +85,7 @@ class ExcelPd implements FromView
         // Struktur data hasil
         $result = [
             'penerima' => [],
+            'permintaan' => [],
             'dropping' => [],
             'pembayaran' => []
         ];
@@ -86,6 +105,32 @@ class ExcelPd implements FromView
             }
 
             $result['penerima'][$kategori][$bulan] += $p->total;
+            $bulanAktif[$bulan] = true;
+        }
+
+        // ========== PROSES PERMINTAAN ==========
+        foreach ($permintaan as $p) {
+            $kategori = $p->kategori->nama_kriteria ?? '-';
+            $subKriteria = $p->subKriteria->nama_sub_kriteria ?? '-';
+            $itemKriteria = $p->itemSubKriteria->nama_item_sub_kriteria ?? '-';
+            $bulan = $p->bulan;
+
+            $key = $kategori . '|' . $subKriteria . '|' . $itemKriteria;
+
+            if (!isset($result['permintaan'][$key])) {
+                $result['permintaan'][$key] = [
+                    'kategori' => $kategori,
+                    'sub_kriteria' => $subKriteria,
+                    'item_kriteria' => $itemKriteria,
+                    'data' => []
+                ];
+                for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+                    $result['permintaan'][$key]['data'][$b] = 0;
+                }
+            }
+
+            $total = $p->M1 + $p->M2 + $p->M3 + $p->M4;
+            $result['permintaan'][$key]['data'][$bulan] += $total;
             $bulanAktif[$bulan] = true;
         }
 

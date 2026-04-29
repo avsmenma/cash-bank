@@ -195,9 +195,9 @@
             <th>Kriteria</th>
             <th>Sub Kriteria</th>
             <th>Item Sub Kriteria</th>
+            <th>Jenis Pembayaran</th>
             <th>Penerima</th>
             <th><span class="th-filter-link" id="th-uraian-click">Uraian <i class="fas fa-search"></i></span></th>
-            <th>Jenis Pembayaran</th>
             <th>Kredit</th>
             <th>Keterangan</th>
         </tr>
@@ -264,7 +264,7 @@
             // Column indexes (0-based in DataTable columns array)
             var COL_TANGGAL = 4;
             var COL_SUMBER  = 5;
-            var COL_URAIAN  = 11;
+            var COL_URAIAN  = 12;
             var inlineOptions = {
                 bankTujuan: @json($bankTujuan->map(fn($row) => ['value' => (string) $row->id_bank_tujuan, 'label' => $row->nama_tujuan])->values()),
                 sumberDana: @json($sumberDana->map(fn($row) => ['value' => (string) $row->id_sumber_dana, 'label' => $row->nama_sumber_dana])->values()),
@@ -280,9 +280,9 @@
                 7:  { field: 'id_kategori_kriteria', type: 'select', source: 'kategori' },
                 8:  { field: 'id_sub_kriteria', type: 'select', source: 'subKriteria' },
                 9:  { field: 'id_item_sub_kriteria', type: 'select', source: 'itemSubKriteria' },
-                10: { field: 'penerima', type: 'text' },
-                11: { field: 'uraian', type: 'textarea' },
-                12: { field: 'id_jenis_pembayaran', type: 'select', source: 'jenisPembayaran' },
+                10: { field: 'id_jenis_pembayaran', type: 'select', source: 'jenisPembayaran' },
+                11: { field: 'penerima', type: 'text' },
+                12: { field: 'uraian', type: 'textarea' },
                 13: { field: 'kredit', type: 'currency' },
                 14: { field: 'keterangan', type: 'textarea' }
             };
@@ -312,9 +312,9 @@
                     { data: 'kategori_kriteria',   width: '130px' },
                     { data: 'sub_kriteria',        width: '130px' },
                     { data: 'item_sub_kriteria',   width: '130px' },
+                    { data: 'jenis_pembayaran',    width: '120px' },
                     { data: 'penerima',            width: '150px' },
                     { data: 'uraian',              width: '250px' },
-                    { data: 'jenis_pembayaran',    width: '120px' },
                     {
                         data: 'kredit',
                         width: '110px',
@@ -670,7 +670,7 @@
                     rowData.jenis_pembayaran = display;
                     if (payload.penerima !== rowData.penerima) {
                         rowData.penerima = payload.penerima;
-                        $cell.closest('tr').children('td').eq(10).text(payload.penerima || '-');
+                        $cell.closest('tr').children('td').eq(11).text(payload.penerima || '-');
                     }
                 }
                 if (meta.field === 'penerima') rowData.penerima = value;

@@ -610,20 +610,85 @@
                 return payload;
             }
 
+            function formatTanggalDisplay(value) {
+                if (!value) return '-';
+                if (typeof moment !== 'undefined') {
+                    return moment(value, 'YYYY-MM-DD').format('DD MMMM YYYY');
+                }
+
+                var parts = String(value).split('-');
+                return parts.length === 3 ? parts[2] + '-' + parts[1] + '-' + parts[0] : value;
+            }
+
+            function inlineDisplayValue(meta, value, payload, $cell) {
+                if (meta.field === 'tanggal') return formatTanggalDisplay(payload.tanggal);
+                if (meta.field === 'kredit') return formatRupiah(payload.kredit);
+                if (meta.type === 'select') {
+                    var selectedText = $cell.data('selected-label');
+                    return selectedText || '-';
+                }
+                return value || '-';
+            }
+
+            function applyInlineSaveToRow($cell, meta, rowData, value, payload) {
+                var display = inlineDisplayValue(meta, value, payload, $cell);
+
+                rowData[meta.field] = payload[meta.field];
+                rowData.tanggal_raw = payload.tanggal;
+                rowData.kredit_raw = payload.kredit;
+
+                if (meta.field === 'tanggal') rowData.tanggal = display;
+                if (meta.field === 'kredit') rowData.kredit = display;
+                if (meta.field === 'id_sumber_dana') rowData.sumber_dana = display;
+                if (meta.field === 'id_bank_tujuan') rowData.bank_tujuan = display;
+                if (meta.field === 'id_kategori_kriteria') {
+                    rowData.kategori_kriteria = display;
+                    rowData.id_sub_kriteria = null;
+                    rowData.sub_kriteria = '-';
+                    rowData.id_item_sub_kriteria = null;
+                    rowData.item_sub_kriteria = '-';
+                    $cell.closest('tr').children('td').eq(8).text('-');
+                    $cell.closest('tr').children('td').eq(9).text('-');
+                }
+                if (meta.field === 'id_sub_kriteria') {
+                    rowData.sub_kriteria = display;
+                    rowData.id_item_sub_kriteria = null;
+                    rowData.item_sub_kriteria = '-';
+                    $cell.closest('tr').children('td').eq(9).text('-');
+                }
+                if (meta.field === 'id_item_sub_kriteria') rowData.item_sub_kriteria = display;
+                if (meta.field === 'id_jenis_pembayaran') {
+                    rowData.jenis_pembayaran = display;
+                    if (payload.penerima !== rowData.penerima) {
+                        rowData.penerima = payload.penerima;
+                        $cell.closest('tr').children('td').eq(10).text(payload.penerima || '-');
+                    }
+                }
+                if (meta.field === 'penerima') rowData.penerima = value;
+                if (meta.field === 'uraian') rowData.uraian = value;
+                if (meta.field === 'keterangan') rowData.keterangan = value;
+
+                table.row($cell.closest('tr')).data(rowData);
+                setActiveCell($cell.closest('tr').children('td').eq(cellColumn($cell)));
+            }
+
             function saveInlineCell($cell, meta, rowData, value) {
                 var col = cellColumn($cell);
+                var payload = buildPayload(rowData, meta.field, value);
                 $cell.removeClass('cb-error-cell cb-saved-cell').addClass('cb-saving-cell');
 
                 $.ajax({
                     url: '/bank-keluar/' + rowData.id_bank_keluar,
                     type: 'POST',
-                    data: buildPayload(rowData, meta.field, value),
+                    data: payload,
                     success: function () {
-                        $cell.removeClass('cb-saving-cell').addClass('cb-saved-cell');
-                        restoreActive = { id: rowData.id_bank_keluar, col: col };
+                        applyInlineSaveToRow($cell, meta, rowData, value, payload);
+                        var $updatedCell = findCellByRowId(rowData.id_bank_keluar, col);
+                        $updatedCell.removeClass('cb-saving-cell cb-error-cell').addClass('cb-saved-cell');
+                        setActiveCell($updatedCell);
                         setTimeout(function () {
-                            table.ajax.reload(null, false);
-                        }, 120);
+                            $updatedCell.removeClass('cb-saved-cell');
+                        }, 900);
                     },
                     error: function (xhr) {
                         $cell.removeClass('cb-saving-cell').addClass('cb-error-cell');
@@ -653,6 +718,9 @@
                 function finishEdit($editor, shouldSave) {
                     if (!$cell.hasClass('cb-editing-cell')) return;
                     var nextValue = $editor.val();
+                    if ($editor.is('select')) {
+                        $cell.data('selected-label', $.trim($editor.find('option:selected').text()));
+                    }
                     if ($editor.hasClass('select2-hidden-accessible')) {
                         $(document).off('keydown.cbInlineSelect2');
                         $editor.off('select2:select select2:close');

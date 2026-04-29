@@ -78,7 +78,18 @@ class BankKeluarController extends Controller
             3600,
             fn() => KategoriKriteria::where('tipe', 'Keluar')->get()
         );
-        $subKriteria = Cache::remember('sub_kriteria', 3600, fn() => SubKriteria::all());
+        $subKriteria = Cache::remember('sub_kriteria', 3600, fn() => SubKriteria::orderByRaw("CASE nama_sub_kriteria
+                WHEN 'Karyawan Pimpinan' THEN 1
+                WHEN 'Karyawan Pelaksana' THEN 2
+                WHEN 'Gaji Honor' THEN 3
+                WHEN 'Purchase Volume' THEN 4
+                WHEN 'Biaya Usaha dan Lainnya' THEN 5
+                WHEN 'Pajak' THEN 6
+                WHEN 'Operasional Produksi' THEN 7
+                ELSE 999
+            END")
+            ->orderBy('id_sub_kriteria')
+            ->get());
         $itemSubKriteria = Cache::remember('item_sub_kriteria', 3600, fn() => ItemSubKriteria::all());
         $jenisPembayaran = Cache::remember('jenis_pembayaran', 3600, fn() => JenisPembayaran::all());
 
@@ -370,6 +381,17 @@ class BankKeluarController extends Controller
             $subKriteria = DB::table('sub_kriteria')
                 ->select('id_sub_kriteria', 'nama_sub_kriteria', 'id_kategori_kriteria')
                 ->where('id_kategori_kriteria', $id)
+                ->orderByRaw("CASE nama_sub_kriteria
+                    WHEN 'Karyawan Pimpinan' THEN 1
+                    WHEN 'Karyawan Pelaksana' THEN 2
+                    WHEN 'Gaji Honor' THEN 3
+                    WHEN 'Purchase Volume' THEN 4
+                    WHEN 'Biaya Usaha dan Lainnya' THEN 5
+                    WHEN 'Pajak' THEN 6
+                    WHEN 'Operasional Produksi' THEN 7
+                    ELSE 999
+                END")
+                ->orderBy('id_sub_kriteria')
                 ->get();
 
             \Log::info('getSub result:', ['count' => $subKriteria->count(), 'data' => $subKriteria->toArray()]);
@@ -2473,7 +2495,18 @@ class BankKeluarController extends Controller
             3600,
             fn() => KategoriKriteria::where('tipe', 'Keluar')->get()
         );
-        $subKriteria = Cache::remember('sub_kriteria', 3600, fn() => SubKriteria::all());
+        $subKriteria = Cache::remember('sub_kriteria', 3600, fn() => SubKriteria::orderByRaw("CASE nama_sub_kriteria
+                WHEN 'Karyawan Pimpinan' THEN 1
+                WHEN 'Karyawan Pelaksana' THEN 2
+                WHEN 'Gaji Honor' THEN 3
+                WHEN 'Purchase Volume' THEN 4
+                WHEN 'Biaya Usaha dan Lainnya' THEN 5
+                WHEN 'Pajak' THEN 6
+                WHEN 'Operasional Produksi' THEN 7
+                ELSE 999
+            END")
+            ->orderBy('id_sub_kriteria')
+            ->get());
         $itemSubKriteria = Cache::remember('item_sub_kriteria', 3600, fn() => ItemSubKriteria::all());
         $jenisPembayaran = Cache::remember('jenis_pembayaran', 3600, fn() => JenisPembayaran::all());
 

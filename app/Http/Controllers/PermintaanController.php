@@ -20,7 +20,19 @@ class PermintaanController extends Controller
     }
     public function getSub($id)
     {
-        return SubKriteria::where('id_kategori_kriteria', $id)->get();
+        return SubKriteria::where('id_kategori_kriteria', $id)
+            ->orderByRaw("CASE nama_sub_kriteria
+                WHEN 'Karyawan Pimpinan' THEN 1
+                WHEN 'Karyawan Pelaksana' THEN 2
+                WHEN 'Gaji Honor' THEN 3
+                WHEN 'Purchase Volume' THEN 4
+                WHEN 'Biaya Usaha dan Lainnya' THEN 5
+                WHEN 'Pajak' THEN 6
+                WHEN 'Operasional Produksi' THEN 7
+                ELSE 999
+            END")
+            ->orderBy('id_sub_kriteria')
+            ->get();
     }
 
     public function getTable(Request $request)

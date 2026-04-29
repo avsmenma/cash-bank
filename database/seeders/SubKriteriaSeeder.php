@@ -21,7 +21,7 @@ class SubKriteriaSeeder extends Seeder
             ['id_sub_kriteria' => 5, 'id_kategori_kriteria' => 2, 'nama_sub_kriteria' => 'Purchase Volume'],
             ['id_sub_kriteria' => 6, 'id_kategori_kriteria' => 2, 'nama_sub_kriteria' => 'Operasional Produksi'],
             ['id_sub_kriteria' => 7, 'id_kategori_kriteria' => 2, 'nama_sub_kriteria' => 'Pembayaran Eksploitasi Lainnya'],
-            ['id_sub_kriteria' => 8, 'id_kategori_kriteria' => 3, 'nama_sub_kriteria' => 'Pajak'],
+            ['id_sub_kriteria' => 8, 'id_kategori_kriteria' => 2, 'nama_sub_kriteria' => 'Pajak'],
             ['id_sub_kriteria' => 9, 'id_kategori_kriteria' => 3, 'nama_sub_kriteria' => 'Investasi On Farm'],
             ['id_sub_kriteria' => 10, 'id_kategori_kriteria' => 3, 'nama_sub_kriteria' => 'Investasi Off Farm'],
             ['id_sub_kriteria' => 11, 'id_kategori_kriteria' => 3, 'nama_sub_kriteria' => 'Pembayaran investasi lainnya'],

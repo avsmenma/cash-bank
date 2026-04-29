@@ -156,6 +156,13 @@
             resize: vertical;
             white-space: normal;
         }
+        textarea.cb-inline-editor-wide {
+            width: 320px;
+            max-width: 48vw;
+            min-height: 72px;
+            line-height: 1.35;
+            box-shadow: 0 4px 18px rgba(15, 23, 42, .14);
+        }
         #example3 .select2-container--bootstrap4 .select2-selection {
             border: 1px solid #1f8ef1;
             border-radius: 0;
@@ -793,6 +800,8 @@
                 var $editor;
                 if (meta.type === 'textarea') {
                     $editor = $('<textarea class="cb-inline-editor"></textarea>').val(currentValue);
+                } else if (meta.field === 'penerima') {
+                    $editor = $('<textarea class="cb-inline-editor cb-inline-editor-wide"></textarea>').val(currentValue);
                 } else {
                     var inputType = meta.type === 'date' ? 'date' : 'text';
                     $editor = $('<input class="cb-inline-editor">').attr('type', inputType);
@@ -810,10 +819,11 @@
                     if (e.key === 'Escape') {
                         e.preventDefault();
                         finishEdit($editor, false);
-                    } else if (e.key === 'Enter' && meta.type !== 'textarea') {
-                        e.preventDefault();
-                        finishEdit($editor, true);
-                    } else if (e.key === 'Enter' && e.ctrlKey) {
+                        return;
+                    }
+
+                    if (e.key === 'Enter') {
+                        if ($editor.is('textarea') && e.shiftKey) return;
                         e.preventDefault();
                         finishEdit($editor, true);
                     }

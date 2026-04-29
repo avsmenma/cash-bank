@@ -267,6 +267,7 @@
             var COL_URAIAN  = 12;
             var BULK_EDIT_FIELDS = [
                 'id_sumber_dana',
+                'id_bank_tujuan',
                 'id_kategori_kriteria',
                 'id_sub_kriteria',
                 'id_item_sub_kriteria',

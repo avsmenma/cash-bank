@@ -156,6 +156,17 @@
             resize: vertical;
             white-space: normal;
         }
+        #example3 .select2-container--bootstrap4 .select2-selection {
+            border: 1px solid #1f8ef1;
+            border-radius: 0;
+            min-height: 32px;
+            font-size: 12px;
+        }
+        .cb-inline-dropdown.select2-dropdown {
+            border-color: #1f8ef1;
+            font-size: 12px;
+            z-index: 99999;
+        }
     </style>
 @endpush
 
@@ -559,6 +570,10 @@
                 function finishEdit($editor, shouldSave) {
                     if (!$cell.hasClass('cb-editing-cell')) return;
                     var nextValue = $editor.val();
+                    if ($editor.hasClass('select2-hidden-accessible')) {
+                        $editor.off('select2:select select2:close');
+                        $editor.select2('destroy');
+                    }
                     $cell.removeClass('cb-editing-cell').html(originalHtml);
                     setActiveCell($cell);
                     if (shouldSave && String(nextValue) !== String(currentValue)) {
@@ -567,7 +582,8 @@
                 }
 
                 if (meta.type === 'select') {
-                    var $select = $('<select class="cb-inline-editor"></select>').prop('disabled', true);
+                    var selectionMade = false;
+                    var $select = $('<select class="cb-inline-editor cb-inline-select"></select>').prop('disabled', true);
                     $select.append('<option value="">Memuat...</option>');
                     $cell.append($select);
                     getSelectOptions(meta, rowData).done(function (options) {
@@ -575,9 +591,35 @@
                         (options || []).forEach(function (opt) {
                             $select.append('<option value="' + escapeHtml(opt.value) + '">' + escapeHtml(opt.label) + '</option>');
                         });
-                        $select.val(String(currentValue)).prop('disabled', false).focus();
+                        $select.val(String(currentValue)).prop('disabled', false);
+
+                        if ($.fn.select2) {
+                            $select.select2({
+                                theme: 'bootstrap4',
+                                width: '100%',
+                                dropdownParent: $('body'),
+                                minimumResultsForSearch: Infinity,
+                                dropdownCssClass: 'cb-inline-dropdown'
+                            });
+                            setTimeout(function () {
+                                $select.select2('open');
+                                $('.select2-container--open .select2-results__option--highlighted')
+                                    .attr('aria-selected', 'true');
+                            }, 0);
+                        } else {
+                            $select.focus();
+                        }
                     });
-                    $select.on('change', function () { finishEdit($select, true); });
+                    $select.on('select2:select', function () {
+                        selectionMade = true;
+                        finishEdit($select, true);
+                    });
+                    $select.on('select2:close', function () {
+                        if (!selectionMade) finishEdit($select, false);
+                    });
+                    $select.on('change', function () {
+                        if (!$.fn.select2) finishEdit($select, true);
+                    });
                     $select.on('keydown', function (e) {
                         if (e.key === 'Enter') { e.preventDefault(); finishEdit($select, true); }
                         if (e.key === 'Escape') { e.preventDefault(); finishEdit($select, false); }

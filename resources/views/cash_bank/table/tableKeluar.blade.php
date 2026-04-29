@@ -458,6 +458,71 @@
                 return deferred.promise();
             }
 
+            function keepOptionInView($option) {
+                var option = $option.get(0);
+                var list = $('.select2-container--open .select2-results__options').get(0);
+                if (!option || !list) return;
+
+                var optionTop = option.offsetTop;
+                var optionBottom = optionTop + option.offsetHeight;
+                var listTop = list.scrollTop;
+                var listBottom = listTop + list.clientHeight;
+
+                if (optionTop < listTop) {
+                    list.scrollTop = optionTop;
+                } else if (optionBottom > listBottom) {
+                    list.scrollTop = optionBottom - list.clientHeight;
+                }
+            }
+
+            function highlightInlineOption($options, index) {
+                var $option = $options.eq(index);
+                $options.removeClass('select2-results__option--highlighted');
+                $option.addClass('select2-results__option--highlighted');
+                keepOptionInView($option);
+            }
+
+            function bindInlineDropdownKeyboard($select) {
+                $(document).off('keydown.cbInlineSelect2').on('keydown.cbInlineSelect2', function (e) {
+                    if (!$('.select2-container--open').length) return;
+
+                    var $options = $('.select2-container--open .select2-results__option[role="option"]').not('[aria-disabled="true"]');
+                    if (!$options.length) return;
+
+                    var currentIndex = $options.index($('.select2-container--open .select2-results__option--highlighted'));
+
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+
+                        var nextIndex = currentIndex;
+                        if (e.key === 'ArrowDown') {
+                            nextIndex = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, $options.length - 1);
+                        } else {
+                            nextIndex = currentIndex < 0 ? $options.length - 1 : Math.max(currentIndex - 1, 0);
+                        }
+                        highlightInlineOption($options, nextIndex);
+                        return false;
+                    }
+
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        var $highlighted = $('.select2-container--open .select2-results__option--highlighted').first();
+                        if (!$highlighted.length) $highlighted = $options.first();
+                        $highlighted.trigger('mouseup');
+                        return false;
+                    }
+
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        $select.select2('close');
+                        return false;
+                    }
+                });
+            }
+
             function getSelectOptions(meta, rowData) {
                 if (meta.source === 'subKriteria') {
                     var kategori = rowData.id_kategori_kriteria || '-';
@@ -571,6 +636,7 @@
                     if (!$cell.hasClass('cb-editing-cell')) return;
                     var nextValue = $editor.val();
                     if ($editor.hasClass('select2-hidden-accessible')) {
+                        $(document).off('keydown.cbInlineSelect2');
                         $editor.off('select2:select select2:close');
                         $editor.select2('destroy');
                     }
@@ -603,8 +669,10 @@
                             });
                             setTimeout(function () {
                                 $select.select2('open');
-                                $('.select2-container--open .select2-results__option--highlighted')
-                                    .attr('aria-selected', 'true');
+                                bindInlineDropdownKeyboard($select);
+                                var $options = $('.select2-container--open .select2-results__option[role="option"]').not('[aria-disabled="true"]');
+                                var selectedIndex = Math.max(0, $options.index($('.select2-container--open .select2-results__option[aria-selected="true"]').first()));
+                                highlightInlineOption($options, selectedIndex);
                             }, 0);
                         } else {
                             $select.focus();

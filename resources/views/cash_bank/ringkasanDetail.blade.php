@@ -121,7 +121,7 @@
         </div>
         <ol class="breadcrumb mb-0" style="background:none;padding:0;">
           <li class="breadcrumb-item"><a href="{{ route('dashboard.index') }}">Home</a></li>
-          <li class="breadcrumb-item"><a href="{{ route('ringkasan.index', ['tahun' => $tahun, 'dari_bulan' => $dariBulan, 'sampai_bulan' => $sampaiBulan]) }}">Ringkasan Pembayaran</a></li>
+          <li class="breadcrumb-item"><a href="{{ route('ringkasan.index') }}">Ringkasan Pembayaran</a></li>
           <li class="breadcrumb-item active">Detail</li>
         </ol>
       </div>
@@ -133,7 +133,7 @@
         <span class="badge-info-rk">
           <i class="fas fa-calendar-alt mr-1"></i> {{ $periodeLabel }}
         </span>
-        <a href="{{ route('ringkasan.index', ['tahun' => $tahun, 'dari_bulan' => $dariBulan, 'sampai_bulan' => $sampaiBulan]) }}" class="btn btn-default btn-sm">
+        <a href="{{ route('ringkasan.index') }}" class="btn btn-default btn-sm">
           <i class="fas fa-arrow-left mr-1"></i> Kembali
         </a>
       </div>

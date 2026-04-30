@@ -9,6 +9,7 @@ use App\Models\BankTujuan;
 use App\Models\SumberDana;
 use App\Models\SubKriteria;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Imports\importKeluar;
 use App\Models\DokumenAgenda;
 use App\Imports\EmployeeImport;
@@ -753,14 +754,20 @@ class BankKeluarController extends Controller
     public function report(Request $request)
     {
         /* ================= AMBIL SEMUA REQUEST FILTER ================= */
-        $tahun = $request->tahun;
-        $bulan = $request->bulan;
-        $tanggalDipilih = $request->tanggal;
-        $bankTujuanId = $request->bank_tujuan;
-        $sumberDanaIds = $request->sumber_dana;
-        $kategoriIds = $request->kategori;
+        $tahun = $request->filled('tahun') ? $request->tahun : now()->year;
+        $bulan = $request->filled('bulan') ? $request->bulan : null;
+        $tglDari = $request->tgl_dari;
+        $tglSampai = $request->tgl_sampai;
+        $tanggalDipilih = array_values(array_filter((array) $request->input('tanggal', []), fn($value) => $value !== null && $value !== ''));
+        $bankTujuanId = $request->filled('bank_tujuan') ? $request->bank_tujuan : null;
+        $sumberDanaIds = array_values(array_filter((array) $request->input('sumber_dana', []), fn($value) => $value !== null && $value !== ''));
+        $kategoriIds = array_values(array_filter((array) $request->input('kategori', []), fn($value) => $value !== null && $value !== ''));
         $rekapanVA = $request->rekapanVA;
-        $idJenisPembayaran = $request->id_jenis_pembayaran;
+        $idJenisPembayaran = $request->filled('id_jenis_pembayaran') ? $request->id_jenis_pembayaran : null;
+        $perPageInput = $request->input('per_page', '10');
+        $perPage = $perPageInput === 'all'
+            ? 'all'
+            : (in_array((int) $perPageInput, [10, 50, 100], true) ? (int) $perPageInput : 10);
 
         /* ================= HITUNG JUMLAH FILTER AKTIF ================= */
         $activeFilters = [];
@@ -770,7 +777,7 @@ class BankKeluarController extends Controller
             $timeFilters[] = 'tahun';
         if ($bulan)
             $timeFilters[] = 'bulan';
-        if ($tanggalDipilih && count($tanggalDipilih) > 0)
+        if (count($tanggalDipilih) > 0)
             $timeFilters[] = 'tanggal';
 
         if ($bankTujuanId)
@@ -787,13 +794,26 @@ class BankKeluarController extends Controller
         $countActiveFilters = count($activeFilters);
 
         /* ================= FILTER TANGGAL (CLOSURE) ================= */
-        $filterTanggal = function ($q) use ($tahun, $bulan, $tanggalDipilih) {
-            if (!empty($tanggalDipilih) && is_array($tanggalDipilih)) {
+        $filterTanggal = function ($q) use ($tahun, $bulan, $tanggalDipilih, $tglDari, $tglSampai) {
+            if (!empty($tanggalDipilih)) {
                 $q->whereIn(DB::raw('DATE(tanggal)'), $tanggalDipilih);
-            } elseif ($tahun && $bulan) {
-                $q->whereYear('tanggal', $tahun)->whereMonth('tanggal', $bulan);
-            } elseif ($tahun) {
+                return;
+            }
+
+            if ($tahun) {
                 $q->whereYear('tanggal', $tahun);
+            }
+
+            if ($bulan) {
+                $q->whereMonth('tanggal', $bulan);
+            }
+
+            if ($tglDari) {
+                $q->whereDate('tanggal', '>=', $tglDari);
+            }
+
+            if ($tglSampai) {
+                $q->whereDate('tanggal', '<=', $tglSampai);
             }
         };
 
@@ -1064,7 +1084,8 @@ class BankKeluarController extends Controller
                     DB::raw('NULL as id_jenis_pembayaran'),
                     DB::raw('NULL as nama_jenis_pembayaran'),
                     DB::raw("'MASUK' as jenis"),
-                    DB::raw('bank_masuk.id_bank_masuk as urut_id')
+                    DB::raw('bank_masuk.id_bank_masuk as urut_id'),
+                    DB::raw('0 as jenis_sort')
                 )
                 ->where(function ($q) use ($applyFilterSaldoAwal) {
                     // Gunakan filter saldo awal (tanpa kategori/jenis pembayaran)
@@ -1101,21 +1122,18 @@ class BankKeluarController extends Controller
                     'bank_keluars.id_jenis_pembayaran',
                     'jenis_pembayarans.nama_jenis_pembayaran',
                     DB::raw("'KELUAR' as jenis"),
-                    DB::raw('bank_keluars.id_bank_keluar as urut_id')
+                    DB::raw('bank_keluars.id_bank_keluar as urut_id'),
+                    DB::raw('1 as jenis_sort')
                 )
                 ->where(function ($q) use ($applyFilterSaldoAwal) {
                     // Gunakan filter saldo awal (tanpa kategori/jenis pembayaran)
                     $applyFilterSaldoAwal($q, 'bank_keluars');
                 });
 
-            $data = $bankMasuk
-                ->unionAll($bankKeluar)
-                ->orderBy('tanggal')
-                ->orderBy('urut_id')
-                ->get();
+            $baseQuery = $bankMasuk->unionAll($bankKeluar);
         } else {
             // Hanya tampilkan Bank Keluar (Kredit) dengan filter lengkap
-            $data = DB::table('bank_keluars')
+            $baseQuery = DB::table('bank_keluars')
                 ->leftJoin('sumber_dana', 'sumber_dana.id_sumber_dana', '=', 'bank_keluars.id_sumber_dana')
                 ->leftJoin('bank_tujuan', 'bank_tujuan.id_bank_tujuan', '=', 'bank_keluars.id_bank_tujuan')
                 ->leftJoin('kategori_kriteria', 'kategori_kriteria.id_kategori_kriteria', '=', 'bank_keluars.id_kategori_kriteria')
@@ -1140,23 +1158,89 @@ class BankKeluarController extends Controller
                     'bank_keluars.id_jenis_pembayaran',
                     'jenis_pembayarans.nama_jenis_pembayaran',
                     DB::raw("'KELUAR' as jenis"),
-                    DB::raw('bank_keluars.id_bank_keluar as urut_id')
+                    DB::raw('bank_keluars.id_bank_keluar as urut_id'),
+                    DB::raw('1 as jenis_sort')
                 )
                 ->where(function ($q) use ($applyFilter) {
                     // Gunakan filter lengkap (dengan kategori/jenis pembayaran)
                     $applyFilter($q, 'bank_keluars');
-                })
+                });
+        }
+
+        /* ================= PAGINASI DATA UTAMA DI DATABASE ================= */
+        $reportQuery = DB::query()->fromSub($baseQuery, 'trx');
+        $totalEntries = (clone $reportQuery)->count();
+        $totalDebet = (clone $reportQuery)->sum('debet');
+        $totalKredit = (clone $reportQuery)->sum('kredit');
+        $page = max(1, (int) $request->input('page', 1));
+
+        if ($perPage === 'all') {
+            $pageRows = (clone $reportQuery)
                 ->orderBy('tanggal')
                 ->orderBy('urut_id')
+                ->orderBy('jenis_sort')
                 ->get();
+
+            $data = new LengthAwarePaginator(
+                $pageRows,
+                $totalEntries,
+                max($totalEntries, 1),
+                1,
+                [
+                    'path' => $request->url(),
+                    'query' => $request->except('page'),
+                ]
+            );
+        } else {
+            $lastPage = max(1, (int) ceil($totalEntries / $perPage));
+            $page = min($page, $lastPage);
+
+            $pageRows = (clone $reportQuery)
+                ->orderBy('tanggal')
+                ->orderBy('urut_id')
+                ->orderBy('jenis_sort')
+                ->forPage($page, $perPage)
+                ->get();
+
+            $data = new LengthAwarePaginator(
+                $pageRows,
+                $totalEntries,
+                $perPage,
+                $page,
+                [
+                    'path' => $request->url(),
+                    'query' => $request->except('page'),
+                ]
+            );
         }
 
         /* ================= HITUNG SALDO BERJALAN / TOTAL KREDIT ================= */
+        $finalSaldo = null;
+
         if ($showSaldoAkhir) {
-            // Mode: Tampil Debet + Kredit + Saldo Akhir
-            // Karena $data sudah berisi semua bank_masuk dan bank_keluar yang difilter
-            // Kita bisa langsung hitung saldo berjalan
+            $finalSaldo = $totalDebet - $totalKredit;
             $saldo = 0;
+
+            if ($data->count() > 0) {
+                $firstRow = $data->first();
+                $saldo = (clone $reportQuery)
+                    ->where(function ($q) use ($firstRow) {
+                        $q->where('tanggal', '<', $firstRow->tanggal)
+                            ->orWhere(function ($sameDate) use ($firstRow) {
+                                $sameDate->where('tanggal', $firstRow->tanggal)
+                                    ->where(function ($sameDateOrder) use ($firstRow) {
+                                        $sameDateOrder->where('urut_id', '<', $firstRow->urut_id)
+                                            ->orWhere(function ($sameId) use ($firstRow) {
+                                                $sameId->where('urut_id', $firstRow->urut_id)
+                                                    ->where('jenis_sort', '<', $firstRow->jenis_sort);
+                                            });
+                                    });
+                            });
+                    })
+                    ->selectRaw('COALESCE(SUM(debet), 0) - COALESCE(SUM(kredit), 0) as saldo')
+                    ->value('saldo') ?? 0;
+            }
+
             foreach ($data as $d) {
                 $saldo += ($d->debet ?? 0) - ($d->kredit ?? 0);
                 $d->saldo_akhir = $saldo;
@@ -1167,9 +1251,6 @@ class BankKeluarController extends Controller
                 $d->saldo_akhir = null;
             }
         }
-
-        // Hitung Total Kredit (untuk mode 2+ filter)
-        $totalKredit = $data->sum('kredit');
 
         /* ================= REKAPAN ================= */
         $rekapVA = [];
@@ -1281,7 +1362,9 @@ class BankKeluarController extends Controller
             'showSaldoAkhir',
             'showSAP',
             'rekapVA',
+            'totalDebet',
             'totalKredit',
+            'finalSaldo',
             'tahun',
             'bulan',
             'tanggalDipilih',

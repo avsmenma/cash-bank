@@ -98,6 +98,15 @@
     }
     tbody tr { background-color: #ffffff; }
     tbody tr:hover { background-color: #f0f5fb; }
+    .sap-inline-input {
+        min-width: 140px;
+        border-color: #ced4da;
+        font-size: 12px;
+        text-align: center;
+    }
+    .sap-inline-input.is-saving { background-color: #fff8db; }
+    .sap-inline-input.is-saved { border-color: #28a745; background-color: #f1fff5; }
+    .sap-inline-input.is-error { border-color: #dc3545; background-color: #fff5f5; }
 </style>
 @endpush
 
@@ -131,8 +140,7 @@
               <th>No</th>
               <th>Nama Bank / VA</th>
               <th>Saldo Akhir</th>
-              <th>Dibuat</th>
-              <th>Diperbarui</th>
+              <th>SAP</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -156,14 +164,66 @@
         { data: 'DT_RowIndex', orderable: false, searchable: false, title: 'No' },
         { data: 'nama_tujuan' },
         { data: 'saldo_akhir', orderable: false, searchable: false },
-        { data: 'created_at' },
-        { data: 'updated_at' },
+        { data: 'sap', orderable: false, searchable: false },
         { data: 'aksi', orderable: false, searchable: false }
       ],
       columnDefs: [
         { targets: 1, className: 'text-center' },
-        { targets: 2, className: 'text-right' }
+        { targets: 2, className: 'text-right' },
+        { targets: 3, className: 'text-center' }
       ]
+    });
+
+    function saveSap(input) {
+      var $input = $(input);
+      var id = $input.data('id');
+      var currentValue = $input.val().trim();
+      var originalValue = String($input.data('original') || '').trim();
+
+      if (currentValue === originalValue) return;
+
+      $input.prop('disabled', true).removeClass('is-saved is-error').addClass('is-saving');
+
+      $.ajax({
+        url: "{{ url('/daftarBank') }}/" + id + "/sap",
+        method: 'PATCH',
+        data: { sap: currentValue },
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+        success: function (response) {
+          var savedValue = response.sap || '';
+          $input
+            .data('original', savedValue)
+            .val(savedValue)
+            .removeClass('is-saving is-error')
+            .addClass('is-saved');
+
+          setTimeout(function () {
+            $input.removeClass('is-saved');
+          }, 1200);
+        },
+        error: function () {
+          $input.removeClass('is-saving is-saved').addClass('is-error');
+          alert('Gagal menyimpan SAP. Silakan coba lagi.');
+        },
+        complete: function () {
+          $input.prop('disabled', false);
+        }
+      });
+    }
+
+    $('#example2').on('focus', '.sap-inline-input', function () {
+      $(this).data('original', $(this).val().trim());
+    });
+
+    $('#example2').on('blur', '.sap-inline-input', function () {
+      saveSap(this);
+    });
+
+    $('#example2').on('keydown', '.sap-inline-input', function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        $(this).blur();
+      }
     });
   });
 </script>

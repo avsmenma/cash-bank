@@ -32,6 +32,18 @@ class daftarBankController extends Controller
                 $saldo = (float) $totalMasuk - (float) $totalKeluar;
                 return 'Rp ' . number_format($saldo, 0, ',', '.');
             })
+            ->addColumn('sap', function ($row) {
+                $value = e($row->sap ?? '');
+
+                return '
+                    <input type="text"
+                        class="form-control form-control-sm sap-inline-input"
+                        value="' . $value . '"
+                        data-id="' . $row->id_bank_tujuan . '"
+                        data-original="' . $value . '"
+                        placeholder="Input SAP">
+                ';
+            })
             ->addColumn('aksi', function ($row) {
                 $route = route('daftarBank.destroy', $row->id_bank_tujuan);
                 $detailRoute = route('daftarBank.detail', $row->id_bank_tujuan);
@@ -63,8 +75,25 @@ class daftarBankController extends Controller
                     </form>
                 ';
             })
-            ->rawColumns(['aksi'])
+            ->rawColumns(['sap', 'aksi'])
             ->make(true);
+    }
+
+    public function updateSap(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'sap' => 'nullable|string|max:255',
+        ]);
+
+        $bank = BankTujuan::findOrFail($id);
+        $bank->sap = $validated['sap'] ?? null;
+        $bank->save();
+
+        return response()->json([
+            'success' => true,
+            'sap' => $bank->sap,
+            'message' => 'SAP berhasil disimpan.',
+        ]);
     }
 
     /**

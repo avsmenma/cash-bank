@@ -10,7 +10,7 @@ class BankTujuan extends Model
 {
     protected $table = 'bank_tujuan';
     protected $primaryKey = 'id_bank_tujuan';
-    protected $fillable = ['nama_tujuan'];
+    protected $fillable = ['nama_tujuan', 'sap'];
 
     public function bankMasuk()
     {

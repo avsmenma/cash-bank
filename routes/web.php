@@ -284,6 +284,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::resource('daftarRekening', DaftarRekeningController::class);
     Route::get('/daftarBank/data', [DaftarBankController::class, 'datatable'])->name('daftarBank.data');
+    Route::patch('/daftarBank/{id}/sap', [DaftarBankController::class, 'updateSap'])->name('daftarBank.updateSap');
     Route::resource('daftarBank', DaftarBankController::class);
     Route::get('/daftarBank/{id}/detail', [DaftarBankController::class, 'showDetail'])
         ->name('daftarBank.detail');

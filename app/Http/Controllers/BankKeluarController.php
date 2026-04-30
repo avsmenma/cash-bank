@@ -726,6 +726,369 @@ class BankKeluarController extends Controller
         }
     }
 
+    public function previewAgenda(Request $request)
+    {
+        $validated = $request->validate([
+            'agenda_numbers' => 'required|string',
+        ]);
+
+        $agendaNumbers = $this->parseAgendaNumbers($validated['agenda_numbers']);
+
+        if (empty($agendaNumbers)) {
+            return response()->json([
+                'message' => 'Masukkan minimal satu nomor agenda.',
+            ], 422);
+        }
+
+        $dokumenList = DB::connection('mysql_agenda_online')
+            ->table('dokumens')
+            ->select(
+                'id as dokumen_id',
+                'nomor_agenda',
+                'uraian_spp as uraian',
+                'nilai_rupiah',
+                'dibayar_kepada as penerima',
+                'jenis_pembayaran',
+                'kategori',
+                'jenis_dokumen',
+                'jenis_sub_pekerjaan',
+                'tanggal_dibayar'
+            )
+            ->whereIn('nomor_agenda', $agendaNumbers)
+            ->get()
+            ->keyBy(fn($row) => trim((string) $row->nomor_agenda));
+
+        $bankOptions = BankTujuan::orderBy('nama_tujuan')
+            ->get(['id_bank_tujuan', 'nama_tujuan'])
+            ->map(fn($bank) => [
+                'id' => $bank->id_bank_tujuan,
+                'text' => $bank->nama_tujuan,
+            ])
+            ->values();
+
+        $rows = [];
+        $warnings = 0;
+
+        foreach ($agendaNumbers as $index => $agendaNumber) {
+            $dokumen = $dokumenList->get($agendaNumber);
+
+            if (!$dokumen) {
+                $warnings++;
+                $rows[] = [
+                    'no' => $index + 1,
+                    'agenda' => $agendaNumber,
+                    'dokumen_id' => null,
+                    'tanggal' => null,
+                    'bank_tujuan_id' => null,
+                    'bank_tujuan' => '-',
+                    'kategori' => '-',
+                    'sub_kriteria' => '-',
+                    'item_sub_kriteria' => '-',
+                    'jenis_pembayaran' => '-',
+                    'penerima' => '-',
+                    'uraian' => 'Dokumen tidak ditemukan di Agenda Online',
+                    'kredit' => '0',
+                    'warning' => true,
+                    'warning_message' => 'Dokumen tidak ditemukan',
+                    'can_save' => false,
+                ];
+                continue;
+            }
+
+            $mapped = $this->mapDokumenAgendaForBankKeluar($dokumen);
+            $bankTujuan = $this->detectBankTujuanFromUraian($dokumen->uraian, $bankOptions);
+            $tanggal = $this->normalizeAgendaDate($dokumen->tanggal_dibayar ?? null);
+            $nilai = $this->parseCurrencyValue($dokumen->nilai_rupiah ?? 0);
+            $hasWarning = !$bankTujuan;
+
+            if ($hasWarning) {
+                $warnings++;
+            }
+
+            $rows[] = [
+                'no' => $index + 1,
+                'agenda' => $dokumen->nomor_agenda ?: $agendaNumber,
+                'dokumen_id' => $dokumen->dokumen_id,
+                'tanggal' => $tanggal,
+                'bank_tujuan_id' => $bankTujuan['id'] ?? null,
+                'bank_tujuan' => $bankTujuan['text'] ?? '-',
+                'kategori_id' => $mapped['kategori_id'],
+                'kategori' => $mapped['kategori_nama'] ?: '-',
+                'sub_kriteria_id' => $mapped['sub_kriteria_id'],
+                'sub_kriteria' => $mapped['sub_kriteria_nama'] ?: '-',
+                'item_sub_kriteria_id' => $mapped['item_sub_kriteria_id'],
+                'item_sub_kriteria' => $mapped['item_sub_kriteria_nama'] ?: '-',
+                'jenis_pembayaran_id' => $mapped['jenis_pembayaran_id'],
+                'jenis_pembayaran' => $mapped['jenis_pembayaran_nama'] ?: '-',
+                'penerima' => $dokumen->penerima ?: '-',
+                'uraian' => $dokumen->uraian ?: '-',
+                'kredit_raw' => $nilai,
+                'kredit' => number_format($nilai, 0, ',', '.'),
+                'warning' => $hasWarning,
+                'warning_message' => $hasWarning ? 'Nomor VA di awal uraian tidak cocok dengan master Bank Tujuan' : '',
+                'can_save' => true,
+            ];
+        }
+
+        session(['bank_keluar_agenda_preview_rows' => $rows]);
+
+        return response()->json([
+            'rows' => $rows,
+            'bank_options' => $bankOptions,
+            'total' => count($rows),
+            'savable' => collect($rows)->where('can_save', true)->count(),
+            'warnings' => $warnings,
+        ]);
+    }
+
+    public function confirmAgenda(Request $request)
+    {
+        $rows = session('bank_keluar_agenda_preview_rows', []);
+
+        if (empty($rows)) {
+            return response()->json([
+                'error' => 'Data preview tidak ditemukan. Silakan tekan Preview Dokumen ulang.',
+            ], 422);
+        }
+
+        $bankOverrides = (array) $request->input('bank_tujuan', []);
+        $saved = 0;
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($rows as $index => $row) {
+                if (empty($row['can_save'])) {
+                    continue;
+                }
+
+                $bankTujuanId = $bankOverrides[$index] ?? $row['bank_tujuan_id'] ?? null;
+                $bankTujuanId = $bankTujuanId !== '' ? $bankTujuanId : null;
+                $kredit = $this->parseCurrencyValue($row['kredit_raw'] ?? $row['kredit'] ?? 0);
+
+                BankKeluar::create([
+                    'dokumen_id' => $row['dokumen_id'] ?? null,
+                    'no_agenda' => null,
+                    'agenda_tahun' => $row['agenda'] ?? null,
+                    'id_sumber_dana' => null,
+                    'id_bank_tujuan' => $bankTujuanId,
+                    'id_kategori_kriteria' => $row['kategori_id'] ?? null,
+                    'id_sub_kriteria' => $row['sub_kriteria_id'] ?? null,
+                    'id_item_sub_kriteria' => $row['item_sub_kriteria_id'] ?? null,
+                    'uraian' => $row['uraian'] ?? null,
+                    'nilai_rupiah' => $kredit,
+                    'penerima' => ($row['penerima'] ?? '-') !== '-' ? $row['penerima'] : null,
+                    'tanggal' => $row['tanggal'] ?? now()->toDateString(),
+                    'id_jenis_pembayaran' => $row['jenis_pembayaran_id'] ?? null,
+                    'debet' => 0,
+                    'kredit' => $kredit,
+                    'keterangan' => 'Tarik otomatis dari nomor agenda',
+                ]);
+
+                $saved++;
+
+                if (!empty($row['dokumen_id'])) {
+                    try {
+                        DB::connection('mysql_agenda_online')
+                            ->table('dokumens')
+                            ->where('id', $row['dokumen_id'])
+                            ->update([
+                                'status_pembayaran' => 'sudah_dibayar',
+                                'dibayar' => $kredit,
+                                'tanggal_dibayar' => $row['tanggal'] ?? now()->toDateString(),
+                            ]);
+                    } catch (\Throwable $e) {
+                        \Log::warning('[CBSync] Gagal update status dokumen Agenda Online dari preview agenda.', [
+                            'dokumen_id' => $row['dokumen_id'],
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+            session()->forget('bank_keluar_agenda_preview_rows');
+
+            return response()->json([
+                'success' => "{$saved} data Bank Keluar berhasil disimpan.",
+                'total' => $saved,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::error('Confirm agenda bank keluar failed: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'Gagal menyimpan data: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function parseAgendaNumbers(string $input): array
+    {
+        $parts = preg_split('/[\r\n,;]+/', $input);
+
+        return collect($parts)
+            ->map(fn($value) => trim((string) $value))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function mapDokumenAgendaForBankKeluar($dokumen): array
+    {
+        $jenisPembayaranStr = trim($dokumen->jenis_pembayaran ?? '');
+        $kategoriStr = trim($dokumen->kategori ?? '');
+        $jenisDokumenStr = trim($dokumen->jenis_dokumen ?? '');
+        $jenisSubPekerjaanStr = trim($dokumen->jenis_sub_pekerjaan ?? '');
+
+        $jenisPembayaran = $jenisPembayaranStr !== ''
+            ? DB::table('jenis_pembayarans')->whereRaw('LOWER(TRIM(nama_jenis_pembayaran)) = ?', [strtolower($jenisPembayaranStr)])->first()
+            : null;
+
+        $kategori = null;
+        if ($kategoriStr !== '') {
+            $kategori = DB::table('kategori_kriteria')
+                ->where('tipe', 'Keluar')
+                ->whereRaw('LOWER(TRIM(nama_kriteria)) = ?', [strtolower($kategoriStr)])
+                ->first();
+
+            if (!$kategori) {
+                $kategori = DB::table('kategori_kriteria')
+                    ->where('tipe', 'Keluar')
+                    ->whereRaw('LOWER(TRIM(nama_kriteria)) LIKE ?', ['%' . strtolower($kategoriStr) . '%'])
+                    ->first();
+            }
+        }
+
+        $subKriteria = null;
+        if ($jenisDokumenStr !== '') {
+            $subQuery = DB::table('sub_kriteria')
+                ->whereRaw('LOWER(TRIM(nama_sub_kriteria)) = ?', [strtolower($jenisDokumenStr)]);
+
+            if ($kategori) {
+                $subQuery->where('id_kategori_kriteria', $kategori->id_kategori_kriteria);
+            }
+
+            $subKriteria = $subQuery->first();
+
+            if (!$subKriteria) {
+                $subQuery = DB::table('sub_kriteria')
+                    ->whereRaw('LOWER(TRIM(nama_sub_kriteria)) LIKE ?', ['%' . strtolower($jenisDokumenStr) . '%']);
+
+                if ($kategori) {
+                    $subQuery->where('id_kategori_kriteria', $kategori->id_kategori_kriteria);
+                }
+
+                $subKriteria = $subQuery->first();
+            }
+        }
+
+        if (!$kategori && $subKriteria && $subKriteria->id_kategori_kriteria) {
+            $kategori = DB::table('kategori_kriteria')->where('id_kategori_kriteria', $subKriteria->id_kategori_kriteria)->first();
+        }
+
+        $itemSubKriteria = null;
+        if ($jenisSubPekerjaanStr !== '') {
+            $itemQuery = DB::table('item_sub_kriteria')
+                ->whereRaw('LOWER(TRIM(nama_item_sub_kriteria)) = ?', [strtolower($jenisSubPekerjaanStr)]);
+
+            if ($subKriteria) {
+                $itemQuery->where('id_sub_kriteria', $subKriteria->id_sub_kriteria);
+            }
+
+            $itemSubKriteria = $itemQuery->first();
+
+            if (!$itemSubKriteria) {
+                $itemQuery = DB::table('item_sub_kriteria')
+                    ->whereRaw('LOWER(TRIM(nama_item_sub_kriteria)) LIKE ?', ['%' . strtolower($jenisSubPekerjaanStr) . '%']);
+
+                if ($subKriteria) {
+                    $itemQuery->where('id_sub_kriteria', $subKriteria->id_sub_kriteria);
+                }
+
+                $itemSubKriteria = $itemQuery->first();
+            }
+        }
+
+        if (!$itemSubKriteria && $subKriteria) {
+            $itemSubKriteria = DB::table('item_sub_kriteria')
+                ->where('id_sub_kriteria', $subKriteria->id_sub_kriteria)
+                ->orderBy('id_item_sub_kriteria')
+                ->first();
+        }
+
+        return [
+            'kategori_id' => $kategori->id_kategori_kriteria ?? null,
+            'kategori_nama' => $kategori->nama_kriteria ?? $kategoriStr,
+            'sub_kriteria_id' => $subKriteria->id_sub_kriteria ?? null,
+            'sub_kriteria_nama' => $subKriteria->nama_sub_kriteria ?? $jenisDokumenStr,
+            'item_sub_kriteria_id' => $itemSubKriteria->id_item_sub_kriteria ?? null,
+            'item_sub_kriteria_nama' => $itemSubKriteria->nama_item_sub_kriteria ?? $jenisSubPekerjaanStr,
+            'jenis_pembayaran_id' => $jenisPembayaran->id_jenis_pembayaran ?? null,
+            'jenis_pembayaran_nama' => $jenisPembayaran->nama_jenis_pembayaran ?? $jenisPembayaranStr,
+        ];
+    }
+
+    private function detectBankTujuanFromUraian(?string $uraian, $bankOptions): ?array
+    {
+        if (!$uraian || !preg_match('/^\s*(\d{6,20})(?=\D|$)/', $uraian, $matches)) {
+            return null;
+        }
+
+        $vaNumber = $matches[1];
+
+        foreach ($bankOptions as $bank) {
+            if (preg_match('/^\s*' . preg_quote($vaNumber, '/') . '(?=\D|$)/', $bank['text'])) {
+                return $bank;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeAgendaDate($date): string
+    {
+        if (!$date) {
+            return now()->toDateString();
+        }
+
+        try {
+            return Carbon::parse($date)->toDateString();
+        } catch (\Throwable $e) {
+            return now()->toDateString();
+        }
+    }
+
+    private function parseCurrencyValue($value): float
+    {
+        if ($value === null || $value === '') {
+            return 0;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        $cleaned = preg_replace('/[^\d.,-]/', '', (string) $value);
+
+        if ($cleaned === '') {
+            return 0;
+        }
+
+        $hasComma = str_contains($cleaned, ',');
+        $dotCount = substr_count($cleaned, '.');
+
+        if ($hasComma) {
+            $cleaned = str_replace('.', '', $cleaned);
+            $cleaned = str_replace(',', '.', $cleaned);
+        } elseif ($dotCount > 1) {
+            $cleaned = str_replace('.', '', $cleaned);
+        }
+
+        return (float) $cleaned;
+    }
+
     // public function dashboard()
     // {
     //     $total_pengeluaran =  BankKeluar::select(

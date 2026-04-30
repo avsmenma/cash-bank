@@ -155,6 +155,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/confirm-import', [BankKeluarController::class, 'confirmImport'])
             ->name('confirmImport');
 
+        Route::post('/preview-agenda', [BankKeluarController::class, 'previewAgenda'])
+            ->name('previewAgenda');
+
+        Route::post('/confirm-agenda', [BankKeluarController::class, 'confirmAgenda'])
+            ->name('confirmAgenda');
+
         Route::get('/export_excel', [BankKeluarController::class, 'export_excel'])
             ->name('export_excel');
 

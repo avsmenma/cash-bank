@@ -139,6 +139,7 @@ class RingkasanPembayaranController extends Controller
 
                     $hierarki[$katId]['subs'][$subId]['items'][$uItem['id']] = [
                         'id'    => $uItem['id'],
+                        'ids'   => $uItem['ids'],
                         'nama'  => $uItem['nama'],
                         'bulan' => $itemBulan,
                         'total' => $itemTotal,
@@ -194,6 +195,7 @@ class RingkasanPembayaranController extends Controller
         $kategoriId  = $request->kategori_id;
         $subId       = $request->sub_kriteria_id;
         $itemId      = $request->item_sub_kriteria_id;
+        $itemIds     = array_values(array_filter((array) $request->input('item_sub_kriteria_ids', [])));
 
         $bulanMap = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
@@ -215,7 +217,9 @@ class RingkasanPembayaranController extends Controller
         if ($subId) {
             $query->where('droppings.id_sub_kriteria', $subId);
         }
-        if ($itemId) {
+        if (!empty($itemIds)) {
+            $query->whereIn('droppings.id_item_sub_kriteria', $itemIds);
+        } elseif ($itemId) {
             $query->where('droppings.id_item_sub_kriteria', $itemId);
         }
 
@@ -270,9 +274,15 @@ class RingkasanPembayaranController extends Controller
             $sub = DB::table('sub_kriteria')->where('id_sub_kriteria', $subId)->first();
             $label = $sub->nama_sub_kriteria ?? '';
         }
-        if ($itemId) {
+        if (!empty($itemIds)) {
+            $item = DB::table('item_sub_kriteria')->where('id_item_sub_kriteria', $itemIds[0])->first();
+            $label = $item->nama_item_sub_kriteria ?? '';
+        } elseif ($itemId) {
             $item = DB::table('item_sub_kriteria')->where('id_item_sub_kriteria', $itemId)->first();
             $label = $item->nama_item_sub_kriteria ?? '';
+        }
+        if ($label === '') {
+            $label = 'Grand Total Pembayaran';
         }
 
         $periodeLabel = ($bulanMap[$dariBulan] ?? '') . ' — ' . ($bulanMap[$sampaiBulan] ?? '') . ' ' . $tahun;

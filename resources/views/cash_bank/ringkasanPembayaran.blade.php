@@ -115,7 +115,6 @@
     /* Level 2 — Sub Kategori */
     .rk-level2 {
         background: #eef5fb;
-        cursor: pointer;
     }
     .rk-level2:hover { background: #ddeaf5 !important; }
     .rk-level2 td {
@@ -130,7 +129,6 @@
     /* Level 3 — Item Sub Kategori */
     .rk-level3 {
         background: #fff;
-        cursor: pointer;
     }
     .rk-level3:hover { background: #f0f6fc !important; }
     .rk-level3 td {
@@ -186,21 +184,21 @@
         white-space: nowrap;
         letter-spacing: -0.3px;
     }
+    .rk-nilai-link {
+        display: inline-block;
+        color: inherit;
+        text-decoration: none;
+        border-bottom: 1px dotted rgba(13, 59, 110, 0.35);
+        cursor: pointer;
+    }
+    .rk-nilai-link:hover {
+        color: #007bff !important;
+        border-bottom-color: #007bff;
+        text-decoration: none;
+    }
 
     /* Child row toggle */
     .rk-child.rk-hidden { display: none; }
-
-    /* Detail hint on hover */
-    .rk-detail-hint {
-        font-size: 10px;
-        color: #3498db;
-        opacity: 0;
-        margin-left: 6px;
-        transition: opacity 0.15s;
-        font-weight: 600;
-    }
-    .rk-level2:hover .rk-detail-hint,
-    .rk-level3:hover .rk-detail-hint { opacity: 1; }
 
     /* Table scroll */
     .tbl-scroll-rk {
@@ -291,6 +289,17 @@
 
       <div class="tbl-scroll-rk">
         @if(count($hierarki) > 0)
+        @php
+          $detailUrl = function (array $params = [], $bulan = null) use ($tahun, $dariBulan, $sampaiBulan) {
+              $period = [
+                  'tahun' => $tahun,
+                  'dari_bulan' => $bulan ?? $dariBulan,
+                  'sampai_bulan' => $bulan ?? $sampaiBulan,
+              ];
+
+              return route('ringkasan.detail', array_merge($period, $params));
+          };
+        @endphp
         <table class="tbl-ringkasan" id="tbl-ringkasan">
           <thead>
             <tr>
@@ -314,11 +323,19 @@
                 </td>
                 @foreach($bulanAktif as $bNum => $bName)
                   <td class="rk-nilai" style="color:#0d3b6e;">
-                    {{ number_format($kat['bulan'][$bNum] ?? 0, 0, ',', '.') }}
+                    <a class="rk-nilai-link"
+                       title="Detail"
+                       href="{{ $detailUrl(['kategori_id' => $katId], $bNum) }}">
+                      {{ number_format($kat['bulan'][$bNum] ?? 0, 0, ',', '.') }}
+                    </a>
                   </td>
                 @endforeach
                 <td class="rk-nilai" style="color:#0d3b6e; font-weight:800;">
-                  {{ number_format($kat['total'], 0, ',', '.') }}
+                  <a class="rk-nilai-link"
+                     title="Detail"
+                     href="{{ $detailUrl(['kategori_id' => $katId]) }}">
+                    {{ number_format($kat['total'], 0, ',', '.') }}
+                  </a>
                 </td>
               </tr>
 
@@ -329,40 +346,52 @@
                   $subLetter = chr(64 + $subIndex);
                 @endphp
 
-                {{-- LEVEL 2: Sub Kategori — click navigates to detail page --}}
-                <tr class="rk-level2 rk-child rk-clickable"
-                    data-parent="kat-{{ $katId }}"
-                    data-href="{{ route('ringkasan.detail', ['kategori_id' => $katId, 'sub_kriteria_id' => $sub['id'], 'tahun' => $tahun, 'dari_bulan' => $dariBulan, 'sampai_bulan' => $sampaiBulan]) }}">
+                {{-- LEVEL 2: Sub Kategori --}}
+                <tr class="rk-level2 rk-child"
+                    data-parent="kat-{{ $katId }}">
                   <td>
                     {{ $subLetter }}.&nbsp;&nbsp;{{ $sub['nama'] }}
-                    <span class="rk-detail-hint">→ detail</span>
                   </td>
                   @foreach($bulanAktif as $bNum => $bName)
                     <td class="rk-nilai" style="color:#1a5276;">
-                      {{ number_format($sub['bulan'][$bNum] ?? 0, 0, ',', '.') }}
+                      <a class="rk-nilai-link"
+                         title="Detail"
+                         href="{{ $detailUrl(['kategori_id' => $katId, 'sub_kriteria_id' => $sub['id']], $bNum) }}">
+                        {{ number_format($sub['bulan'][$bNum] ?? 0, 0, ',', '.') }}
+                      </a>
                     </td>
                   @endforeach
                   <td class="rk-nilai" style="color:#1a5276; font-weight:700;">
-                    {{ number_format($sub['total'], 0, ',', '.') }}
+                    <a class="rk-nilai-link"
+                       title="Detail"
+                       href="{{ $detailUrl(['kategori_id' => $katId, 'sub_kriteria_id' => $sub['id']]) }}">
+                      {{ number_format($sub['total'], 0, ',', '.') }}
+                    </a>
                   </td>
                 </tr>
 
                 @foreach($sub['items'] as $itemKey => $item)
-                  {{-- LEVEL 3: Item Sub Kategori — click navigates to detail page --}}
-                  <tr class="rk-level3 rk-child rk-clickable"
-                      data-parent="kat-{{ $katId }}"
-                      data-href="{{ route('ringkasan.detail', ['kategori_id' => $katId, 'sub_kriteria_id' => $sub['id'], 'item_sub_kriteria_id' => $item['id'], 'tahun' => $tahun, 'dari_bulan' => $dariBulan, 'sampai_bulan' => $sampaiBulan]) }}">
+                  {{-- LEVEL 3: Item Sub Kategori --}}
+                  <tr class="rk-level3 rk-child"
+                      data-parent="kat-{{ $katId }}">
                     <td>
                       -&nbsp;{{ $item['nama'] }}
-                      <span class="rk-detail-hint">→ detail</span>
                     </td>
                     @foreach($bulanAktif as $bNum => $bName)
                       <td class="rk-nilai">
-                        {{ number_format($item['bulan'][$bNum] ?? 0, 0, ',', '.') }}
+                        <a class="rk-nilai-link"
+                           title="Detail"
+                           href="{{ $detailUrl(['kategori_id' => $katId, 'sub_kriteria_id' => $sub['id'], 'item_sub_kriteria_ids' => $item['ids']], $bNum) }}">
+                          {{ number_format($item['bulan'][$bNum] ?? 0, 0, ',', '.') }}
+                        </a>
                       </td>
                     @endforeach
                     <td class="rk-nilai">
-                      {{ number_format($item['total'], 0, ',', '.') }}
+                      <a class="rk-nilai-link"
+                         title="Detail"
+                         href="{{ $detailUrl(['kategori_id' => $katId, 'sub_kriteria_id' => $sub['id'], 'item_sub_kriteria_ids' => $item['ids']]) }}">
+                        {{ number_format($item['total'], 0, ',', '.') }}
+                      </a>
                     </td>
                   </tr>
                 @endforeach
@@ -372,11 +401,19 @@
                   <td>Sub Total {{ $subLetter }}.{{ $subIndex }}</td>
                   @foreach($bulanAktif as $bNum => $bName)
                     <td class="rk-nilai" style="color:#0d3b6e;">
-                      {{ number_format($sub['bulan'][$bNum] ?? 0, 0, ',', '.') }}
+                      <a class="rk-nilai-link"
+                         title="Detail"
+                         href="{{ $detailUrl(['kategori_id' => $katId, 'sub_kriteria_id' => $sub['id']], $bNum) }}">
+                        {{ number_format($sub['bulan'][$bNum] ?? 0, 0, ',', '.') }}
+                      </a>
                     </td>
                   @endforeach
                   <td class="rk-nilai" style="color:#0d3b6e; font-weight:800;">
-                    {{ number_format($sub['total'], 0, ',', '.') }}
+                    <a class="rk-nilai-link"
+                       title="Detail"
+                       href="{{ $detailUrl(['kategori_id' => $katId, 'sub_kriteria_id' => $sub['id']]) }}">
+                      {{ number_format($sub['total'], 0, ',', '.') }}
+                    </a>
                   </td>
                 </tr>
               @endforeach
@@ -386,11 +423,19 @@
                 <td>Total {{ $kat['nama'] }}</td>
                 @foreach($bulanAktif as $bNum => $bName)
                   <td class="rk-nilai" style="color:#aed6f1;">
-                    {{ number_format($kat['bulan'][$bNum] ?? 0, 0, ',', '.') }}
+                    <a class="rk-nilai-link"
+                       title="Detail"
+                       href="{{ $detailUrl(['kategori_id' => $katId], $bNum) }}">
+                      {{ number_format($kat['bulan'][$bNum] ?? 0, 0, ',', '.') }}
+                    </a>
                   </td>
                 @endforeach
                 <td class="rk-nilai" style="color:#fff; font-size:13px;">
-                  {{ number_format($kat['total'], 0, ',', '.') }}
+                  <a class="rk-nilai-link"
+                     title="Detail"
+                     href="{{ $detailUrl(['kategori_id' => $katId]) }}">
+                    {{ number_format($kat['total'], 0, ',', '.') }}
+                  </a>
                 </td>
               </tr>
             @endforeach
@@ -400,11 +445,19 @@
               <td>GRAND TOTAL PEMBAYARAN</td>
               @foreach($bulanAktif as $bNum => $bName)
                 <td class="rk-nilai" style="color:#85c1e9;">
-                  {{ number_format($grandTotal[$bNum] ?? 0, 0, ',', '.') }}
+                  <a class="rk-nilai-link"
+                     title="Detail"
+                     href="{{ $detailUrl([], $bNum) }}">
+                    {{ number_format($grandTotal[$bNum] ?? 0, 0, ',', '.') }}
+                  </a>
                 </td>
               @endforeach
               <td class="rk-nilai" style="color:#f9e79f; font-size:14px;">
-                {{ number_format($grandTotalAll, 0, ',', '.') }}
+                <a class="rk-nilai-link"
+                   title="Detail"
+                   href="{{ $detailUrl() }}">
+                  {{ number_format($grandTotalAll, 0, ',', '.') }}
+                </a>
               </td>
             </tr>
           </tbody>
@@ -443,13 +496,8 @@ $(document).ready(function() {
         }
     });
 
-    // NAVIGATE to detail page on click
-    $(document).on('click', '.rk-clickable', function(e) {
+    $(document).on('click', '.rk-nilai-link', function(e) {
         e.stopPropagation();
-        const href = $(this).data('href');
-        if (href) {
-            window.location.href = href;
-        }
     });
 
     // RESET FILTER

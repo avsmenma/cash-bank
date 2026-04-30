@@ -50,7 +50,7 @@
                     <small class="text-muted ml-auto">Bank Tujuan dapat disesuaikan sebelum disimpan.</small>
                 </div>
                 <div style="max-height:460px; overflow-y:auto; overflow-x:auto;">
-                    <table class="table table-bordered table-sm mb-0" style="font-size:11px; min-width:1500px;">
+                    <table class="table table-bordered table-sm mb-0 agenda-preview-table" style="font-size:11px; min-width:1500px;">
                         <thead>
                             <tr style="background:#0d3b6e; color:#fff; position:sticky; top:0; z-index:1;">
                                 <th style="width:40px;">No</th>
@@ -86,6 +86,11 @@
 </div>
 
 @push('scripts')
+<style>
+    .agenda-preview-table thead th {
+        color: #fff !important;
+    }
+</style>
 <script>
 $(function () {
     var previewRowsAgendaKeluar = [];
@@ -113,6 +118,9 @@ $(function () {
 
     function renderBankSelect(row, index) {
         if (!row.can_save) return '-';
+        if (row.warning_message === 'Nomor VA di awal uraian tidak cocok dengan master Bank Tujuan') {
+            return '';
+        }
 
         var html = '<select class="form-control form-control-sm agenda-bank-select" data-index="' + index + '">';
         html += '<option value="">-- Pilih Bank Tujuan --</option>';
@@ -137,7 +145,9 @@ $(function () {
             var status = row.can_save
                 ? (row.warning ? '<span class="badge badge-warning">Perlu cek</span>' : '<span class="badge badge-success">OK</span>')
                 : '<span class="badge badge-danger">Tidak dapat disimpan</span>';
-            var warning = row.warning_message ? '<div class="text-muted mt-1" style="font-size:10px;">' + escapeHtml(row.warning_message) + '</div>' : '';
+            var warning = row.warning_message && row.warning_message !== 'Nomor VA di awal uraian tidak cocok dengan master Bank Tujuan'
+                ? '<div class="text-muted mt-1" style="font-size:10px;">' + escapeHtml(row.warning_message) + '</div>'
+                : '';
 
             html += '<tr style="' + bg + '">'
                 + '<td class="text-center">' + row.no + '</td>'

@@ -21,6 +21,52 @@ use App\Imports\importExcelMasukImport;
 
 class BankMasukController extends Controller
 {
+    private function normalizeReferenceText(?string $value): string
+    {
+        $value = strtolower(trim((string) $value));
+        $value = preg_replace('/\s+/', ' ', $value);
+
+        return $value ?? '';
+    }
+
+    private function extractReferenceNumbers(?string $value): array
+    {
+        preg_match_all('/\b\d[\d\-\/\s]{5,}\d\b/', (string) $value, $matches);
+
+        return collect($matches[0] ?? [])
+            ->map(fn($number) => preg_replace('/\D+/', '', $number))
+            ->filter(fn($number) => strlen($number) >= 6)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function findReferenceName(array $map, ?string $search): ?string
+    {
+        $searchText = $this->normalizeReferenceText($search);
+        if ($searchText === '') {
+            return null;
+        }
+
+        $searchNumbers = $this->extractReferenceNumbers($search);
+        if (!empty($searchNumbers)) {
+            foreach ($map as $name => $id) {
+                if (array_intersect($searchNumbers, $this->extractReferenceNumbers($name))) {
+                    return $name;
+                }
+            }
+        }
+
+        foreach ($map as $name => $id) {
+            $nameText = $this->normalizeReferenceText($name);
+            if ($nameText === $searchText || str_contains($nameText, $searchText) || str_contains($searchText, $nameText)) {
+                return $name;
+            }
+        }
+
+        return null;
+    }
+
     public function index(Request $request)
     {
         return view('cash_bank.bankMasuk', [
@@ -319,42 +365,14 @@ class BankMasukController extends Controller
             $tanggalStr = trim((string)$tanggalRaw);
             if (empty($tanggalStr) || ($debetNum <= 0 && empty($sumberRaw))) continue;
 
-            // Resolve referensi — HANYA jika nilai tidak kosong (str_contains(x,'') selalu true!)
-            $sumberFound = null;
-            if (!empty($sumberRaw)) {
-                foreach ($sumberDanaMap as $nama => $id) {
-                    if (str_contains(strtolower($nama), strtolower($sumberRaw)) || str_contains(strtolower($sumberRaw), strtolower($nama))) {
-                        $sumberFound = $nama; break;
-                    }
-                }
-            }
+            // Resolve referensi dengan prioritas cocok nomor rekening.
+            $sumberFound = $this->findReferenceName($sumberDanaMap, $sumberRaw);
 
-            $bankFound = null;
-            if (!empty($bankRaw)) {
-                foreach ($bankTujuanMap as $nama => $id) {
-                    if (str_contains(strtolower($nama), strtolower($bankRaw)) || str_contains(strtolower($bankRaw), strtolower($nama))) {
-                        $bankFound = $nama; break;
-                    }
-                }
-            }
+            $bankFound = $this->findReferenceName($bankTujuanMap, $bankRaw);
 
-            $kategoriFound = null;
-            if (!empty($kategoriRaw)) {
-                foreach ($kategoriMap as $nama => $id) {
-                    if (str_contains(strtolower($nama), strtolower($kategoriRaw)) || str_contains(strtolower($kategoriRaw), strtolower($nama))) {
-                        $kategoriFound = $nama; break;
-                    }
-                }
-            }
+            $kategoriFound = $this->findReferenceName($kategoriMap, $kategoriRaw);
 
-            $jenisFound = null;
-            if (!empty($jenisRaw)) {
-                foreach ($jenisPembMap as $nama => $id) {
-                    if (str_contains(strtolower($nama), strtolower($jenisRaw)) || str_contains(strtolower($jenisRaw), strtolower($nama))) {
-                        $jenisFound = $nama; break;
-                    }
-                }
-            }
+            $jenisFound = $this->findReferenceName($jenisPembMap, $jenisRaw);
 
 
             // Format tanggal

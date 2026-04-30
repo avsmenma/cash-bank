@@ -19,6 +19,8 @@ class importMasuk implements ToModel, WithHeadingRow
 {
     use Importable;
 
+    protected $referenceCache = [];
+
     public function bindValue(Cell $cell, $value)
     {
         $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
@@ -32,6 +34,64 @@ class importMasuk implements ToModel, WithHeadingRow
                 str_replace(["\r", "\n"], ' ', $text)
             )
         );
+    }
+
+    private function normalizeReferenceText(?string $value): string
+    {
+        $value = strtolower(trim((string) $value));
+        $value = preg_replace('/\s+/', ' ', $value);
+
+        return $value ?? '';
+    }
+
+    private function extractReferenceNumbers(?string $value): array
+    {
+        preg_match_all('/\b\d[\d\-\/\s]{5,}\d\b/', (string) $value, $matches);
+
+        return collect($matches[0] ?? [])
+            ->map(fn($number) => preg_replace('/\D+/', '', $number))
+            ->filter(fn($number) => strlen($number) >= 6)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function getReferenceMap(string $modelClass, string $nameColumn, string $idColumn): array
+    {
+        $key = $modelClass . ':' . $nameColumn . ':' . $idColumn;
+        if (!array_key_exists($key, $this->referenceCache)) {
+            $this->referenceCache[$key] = $modelClass::pluck($idColumn, $nameColumn)->toArray();
+        }
+
+        return $this->referenceCache[$key];
+    }
+
+    private function findReferenceId(string $modelClass, string $nameColumn, string $idColumn, ?string $search)
+    {
+        $searchText = $this->normalizeReferenceText($search);
+        if ($searchText === '') {
+            return null;
+        }
+
+        $map = $this->getReferenceMap($modelClass, $nameColumn, $idColumn);
+        $searchNumbers = $this->extractReferenceNumbers($search);
+
+        if (!empty($searchNumbers)) {
+            foreach ($map as $name => $id) {
+                if (array_intersect($searchNumbers, $this->extractReferenceNumbers($name))) {
+                    return $id;
+                }
+            }
+        }
+
+        foreach ($map as $name => $id) {
+            $nameText = $this->normalizeReferenceText($name);
+            if ($nameText === $searchText || str_contains($nameText, $searchText) || str_contains($searchText, $nameText)) {
+                return $id;
+            }
+        }
+
+        return null;
     }
 
     
@@ -76,18 +136,13 @@ class importMasuk implements ToModel, WithHeadingRow
              'agenda_tahun'  => $row['agenda_tahun'] ?? null,
              'tanggal'       => $tanggal,
 
-             'id_sumber_dana' => $sumberDana ? SumberDana::where('nama_sumber_dana', 'LIKE', "%{$sumberDana}%")
-                ->value('id_sumber_dana') : null,
+             'id_sumber_dana' => $this->findReferenceId(SumberDana::class, 'nama_sumber_dana', 'id_sumber_dana', $sumberDana),
 
-            'id_bank_tujuan' => $bankTujuan !== ''
-                ? BankTujuan::where('nama_tujuan', 'LIKE', "%{$bankTujuan}%")->value('id_bank_tujuan')
-                : null,
+            'id_bank_tujuan' => $this->findReferenceId(BankTujuan::class, 'nama_tujuan', 'id_bank_tujuan', $bankTujuan),
 
-            'id_kategori_kriteria' => $kategori !== '' ? KategoriKriteria::where('nama_kriteria', 'LIKE', "%{$kategori}%")
-                ->value('id_kategori_kriteria') : null,
+            'id_kategori_kriteria' => $this->findReferenceId(KategoriKriteria::class, 'nama_kriteria', 'id_kategori_kriteria', $kategori),
 
-            'id_jenis_pembayaran' => $jenisPembayaran !== '' ? JenisPembayaran::where('nama_jenis_pembayaran', 'LIKE', "%{$jenisPembayaran}%")
-                ->value('id_jenis_pembayaran') : null,
+            'id_jenis_pembayaran' => $this->findReferenceId(JenisPembayaran::class, 'nama_jenis_pembayaran', 'id_jenis_pembayaran', $jenisPembayaran),
 
             'penerima' => $row['penerima'] ?? null,
             'uraian'   => $uraian,

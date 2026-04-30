@@ -23,13 +23,13 @@
                 <div class="card-header p-2">
                     <ul class="nav nav-pills">
                         <li class="nav-item"><a class="nav-link active" href="#activity"
-                                data-toggle="tab">Dropping/Realisasi</a></li>
+                                data-toggle="tab">Realisasi</a></li>
                         <li class="nav-item"><a class="nav-link" id="rencana-tab" href="#rencana"
-                                data-toggle="tab">Permintaan</a></li>
+                                data-toggle="tab">Rencana</a></li>
                         <li class="nav-item"> <a class="nav-link" id="cashflow-tab" data-toggle="tab"
-                                href="#timeline">CashFlow Realisasi</a></li>
+                                href="#timeline">Rekap</a></li>
                         <li class="nav-item"> <a class="nav-link" id="cashflowGabungan-tab" data-toggle="tab"
-                                href="#gabungan">CashFlow Gabungan</a></li>
+                                href="#gabungan">Evaluasi</a></li>
                     </ul>
                 </div>
                 <div class="card-body">

@@ -177,8 +177,10 @@
     function saveSap(input) {
       var $input = $(input);
       var id = $input.data('id');
-      var currentValue = $input.val().trim();
+      var currentValue = formatSapValue($input.val());
       var originalValue = String($input.data('original') || '').trim();
+
+      $input.val(currentValue);
 
       if (currentValue === originalValue) return;
 
@@ -211,8 +213,28 @@
       });
     }
 
+    function formatSapValue(value) {
+      var digits = String(value || '').replace(/\D/g, '');
+
+      if (!digits) return '';
+
+      digits = digits.replace(/^0+/, '') || '0';
+
+      return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
     $('#example2').on('focus', '.sap-inline-input', function () {
       $(this).data('original', $(this).val().trim());
+    });
+
+    $('#example2').on('input', '.sap-inline-input', function () {
+      var cursorPosition = this.selectionStart;
+      var beforeLength = this.value.length;
+
+      this.value = formatSapValue(this.value);
+
+      var afterLength = this.value.length;
+      this.setSelectionRange(cursorPosition + (afterLength - beforeLength), cursorPosition + (afterLength - beforeLength));
     });
 
     $('#example2').on('blur', '.sap-inline-input', function () {

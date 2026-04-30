@@ -33,7 +33,7 @@ class daftarBankController extends Controller
                 return 'Rp ' . number_format($saldo, 0, ',', '.');
             })
             ->addColumn('sap', function ($row) {
-                $value = e($row->sap ?? '');
+                $value = e($this->formatSapValue($row->sap));
 
                 return '
                     <input type="text"
@@ -86,7 +86,7 @@ class daftarBankController extends Controller
         ]);
 
         $bank = BankTujuan::findOrFail($id);
-        $bank->sap = $validated['sap'] ?? null;
+        $bank->sap = $this->formatSapValue($validated['sap'] ?? null);
         $bank->save();
 
         return response()->json([
@@ -94,6 +94,20 @@ class daftarBankController extends Controller
             'sap' => $bank->sap,
             'message' => 'SAP berhasil disimpan.',
         ]);
+    }
+
+    private function formatSapValue($value): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $value);
+
+        if ($digits === '') {
+            return null;
+        }
+
+        $digits = ltrim($digits, '0');
+        $digits = $digits === '' ? '0' : $digits;
+
+        return preg_replace('/\B(?=(\d{3})+(?!\d))/', '.', $digits);
     }
 
     /**

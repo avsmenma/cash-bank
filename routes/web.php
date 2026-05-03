@@ -145,6 +145,8 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/report', [BankKeluarController::class, 'report'])
             ->name('report');
+        Route::get('/report/data', [BankKeluarController::class, 'reportData'])
+            ->name('report.data');
 
         Route::post('/importExcel', [BankKeluarController::class, 'importExcel'])
             ->name('importExcel');

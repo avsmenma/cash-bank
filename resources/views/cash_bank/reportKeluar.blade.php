@@ -88,10 +88,10 @@
             <div class="d-flex align-items-center justify-content-between px-3 pt-3 pb-2 cb-fullscreen-hide">
                 <div class="d-flex align-items-center">
                     <label class="mb-0 small font-weight-bold text-secondary mr-2">Tampilkan</label>
-                    <select id="showEntriesSelect" name="per_page" form="filterForm" class="form-control form-control-sm" style="width:90px;" onchange="submitForm()">
-                        <option value="10" {{ request('per_page', '10') == '10' ? 'selected' : '' }}>10</option>
+                    <select id="showEntriesSelect" name="per_page" form="filterForm" class="form-control form-control-sm" style="width:90px;">
+                        <option value="10" {{ request('per_page') == '10' ? 'selected' : '' }}>10</option>
                         <option value="25" {{ request('per_page') == '25' ? 'selected' : '' }}>25</option>
-                        <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50</option>
+                        <option value="50" {{ request('per_page', '50') == '50' ? 'selected' : '' }}>50</option>
                         <option value="100" {{ request('per_page') == '100' ? 'selected' : '' }}>100</option>
                     </select>
                     <label class="mb-0 small font-weight-bold text-secondary ml-2">entri</label>
@@ -118,50 +118,7 @@
                             <th class="rk-th text-center">Saldo Akhir</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @php
-                            $no = $data->firstItem() ?? 1;
-                        @endphp
-                        @forelse($data as $row)
-                            @php
-                                $isDebet = ($row->jenis ?? '') === 'MASUK';
-                                $saldo = $row->saldo_akhir ?? 0;
-                            @endphp
-                            <tr class="{{ $isDebet ? 'rk-row-debet' : 'rk-row-kredit' }}">
-                                <td class="text-center rk-td">{{ $no++ }}</td>
-                                <td class="rk-td">{{ $row->no_agenda ?? '-' }}</td>
-                                <td class="text-center rk-td">
-                                    {{ $row->tanggal ? \Carbon\Carbon::parse($row->tanggal)->format('d/m/Y') : '-' }}
-                                </td>
-                                <td class="rk-td">{{ $row->no_sap ?? '-' }}</td>
-                                <td class="rk-td rk-sumber">{{ $row->nama_sumber_dana ?? '-' }}</td>
-                                <td class="rk-td rk-penerima">{{ $row->penerima ?? '-' }}</td>
-                                <td class="rk-td rk-uraian" title="{{ $row->uraian }}">{{ $row->uraian ?? '-' }}</td>
-                                <td class="text-right rk-td rk-debet">
-                                    {{ $row->debet > 0 ? number_format($row->debet, 0, ',', '.') : '' }}
-                                </td>
-                                <td class="text-right rk-td rk-kredit">
-                                    {{ $row->kredit > 0 ? number_format($row->kredit, 0, ',', '.') : '' }}
-                                </td>
-                                <td class="text-right rk-td rk-saldo {{ $saldo < 0 ? 'rk-neg' : '' }}">
-                                    @if($saldo !== null)
-                                        {{ $saldo < 0
-                                            ? '(' . number_format(abs($saldo), 0, ',', '.') . ')'
-                                            : number_format($saldo, 0, ',', '.') }}
-                                    @else -
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="10" class="text-center text-muted py-4">
-                                    <i class="fas fa-inbox fa-2x d-block mb-2"></i>
-                                    Tidak ada data untuk filter yang dipilih.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                    @if($data->total() > 0)
+                    <tbody></tbody>
                     <tfoot>
                         <tr class="rk-footer">
                             <td colspan="7" class="text-right font-weight-bold">TOTAL</td>
@@ -182,11 +139,10 @@
                             </td>
                         </tr>
                     </tfoot>
-                    @endif
                 </table>
             </div>
             {{-- Pagination Controls --}}
-            <div class="d-flex align-items-center justify-content-between px-3 py-2 cb-fullscreen-hide" id="rkPaginationWrap">
+            <div class="d-none align-items-center justify-content-between px-3 py-2 cb-fullscreen-hide" id="rkPaginationWrap">
                 <div id="rkPageInfo" class="small text-secondary">
                     @if($data->total() > 0)
                         Menampilkan {{ $data->firstItem() }} - {{ $data->lastItem() }} dari {{ $data->total() }} entri
@@ -297,5 +253,86 @@ function resetFilter() {
 
 
 </script>
+
+@push('scripts')
+<script>
+$(function () {
+    if (!$.fn.DataTable) return;
+
+    var initialLength = parseInt($('#showEntriesSelect').val(), 10) || 50;
+    var reportParams = @json(request()->query());
+    var $entriesInfo = $('#rkEntriesInfo, #rkPageInfo');
+
+    var table = $('#rkTable').DataTable({
+        processing: true,
+        serverSide: true,
+        deferRender: true,
+        ordering: false,
+        searching: false,
+        autoWidth: false,
+        scrollX: true,
+        scrollY: '60vh',
+        scroller: {
+            loadingIndicator: true,
+            displayBuffer: 9
+        },
+        dom: 'rt',
+        pageLength: initialLength,
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        ajax: {
+            url: "{{ route('bank-keluar.report.data') }}",
+            data: function (d) {
+                $.extend(d, reportParams);
+                d.per_page = $('#showEntriesSelect').val() || initialLength;
+            }
+        },
+        columns: [
+            { data: 'no', className: 'text-center rk-td' },
+            { data: 'no_agenda', className: 'rk-td' },
+            { data: 'tanggal', className: 'text-center rk-td' },
+            { data: 'no_sap', className: 'rk-td' },
+            { data: 'nama_sumber_dana', className: 'rk-td rk-sumber' },
+            { data: 'penerima', className: 'rk-td rk-penerima' },
+            {
+                data: 'uraian',
+                className: 'rk-td rk-uraian',
+                createdCell: function (td, cellData) {
+                    td.title = $('<div>').html(cellData || '').text();
+                }
+            },
+            { data: 'debet', className: 'text-right rk-td rk-debet' },
+            { data: 'kredit', className: 'text-right rk-td rk-kredit' },
+            { data: 'saldo_akhir', className: 'text-right rk-td rk-saldo' }
+        ],
+        language: {
+            emptyTable: 'Tidak ada data untuk filter yang dipilih.',
+            processing: 'Memuat data...'
+        }
+    });
+
+    function updateInfo() {
+        var info = table.page.info();
+        if (!info.recordsDisplay) {
+            $entriesInfo.text('Tidak ada data');
+            return;
+        }
+        $entriesInfo.text('Menampilkan ' + (info.start + 1) + ' - ' + info.end + ' dari ' + info.recordsDisplay + ' entri');
+    }
+
+    table.on('xhr.dt', function (e, settings, json) {
+        if (!json || !json.totals) return;
+        $('#rkTable tfoot .rk-debet').text(json.totals.debet);
+        $('#rkTable tfoot .rk-kredit').text(json.totals.kredit);
+        $('#rkTable tfoot .rk-saldo').text(json.totals.saldo);
+    });
+
+    table.on('draw', updateInfo);
+
+    $('#showEntriesSelect').on('change', function () {
+        table.page.len(parseInt(this.value, 10) || 50).draw(false);
+    });
+});
+</script>
+@endpush
 
 @endsection

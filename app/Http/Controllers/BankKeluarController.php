@@ -1719,6 +1719,301 @@ class BankKeluarController extends Controller
         ));
     }
 
+    private function buildReportDataQuery(Request $request): array
+    {
+        $tahun = $request->filled('tahun') ? $request->tahun : now()->year;
+        $bulan = $request->filled('bulan') ? $request->bulan : null;
+        $tglDari = $request->tgl_dari;
+        $tglSampai = $request->tgl_sampai;
+        $tanggalDipilih = array_values(array_filter((array) $request->input('tanggal', []), fn($value) => $value !== null && $value !== ''));
+        $bankTujuanId = $request->filled('bank_tujuan') ? $request->bank_tujuan : null;
+        $sumberDanaIds = array_values(array_filter((array) $request->input('sumber_dana', []), fn($value) => $value !== null && $value !== ''));
+        $kategoriIds = array_values(array_filter((array) $request->input('kategori', []), fn($value) => $value !== null && $value !== ''));
+        $rekapanVA = $request->rekapanVA;
+        $idJenisPembayaran = $request->filled('id_jenis_pembayaran') ? $request->id_jenis_pembayaran : null;
+
+        $activeFilters = [];
+
+        if ($bankTujuanId) {
+            $activeFilters[] = 'bank_tujuan';
+        }
+        if (count($sumberDanaIds) > 0) {
+            $activeFilters[] = 'sumber_dana';
+        }
+        if (count($kategoriIds) > 0) {
+            $activeFilters[] = 'kategori';
+        }
+        if ($idJenisPembayaran) {
+            $activeFilters[] = 'jenis_pembayaran';
+        }
+        if ($rekapanVA) {
+            $activeFilters[] = 'rekapan';
+        }
+
+        $countActiveFilters = count($activeFilters);
+
+        $filterTanggal = function ($q) use ($tahun, $bulan, $tanggalDipilih, $tglDari, $tglSampai) {
+            if (!empty($tanggalDipilih)) {
+                $q->whereIn(DB::raw('DATE(tanggal)'), $tanggalDipilih);
+                return;
+            }
+
+            if ($tahun) {
+                $q->whereYear('tanggal', $tahun);
+            }
+
+            if ($bulan) {
+                $q->whereMonth('tanggal', $bulan);
+            }
+
+            if ($tglDari) {
+                $q->whereDate('tanggal', '>=', $tglDari);
+            }
+
+            if ($tglSampai) {
+                $q->whereDate('tanggal', '<=', $tglSampai);
+            }
+        };
+
+        $applyFilter = function ($q, $table = null) use ($filterTanggal, $bankTujuanId, $sumberDanaIds, $kategoriIds, $idJenisPembayaran) {
+            $prefix = $table ? $table . '.' : '';
+
+            $filterTanggal($q);
+
+            if ($bankTujuanId) {
+                $q->where($prefix . 'id_bank_tujuan', $bankTujuanId);
+            }
+
+            if (count($sumberDanaIds) > 0) {
+                $q->whereIn($prefix . 'id_sumber_dana', $sumberDanaIds);
+            }
+
+            if (count($kategoriIds) > 0) {
+                $q->whereIn($prefix . 'id_kategori_kriteria', $kategoriIds);
+            }
+
+            if ($idJenisPembayaran) {
+                $q->where($prefix . 'id_jenis_pembayaran', $idJenisPembayaran);
+            }
+        };
+
+        $applyFilterSaldoAwal = function ($q, $table = null) use ($filterTanggal, $bankTujuanId, $sumberDanaIds) {
+            $prefix = $table ? $table . '.' : '';
+
+            $filterTanggal($q);
+
+            if ($bankTujuanId) {
+                $q->where($prefix . 'id_bank_tujuan', $bankTujuanId);
+            }
+
+            if (count($sumberDanaIds) > 0) {
+                $q->whereIn($prefix . 'id_sumber_dana', $sumberDanaIds);
+            }
+        };
+
+        $showKreditJenisPembayaran = ($countActiveFilters == 1 && $idJenisPembayaran);
+
+        if ($countActiveFilters == 0 || ($countActiveFilters == 1 && !$showKreditJenisPembayaran)) {
+            $showDebet = true;
+            $showSaldoAkhir = true;
+            $showSAP = true;
+        } else {
+            $showDebet = false;
+            $showSaldoAkhir = false;
+            $showSAP = false;
+        }
+
+        if ($showDebet) {
+            $bankMasuk = DB::table('bank_masuk')
+                ->leftJoin('sumber_dana', 'sumber_dana.id_sumber_dana', '=', 'bank_masuk.id_sumber_dana')
+                ->leftJoin('bank_tujuan', 'bank_tujuan.id_bank_tujuan', '=', 'bank_masuk.id_bank_tujuan')
+                ->select(
+                    'bank_masuk.agenda_tahun',
+                    'bank_masuk.id_sumber_dana',
+                    'sumber_dana.nama_sumber_dana',
+                    'bank_masuk.id_bank_tujuan',
+                    'bank_tujuan.nama_tujuan',
+                    'bank_masuk.uraian',
+                    'bank_masuk.penerima',
+                    'bank_masuk.tanggal',
+                    'bank_masuk.debet',
+                    DB::raw('0 as kredit'),
+                    'bank_masuk.no_sap',
+                    DB::raw('NULL as no_agenda'),
+                    DB::raw('NULL as nama_kriteria'),
+                    DB::raw('NULL as nama_sub_kriteria'),
+                    DB::raw('NULL as nama_item_sub_kriteria'),
+                    DB::raw('NULL as id_jenis_pembayaran'),
+                    DB::raw('NULL as nama_jenis_pembayaran'),
+                    DB::raw("'MASUK' as jenis"),
+                    DB::raw('bank_masuk.id_bank_masuk as urut_id'),
+                    DB::raw('0 as jenis_sort')
+                )
+                ->where(function ($q) use ($applyFilterSaldoAwal) {
+                    $applyFilterSaldoAwal($q, 'bank_masuk');
+                });
+
+            $bankKeluar = DB::table('bank_keluars')
+                ->leftJoin('sumber_dana', 'sumber_dana.id_sumber_dana', '=', 'bank_keluars.id_sumber_dana')
+                ->leftJoin('bank_tujuan', 'bank_tujuan.id_bank_tujuan', '=', 'bank_keluars.id_bank_tujuan')
+                ->leftJoin('kategori_kriteria', 'kategori_kriteria.id_kategori_kriteria', '=', 'bank_keluars.id_kategori_kriteria')
+                ->leftJoin('sub_kriteria', 'sub_kriteria.id_sub_kriteria', '=', 'bank_keluars.id_sub_kriteria')
+                ->leftJoin('item_sub_kriteria', 'item_sub_kriteria.id_item_sub_kriteria', '=', 'bank_keluars.id_item_sub_kriteria')
+                ->leftJoin('jenis_pembayarans', 'jenis_pembayarans.id_jenis_pembayaran', '=', 'bank_keluars.id_jenis_pembayaran')
+                ->select(
+                    'bank_keluars.agenda_tahun',
+                    'bank_keluars.id_sumber_dana',
+                    'sumber_dana.nama_sumber_dana',
+                    'bank_keluars.id_bank_tujuan',
+                    'bank_tujuan.nama_tujuan',
+                    'bank_keluars.uraian',
+                    'bank_keluars.penerima',
+                    'bank_keluars.tanggal',
+                    DB::raw('0 as debet'),
+                    'bank_keluars.kredit',
+                    'bank_keluars.no_sap',
+                    DB::raw('bank_keluars.agenda_tahun as no_agenda'),
+                    'kategori_kriteria.nama_kriteria',
+                    'sub_kriteria.nama_sub_kriteria',
+                    'item_sub_kriteria.nama_item_sub_kriteria',
+                    'bank_keluars.id_jenis_pembayaran',
+                    'jenis_pembayarans.nama_jenis_pembayaran',
+                    DB::raw("'KELUAR' as jenis"),
+                    DB::raw('bank_keluars.id_bank_keluar as urut_id'),
+                    DB::raw('1 as jenis_sort')
+                )
+                ->where(function ($q) use ($applyFilterSaldoAwal) {
+                    $applyFilterSaldoAwal($q, 'bank_keluars');
+                });
+
+            $baseQuery = $bankMasuk->unionAll($bankKeluar);
+        } else {
+            $baseQuery = DB::table('bank_keluars')
+                ->leftJoin('sumber_dana', 'sumber_dana.id_sumber_dana', '=', 'bank_keluars.id_sumber_dana')
+                ->leftJoin('bank_tujuan', 'bank_tujuan.id_bank_tujuan', '=', 'bank_keluars.id_bank_tujuan')
+                ->leftJoin('kategori_kriteria', 'kategori_kriteria.id_kategori_kriteria', '=', 'bank_keluars.id_kategori_kriteria')
+                ->leftJoin('sub_kriteria', 'sub_kriteria.id_sub_kriteria', '=', 'bank_keluars.id_sub_kriteria')
+                ->leftJoin('item_sub_kriteria', 'item_sub_kriteria.id_item_sub_kriteria', '=', 'bank_keluars.id_item_sub_kriteria')
+                ->leftJoin('jenis_pembayarans', 'jenis_pembayarans.id_jenis_pembayaran', '=', 'bank_keluars.id_jenis_pembayaran')
+                ->select(
+                    'bank_keluars.agenda_tahun',
+                    'bank_keluars.id_sumber_dana',
+                    'sumber_dana.nama_sumber_dana',
+                    'bank_keluars.id_bank_tujuan',
+                    'bank_tujuan.nama_tujuan',
+                    'bank_keluars.uraian',
+                    'bank_keluars.penerima',
+                    'bank_keluars.tanggal',
+                    DB::raw('0 as debet'),
+                    'bank_keluars.kredit',
+                    'bank_keluars.no_sap',
+                    DB::raw('bank_keluars.agenda_tahun as no_agenda'),
+                    'kategori_kriteria.nama_kriteria',
+                    'sub_kriteria.nama_sub_kriteria',
+                    'item_sub_kriteria.nama_item_sub_kriteria',
+                    'bank_keluars.id_jenis_pembayaran',
+                    'jenis_pembayarans.nama_jenis_pembayaran',
+                    DB::raw("'KELUAR' as jenis"),
+                    DB::raw('bank_keluars.id_bank_keluar as urut_id'),
+                    DB::raw('1 as jenis_sort')
+                )
+                ->where(function ($q) use ($applyFilter) {
+                    $applyFilter($q, 'bank_keluars');
+                });
+        }
+
+        return [
+            'reportQuery' => DB::query()->fromSub($baseQuery, 'trx'),
+            'showSaldoAkhir' => $showSaldoAkhir,
+            'showSAP' => $showSAP,
+        ];
+    }
+
+    public function reportData(Request $request)
+    {
+        $context = $this->buildReportDataQuery($request);
+        $reportQuery = $context['reportQuery'];
+        $showSaldoAkhir = $context['showSaldoAkhir'];
+        $showSAP = $context['showSAP'];
+
+        $totalEntries = (clone $reportQuery)->count();
+        $totalDebet = (clone $reportQuery)->sum('debet');
+        $totalKredit = (clone $reportQuery)->sum('kredit');
+        $finalSaldo = $showSaldoAkhir ? $totalDebet - $totalKredit : null;
+
+        $start = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 50);
+        $length = $length > 0 ? min($length, 1000) : 50;
+
+        $rows = (clone $reportQuery)
+            ->orderBy('tanggal')
+            ->orderBy('urut_id')
+            ->orderBy('jenis_sort')
+            ->skip($start)
+            ->take($length)
+            ->get();
+
+        $saldo = 0;
+
+        if ($showSaldoAkhir && $rows->count() > 0) {
+            $firstRow = $rows->first();
+            $saldo = (clone $reportQuery)
+                ->where(function ($q) use ($firstRow) {
+                    $q->where('tanggal', '<', $firstRow->tanggal)
+                        ->orWhere(function ($sameDate) use ($firstRow) {
+                            $sameDate->where('tanggal', $firstRow->tanggal)
+                                ->where(function ($sameDateOrder) use ($firstRow) {
+                                    $sameDateOrder->where('urut_id', '<', $firstRow->urut_id)
+                                        ->orWhere(function ($sameId) use ($firstRow) {
+                                            $sameId->where('urut_id', $firstRow->urut_id)
+                                                ->where('jenis_sort', '<', $firstRow->jenis_sort);
+                                        });
+                                });
+                        });
+                })
+                ->selectRaw('COALESCE(SUM(debet), 0) - COALESCE(SUM(kredit), 0) as saldo')
+                ->value('saldo') ?? 0;
+        }
+
+        $data = [];
+
+        foreach ($rows as $index => $row) {
+            if ($showSaldoAkhir) {
+                $saldo += ($row->debet ?? 0) - ($row->kredit ?? 0);
+            }
+
+            $data[] = [
+                'DT_RowClass' => ($row->jenis ?? '') === 'MASUK' ? 'rk-row-debet' : 'rk-row-kredit',
+                'no' => $start + $index + 1,
+                'no_agenda' => e($row->no_agenda ?? '-'),
+                'tanggal' => $row->tanggal ? Carbon::parse($row->tanggal)->format('d/m/Y') : '-',
+                'no_sap' => $showSAP ? e($row->no_sap ?? '-') : e($row->no_sap ?? '-'),
+                'nama_sumber_dana' => e($row->nama_sumber_dana ?? '-'),
+                'penerima' => e($row->penerima ?? '-'),
+                'uraian' => e($row->uraian ?? '-'),
+                'debet' => ($row->debet ?? 0) > 0 ? number_format($row->debet, 0, ',', '.') : '',
+                'kredit' => ($row->kredit ?? 0) > 0 ? number_format($row->kredit, 0, ',', '.') : '',
+                'saldo_akhir' => $showSaldoAkhir ? ($saldo < 0
+                    ? '(' . number_format(abs($saldo), 0, ',', '.') . ')'
+                    : number_format($saldo, 0, ',', '.')) : '',
+            ];
+        }
+
+        return response()->json([
+            'draw' => (int) $request->input('draw'),
+            'recordsTotal' => $totalEntries,
+            'recordsFiltered' => $totalEntries,
+            'data' => $data,
+            'totals' => [
+                'debet' => number_format($totalDebet ?? 0, 0, ',', '.'),
+                'kredit' => number_format($totalKredit ?? 0, 0, ',', '.'),
+                'saldo' => $finalSaldo === null ? '-' : ($finalSaldo < 0
+                    ? '(' . number_format(abs($finalSaldo), 0, ',', '.') . ')'
+                    : number_format($finalSaldo, 0, ',', '.')),
+            ],
+        ]);
+    }
+
     //     public function report(Request $request)
 //     {
 

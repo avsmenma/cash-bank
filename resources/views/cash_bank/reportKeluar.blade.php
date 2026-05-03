@@ -2,7 +2,7 @@
 @section('content')
 
 <div class="container-fluid mt-4">
-    <section class="content-header">
+    <section class="content-header cb-fullscreen-hide">
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
@@ -22,7 +22,7 @@
 
     <section class="content">
         {{-- FILTER BAR --}}
-        <div class="card shadow mb-3" style="border-top:4px solid #0d3b6e;">
+        <div class="card shadow mb-3 cb-fullscreen-hide" style="border-top:4px solid #0d3b6e;">
             <div class="card-body py-3">
                 <form action="{{ route('bank-keluar.report') }}" method="GET" id="filterForm">
                     <div class="row align-items-end g-2">
@@ -83,9 +83,9 @@
         </div>
 
         {{-- TABLE --}}
-        <div class="card shadow" style="border:none;">
+        <div class="card shadow cb-fullscreen-table" style="border:none;">
             {{-- Show Entries + Info --}}
-            <div class="d-flex align-items-center justify-content-between px-3 pt-3 pb-2">
+            <div class="d-flex align-items-center justify-content-between px-3 pt-3 pb-2 cb-fullscreen-hide">
                 <div class="d-flex align-items-center">
                     <label class="mb-0 small font-weight-bold text-secondary mr-2">Tampilkan</label>
                     <select id="showEntriesSelect" name="per_page" form="filterForm" class="form-control form-control-sm" style="width:90px;" onchange="submitForm()">
@@ -186,7 +186,7 @@
                 </table>
             </div>
             {{-- Pagination Controls --}}
-            <div class="d-flex align-items-center justify-content-between px-3 py-2" id="rkPaginationWrap">
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 cb-fullscreen-hide" id="rkPaginationWrap">
                 <div id="rkPageInfo" class="small text-secondary">
                     @if($data->total() > 0)
                         Menampilkan {{ $data->firstItem() }} - {{ $data->lastItem() }} dari {{ $data->total() }} entri

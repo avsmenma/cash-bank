@@ -64,7 +64,7 @@
         </style>
     @endpush
 
-    <section class="content-header">
+    <section class="content-header cb-fullscreen-hide">
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
@@ -86,10 +86,10 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-12">
-                    <div class="invoice p-3 mb-3">
+                    <div class="invoice p-3 mb-3 cb-fullscreen-table">
 
                         <!-- Header -->
-                        <div class="row mb-3">
+                        <div class="row mb-3 cb-fullscreen-hide">
                             <div class="col-12">
                                 <h4>
                                     <i class="fas fa-university"></i>
@@ -99,7 +99,7 @@
                             </div>
                         </div>
 
-                        <div class="row no-print mb-3">
+                        <div class="row no-print mb-3 cb-fullscreen-hide">
                             <div class="col-12">
                                 <a href="{{ route('daftarBank.index') }}" class="btn btn-secondary">
                                     <i class="fas fa-arrow-left"></i> Kembali
@@ -107,7 +107,7 @@
                             </div>
                         </div>
 
-                        <hr>
+                        <hr class="cb-fullscreen-hide">
 
                         <div class="row">
                             <div class="col-12 table-responsive">

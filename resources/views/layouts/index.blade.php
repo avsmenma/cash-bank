@@ -49,6 +49,85 @@
         .sidebar .nav .nav-treeview {
             margin-left: 20px;
         }
+
+        .cb-fullscreen-toggle {
+            width: 48px;
+            height: 32px;
+            border: 1px solid rgba(255,255,255,.35);
+            border-radius: 4px;
+            background: rgba(255,255,255,.08);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 14px;
+        }
+        .cb-fullscreen-toggle:hover,
+        .cb-fullscreen-toggle:focus {
+            background: rgba(255,255,255,.16);
+            color: #fff;
+            outline: none;
+        }
+        body.cb-table-fullscreen {
+            overflow: hidden;
+            background: #fff;
+        }
+        body.cb-table-fullscreen .main-header,
+        body.cb-table-fullscreen .main-sidebar,
+        body.cb-table-fullscreen .cb-fullscreen-hide {
+            display: none !important;
+        }
+        body.cb-table-fullscreen .content-wrapper {
+            margin-left: 0 !important;
+            padding: 0 !important;
+            min-height: 100vh !important;
+            height: 100vh !important;
+            overflow: hidden !important;
+            background: #fff !important;
+        }
+        body.cb-table-fullscreen .content,
+        body.cb-table-fullscreen .content-wrapper > .container-fluid,
+        body.cb-table-fullscreen .content .container-fluid {
+            width: 100% !important;
+            max-width: none !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        body.cb-table-fullscreen .cb-fullscreen-table {
+            width: 100% !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
+            margin: 0 !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            background: #fff !important;
+            padding: 12px !important;
+            overflow: hidden !important;
+        }
+        body.cb-table-fullscreen .cb-fullscreen-table .dataTables_wrapper {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        body.cb-table-fullscreen .cb-fullscreen-table .dt-buttons {
+            display: none !important;
+        }
+        body.cb-table-fullscreen .cb-fullscreen-table .dataTables_scroll {
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+        body.cb-table-fullscreen .cb-fullscreen-table .dataTables_scrollBody {
+            height: calc(100vh - 72px) !important;
+            max-height: calc(100vh - 72px) !important;
+        }
+        body.cb-table-fullscreen .cb-fullscreen-table .table-responsive {
+            height: calc(100vh - 24px) !important;
+            max-height: calc(100vh - 24px) !important;
+            overflow: auto !important;
+        }
     </style>
 </head>
 
@@ -70,6 +149,13 @@
 
             <ul class="navbar-nav ml-auto">
                 <!-- Navbar Search -->
+                @if(request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'daftarBank.*', 'rekening-koran.*'))
+                    <li class="nav-item d-flex align-items-center">
+                        <button type="button" class="cb-fullscreen-toggle" id="cbBankFullscreenToggle" title="Mode layar penuh tabel" aria-label="Mode layar penuh tabel" aria-pressed="false">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </li>
+                @endif
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
                     <button type="submit" class="btn border-0">
@@ -372,6 +458,60 @@
         .drag-scrolling { cursor: grabbing !important; user-select: none; }
         .table-responsive, .drag-scroll, .dataTables_scrollBody { cursor: grab; }
     </style>
+    <script>
+    (function() {
+        var toggle = document.getElementById('cbBankFullscreenToggle');
+        if (!toggle) return;
+
+        function resizeDataTables() {
+            if (!window.jQuery || !jQuery.fn || !jQuery.fn.dataTable) return;
+            jQuery('.cb-fullscreen-table table.dataTable').each(function() {
+                if (!jQuery.fn.DataTable.isDataTable(this)) return;
+                var table = jQuery(this).DataTable();
+                table.columns.adjust();
+                if (table.scroller && typeof table.scroller.measure === 'function') {
+                    table.scroller.measure();
+                }
+                table.draw(false);
+            });
+        }
+
+        function setActive(active) {
+            document.body.classList.toggle('cb-table-fullscreen', active);
+            toggle.setAttribute('aria-pressed', active ? 'true' : 'false');
+            toggle.innerHTML = active
+                ? '<i class="fas fa-compress"></i>'
+                : '<i class="fas fa-expand"></i>';
+            setTimeout(resizeDataTables, 80);
+            setTimeout(resizeDataTables, 240);
+        }
+
+        toggle.addEventListener('click', function() {
+            var active = !document.body.classList.contains('cb-table-fullscreen');
+            if (active && document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(function() {
+                    setActive(true);
+                });
+                setActive(true);
+                return;
+            }
+            if (!active && document.fullscreenElement && document.exitFullscreen) {
+                document.exitFullscreen();
+                return;
+            }
+            setActive(active);
+        });
+
+        document.addEventListener('fullscreenchange', function() {
+            setActive(Boolean(document.fullscreenElement));
+        });
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && document.body.classList.contains('cb-table-fullscreen') && !document.fullscreenElement) {
+                setActive(false);
+            }
+        });
+    })();
+    </script>
 
     @stack('scripts')
 

@@ -80,7 +80,7 @@
   <div class="container-fluid">
 
     {{-- PAGE TITLE CARD --}}
-    <div class="page-title-card mt-3">
+    <div class="page-title-card mt-3 cb-fullscreen-hide">
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
         <h1><i class="fas fa-arrow-circle-down mr-2" style="color:#1a7a3d;"></i>Input Bank Masuk</h1>
         <ol class="breadcrumb mb-0" style="background:none;padding:0;">
@@ -92,7 +92,7 @@
     </div>
 
     {{-- ACTION BAR --}}
-    <div class="action-bar">
+    <div class="action-bar cb-fullscreen-hide">
       <a href="#" rel="noopener" class="btn btn-danger btn-sm" id="deleteAllSelectedRecord">
         <i class="fas fa-trash mr-1"></i>Hapus
       </a>
@@ -116,7 +116,7 @@
     </div>
 
     {{-- TABLE CARD --}}
-    <div class="table-card p-3">
+    <div class="table-card p-3 cb-fullscreen-table">
       @include('cash_bank.table.tableMasuk')
     </div>
 

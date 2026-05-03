@@ -114,7 +114,7 @@
   <div class="container-fluid">
 
     {{-- PAGE TITLE CARD --}}
-    <div class="page-title-card mt-3">
+    <div class="page-title-card mt-3 cb-fullscreen-hide">
       <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap:8px;">
         <h1><i class="fas fa-university mr-2"></i>Daftar Virtual Account (VA)</h1>
         <ol class="breadcrumb mb-0" style="background:none;padding:0;">
@@ -125,14 +125,14 @@
     </div>
 
     {{-- ACTION BAR --}}
-    <div class="action-bar">
+    <div class="action-bar cb-fullscreen-hide">
       <a href="javascript:void(0)" class="btn btn-success btn-sm" data-toggle="modal" data-target="#ModalTambahBank">
         <i class="fas fa-plus mr-1"></i>Tambah Data
       </a>
     </div>
 
     {{-- TABLE CARD --}}
-    <div class="table-card">
+    <div class="table-card cb-fullscreen-table">
       <div class="table-responsive">
         <table id="example2" class="table table-bordered mb-0">
           <thead>

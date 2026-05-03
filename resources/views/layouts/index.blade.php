@@ -73,12 +73,84 @@
             background: #fff;
         }
         body.cb-table-fullscreen .main-header,
-        body.cb-table-fullscreen .main-sidebar,
         body.cb-table-fullscreen .cb-fullscreen-hide {
             display: none !important;
         }
-        body.cb-table-fullscreen .content-wrapper {
+        body.cb-table-fullscreen .main-sidebar {
+            display: block !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            width: 64px !important;
+            min-height: 100vh !important;
+            z-index: 1045 !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            transition: width .18s ease, box-shadow .18s ease;
+        }
+        body.cb-table-fullscreen .main-sidebar:hover,
+        body.cb-table-fullscreen .main-sidebar:focus-within {
+            width: 250px !important;
+            box-shadow: 8px 0 22px rgba(15, 23, 42, .25);
+        }
+        body.cb-table-fullscreen .main-sidebar .brand-link {
+            height: 64px;
+            padding: 8px 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+        body.cb-table-fullscreen .main-sidebar .brand-link img {
+            width: 42px;
+            height: 42px;
+            flex: 0 0 42px;
+        }
+        body.cb-table-fullscreen .main-sidebar .brand-text,
+        body.cb-table-fullscreen .main-sidebar .nav-sidebar .nav-link p,
+        body.cb-table-fullscreen .main-sidebar .nav-sidebar .nav-link .right {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .12s ease;
+            white-space: nowrap;
+        }
+        body.cb-table-fullscreen .main-sidebar:hover .brand-text,
+        body.cb-table-fullscreen .main-sidebar:focus-within .brand-text,
+        body.cb-table-fullscreen .main-sidebar:hover .nav-sidebar .nav-link p,
+        body.cb-table-fullscreen .main-sidebar:focus-within .nav-sidebar .nav-link p,
+        body.cb-table-fullscreen .main-sidebar:hover .nav-sidebar .nav-link .right,
+        body.cb-table-fullscreen .main-sidebar:focus-within .nav-sidebar .nav-link .right {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        body.cb-table-fullscreen .main-sidebar .sidebar {
+            overflow-x: hidden;
+            padding-left: 8px;
+            padding-right: 8px;
+        }
+        body.cb-table-fullscreen .main-sidebar .nav-sidebar .nav-link {
+            width: 232px;
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+        body.cb-table-fullscreen .main-sidebar .nav-sidebar .nav-icon,
+        body.cb-table-fullscreen .main-sidebar .nav-sidebar > .nav-item > .nav-link > i:first-child {
+            flex: 0 0 32px;
+            width: 32px;
+            margin-right: 10px;
+            text-align: center;
+        }
+        body.cb-table-fullscreen .main-sidebar .nav-treeview {
             margin-left: 0 !important;
+            width: 232px;
+        }
+        body.cb-table-fullscreen .main-sidebar:not(:hover):not(:focus-within) .nav-treeview {
+            display: none !important;
+        }
+        body.cb-table-fullscreen .content-wrapper {
+            margin-left: 64px !important;
             padding: 0 !important;
             min-height: 100vh !important;
             height: 100vh !important;
@@ -478,6 +550,9 @@
 
         function setActive(active) {
             document.body.classList.toggle('cb-table-fullscreen', active);
+            try {
+                sessionStorage.setItem('cbBankTableFullscreen', active ? '1' : '0');
+            } catch (e) {}
             toggle.setAttribute('aria-pressed', active ? 'true' : 'false');
             toggle.innerHTML = active
                 ? '<i class="fas fa-compress"></i>'
@@ -510,6 +585,12 @@
                 setActive(false);
             }
         });
+
+        try {
+            if (sessionStorage.getItem('cbBankTableFullscreen') === '1') {
+                setActive(true);
+            }
+        } catch (e) {}
     })();
     </script>
 

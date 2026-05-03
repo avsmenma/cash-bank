@@ -81,6 +81,17 @@
         body.cb-table-fullscreen .card-header {
             display: none !important;
         }
+        body.cb-table-fullscreen .cb-fullscreen-table .cb-fullscreen-controls {
+            display: flex !important;
+            margin-bottom: 12px !important;
+        }
+        body.cb-table-fullscreen .cb-fullscreen-table .cb-fullscreen-support {
+            display: none !important;
+        }
+        body.cb-table-fullscreen .select2-container--open,
+        body.cb-table-fullscreen .select2-dropdown {
+            z-index: 1060 !important;
+        }
         body.cb-table-fullscreen .main-sidebar {
             display: block !important;
             position: fixed !important;

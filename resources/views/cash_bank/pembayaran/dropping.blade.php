@@ -28,8 +28,8 @@
         </div>
         <div class="card-body">
           <div class="tab-content">
-            <div class="active tab-pane" id="activity">
-              <div class="row no-print mb-3">
+            <div class="active tab-pane cb-fullscreen-table" id="activity">
+              <div class="row no-print mb-3 cb-fullscreen-controls">
                 <div class="col-12">
                   <div class="d-flex justify-content-between">
                     <div class="d-flex gap-2">
@@ -72,7 +72,7 @@
                         </select>
                       </div>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 cb-fullscreen-support">
                       <a href="{{ url('/bank-masuk/view/pdf')}}" target="_blank" class="btn btn-outline-primary">
                         <i class="fas fa-print"></i> Download PDF
                       </a>
@@ -95,8 +95,8 @@
                 </div>
               </div>
             </div>
-            <div class="tab-pane" id="timeline">
-              <div class="row no-print mb-3">
+            <div class="tab-pane cb-fullscreen-table" id="timeline">
+              <div class="row no-print mb-3 cb-fullscreen-controls">
                 <div class="col-12">
                   <div class="d-flex gap-2 align-items-center">
                     <div class="form-group mb-0">
@@ -122,8 +122,8 @@
               </div>
             </div>
             {{-- TAB RENCANA --}}
-            <div class="tab-pane" id="rencana">
-              <div class="row no-print mb-3">
+            <div class="tab-pane cb-fullscreen-table" id="rencana">
+              <div class="row no-print mb-3 cb-fullscreen-controls">
                 <div class="col-12 justify-content-between">
                   <div class="d-flex justify-content-between">
                     <div class="d-flex gap-2">
@@ -148,7 +148,7 @@
                         </select>
                       </div>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 cb-fullscreen-support">
                       <a href="#" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download PDF</a>
                       <a href="#" class="btn btn-outline-danger"><i class="fas fa-file-excel"></i> Download Excel</a>
                       </a>
@@ -166,12 +166,12 @@
               </div>
             </div>
             {{-- TAB GABUNGAN --}}
-            <div class="tab-pane" id="gabungan">
-              <div class="row no-print mb-3">
+            <div class="tab-pane cb-fullscreen-table" id="gabungan">
+              <div class="row no-print mb-3 cb-fullscreen-controls">
                 <div class="col-12">
                   <div class="d-flex gap-2">
-                    <a href="#" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download PDF</a>
-                    <a href="#" class="btn btn-outline-danger"><i class="fas fa-file-excel"></i> Download Excel</a>
+                    <a href="#" class="btn btn-outline-primary cb-fullscreen-support"><i class="fas fa-print"></i> Download PDF</a>
+                    <a href="#" class="btn btn-outline-danger cb-fullscreen-support"><i class="fas fa-file-excel"></i> Download Excel</a>
                     <div class="col-md-3">
                       <select class="select2" id="tahunGabungan">
                         @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)

@@ -90,9 +90,9 @@
                     <label class="mb-0 small font-weight-bold text-secondary mr-2">Tampilkan</label>
                     <select id="showEntriesSelect" name="per_page" form="filterForm" class="form-control form-control-sm" style="width:90px;" onchange="submitForm()">
                         <option value="10" {{ request('per_page', '10') == '10' ? 'selected' : '' }}>10</option>
+                        <option value="25" {{ request('per_page') == '25' ? 'selected' : '' }}>25</option>
                         <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50</option>
                         <option value="100" {{ request('per_page') == '100' ? 'selected' : '' }}>100</option>
-                        <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>Semua</option>
                     </select>
                     <label class="mb-0 small font-weight-bold text-secondary ml-2">entri</label>
                 </div>

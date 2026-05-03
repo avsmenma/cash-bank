@@ -609,6 +609,7 @@
                     pageLength: 25,
                     lengthMenu: [10, 25, 50, 100],
                     order: [],
+                    deferRender: true,
                     language: {
                         processing: "Memproses...",
                         search: "Cari:",
@@ -627,6 +628,11 @@
                     },
                     responsive: false,
                     scrollX: true,
+                    scrollY: '60vh',
+                    scroller: {
+                        loadingIndicator: true,
+                        displayBuffer: 9
+                    },
                     drawCallback: function() {
                         updateSelectedCount();
                     }

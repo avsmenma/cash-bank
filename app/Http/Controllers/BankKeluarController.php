@@ -1128,9 +1128,7 @@ class BankKeluarController extends Controller
         $rekapanVA = $request->rekapanVA;
         $idJenisPembayaran = $request->filled('id_jenis_pembayaran') ? $request->id_jenis_pembayaran : null;
         $perPageInput = $request->input('per_page', '10');
-        $perPage = $perPageInput === 'all'
-            ? 'all'
-            : (in_array((int) $perPageInput, [10, 50, 100], true) ? (int) $perPageInput : 10);
+        $perPage = in_array((int) $perPageInput, [10, 25, 50, 100], true) ? (int) $perPageInput : 10;
 
         /* ================= HITUNG JUMLAH FILTER AKTIF ================= */
         $activeFilters = [];
@@ -1537,45 +1535,26 @@ class BankKeluarController extends Controller
         $totalKredit = (clone $reportQuery)->sum('kredit');
         $page = max(1, (int) $request->input('page', 1));
 
-        if ($perPage === 'all') {
-            $pageRows = (clone $reportQuery)
-                ->orderBy('tanggal')
-                ->orderBy('urut_id')
-                ->orderBy('jenis_sort')
-                ->get();
+        $lastPage = max(1, (int) ceil($totalEntries / $perPage));
+        $page = min($page, $lastPage);
 
-            $data = new LengthAwarePaginator(
-                $pageRows,
-                $totalEntries,
-                max($totalEntries, 1),
-                1,
-                [
-                    'path' => $request->url(),
-                    'query' => $request->except('page'),
-                ]
-            );
-        } else {
-            $lastPage = max(1, (int) ceil($totalEntries / $perPage));
-            $page = min($page, $lastPage);
+        $pageRows = (clone $reportQuery)
+            ->orderBy('tanggal')
+            ->orderBy('urut_id')
+            ->orderBy('jenis_sort')
+            ->forPage($page, $perPage)
+            ->get();
 
-            $pageRows = (clone $reportQuery)
-                ->orderBy('tanggal')
-                ->orderBy('urut_id')
-                ->orderBy('jenis_sort')
-                ->forPage($page, $perPage)
-                ->get();
-
-            $data = new LengthAwarePaginator(
-                $pageRows,
-                $totalEntries,
-                $perPage,
-                $page,
-                [
-                    'path' => $request->url(),
-                    'query' => $request->except('page'),
-                ]
-            );
-        }
+        $data = new LengthAwarePaginator(
+            $pageRows,
+            $totalEntries,
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->except('page'),
+            ]
+        );
 
         /* ================= HITUNG SALDO BERJALAN / TOTAL KREDIT ================= */
         $finalSaldo = null;

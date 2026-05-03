@@ -157,8 +157,15 @@
     $('#example2').DataTable({
       processing: true,
       serverSide: true,
+      deferRender: true,
       ordering: false,
-      lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Semua']],
+      scrollY: '60vh',
+      scroller: {
+        loadingIndicator: true,
+        displayBuffer: 9
+      },
+      pageLength: 50,
+      lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
       ajax: "{{ route('daftarBank.data') }}",
       columns: [
         { data: 'DT_RowIndex', orderable: false, searchable: false, title: 'No' },

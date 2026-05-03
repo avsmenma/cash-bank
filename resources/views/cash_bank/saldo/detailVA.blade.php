@@ -185,7 +185,8 @@
                     paging: true,
                     searching: true,
                     order: [[1, 'asc']],
-                    lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Semua"]],
+                    deferRender: true,
+                    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
                     columnDefs: [
                         { orderable: false, targets: [0] }
                     ]

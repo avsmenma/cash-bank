@@ -53,6 +53,10 @@ class daftarSPPController extends Controller
             $tahun = $request->tahun ?? date('Y');
             $filterStatus = $request->status;
             $perPage = (int) ($request->per_page ?? 10);
+            $allowedPerPage = [10, 25, 50, 100];
+            if (! in_array($perPage, $allowedPerPage, true)) {
+                $perPage = 10;
+            }
             $page = (int) ($request->page ?? 1);
             $search = $request->search;
 
@@ -92,20 +96,13 @@ class daftarSPPController extends Controller
             // Get total count before pagination (clone to avoid modifying query)
             $totalRecords = (clone $query)->count();
 
-            // Handle "show all"
-            if ($perPage === -1) {
-                $allData = $query->get();
-                $totalPages = 1;
-                $page = 1;
-            } else {
-                $totalPages = max(1, (int) ceil($totalRecords / $perPage));
-                $page = min($page, $totalPages);
-                $offset = ($page - 1) * $perPage;
-                $allData = $query->skip($offset)->take($perPage)->get();
-            }
+            $totalPages = max(1, (int) ceil($totalRecords / $perPage));
+            $page = min($page, $totalPages);
+            $offset = ($page - 1) * $perPage;
+            $allData = $query->skip($offset)->take($perPage)->get();
 
             // Calculate global start index for numbering
-            $startIndex = ($perPage === -1) ? 0 : ($page - 1) * $perPage;
+            $startIndex = ($page - 1) * $perPage;
 
             $bulanNames = [
                 0 => 'TANPA TANGGAL',
@@ -120,7 +117,7 @@ class daftarSPPController extends Controller
                 'per_page' => $perPage,
                 'total_records' => $totalRecords,
                 'from' => $totalRecords > 0 ? $startIndex + 1 : 0,
-                'to' => $totalRecords > 0 ? min($startIndex + ($perPage === -1 ? $totalRecords : $perPage), $totalRecords) : 0,
+                'to' => $totalRecords > 0 ? min($startIndex + $perPage, $totalRecords) : 0,
             ];
 
             return view('cash_bank.dataSPP', compact('allData', 'bulanNames', 'tahun', 'pagination', 'startIndex'));

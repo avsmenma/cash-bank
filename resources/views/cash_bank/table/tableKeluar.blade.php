@@ -11,7 +11,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        /* Kolom yang boleh wrap teks ke bawah */
+        /* Scroller butuh tinggi baris stabil agar scroll tetap halus */
         #example3 td:nth-child(6),  /* Sumber Dana */
         #example3 th:nth-child(6),
         #example3 td:nth-child(7),  /* Bank Tujuan */
@@ -22,8 +22,8 @@
         #example3 th:nth-child(13),
         #example3 td:nth-child(15), /* Keterangan */
         #example3 th:nth-child(15) {
-            white-space: normal !important;
-            word-break: break-word;
+            white-space: nowrap !important;
+            word-break: normal;
         }
         /* Header navy */
         #example3 thead th,
@@ -335,10 +335,17 @@
             var table = $('#example3').DataTable({
                 processing: true,
                 serverSide: true,
+                deferRender: true,
                 ordering: false,
                 autoWidth: false,
                 scrollX: true,
-                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Semua']],
+                scrollY: '60vh',
+                scroller: {
+                    loadingIndicator: true,
+                    displayBuffer: 9
+                },
+                pageLength: 50,
+                lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
                 ajax: {
                     url: "{{ route('bank-keluar.data') }}",
                     data: function(d) {

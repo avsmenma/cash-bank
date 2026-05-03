@@ -23,6 +23,7 @@
     <link rel="stylesheet"
         href="{{ asset('adminLTE/plugins/datatables-responsive/css/responsive.bootstrap4.min.css')}}">
     <link rel="stylesheet" href="{{ asset('adminLTE/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('adminLTE/plugins/datatables-scroller/css/scroller.bootstrap4.min.css') }}">
     <!-- select 2 -->
     <link rel="stylesheet" href="{{ asset('adminLTE/plugins/select2/css/select2.min.css')}}">
     <link rel="stylesheet" href="{{ asset('adminLTE/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css')}}">
@@ -131,6 +132,8 @@
     <!--  DataTables Core -->
     <script src="{{ asset('adminLTE/plugins/datatables/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('adminLTE/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('adminLTE/plugins/datatables-scroller/js/dataTables.scroller.min.js') }}"></script>
+    <script src="{{ asset('adminLTE/plugins/datatables-scroller/js/scroller.bootstrap4.min.js') }}"></script>
 
     <!--  DataTables Responsive -->
     <script src="{{ asset('adminLTE/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>

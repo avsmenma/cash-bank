@@ -158,7 +158,8 @@
 
 <style>
 #rkTable {
-    table-layout: fixed;
+    table-layout: fixed !important;
+    width: 100% !important;
     min-width: 1820px;
 }
 #rkTable th:nth-child(1), #rkTable td:nth-child(1) { width: 55px; }
@@ -195,28 +196,44 @@
     border-color: #d0dce8 !important;
 }
 .rk-sumber {
-    white-space: normal;
+    white-space: normal !important;
     overflow-wrap: anywhere;
     word-break: normal;
     vertical-align: top;
     line-height: 1.35;
-    overflow: visible;
+    overflow: hidden !important;
+    text-overflow: clip !important;
 }
 .rk-penerima {
-    white-space: normal;
+    white-space: normal !important;
     overflow-wrap: anywhere;
     word-break: normal;
     vertical-align: top;
     line-height: 1.35;
-    overflow: visible;
+    overflow: hidden !important;
+    text-overflow: clip !important;
 }
 .rk-uraian {
-    white-space: normal;
+    white-space: normal !important;
     overflow-wrap: anywhere;
     word-break: normal;
     vertical-align: top;
     line-height: 1.35;
-    overflow: visible;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+}
+.rk-wrap-cell {
+    max-width: 100%;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    line-height: 1.35;
+}
+.rk-nowrap-cell {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
 }
 
 /* ====== ROWS ====== */
@@ -287,22 +304,40 @@ $(function () {
             }
         },
         columns: [
-            { data: 'no', className: 'text-center rk-td' },
-            { data: 'no_agenda', className: 'rk-td' },
-            { data: 'tanggal', className: 'text-center rk-td' },
-            { data: 'no_sap', className: 'rk-td' },
-            { data: 'nama_sumber_dana', className: 'rk-td rk-sumber' },
-            { data: 'penerima', className: 'rk-td rk-penerima' },
+            { data: 'no', className: 'text-center rk-td', width: '55px' },
+            { data: 'no_agenda', className: 'rk-td', width: '120px' },
+            { data: 'tanggal', className: 'text-center rk-td', width: '110px' },
+            { data: 'no_sap', className: 'rk-td', width: '120px' },
+            {
+                data: 'nama_sumber_dana',
+                className: 'rk-td rk-sumber',
+                width: '250px',
+                render: function (data) {
+                    return '<div class="rk-wrap-cell">' + (data || '-') + '</div>';
+                }
+            },
+            {
+                data: 'penerima',
+                className: 'rk-td rk-penerima',
+                width: '170px',
+                render: function (data) {
+                    return '<div class="rk-wrap-cell">' + (data || '-') + '</div>';
+                }
+            },
             {
                 data: 'uraian',
                 className: 'rk-td rk-uraian',
+                width: '600px',
+                render: function (data) {
+                    return '<div class="rk-wrap-cell">' + (data || '-') + '</div>';
+                },
                 createdCell: function (td, cellData) {
                     td.title = $('<div>').html(cellData || '').text();
                 }
             },
-            { data: 'debet', className: 'text-right rk-td rk-debet' },
-            { data: 'kredit', className: 'text-right rk-td rk-kredit' },
-            { data: 'saldo_akhir', className: 'text-right rk-td rk-saldo' }
+            { data: 'debet', className: 'text-right rk-td rk-debet', width: '130px' },
+            { data: 'kredit', className: 'text-right rk-td rk-kredit', width: '130px' },
+            { data: 'saldo_akhir', className: 'text-right rk-td rk-saldo', width: '130px' }
         ],
         language: {
             emptyTable: 'Tidak ada data untuk filter yang dipilih.',

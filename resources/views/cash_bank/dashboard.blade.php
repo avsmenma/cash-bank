@@ -24,7 +24,7 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="card">
-                    <div class="card-header p-2">
+                    <div class="card-header p-2 cb-fullscreen-tabs">
                         <ul class="nav nav-pills">
                             <li class="nav-item">
                                 <a class="nav-link active" id="pd-tab" href="#activity" data-toggle="tab">CashFlow PD</a>
@@ -37,7 +37,7 @@
                     <div class="card-body">
                         <div class="tab-content">
                             <!-- TAB 1: CashFlow PD -->
-                            <div class="active tab-pane" id="activity">
+                            <div class="active tab-pane cb-fullscreen-table" id="activity">
                                 <div class="row align-items-end mb-3 cb-fullscreen-hide">
                                     <div class="form-group mb-0 ml-1">
                                         <label>Tahun:</label>
@@ -114,7 +114,7 @@
                             </div>
                             
                             <!-- TAB 2: CashFlow PvD -->
-                            <div class="tab-pane" id="timeline">
+                            <div class="tab-pane cb-fullscreen-table" id="timeline">
                                 <div class="row align-items-end mb-3 cb-fullscreen-hide">
                                     <div class="form-group mb-0 ml-1">
                                         <label>Tahun:</label>

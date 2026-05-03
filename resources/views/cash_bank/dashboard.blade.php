@@ -38,7 +38,7 @@
                         <div class="tab-content">
                             <!-- TAB 1: CashFlow PD -->
                             <div class="active tab-pane" id="activity">
-                                <div class="row align-items-end mb-3">
+                                <div class="row align-items-end mb-3 cb-fullscreen-hide">
                                     <div class="form-group mb-0 ml-1">
                                         <label>Tahun:</label>
                                         <select name="tahun" id="tahunPD" class="form-control select2">
@@ -103,7 +103,7 @@
                                     </div>
                                 </div>
                                 
-                                <hr>
+                                <hr class="cb-fullscreen-hide">
                                 
                                 <!-- Content for CashFlow PD -->
                                 <div id="pd-content">
@@ -115,7 +115,7 @@
                             
                             <!-- TAB 2: CashFlow PvD -->
                             <div class="tab-pane" id="timeline">
-                                <div class="row align-items-end mb-3">
+                                <div class="row align-items-end mb-3 cb-fullscreen-hide">
                                     <div class="form-group mb-0 ml-1">
                                         <label>Tahun:</label>
                                         <select name="tahunPvd" id="tahunPvD" class="form-control select2">
@@ -180,7 +180,7 @@
                                         </a>    
                                     </div>
                                 </div>
-                                <hr>
+                                <hr class="cb-fullscreen-hide">
                                 
                                 <!-- Content for CashFlow PvD -->
                                 <div id="pvd-content">

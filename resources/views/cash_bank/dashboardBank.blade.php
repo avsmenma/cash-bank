@@ -33,7 +33,7 @@
 
     <section class="content">
         {{-- TOMBOL EXPORT --}}
-        <div class="mb-3">
+        <div class="mb-3 cb-fullscreen-hide">
             <button type="button" class="btn btn-success btn-sm mr-2" onclick="openExportModal('excel')">
                 <i class="fas fa-file-excel mr-1"></i> Export Excel
             </button>
@@ -43,7 +43,7 @@
         </div>
 
         {{-- LAYOUT BERSEBELAHAN --}}
-        <div class="d-flex flex-wrap" style="gap:20px;">
+        <div class="d-flex flex-wrap cb-fullscreen-table" style="gap:20px;">
 
             {{-- ====== KOLOM KIRI (TABEL + INFO) ====== --}}
             <div style="flex:1; min-width:380px; align-self:flex-start;">
@@ -138,7 +138,7 @@
             </div>{{-- end card --}}
 
             {{-- INFO RINGKASAN SALDO --}}
-            <div class="mt-3" style="
+            <div class="mt-3 cb-fullscreen-hide" style="
                 background: #f8fafc;
                 border: 1px solid #d5dfe8;
                 border-left: 4px solid #0d3b6e;

@@ -73,7 +73,12 @@
             background: #fff;
         }
         body.cb-table-fullscreen .main-header,
-        body.cb-table-fullscreen .cb-fullscreen-hide {
+        body.cb-table-fullscreen .cb-fullscreen-hide,
+        body.cb-table-fullscreen .content-header,
+        body.cb-table-fullscreen .page-title-card,
+        body.cb-table-fullscreen .filter-card-ringkasan,
+        body.cb-table-fullscreen .no-print,
+        body.cb-table-fullscreen .card-header {
             display: none !important;
         }
         body.cb-table-fullscreen .main-sidebar {
@@ -167,6 +172,9 @@
         }
         body.cb-table-fullscreen .content,
         body.cb-table-fullscreen .content-wrapper > .container-fluid,
+        body.cb-table-fullscreen .content-wrapper > .container-fuild,
+        body.cb-table-fullscreen .content-wrapper > div,
+        body.cb-table-fullscreen .container-fuild,
         body.cb-table-fullscreen .content .container-fluid {
             width: 100% !important;
             max-width: none !important;
@@ -212,6 +220,13 @@
             max-height: calc(100vh - 24px) !important;
             overflow: auto !important;
         }
+        body.cb-table-fullscreen .cb-fullscreen-table > .table-responsive,
+        body.cb-table-fullscreen .cb-fullscreen-table .tbl-scroll-rk,
+        body.cb-table-fullscreen .cb-fullscreen-table .table-scroll {
+            height: calc(100vh - 24px) !important;
+            max-height: calc(100vh - 24px) !important;
+            overflow: auto !important;
+        }
     </style>
 </head>
 
@@ -233,7 +248,7 @@
 
             <ul class="navbar-nav ml-auto">
                 <!-- Navbar Search -->
-                @if(request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'daftarBank.*', 'rekening-koran.*'))
+                @if(request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'daftarBank.*', 'rekening-koran.*', 'ringkasan.*', 'penerima.*', 'dropping.*', 'permintaan.*', 'daftar-spp.*', 'dashboard.*'))
                     <li class="nav-item d-flex align-items-center">
                         <button type="button" class="cb-fullscreen-toggle" id="cbBankFullscreenToggle" title="Mode layar penuh tabel" aria-label="Mode layar penuh tabel" aria-pressed="false">
                             <i class="fas fa-expand"></i>
@@ -578,9 +593,54 @@
             });
         }
 
+        function isVisible(el) {
+            return Boolean(el && (el.offsetWidth || el.offsetHeight || el.getClientRects().length));
+        }
+
+        function applyAutoFullscreenTarget(active) {
+            document.querySelectorAll('.cb-fullscreen-auto-target').forEach(function(el) {
+                el.classList.remove('cb-fullscreen-auto-target', 'cb-fullscreen-table');
+            });
+            if (!active || document.querySelector('.cb-fullscreen-table')) return;
+
+            var preferredSelectors = [
+                '#spp-content',
+                '#realisasi-content',
+                '#rencana-content',
+                '#cashflow-content',
+                '#gabungan-content',
+                '#table-wrapper',
+                '#cashflow-wrapper',
+                '#pd-content',
+                '#pvd-content',
+                '#mk-content',
+                '.table-card-rk'
+            ];
+
+            for (var i = 0; i < preferredSelectors.length; i++) {
+                var target = document.querySelector(preferredSelectors[i]);
+                if (isVisible(target)) {
+                    target.classList.add('cb-fullscreen-table', 'cb-fullscreen-auto-target');
+                    return;
+                }
+            }
+
+            var visibleTables = Array.prototype.slice.call(document.querySelectorAll('.content-wrapper table'))
+                .filter(isVisible);
+            if (!visibleTables.length) return;
+
+            var table = visibleTables[0];
+            var wrapper = table.closest('.table-responsive, .table-scroll, .tbl-scroll-rk, .card, .invoice') || table.parentElement;
+            if (wrapper) {
+                wrapper.classList.add('cb-fullscreen-table', 'cb-fullscreen-auto-target');
+            }
+        }
+
         function setActive(active) {
+            applyAutoFullscreenTarget(active);
             document.body.classList.toggle('cb-table-fullscreen', active);
             try {
+                sessionStorage.setItem('cbTableFullscreen', active ? '1' : '0');
                 sessionStorage.setItem('cbBankTableFullscreen', active ? '1' : '0');
             } catch (e) {}
             toggle.setAttribute('aria-pressed', active ? 'true' : 'false');
@@ -617,7 +677,7 @@
         });
 
         try {
-            if (sessionStorage.getItem('cbBankTableFullscreen') === '1') {
+            if (sessionStorage.getItem('cbTableFullscreen') === '1' || sessionStorage.getItem('cbBankTableFullscreen') === '1') {
                 setActive(true);
             }
         } catch (e) {}

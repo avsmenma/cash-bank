@@ -103,7 +103,7 @@
                         </div>
 
                         {{-- Show Entries & Search Bar --}}
-                        <div class="d-flex justify-content-between align-items-center flex-wrap mb-2" style="gap:10px;">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap mb-2 cb-fullscreen-hide" style="gap:10px;">
                             <div class="d-flex align-items-center" style="gap:6px; font-size:13px; color:#444; font-weight:500;">
                                 Show
                                 <select class="form-control form-control-sm" id="sppPerPage" style="width:70px; display:inline-block;">

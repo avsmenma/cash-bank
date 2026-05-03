@@ -280,7 +280,7 @@
 
     {{-- TABLE CARD --}}
     <div class="table-card-rk">
-      <div style="padding: 12px 16px;">
+      <div class="cb-fullscreen-hide" style="padding: 12px 16px;">
         <span class="period-badge-rk">
           <i class="fas fa-calendar-alt mr-1"></i>
           Periode: {{ $bulanMap[$dariBulan] ?? '' }} — {{ $bulanMap[$sampaiBulan] ?? '' }} {{ $tahun }}

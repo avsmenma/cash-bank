@@ -20,7 +20,7 @@
         </section>
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header p-2">
+                <div class="card-header p-2 cb-fullscreen-tabs">
                     <ul class="nav nav-pills">
                         <li class="nav-item"><a class="nav-link active" href="#activity"
                                 data-toggle="tab">Realisasi</a></li>
@@ -34,7 +34,7 @@
                 </div>
                 <div class="card-body">
                     <div class="tab-content">
-                        <div class="active tab-pane" id="activity">
+                        <div class="active tab-pane cb-fullscreen-table" id="activity">
                             <div class="row no-print">
                                 <div class="col-12">
                                     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
@@ -138,7 +138,7 @@
 
                         </div>
                     <!-- /.tab-pane -->
-                    <div class="tab-pane" id="timeline">
+                    <div class="tab-pane cb-fullscreen-table" id="timeline">
                         <div class="row no-print mb-3">
                             <div class="col-12">
                                 <div class="d-flex gap-2">
@@ -162,7 +162,7 @@
                         </div>
                     </div>
                     {{-- TAB RENCANA --}}
-                    <div class="tab-pane" id="rencana">
+                    <div class="tab-pane cb-fullscreen-table" id="rencana">
                         <div class="row no-print mb-3">
                             <div class="col-12">
                                 <div class="d-flex gap-2">
@@ -194,7 +194,7 @@
                         </div>
                     </div>
                     {{-- TAB GABUNGAN --}}
-                    <div class="tab-pane" id="gabungan">
+                    <div class="tab-pane cb-fullscreen-table" id="gabungan">
                         <div class="row no-print mb-3">
                             <div class="col-12">
                                 <div class="d-flex gap-2 align-items-center">

@@ -1,17 +1,17 @@
 @push('styles')
     <style>
         #example3 {
-            table-layout: fixed !important;
+            table-layout: auto !important;
             width: 100% !important;
         }
         #example3 th,
         #example3 td {
             white-space: nowrap;
             vertical-align: middle;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            overflow: visible;
+            text-overflow: clip;
         }
-        /* Scroller butuh tinggi baris stabil agar scroll tetap halus */
+        /* Kolom dokumen dibuat lebar agar isi tidak dipotong dengan ellipsis */
         #example3 td:nth-child(6),  /* Sumber Dana */
         #example3 th:nth-child(6),
         #example3 td:nth-child(7),  /* Bank Tujuan */
@@ -24,6 +24,8 @@
         #example3 th:nth-child(15) {
             white-space: nowrap !important;
             word-break: normal;
+            overflow: visible !important;
+            text-overflow: clip !important;
         }
         /* Header navy */
         #example3 thead th,
@@ -359,14 +361,14 @@
                     { data: 'agenda_tahun',        width: '110px' },
                     { data: 'DT_RowIndex',         width: '70px',  orderable: false, searchable: false, title: 'No Bukti' },
                     { data: 'tanggal',             width: '90px' },
-                    { data: 'sumber_dana',         width: '180px' },
-                    { data: 'bank_tujuan',         width: '160px' },
-                    { data: 'kategori_kriteria',   width: '130px' },
-                    { data: 'sub_kriteria',        width: '130px' },
-                    { data: 'item_sub_kriteria',   width: '130px' },
-                    { data: 'jenis_pembayaran',    width: '120px' },
-                    { data: 'penerima',            width: '150px' },
-                    { data: 'uraian',              width: '250px' },
+                    { data: 'sumber_dana',         width: '360px' },
+                    { data: 'bank_tujuan',         width: '260px' },
+                    { data: 'kategori_kriteria',   width: '220px' },
+                    { data: 'sub_kriteria',        width: '240px' },
+                    { data: 'item_sub_kriteria',   width: '280px' },
+                    { data: 'jenis_pembayaran',    width: '180px' },
+                    { data: 'penerima',            width: '260px' },
+                    { data: 'uraian',              width: '680px' },
                     {
                         data: 'kredit',
                         width: '110px',
@@ -376,7 +378,7 @@
                             return data;
                         }
                     },
-                    { data: 'keterangan',          width: '180px' }
+                    { data: 'keterangan',          width: '360px' }
                 ],
                 columnDefs: [
                     {

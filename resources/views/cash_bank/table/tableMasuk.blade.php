@@ -1,17 +1,17 @@
 @push('styles')
     <style>
         #example2 {
-            table-layout: fixed !important;
+            table-layout: auto !important;
             width: 100% !important;
         }
         #example2 th,
         #example2 td {
             white-space: nowrap;
             vertical-align: middle;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            overflow: visible;
+            text-overflow: clip;
         }
-        /* Scroller butuh tinggi baris stabil agar scroll tetap halus */
+        /* Kolom dokumen dibuat lebar agar isi tidak dipotong dengan ellipsis */
         #example2 td:nth-child(6),  /* Sumber Dana */
         #example2 th:nth-child(6),
         #example2 td:nth-child(7),  /* Bank Tujuan */
@@ -24,6 +24,8 @@
         #example2 th:nth-child(13) {
             white-space: nowrap !important;
             word-break: normal;
+            overflow: visible !important;
+            text-overflow: clip !important;
         }
         /* Header navy */
         #example2 thead th,
@@ -84,14 +86,14 @@
                     { data: 'agenda_tahun',      width: '110px' },
                     { data: 'DT_RowIndex',       width: '70px',  orderable: false, searchable: false, title: 'No Bukti' },
                     { data: 'tanggal',           width: '90px' },
-                    { data: 'sumber_dana',       width: '180px' },
-                    { data: 'bank_tujuan',       width: '160px' },
-                    { data: 'kategori_kriteria', width: '130px' },
-                    { data: 'penerima',          width: '150px' },
-                    { data: 'uraian',            width: '250px' },
+                    { data: 'sumber_dana',       width: '360px' },
+                    { data: 'bank_tujuan',       width: '260px' },
+                    { data: 'kategori_kriteria', width: '180px' },
+                    { data: 'penerima',          width: '260px' },
+                    { data: 'uraian',            width: '620px' },
                     { data: 'jenis_pembayaran',  width: '100px' },
                     { data: 'debet',             width: '110px' },
-                    { data: 'keterangan',        width: '180px' },
+                    { data: 'keterangan',        width: '360px' },
                     { data: 'aksi',              width: '70px', orderable: false, searchable: false }
                 ]
             });

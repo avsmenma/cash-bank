@@ -18,7 +18,7 @@
     </section>
     <div class="col-md-12">
       <div class="card">
-        <div class="card-header p-2">
+        <div class="card-header p-2 cb-fullscreen-tabs">
           <ul class="nav nav-pills">
             <li class="nav-item"><a class="nav-link active" href="#activity" data-toggle="tab">Daftar
                 Permintaan/Rencana</a></li>

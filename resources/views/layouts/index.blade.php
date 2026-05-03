@@ -85,6 +85,23 @@
             display: flex !important;
             margin-bottom: 12px !important;
         }
+        body.cb-table-fullscreen .card-header.cb-fullscreen-tabs {
+            display: block !important;
+            background: #fff !important;
+            border-bottom: 1px solid #dee2e6 !important;
+            padding: 10px 12px !important;
+            margin: 0 !important;
+            position: relative;
+            z-index: 2;
+        }
+        body.cb-table-fullscreen .card-header.cb-fullscreen-tabs .nav {
+            display: flex !important;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        body.cb-table-fullscreen .card-header.cb-fullscreen-tabs .nav-link {
+            padding: 8px 14px;
+        }
         body.cb-table-fullscreen .cb-fullscreen-table .cb-fullscreen-support {
             display: none !important;
         }
@@ -230,6 +247,15 @@
             height: calc(100vh - 24px) !important;
             max-height: calc(100vh - 24px) !important;
             overflow: auto !important;
+        }
+        body.cb-table-fullscreen .card-header.cb-fullscreen-tabs + .card-body .cb-fullscreen-table {
+            height: calc(100vh - 64px) !important;
+            min-height: calc(100vh - 64px) !important;
+        }
+        body.cb-table-fullscreen .card-header.cb-fullscreen-tabs + .card-body .cb-fullscreen-table .table-responsive,
+        body.cb-table-fullscreen .card-header.cb-fullscreen-tabs + .card-body .cb-fullscreen-table .table-scroll {
+            height: calc(100vh - 112px) !important;
+            max-height: calc(100vh - 112px) !important;
         }
         body.cb-table-fullscreen .cb-fullscreen-table > .table-responsive,
         body.cb-table-fullscreen .cb-fullscreen-table .tbl-scroll-rk,

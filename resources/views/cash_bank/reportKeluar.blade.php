@@ -201,6 +201,21 @@
 </div>
 
 <style>
+#rkTable {
+    table-layout: fixed;
+    min-width: 1480px;
+}
+#rkTable th:nth-child(1), #rkTable td:nth-child(1) { width: 55px; }
+#rkTable th:nth-child(2), #rkTable td:nth-child(2) { width: 120px; }
+#rkTable th:nth-child(3), #rkTable td:nth-child(3) { width: 110px; }
+#rkTable th:nth-child(4), #rkTable td:nth-child(4) { width: 120px; }
+#rkTable th:nth-child(5), #rkTable td:nth-child(5) { width: 230px; }
+#rkTable th:nth-child(6), #rkTable td:nth-child(6) { width: 220px; }
+#rkTable th:nth-child(7), #rkTable td:nth-child(7) { width: 560px; }
+#rkTable th:nth-child(8), #rkTable td:nth-child(8),
+#rkTable th:nth-child(9), #rkTable td:nth-child(9),
+#rkTable th:nth-child(10), #rkTable td:nth-child(10) { width: 130px; }
+
 /* ====== HEADER ====== */
 .rk-th {
     background: #0d3b6e !important;
@@ -223,14 +238,17 @@
 }
 .rk-penerima {
     white-space: normal;
-    min-width: 120px;
-    max-width: 180px;
-    word-break: break-word;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    vertical-align: top;
+    line-height: 1.35;
 }
 .rk-uraian {
     white-space: normal;
-    min-width: 220px;
-    max-width: 400px;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    vertical-align: top;
+    line-height: 1.35;
 }
 
 /* ====== ROWS ====== */

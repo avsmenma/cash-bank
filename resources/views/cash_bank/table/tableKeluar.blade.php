@@ -1,17 +1,18 @@
 @push('styles')
     <style>
         #example3 {
-            table-layout: auto !important;
+            table-layout: fixed !important;
             width: 100% !important;
+            min-width: 2650px;
         }
         #example3 th,
         #example3 td {
             white-space: nowrap;
             vertical-align: middle;
-            overflow: visible;
+            overflow: hidden;
             text-overflow: clip;
         }
-        /* Kolom dokumen dibuat lebar agar isi tidak dipotong dengan ellipsis */
+        /* Ukuran berbasis data master dan uraian transaksi; outlier dibungkus ke bawah, bukan memperlebar kolom. */
         #example3 td:nth-child(6),  /* Sumber Dana */
         #example3 th:nth-child(6),
         #example3 td:nth-child(7),  /* Bank Tujuan */
@@ -22,8 +23,11 @@
         #example3 th:nth-child(13),
         #example3 td:nth-child(15), /* Keterangan */
         #example3 th:nth-child(15) {
-            white-space: nowrap !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
             word-break: normal;
+            vertical-align: top;
+            line-height: 1.35;
             overflow: visible !important;
             text-overflow: clip !important;
         }
@@ -358,27 +362,27 @@
                 columns: [
                     { data: 'checkbox',            width: '35px' },
                     { data: 'DT_RowIndex',         width: '45px',  orderable: false, searchable: false, title: 'No' },
-                    { data: 'agenda_tahun',        width: '110px' },
-                    { data: 'DT_RowIndex',         width: '70px',  orderable: false, searchable: false, title: 'No Bukti' },
-                    { data: 'tanggal',             width: '90px' },
-                    { data: 'sumber_dana',         width: '360px' },
-                    { data: 'bank_tujuan',         width: '260px' },
-                    { data: 'kategori_kriteria',   width: '220px' },
-                    { data: 'sub_kriteria',        width: '240px' },
-                    { data: 'item_sub_kriteria',   width: '280px' },
-                    { data: 'jenis_pembayaran',    width: '180px' },
-                    { data: 'penerima',            width: '260px' },
-                    { data: 'uraian',              width: '680px' },
+                    { data: 'agenda_tahun',        width: '105px' },
+                    { data: 'DT_RowIndex',         width: '72px',  orderable: false, searchable: false, title: 'No Bukti' },
+                    { data: 'tanggal',             width: '110px' },
+                    { data: 'sumber_dana',         width: '250px' },
+                    { data: 'bank_tujuan',         width: '180px' },
+                    { data: 'kategori_kriteria',   width: '180px' },
+                    { data: 'sub_kriteria',        width: '190px' },
+                    { data: 'item_sub_kriteria',   width: '220px' },
+                    { data: 'jenis_pembayaran',    width: '110px' },
+                    { data: 'penerima',            width: '220px' },
+                    { data: 'uraian',              width: '560px' },
                     {
                         data: 'kredit',
-                        width: '110px',
+                        width: '130px',
                         className: 'text-right',
                         render: function (data) {
                             if (data === null || data === undefined || data === '') return '0';
                             return data;
                         }
                     },
-                    { data: 'keterangan',          width: '360px' }
+                    { data: 'keterangan',          width: '240px' }
                 ],
                 columnDefs: [
                     {

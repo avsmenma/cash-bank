@@ -3,24 +3,37 @@
     @push('styles')
         <style>
         #tableDetailVA {
-            table-layout: auto !important;
+            table-layout: fixed !important;
             width: 100% !important;
+            min-width: 1500px;
         }
 
         #tableDetailVA th,
         #tableDetailVA td {
             white-space: nowrap;
             vertical-align: middle;
-            overflow: visible;
+            overflow: hidden;
             text-overflow: clip;
         }
 
-        /* Kolom Uraian: dibuat lebar dan tetap satu baris supaya isi tidak terpotong */
+        #tableDetailVA th:nth-child(4),
+        #tableDetailVA td:nth-child(4) {
+            width: 220px;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+            vertical-align: top;
+            line-height: 1.35;
+        }
+
+        /* Kolom Uraian: fixed dan wrap agar outlier tidak memperlebar tabel */
         #tableDetailVA th:nth-child(5),
         #tableDetailVA td:nth-child(5) {
-            white-space: nowrap !important;
+            width: 560px;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
             word-break: normal;
-            min-width: 620px;
+            vertical-align: top;
+            line-height: 1.35;
         }
 
 

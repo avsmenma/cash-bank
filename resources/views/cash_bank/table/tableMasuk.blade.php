@@ -1,17 +1,18 @@
 @push('styles')
     <style>
         #example2 {
-            table-layout: auto !important;
+            table-layout: fixed !important;
             width: 100% !important;
+            min-width: 2240px;
         }
         #example2 th,
         #example2 td {
             white-space: nowrap;
             vertical-align: middle;
-            overflow: visible;
+            overflow: hidden;
             text-overflow: clip;
         }
-        /* Kolom dokumen dibuat lebar agar isi tidak dipotong dengan ellipsis */
+        /* Ukuran berbasis data: uraian rata-rata 69 karakter, 91% <= 120 karakter, outlier dibungkus ke bawah. */
         #example2 td:nth-child(6),  /* Sumber Dana */
         #example2 th:nth-child(6),
         #example2 td:nth-child(7),  /* Bank Tujuan */
@@ -22,8 +23,11 @@
         #example2 th:nth-child(10),
         #example2 td:nth-child(13), /* Keterangan */
         #example2 th:nth-child(13) {
-            white-space: nowrap !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
             word-break: normal;
+            vertical-align: top;
+            line-height: 1.35;
             overflow: visible !important;
             text-overflow: clip !important;
         }
@@ -83,17 +87,17 @@
                 columns: [
                     { data: 'checkbox',          width: '35px' },
                     { data: 'DT_RowIndex',       width: '45px',  orderable: false, searchable: false, title: 'No' },
-                    { data: 'agenda_tahun',      width: '110px' },
-                    { data: 'DT_RowIndex',       width: '70px',  orderable: false, searchable: false, title: 'No Bukti' },
-                    { data: 'tanggal',           width: '90px' },
-                    { data: 'sumber_dana',       width: '360px' },
-                    { data: 'bank_tujuan',       width: '260px' },
-                    { data: 'kategori_kriteria', width: '180px' },
-                    { data: 'penerima',          width: '260px' },
-                    { data: 'uraian',            width: '620px' },
+                    { data: 'agenda_tahun',      width: '100px' },
+                    { data: 'DT_RowIndex',       width: '72px',  orderable: false, searchable: false, title: 'No Bukti' },
+                    { data: 'tanggal',           width: '110px' },
+                    { data: 'sumber_dana',       width: '250px' },
+                    { data: 'bank_tujuan',       width: '180px' },
+                    { data: 'kategori_kriteria', width: '170px' },
+                    { data: 'penerima',          width: '180px' },
+                    { data: 'uraian',            width: '560px' },
                     { data: 'jenis_pembayaran',  width: '100px' },
-                    { data: 'debet',             width: '110px' },
-                    { data: 'keterangan',        width: '360px' },
+                    { data: 'debet',             width: '130px' },
+                    { data: 'keterangan',        width: '240px' },
                     { data: 'aksi',              width: '70px', orderable: false, searchable: false }
                 ]
             });

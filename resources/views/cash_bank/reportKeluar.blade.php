@@ -134,7 +134,7 @@
                                     {{ $row->tanggal ? \Carbon\Carbon::parse($row->tanggal)->format('d/m/Y') : '-' }}
                                 </td>
                                 <td class="rk-td">{{ $row->no_sap ?? '-' }}</td>
-                                <td class="rk-td">{{ $row->nama_sumber_dana ?? '-' }}</td>
+                                <td class="rk-td rk-sumber">{{ $row->nama_sumber_dana ?? '-' }}</td>
                                 <td class="rk-td rk-penerima">{{ $row->penerima ?? '-' }}</td>
                                 <td class="rk-td rk-uraian" title="{{ $row->uraian }}">{{ $row->uraian ?? '-' }}</td>
                                 <td class="text-right rk-td rk-debet">
@@ -203,15 +203,15 @@
 <style>
 #rkTable {
     table-layout: fixed;
-    min-width: 1480px;
+    min-width: 1820px;
 }
 #rkTable th:nth-child(1), #rkTable td:nth-child(1) { width: 55px; }
 #rkTable th:nth-child(2), #rkTable td:nth-child(2) { width: 120px; }
 #rkTable th:nth-child(3), #rkTable td:nth-child(3) { width: 110px; }
 #rkTable th:nth-child(4), #rkTable td:nth-child(4) { width: 120px; }
-#rkTable th:nth-child(5), #rkTable td:nth-child(5) { width: 230px; }
-#rkTable th:nth-child(6), #rkTable td:nth-child(6) { width: 220px; }
-#rkTable th:nth-child(7), #rkTable td:nth-child(7) { width: 560px; }
+#rkTable th:nth-child(5), #rkTable td:nth-child(5) { width: 250px; }
+#rkTable th:nth-child(6), #rkTable td:nth-child(6) { width: 170px; }
+#rkTable th:nth-child(7), #rkTable td:nth-child(7) { width: 600px; }
 #rkTable th:nth-child(8), #rkTable td:nth-child(8),
 #rkTable th:nth-child(9), #rkTable td:nth-child(9),
 #rkTable th:nth-child(10), #rkTable td:nth-child(10) { width: 130px; }
@@ -234,7 +234,17 @@
     padding: 5px 8px;
     vertical-align: middle;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
     border-color: #d0dce8 !important;
+}
+.rk-sumber {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    vertical-align: top;
+    line-height: 1.35;
+    overflow: visible;
 }
 .rk-penerima {
     white-space: normal;
@@ -242,6 +252,7 @@
     word-break: normal;
     vertical-align: top;
     line-height: 1.35;
+    overflow: visible;
 }
 .rk-uraian {
     white-space: normal;
@@ -249,6 +260,7 @@
     word-break: normal;
     vertical-align: top;
     line-height: 1.35;
+    overflow: visible;
 }
 
 /* ====== ROWS ====== */

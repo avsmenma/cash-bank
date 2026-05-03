@@ -3,7 +3,7 @@
         #example3 {
             table-layout: fixed !important;
             width: 100% !important;
-            min-width: 2650px;
+            min-width: 2800px;
         }
         #example3 th,
         #example3 td {
@@ -17,6 +17,14 @@
         #example3 th:nth-child(6),
         #example3 td:nth-child(7),  /* Bank Tujuan */
         #example3 th:nth-child(7),
+        #example3 td:nth-child(8),  /* Kriteria */
+        #example3 th:nth-child(8),
+        #example3 td:nth-child(9),  /* Sub Kriteria */
+        #example3 th:nth-child(9),
+        #example3 td:nth-child(10), /* Item Sub Kriteria */
+        #example3 th:nth-child(10),
+        #example3 td:nth-child(11), /* Jenis Pembayaran */
+        #example3 th:nth-child(11),
         #example3 td:nth-child(12), /* Penerima */
         #example3 th:nth-child(12),
         #example3 td:nth-child(13), /* Uraian */
@@ -367,10 +375,10 @@
                     { data: 'tanggal',             width: '110px' },
                     { data: 'sumber_dana',         width: '250px' },
                     { data: 'bank_tujuan',         width: '180px' },
-                    { data: 'kategori_kriteria',   width: '180px' },
-                    { data: 'sub_kriteria',        width: '190px' },
-                    { data: 'item_sub_kriteria',   width: '220px' },
-                    { data: 'jenis_pembayaran',    width: '110px' },
+                    { data: 'kategori_kriteria',   width: '220px' },
+                    { data: 'sub_kriteria',        width: '205px' },
+                    { data: 'item_sub_kriteria',   width: '245px' },
+                    { data: 'jenis_pembayaran',    width: '135px' },
                     { data: 'penerima',            width: '220px' },
                     { data: 'uraian',              width: '560px' },
                     {
@@ -468,7 +476,30 @@
                 }
             }
 
+            function syncScrollBodyHeight() {
+                var info = table.page.info();
+                var $scrollBody = $(table.table().container()).find('.dataTables_scrollBody');
+
+                if (!$scrollBody.length) return;
+
+                if (info.recordsDisplay > 0 && info.recordsDisplay <= 12 && !document.body.classList.contains('cb-table-fullscreen')) {
+                    $scrollBody.css({
+                        height: 'auto',
+                        maxHeight: 'none',
+                        minHeight: 0
+                    });
+                    return;
+                }
+
+                $scrollBody.css({
+                    height: '60vh',
+                    maxHeight: '60vh',
+                    minHeight: ''
+                });
+            }
+
             table.on('draw', function () {
+                syncScrollBodyHeight();
                 reapplyCheckedRows();
                 ensureActiveCell();
             });

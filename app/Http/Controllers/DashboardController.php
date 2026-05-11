@@ -675,6 +675,8 @@ class dashboardController extends Controller
 
         // ================================================================
         // PEMBAYARAN (BankKeluar) - breakdown by tanggal into weeks
+        // Sheet PMK memakai formula seperti =SUM(Bayar!F1304)/1000,
+        // jadi nilai bank keluar dikonversi ke satuan ribuan rupiah.
         // ================================================================
         $pembayaranRows = \App\Models\BankKeluar::with(['kategori','subKriteria','itemSubKriteria'])
             ->whereYear('tanggal', $tahun)
@@ -682,9 +684,6 @@ class dashboardController extends Controller
             ->whereNotNull('kredit')
             ->where('kredit', '!=', '')
             ->where('kredit', '!=', '0')
-            ->whereNotNull('id_kategori_kriteria')
-            ->whereNotNull('id_sub_kriteria')
-            ->whereNotNull('id_item_sub_kriteria')
             ->get();
 
         $pembayaranData = []; // [bulan][kategori][sub][item] = weekTemplate
@@ -692,10 +691,13 @@ class dashboardController extends Controller
         foreach ($pembayaranRows as $row) {
             $b   = (int)\Carbon\Carbon::parse($row->tanggal)->month;
             $day = (int)\Carbon\Carbon::parse($row->tanggal)->day;
-            $k   = $row->kategori->nama_kriteria          ?? '-';
-            $s   = $row->subKriteria->nama_sub_kriteria   ?? '-';
-            $i   = $row->itemSubKriteria->nama_item_sub_kriteria ?? '-';
-            $nilai = (float)($row->kredit ?? 0);
+            $inferred = $this->inferModalKerjaPaymentPath($row);
+            if (!$inferred) {
+                continue;
+            }
+
+            [$k, $s, $i] = $inferred;
+            $nilai = ((float)($row->kredit ?? 0)) / 1000;
 
             if (!isset($pembayaranData[$b][$k][$s][$i])) {
                 $pembayaranData[$b][$k][$s][$i] = $weekTemplate;
@@ -781,6 +783,124 @@ class dashboardController extends Controller
             'allKeys', 'bulanAktif', 'tahun', 'bulanMap',
             'bulanDari', 'bulanSampai', 'weekCuts'
         ));
+    }
+
+    private function inferModalKerjaPaymentPath($row): ?array
+    {
+        $kategori = trim((string)($row->kategori->nama_kriteria ?? ''));
+        $sub = trim((string)($row->subKriteria->nama_sub_kriteria ?? ''));
+        $item = trim((string)($row->itemSubKriteria->nama_item_sub_kriteria ?? ''));
+
+        if ($kategori !== '' && $sub !== '' && $item !== '') {
+            return [$kategori, $sub, $item];
+        }
+
+        $text = $this->normalizeModalKerjaText(
+            implode(' ', [
+                $row->uraian ?? '',
+                $row->penerima ?? '',
+                $row->keterangan ?? '',
+                $row->jenis_pembayaran ?? '',
+            ])
+        );
+
+        if ($text === '') {
+            return null;
+        }
+
+        $gajiKategori = 'Kebutuhan Gaji, Upah dan Tunjangan';
+        $pimpinan = 'Karyawan Pimpinan';
+        $pelaksana = 'Karyawan Pelaksana';
+
+        if (str_contains($text, 'bpjs')) {
+            $sub = (str_contains($text, 'pensiunan') || str_contains($text, 'gol iii') || str_contains($text, 'gol iv'))
+                ? $pimpinan
+                : $pelaksana;
+
+            return [$gajiKategori, $sub, 'Iuran BPJS B. Perusahaan'];
+        }
+
+        if (str_contains($text, 'dapenbun')) {
+            $sub = str_contains($text, 'pimpinan') ? $pimpinan : $pelaksana;
+            $item = str_contains($text, 'tambahan')
+                ? 'Iuran Dapenbun (Tambahan)'
+                : 'Iuran Dapenbun (Normal)';
+
+            return [$gajiKategori, $sub, $item];
+        }
+
+        if (str_contains($text, 'sht')) {
+            return [$gajiKategori, $pelaksana, 'SHT (Cicilan)'];
+        }
+
+        if (str_contains($text, 'pph pasal 21') || str_contains($text, 'pph 21')) {
+            $sub = str_contains($text, 'pimpinan') ? $pimpinan : $pelaksana;
+            return [$gajiKategori, $sub, 'PPh pasal 21'];
+        }
+
+        if (str_contains($text, 'pakaian dinas')) {
+            return [$gajiKategori, $pelaksana, 'Lainnya'];
+        }
+
+        if (str_contains($text, 'gaji') || str_contains($text, 'tunjangan') || str_contains($text, 'lembur') || str_contains($text, 'premi') || str_contains($text, 'cuti')) {
+            $sub = (str_contains($text, 'pimpinan') || str_contains($text, 'gol iii') || str_contains($text, 'gol iv'))
+                ? $pimpinan
+                : $pelaksana;
+
+            if (str_contains($text, 'lembur')) {
+                return [$gajiKategori, $sub, 'Lembur'];
+            }
+            if (str_contains($text, 'premi')) {
+                return [$gajiKategori, $sub, 'Premi'];
+            }
+            if (str_contains($text, 'cuti tahunan')) {
+                return [$gajiKategori, $sub, 'Cuti Tahunan'];
+            }
+            if (str_contains($text, 'cuti panjang')) {
+                return [$gajiKategori, $sub, 'Cuti Panjang'];
+            }
+
+            return [$gajiKategori, $sub, 'Gaji dan Tunjangan'];
+        }
+
+        $biayaKategori = 'Payment Requirement for Exploitation Activity';
+        $biayaUsaha = 'Biaya Usaha dan Lainnya';
+
+        $biayaMap = [
+            'csr' => 'Biaya CSR',
+            'keamanan' => 'Biaya Keamanan',
+            'konsultan' => 'Biaya Konsultan (DAPN)',
+            'media' => 'Biaya Media',
+            'pelabuhan' => 'Biaya Pelabuhan',
+            'pemasaran' => 'Biaya Pemasaran Lainnya',
+            'pemeliharaan bangunan' => 'Biaya Pemeliharaan Bangunan, Mesin, Jalan dan Instalasi (DINP)',
+            'perlengkapan kantor' => 'Biaya Pemeliharaan Perlengkapan Kantor',
+            'pendidikan' => 'Biaya Pendidikan dan Pengembangan SDM',
+            'pengangkutan' => 'Biaya Pengangkutan, Perjalanan & Penginapan',
+            'pengendalian lingkungan' => 'Biaya Pengendalian Lingkungan (ISO 14000)',
+            'pengiriman ke pelabuhan' => 'Biaya Pengiriman ke Pelabuhan (CPO)',
+            'sumbangan' => 'Biaya Sumbangan dan Iuran',
+            'telekomunikasi' => 'Biaya Telekomunikasi dan Ekspedisi',
+            'atk' => 'Utilities (Air, Listrik, ATK, Brg Umum, Sewa Kantor)',
+            'listrik' => 'Utilities (Air, Listrik, ATK, Brg Umum, Sewa Kantor)',
+            'sewa kantor' => 'Utilities (Air, Listrik, ATK, Brg Umum, Sewa Kantor)',
+        ];
+
+        foreach ($biayaMap as $needle => $mappedItem) {
+            if (str_contains($text, $needle)) {
+                return [$biayaKategori, $biayaUsaha, $mappedItem];
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeModalKerjaText(?string $value): string
+    {
+        $value = strtolower((string)$value);
+        $value = preg_replace('/[^a-z0-9]+/i', ' ', $value);
+
+        return trim(preg_replace('/\s+/', ' ', $value));
     }
 
     public function bank(Request $request)

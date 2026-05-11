@@ -525,11 +525,32 @@
                 });
             }
 
+            function protectNativeScrollbars() {
+                var scrollBody = $(table.table().container()).find('.dataTables_scrollBody')[0];
+                if (!scrollBody || scrollBody._cbBankKeluarScrollbarGuard) return;
+
+                scrollBody._cbBankKeluarScrollbarGuard = true;
+                scrollBody.addEventListener('pointerdown', function (event) {
+                    var rect = scrollBody.getBoundingClientRect();
+                    var verticalScrollbarWidth = scrollBody.offsetWidth - scrollBody.clientWidth;
+                    var horizontalScrollbarHeight = scrollBody.offsetHeight - scrollBody.clientHeight;
+                    var onVerticalScrollbar = verticalScrollbarWidth > 0 && event.clientX >= rect.right - verticalScrollbarWidth - 2;
+                    var onHorizontalScrollbar = horizontalScrollbarHeight > 0 && event.clientY >= rect.bottom - horizontalScrollbarHeight - 2;
+
+                    if (onVerticalScrollbar || onHorizontalScrollbar) {
+                        event.stopImmediatePropagation();
+                    }
+                }, true);
+            }
+
             table.on('draw', function () {
                 syncScrollBodyHeight();
+                protectNativeScrollbars();
                 reapplyCheckedRows();
                 ensureActiveCell();
             });
+
+            table.on('init.dt', protectNativeScrollbars);
 
             $(document).on('change', '.checkbox_ids', function () {
                 var id = String($(this).val());
@@ -559,6 +580,7 @@
             $('#example3 tbody').on('pointerdown', 'td.cb-spreadsheet-cell', function (e) {
                 if (e.pointerType === 'mouse' && e.button !== 0) return;
                 activateCellFromPointer(e, $(this));
+                e.stopPropagation();
             });
 
             $('#example3 tbody').on('click', 'td.cb-spreadsheet-cell', function (e) {

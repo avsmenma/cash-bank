@@ -12,6 +12,20 @@
             overflow: hidden;
             text-overflow: clip;
         }
+        #example3 tbody tr {
+            height: 58px;
+        }
+        #example3 .cb-cell-wrap {
+            display: block;
+            max-width: 100%;
+            max-height: 44px;
+            line-height: 1.35;
+            white-space: normal !important;
+            overflow: hidden;
+            overflow-wrap: anywhere;
+            word-break: normal;
+            text-overflow: clip;
+        }
         /* Ukuran berbasis data master dan uraian transaksi; outlier dibungkus ke bawah, bukan memperlebar kolom. */
         #example3 td:nth-child(6),  /* Sumber Dana */
         #example3 th:nth-child(6),
@@ -346,17 +360,45 @@
                 14: { field: 'keterangan', type: 'textarea' }
             };
 
+            function renderTextCell(data, type) {
+                if (type !== 'display') {
+                    return data === null || data === undefined ? '' : data;
+                }
+
+                return '<span class="cb-cell-wrap" title="' + escapeHtml(data || '-') + '">' + escapeHtml(data || '-') + '</span>';
+            }
+
+            function renderInlineText(data, type) {
+                return type === 'display' ? escapeHtml(data || '-') : (data || '');
+            }
+
+            function refreshScrollerMetrics() {
+                if (!$.fn.DataTable.isDataTable('#example3')) return;
+
+                window.requestAnimationFrame(function () {
+                    table.columns.adjust();
+                    if (table.scroller && typeof table.scroller.measure === 'function') {
+                        table.scroller.measure(false);
+                    }
+                });
+            }
+
             var table = $('#example3').DataTable({
                 processing: true,
                 serverSide: true,
                 deferRender: true,
                 ordering: false,
                 autoWidth: false,
+                searchDelay: 350,
+                rowId: function (row) {
+                    return row && row.id_bank_keluar ? 'bank-keluar-' + row.id_bank_keluar : null;
+                },
                 scrollX: true,
                 scrollY: '60vh',
                 scroller: {
                     loadingIndicator: true,
-                    displayBuffer: 9
+                    displayBuffer: 12,
+                    rowHeight: 58
                 },
                 pageLength: 50,
                 lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
@@ -365,22 +407,32 @@
                     data: function(d) {
                         d.filter_tgl_dari   = $('#filter-tgl-dari').val() || '';
                         d.filter_tgl_sampai = $('#filter-tgl-sampai').val() || '';
+                    },
+                    dataSrc: function (json) {
+                        return json && Array.isArray(json.data) ? json.data : [];
+                    },
+                    error: function (xhr) {
+                        var message = 'Gagal memuat data Bank Keluar.';
+                        if (xhr.responseJSON && (xhr.responseJSON.message || xhr.responseJSON.error)) {
+                            message = xhr.responseJSON.message || xhr.responseJSON.error;
+                        }
+                        console.error(message, xhr.responseText || xhr);
                     }
                 },
                 columns: [
                     { data: 'checkbox',            width: '35px' },
-                    { data: 'DT_RowIndex',         width: '45px',  orderable: false, searchable: false, title: 'No' },
-                    { data: 'agenda_tahun',        width: '105px' },
-                    { data: 'DT_RowIndex',         width: '72px',  orderable: false, searchable: false, title: 'No Bukti' },
-                    { data: 'tanggal',             width: '110px' },
-                    { data: 'sumber_dana',         width: '250px' },
-                    { data: 'bank_tujuan',         width: '180px' },
-                    { data: 'kategori_kriteria',   width: '220px' },
-                    { data: 'sub_kriteria',        width: '205px' },
-                    { data: 'item_sub_kriteria',   width: '245px' },
-                    { data: 'jenis_pembayaran',    width: '135px' },
-                    { data: 'penerima',            width: '220px' },
-                    { data: 'uraian',              width: '560px' },
+                    { data: 'DT_RowIndex',         width: '45px',  orderable: false, searchable: false, title: 'No', render: renderInlineText },
+                    { data: 'agenda_tahun',        width: '105px', render: renderInlineText },
+                    { data: 'DT_RowIndex',         width: '72px',  orderable: false, searchable: false, title: 'No Bukti', render: renderInlineText },
+                    { data: 'tanggal',             width: '110px', render: renderInlineText },
+                    { data: 'sumber_dana',         width: '250px', render: renderTextCell },
+                    { data: 'bank_tujuan',         width: '180px', render: renderTextCell },
+                    { data: 'kategori_kriteria',   width: '220px', render: renderTextCell },
+                    { data: 'sub_kriteria',        width: '205px', render: renderTextCell },
+                    { data: 'item_sub_kriteria',   width: '245px', render: renderTextCell },
+                    { data: 'jenis_pembayaran',    width: '135px', render: renderTextCell },
+                    { data: 'penerima',            width: '220px', render: renderTextCell },
+                    { data: 'uraian',              width: '560px', render: renderTextCell },
                     {
                         data: 'kredit',
                         width: '130px',
@@ -390,7 +442,7 @@
                             return data;
                         }
                     },
-                    { data: 'keterangan',          width: '240px' }
+                    { data: 'keterangan',          width: '240px', render: renderTextCell }
                 ],
                 columnDefs: [
                     {
@@ -471,8 +523,8 @@
                         return;
                     }
                 }
-                if (!activeCell || !activeCell.length || !$.contains(document, activeCell[0])) {
-                    setActiveCell($('#example3 tbody td.cb-editable-cell:visible').first());
+                if (activeCell && activeCell.length && !$.contains(document, activeCell[0])) {
+                    activeCell = null;
                 }
             }
 
@@ -502,6 +554,11 @@
                 syncScrollBodyHeight();
                 reapplyCheckedRows();
                 ensureActiveCell();
+                refreshScrollerMetrics();
+            });
+
+            table.on('xhr.dt init.dt column-sizing.dt', function () {
+                refreshScrollerMetrics();
             });
 
             $(document).on('change', '.checkbox_ids', function () {

@@ -136,8 +136,10 @@
             opacity: 1;
         }
         #example3 td.cb-active-cell {
-            box-shadow: inset 0 0 0 2px #1f8ef1;
+            box-shadow: inset 0 0 0 2px #0d6efd, inset 0 0 0 9999px rgba(13, 110, 253, .08);
             background: #eef7ff !important;
+            outline: 2px solid #0d6efd;
+            outline-offset: -2px;
         }
         #example3 td.cb-editing-cell {
             padding: 2px !important;
@@ -437,14 +439,21 @@
                 return parseInt($cell.attr('data-col-index'), 10);
             }
 
-            function setActiveCell($cell) {
+            function setActiveCell($cell, options) {
+                options = options || {};
                 if (!$cell || !$cell.length || $cell.hasClass('cb-editing-cell')) return;
                 $('#example3 tbody td.cb-active-cell').removeClass('cb-active-cell');
                 activeCell = $cell;
                 activeCell.addClass('cb-active-cell').focus();
-                if (activeCell[0] && activeCell[0].scrollIntoView) {
+                if (!options.skipScroll && activeCell[0] && activeCell[0].scrollIntoView) {
                     activeCell[0].scrollIntoView({ block: 'nearest', inline: 'nearest' });
                 }
+            }
+
+            function activateCellFromPointer(e, $cell) {
+                if ($(e.target).is('input, select, textarea, button, a, label')) return;
+                shiftSelectAnchorCell = $cell;
+                setActiveCell($cell, { skipScroll: true });
             }
 
             function selectRowsBetweenCells($fromCell, $toCell) {
@@ -547,10 +556,13 @@
                 }, 0);
             });
 
+            $('#example3 tbody').on('pointerdown', 'td.cb-spreadsheet-cell', function (e) {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                activateCellFromPointer(e, $(this));
+            });
+
             $('#example3 tbody').on('click', 'td.cb-spreadsheet-cell', function (e) {
-                if ($(e.target).is('input, select, textarea, button, a')) return;
-                shiftSelectAnchorCell = $(this);
-                setActiveCell($(this));
+                activateCellFromPointer(e, $(this));
             });
 
             $('#example3 tbody').on('dblclick', 'td.cb-editable-cell', function () {

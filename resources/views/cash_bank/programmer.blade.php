@@ -389,6 +389,76 @@
     .pulse-danger {
         animation: pulse-red 2s infinite;
     }
+
+    .keyword-panel {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+
+    .keyword-panel-header {
+        background: #243447;
+        color: #ffffff;
+        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .keyword-panel-header h5 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .keyword-panel-body {
+        padding: 1.25rem;
+    }
+
+    .keyword-result {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem;
+        background: #f8fafc;
+        min-height: 98px;
+    }
+
+    .keyword-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .keyword-count.match {
+        background: #e8f4ff;
+        color: #1f5f8b;
+    }
+
+    .keyword-count.update {
+        background: #fff4e5;
+        color: #9a5b00;
+    }
+
+    .keyword-sample {
+        max-height: 220px;
+        overflow: auto;
+        margin-top: 0.75rem;
+    }
+
+    .keyword-sample table {
+        font-size: 0.78rem;
+        margin-bottom: 0;
+    }
 </style>
 @endpush
 
@@ -403,6 +473,77 @@
                 <p class="mt-1">Data Management Console — Hapus data tanpa akses database langsung</p>
             </div>
             <span class="badge-role"><i class="fas fa-shield-alt mr-1"></i> ROLE: PROGRAMMER</span>
+        </div>
+    </div>
+
+    {{-- ===== KEYWORD MAPPER ===== --}}
+    <div class="keyword-panel">
+        <div class="keyword-panel-header">
+            <h5><i class="fas fa-tags mr-2"></i>Keyword Mapper Bank Keluar</h5>
+            <span class="badge badge-light text-dark">Backup otomatis sebelum update</span>
+        </div>
+        <div class="keyword-panel-body">
+            <form id="keywordMapperForm">
+                <div class="row">
+                    <div class="col-lg-4 mb-3">
+                        <label class="small font-weight-bold">Kata Kunci</label>
+                        <textarea class="form-control" name="keywords" id="keywordInput" rows="6"
+                            placeholder="Contoh:&#10;Pembelian TBS&#10;Kebun A"></textarea>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="small font-weight-bold">Mode</label>
+                                <select class="form-control" name="match_mode" id="keywordMatchMode">
+                                    <option value="all">Semua kata kunci</option>
+                                    <option value="any">Salah satu kata kunci</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="small font-weight-bold">Jenis Pembayaran</label>
+                                <select class="form-control keyword-select" name="id_jenis_pembayaran" id="keywordJenis">
+                                    <option value="">Pilih Jenis Pembayaran</option>
+                                    @foreach($keywordReferences['jenis'] as $jenis)
+                                        <option value="{{ $jenis->id_jenis_pembayaran }}">{{ $jenis->nama_jenis_pembayaran }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="small font-weight-bold">Kriteria</label>
+                                <select class="form-control keyword-select" name="id_kategori_kriteria" id="keywordKategori">
+                                    <option value="">Pilih Kriteria</option>
+                                    @foreach($keywordReferences['kategori'] as $kategori)
+                                        <option value="{{ $kategori->id_kategori_kriteria }}">{{ $kategori->nama_kriteria }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="small font-weight-bold">Sub Kriteria</label>
+                                <select class="form-control keyword-select" name="id_sub_kriteria" id="keywordSub" disabled>
+                                    <option value="">Pilih Sub Kriteria</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="small font-weight-bold">Item Sub Kriteria</label>
+                                <select class="form-control keyword-select" name="id_item_sub_kriteria" id="keywordItem" disabled>
+                                    <option value="">Pilih Item</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center" style="gap: 0.5rem;">
+                            <button type="button" class="btn btn-primary" id="btnKeywordPreview">
+                                <i class="fas fa-search mr-1"></i>Preview
+                            </button>
+                            <button type="button" class="btn btn-success" id="btnKeywordUpdate" disabled>
+                                <i class="fas fa-save mr-1"></i>Update Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="keyword-result mt-3" id="keywordResult">
+                <span class="text-muted">Belum ada preview.</span>
+            </div>
         </div>
     </div>
 
@@ -530,12 +671,149 @@
     let currentColumns = [];
     let currentPrimaryKey = 'id';
     let pendingDeleteAction = null;
+    let latestKeywordPreview = null;
 
     const tableMap = @json($tableMap);
+    const keywordReferences = @json($keywordReferences);
 
     // ===== CSRF Setup =====
     $.ajaxSetup({
         headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+    });
+
+    $('.keyword-select').select2({ theme: 'bootstrap4', width: '100%' });
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function refreshKeywordSubOptions() {
+        const kategoriId = $('#keywordKategori').val();
+        const subs = keywordReferences.subByKategori[kategoriId] || [];
+        let html = '<option value="">Pilih Sub Kriteria</option>';
+        subs.forEach(item => {
+            html += `<option value="${item.id_sub_kriteria}">${escapeHtml(item.nama_sub_kriteria)}</option>`;
+        });
+        $('#keywordSub').html(html).prop('disabled', !kategoriId).val('').trigger('change.select2');
+        refreshKeywordItemOptions();
+    }
+
+    function refreshKeywordItemOptions() {
+        const subId = $('#keywordSub').val();
+        const items = keywordReferences.itemBySub[subId] || [];
+        let html = '<option value="">Pilih Item</option>';
+        items.forEach(item => {
+            html += `<option value="${item.id_item_sub_kriteria}">${escapeHtml(item.nama_item_sub_kriteria)}</option>`;
+        });
+        $('#keywordItem').html(html).prop('disabled', !subId).val('').trigger('change.select2');
+    }
+
+    $('#keywordKategori').on('change', refreshKeywordSubOptions);
+    $('#keywordSub').on('change', refreshKeywordItemOptions);
+    $('#keywordMapperForm').on('input change', 'textarea, select', function() {
+        latestKeywordPreview = null;
+        $('#btnKeywordUpdate').prop('disabled', true);
+    });
+
+    function collectKeywordForm() {
+        return {
+            keywords: $('#keywordInput').val(),
+            match_mode: $('#keywordMatchMode').val(),
+            id_kategori_kriteria: $('#keywordKategori').val(),
+            id_sub_kriteria: $('#keywordSub').val(),
+            id_item_sub_kriteria: $('#keywordItem').val(),
+            id_jenis_pembayaran: $('#keywordJenis').val()
+        };
+    }
+
+    function renderKeywordResult(res) {
+        let html = `
+            <div>
+                <span class="keyword-count match"><i class="fas fa-filter"></i>${Number(res.matched || 0).toLocaleString('id-ID')} cocok</span>
+                <span class="keyword-count update"><i class="fas fa-pen"></i>${Number(res.will_update || 0).toLocaleString('id-ID')} akan diubah</span>
+            </div>
+        `;
+
+        if (res.samples && res.samples.length) {
+            html += '<div class="keyword-sample"><table class="table table-bordered table-sm"><thead><tr><th>ID</th><th>Agenda</th><th>Uraian</th><th>Kriteria Saat Ini</th></tr></thead><tbody>';
+            res.samples.forEach(row => {
+                const current = [
+                    row.nama_kriteria || '-',
+                    row.nama_sub_kriteria || '-',
+                    row.nama_item_sub_kriteria || '-',
+                    row.nama_jenis_pembayaran || '-'
+                ].join(' | ');
+                html += `<tr>
+                    <td>${escapeHtml(row.id_bank_keluar)}</td>
+                    <td>${escapeHtml(row.agenda_tahun || '-')}</td>
+                    <td>${escapeHtml(row.uraian || '-')}</td>
+                    <td>${escapeHtml(current)}</td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+        }
+
+        $('#keywordResult').html(html);
+        $('#btnKeywordUpdate').prop('disabled', Number(res.will_update || 0) === 0);
+    }
+
+    $('#btnKeywordPreview').on('click', function() {
+        const btn = $(this);
+        latestKeywordPreview = null;
+        $('#btnKeywordUpdate').prop('disabled', true);
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Preview...');
+
+        $.ajax({
+            url: '{{ route("programmer.keywordPreview") }}',
+            type: 'POST',
+            data: collectKeywordForm(),
+            success: function(res) {
+                latestKeywordPreview = res;
+                renderKeywordResult(res);
+                showToast('success', 'Preview selesai');
+            },
+            error: function(xhr) {
+                $('#keywordResult').html('<span class="text-danger">' + escapeHtml(xhr.responseJSON?.message || 'Preview gagal') + '</span>');
+                showToast('error', xhr.responseJSON?.message || 'Preview gagal');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fas fa-search mr-1"></i>Preview');
+            }
+        });
+    });
+
+    $('#btnKeywordUpdate').on('click', function() {
+        if (!latestKeywordPreview || Number(latestKeywordPreview.will_update || 0) === 0) return;
+        if (!confirm(`Update ${latestKeywordPreview.will_update} data Bank Keluar?`)) return;
+
+        const btn = $(this);
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Update...');
+
+        $.ajax({
+            url: '{{ route("programmer.keywordUpdate") }}',
+            type: 'POST',
+            data: collectKeywordForm(),
+            success: function(res) {
+                showToast('success', `${res.message} Backup: ${res.backup_table || '-'}`);
+                $('#keywordResult').append(`<div class="mt-2 text-success font-weight-bold">Backup: ${escapeHtml(res.backup_table || '-')}</div>`);
+                if (currentTable === 'bank_keluar' && dtInstance) dtInstance.ajax.reload(null, false);
+                latestKeywordPreview = null;
+            },
+            error: function(xhr) {
+                showToast('error', xhr.responseJSON?.message || xhr.responseJSON?.error || 'Update gagal');
+                btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Update Data');
+            },
+            complete: function(xhr) {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    btn.prop('disabled', true).html('<i class="fas fa-save mr-1"></i>Update Data');
+                }
+            }
+        });
     });
 
     // ===== SELECT TABLE =====

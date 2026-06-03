@@ -478,6 +478,8 @@ Route::middleware(['auth'])->prefix('ringkasan-pembayaran')->name('ringkasan.')-
 Route::group(['middleware' => ['auth', 'check_role:programmer'], 'prefix' => 'programmer'], function () {
     Route::get('/', [ProgrammerController::class, 'index'])->name('programmer.index');
     Route::get('/data/{table}', [ProgrammerController::class, 'getData'])->name('programmer.data');
+    Route::post('/keyword-preview', [ProgrammerController::class, 'keywordPreview'])->name('programmer.keywordPreview');
+    Route::post('/keyword-update', [ProgrammerController::class, 'keywordUpdate'])->name('programmer.keywordUpdate');
     Route::delete('/delete/{table}/{id}', [ProgrammerController::class, 'deleteRecord'])->name('programmer.delete');
     Route::delete('/bulk-delete/{table}', [ProgrammerController::class, 'bulkDelete'])->name('programmer.bulkDelete');
     Route::delete('/truncate/{table}', [ProgrammerController::class, 'truncateTable'])->name('programmer.truncate');

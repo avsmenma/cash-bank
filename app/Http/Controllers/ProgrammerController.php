@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use App\Models\BankKeluar;
 use App\Models\BankMasuk;
 use App\Models\GabunganMasukKeluar;
@@ -111,6 +112,7 @@ class ProgrammerController extends Controller
     {
         $tableMap = $this->getTableMap();
         $stats = [];
+        $keywordReferences = $this->getKeywordReferences();
 
         foreach ($tableMap as $key => $info) {
             try {
@@ -126,7 +128,7 @@ class ProgrammerController extends Controller
             ];
         }
 
-        return view('cash_bank.programmer', compact('stats', 'tableMap'));
+        return view('cash_bank.programmer', compact('stats', 'tableMap', 'keywordReferences'));
     }
 
     /**
@@ -263,5 +265,200 @@ class ProgrammerController extends Controller
             'message' => "Semua data di tabel {$info['name']} berhasil dihapus",
             'newCount' => 0,
         ]);
+    }
+
+    public function keywordPreview(Request $request)
+    {
+        $payload = $this->validateKeywordPayload($request);
+        $target = $payload['target'];
+
+        $matchedQuery = $this->buildKeywordMatchQuery($payload['keywords'], $payload['match_mode']);
+        $changedQuery = $this->buildNeedsKeywordUpdateQuery(clone $matchedQuery, $target);
+
+        $samples = (clone $matchedQuery)
+            ->leftJoin('kategori_kriteria as kk', 'kk.id_kategori_kriteria', '=', 'bank_keluars.id_kategori_kriteria')
+            ->leftJoin('sub_kriteria as sk', 'sk.id_sub_kriteria', '=', 'bank_keluars.id_sub_kriteria')
+            ->leftJoin('item_sub_kriteria as isk', 'isk.id_item_sub_kriteria', '=', 'bank_keluars.id_item_sub_kriteria')
+            ->leftJoin('jenis_pembayarans as jp', 'jp.id_jenis_pembayaran', '=', 'bank_keluars.id_jenis_pembayaran')
+            ->select(
+                'bank_keluars.id_bank_keluar',
+                'bank_keluars.agenda_tahun',
+                'bank_keluars.uraian',
+                'kk.nama_kriteria',
+                'sk.nama_sub_kriteria',
+                'isk.nama_item_sub_kriteria',
+                'jp.nama_jenis_pembayaran'
+            )
+            ->orderBy('bank_keluars.id_bank_keluar')
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'matched' => (clone $matchedQuery)->count(),
+            'will_update' => $changedQuery->count(),
+            'samples' => $samples,
+        ]);
+    }
+
+    public function keywordUpdate(Request $request)
+    {
+        $payload = $this->validateKeywordPayload($request);
+        $target = $payload['target'];
+
+        $matchedQuery = $this->buildKeywordMatchQuery($payload['keywords'], $payload['match_mode']);
+        $ids = $this->buildNeedsKeywordUpdateQuery(clone $matchedQuery, $target)
+            ->pluck('id_bank_keluar')
+            ->all();
+
+        if (empty($ids)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tidak ada data yang perlu diubah.',
+                'matched' => (clone $matchedQuery)->count(),
+                'updated' => 0,
+                'backup_table' => null,
+            ]);
+        }
+
+        $backupTable = 'bank_keluars_keyword_backup_' . now()->format('Ymd_His') . '_' . bin2hex(random_bytes(3));
+        DB::statement("CREATE TABLE {$backupTable} LIKE bank_keluars");
+
+        $columns = Schema::getColumnListing('bank_keluars');
+        foreach (array_chunk($ids, 500) as $chunk) {
+            DB::table($backupTable)->insertUsing(
+                $columns,
+                DB::table('bank_keluars')->select($columns)->whereIn('id_bank_keluar', $chunk)
+            );
+        }
+
+        $updated = 0;
+        DB::beginTransaction();
+        try {
+            foreach (array_chunk($ids, 500) as $chunk) {
+                $updated += DB::table('bank_keluars')
+                    ->whereIn('id_bank_keluar', $chunk)
+                    ->update([
+                        'id_kategori_kriteria' => $target['id_kategori_kriteria'],
+                        'id_sub_kriteria' => $target['id_sub_kriteria'],
+                        'id_item_sub_kriteria' => $target['id_item_sub_kriteria'],
+                        'id_jenis_pembayaran' => $target['id_jenis_pembayaran'],
+                        'updated_at' => now(),
+                    ]);
+            }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$updated} data Bank Keluar berhasil diubah.",
+            'matched' => (clone $matchedQuery)->count(),
+            'updated' => $updated,
+            'backup_table' => $backupTable,
+        ]);
+    }
+
+    private function validateKeywordPayload(Request $request): array
+    {
+        $validated = $request->validate([
+            'keywords' => 'required|string',
+            'match_mode' => 'required|in:all,any',
+            'id_kategori_kriteria' => 'required|exists:kategori_kriteria,id_kategori_kriteria',
+            'id_sub_kriteria' => 'required|exists:sub_kriteria,id_sub_kriteria',
+            'id_item_sub_kriteria' => 'required|exists:item_sub_kriteria,id_item_sub_kriteria',
+            'id_jenis_pembayaran' => 'required|exists:jenis_pembayarans,id_jenis_pembayaran',
+        ]);
+
+        $keywords = $this->parseKeywordInput($validated['keywords']);
+        if (empty($keywords)) {
+            abort(422, 'Masukkan minimal satu kata kunci.');
+        }
+
+        $subExists = DB::table('sub_kriteria')
+            ->where('id_sub_kriteria', $validated['id_sub_kriteria'])
+            ->where('id_kategori_kriteria', $validated['id_kategori_kriteria'])
+            ->exists();
+
+        $itemExists = DB::table('item_sub_kriteria')
+            ->where('id_item_sub_kriteria', $validated['id_item_sub_kriteria'])
+            ->where('id_sub_kriteria', $validated['id_sub_kriteria'])
+            ->exists();
+
+        if (!$subExists || !$itemExists) {
+            abort(422, 'Kombinasi kategori, sub kategori, dan item sub kategori tidak valid.');
+        }
+
+        return [
+            'keywords' => $keywords,
+            'match_mode' => $validated['match_mode'],
+            'target' => [
+                'id_kategori_kriteria' => (int) $validated['id_kategori_kriteria'],
+                'id_sub_kriteria' => (int) $validated['id_sub_kriteria'],
+                'id_item_sub_kriteria' => (int) $validated['id_item_sub_kriteria'],
+                'id_jenis_pembayaran' => (int) $validated['id_jenis_pembayaran'],
+            ],
+        ];
+    }
+
+    private function parseKeywordInput(string $input): array
+    {
+        return collect(preg_split('/[\r\n,;]+/', $input))
+            ->map(fn($value) => trim((string) $value))
+            ->filter()
+            ->unique(fn($value) => mb_strtolower($value))
+            ->values()
+            ->all();
+    }
+
+    private function buildKeywordMatchQuery(array $keywords, string $matchMode)
+    {
+        $query = DB::table('bank_keluars');
+
+        if ($matchMode === 'all') {
+            foreach ($keywords as $keyword) {
+                $query->whereRaw('LOWER(bank_keluars.uraian) LIKE ?', ['%' . mb_strtolower($keyword) . '%']);
+            }
+
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($keywords) {
+            foreach ($keywords as $keyword) {
+                $q->orWhereRaw('LOWER(bank_keluars.uraian) LIKE ?', ['%' . mb_strtolower($keyword) . '%']);
+            }
+        });
+    }
+
+    private function buildNeedsKeywordUpdateQuery($query, array $target)
+    {
+        return $query->where(function ($q) use ($target) {
+            $q->whereRaw('COALESCE(id_kategori_kriteria, 0) <> ?', [$target['id_kategori_kriteria']])
+                ->orWhereRaw('COALESCE(id_sub_kriteria, 0) <> ?', [$target['id_sub_kriteria']])
+                ->orWhereRaw('COALESCE(id_item_sub_kriteria, 0) <> ?', [$target['id_item_sub_kriteria']])
+                ->orWhereRaw('COALESCE(id_jenis_pembayaran, 0) <> ?', [$target['id_jenis_pembayaran']]);
+        });
+    }
+
+    private function getKeywordReferences(): array
+    {
+        return [
+            'kategori' => DB::table('kategori_kriteria')
+                ->where('tipe', 'Keluar')
+                ->orderBy('nama_kriteria')
+                ->get(['id_kategori_kriteria', 'nama_kriteria']),
+            'subByKategori' => DB::table('sub_kriteria')
+                ->orderBy('nama_sub_kriteria')
+                ->get(['id_sub_kriteria', 'id_kategori_kriteria', 'nama_sub_kriteria'])
+                ->groupBy('id_kategori_kriteria'),
+            'itemBySub' => DB::table('item_sub_kriteria')
+                ->orderBy('nama_item_sub_kriteria')
+                ->get(['id_item_sub_kriteria', 'id_sub_kriteria', 'nama_item_sub_kriteria'])
+                ->groupBy('id_sub_kriteria'),
+            'jenis' => DB::table('jenis_pembayarans')
+                ->orderBy('nama_jenis_pembayaran')
+                ->get(['id_jenis_pembayaran', 'nama_jenis_pembayaran']),
+        ];
     }
 }

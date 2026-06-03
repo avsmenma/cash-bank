@@ -268,6 +268,9 @@
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed">
+    @php
+        $isProgrammer = auth()->check() && auth()->user()->role === 'programmer';
+    @endphp
     <div class="wrapper">
         <!-- NAVBAR -->
         <nav class="main-header navbar navbar-expand navbar-dark">
@@ -317,6 +320,15 @@
                 <nav class="mt-5">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                         data-accordion="false">
+                        @if($isProgrammer)
+                        <li class="nav-item">
+                            <a href="{{ route('programmer.index') }}"
+                                class="nav-link {{ request()->routeIs('programmer.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-terminal"></i>
+                                <p>Programmer Panel</p>
+                            </a>
+                        </li>
+                        @else
                         <li
                             class="nav-item {{ request()->routeIs('dashboard.*', 'dashboard-pembayaran.*', 'dashboard.bank.*') ? 'menu-open menu-is-opening' : '' }}">
                             <a href="#"
@@ -437,6 +449,7 @@
                                 </li>
                             </ul>
                         </li>
+                        @endif
                     </ul>
                 </nav>
                 <!-- /.sidebar-menu -->

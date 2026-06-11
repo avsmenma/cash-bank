@@ -703,25 +703,11 @@
 
         toggle.addEventListener('click', function() {
             var active = !document.body.classList.contains('cb-table-fullscreen');
-            if (active && document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch(function() {
-                    setActive(true);
-                });
-                setActive(true);
-                return;
-            }
-            if (!active && document.fullscreenElement && document.exitFullscreen) {
-                document.exitFullscreen();
-                return;
-            }
             setActive(active);
         });
 
-        document.addEventListener('fullscreenchange', function() {
-            setActive(Boolean(document.fullscreenElement));
-        });
         document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape' && document.body.classList.contains('cb-table-fullscreen') && !document.fullscreenElement) {
+            if (event.key === 'Escape' && document.body.classList.contains('cb-table-fullscreen')) {
                 setActive(false);
             }
         });

@@ -364,10 +364,12 @@
                 },
                 scrollX: true,
                 scrollY: '60vh',
-                scroller: {
-                    loadingIndicator: true,
-                    displayBuffer: 9
-                },
+                scrollCollapse: true,
+                // Scroller (virtual scroll) dilepas: ekstensi itu mengasumsikan tinggi baris
+                // seragam, sedangkan kolom Kriteria/Sub/Item/Uraian dibungkus (wrap) sehingga
+                // tinggi baris bervariasi -> Scroller salah hitung & hanya menggambar sebagian
+                // baris. Gunakan paging standar di dalam scrollY agar tahan tinggi baris apa pun.
+                paging: true,
                 pageLength: 50,
                 lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
                 ajax: {

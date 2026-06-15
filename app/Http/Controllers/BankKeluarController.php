@@ -370,6 +370,10 @@ class BankKeluarController extends Controller
 
         DB::commit();
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => 'Data Bank Keluar berhasil disimpan']);
+        }
+
         return redirect()->back()->with('success', 'Data Bank Keluar berhasil disimpan');
     }
 

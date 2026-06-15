@@ -2812,18 +2812,113 @@ class BankKeluarController extends Controller
         $itemSubKritMap = \App\Models\ItemSubKriteria::pluck('id_item_sub_kriteria', 'nama_item_sub_kriteria')->toArray();
         $jenisPembMap = \App\Models\JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran')->toArray();
 
-        // Helper partial match dengan guard empty
+        $normalizeReference = function ($value) {
+            $value = strtolower(trim((string) $value));
+            $value = str_replace('&', ' dan ', $value);
+            $value = preg_replace('/\bpt\b\.?/i', ' ', $value);
+            $value = preg_replace('/\bcab\b\.?/i', ' cabang ', $value);
+            $value = preg_replace('/[^a-z0-9]+/i', ' ', $value);
+            $value = preg_replace('/\s+/', ' ', $value);
+
+            return trim($value ?? '');
+        };
+
+        $extractNumbers = function ($value) {
+            preg_match_all('/\b\d[\d\-\/\s]{5,}\d\b/', (string) $value, $matches);
+
+            return collect($matches[0] ?? [])
+                ->map(fn($number) => preg_replace('/\D+/', '', $number))
+                ->filter(fn($number) => strlen($number) >= 6)
+                ->unique()
+                ->values()
+                ->all();
+        };
+
+        // Helper partial match dengan guard empty, dukung nomor rekening dan variasi tanda baca.
         $findInMap = function ($map, $search) {
+            $normalizeReference = function ($value) {
+                $value = strtolower(trim((string) $value));
+                $value = str_replace('&', ' dan ', $value);
+                $value = preg_replace('/\bpt\b\.?/i', ' ', $value);
+                $value = preg_replace('/\bcab\b\.?/i', ' cabang ', $value);
+                $value = preg_replace('/[^a-z0-9]+/i', ' ', $value);
+                $value = preg_replace('/\s+/', ' ', $value);
+
+                return trim($value ?? '');
+            };
+
+            $extractNumbers = function ($value) {
+                preg_match_all('/\b\d[\d\-\/\s]{5,}\d\b/', (string) $value, $matches);
+
+                return collect($matches[0] ?? [])
+                    ->map(fn($number) => preg_replace('/\D+/', '', $number))
+                    ->filter(fn($number) => strlen($number) >= 6)
+                    ->unique()
+                    ->values()
+                    ->all();
+            };
+
             if (empty($search))
                 return null;
-            $sl = strtolower(trim($search));
+            $sl = $normalizeReference($search);
+            $searchNumbers = $extractNumbers($search);
+
             foreach ($map as $nama => $id) {
-                $nl = strtolower($nama);
-                if ($nl === $sl || str_contains($nl, $sl) || str_contains($sl, $nl)) {
+                $nl = $normalizeReference($nama);
+                if ($nl === $sl) {
+                    return $nama;
+                }
+            }
+
+            if (!empty($searchNumbers)) {
+                foreach ($map as $nama => $id) {
+                    if (array_intersect($searchNumbers, $extractNumbers($nama))) {
+                        return $nama;
+                    }
+                }
+            }
+
+            foreach ($map as $nama => $id) {
+                $nl = $normalizeReference($nama);
+                if ($nl === '' || $sl === '') {
+                    continue;
+                }
+
+                if (str_contains($nl, $sl) || str_contains($sl, $nl)) {
+                    return $nama;
+                }
+
+                $searchTokens = array_filter(explode(' ', $sl), fn($token) => strlen($token) >= 3);
+                $nameTokens = array_filter(explode(' ', $nl), fn($token) => strlen($token) >= 3);
+                if (!empty($searchTokens) && count(array_intersect($searchTokens, $nameTokens)) >= min(2, count($searchTokens))) {
                     return $nama;
                 }
             }
             return null;
+        };
+
+        $inferKeluarReferences = function ($kategori, $subKriteria, $itemSubKriteria) use (
+            $findInMap,
+            $normalizeReference,
+            $kategoriMap,
+            $subKriteriaMap,
+            $itemSubKritMap
+        ) {
+            $text = $normalizeReference($kategori . ' ' . $subKriteria . ' ' . $itemSubKriteria);
+
+            if ($text !== '' && (str_contains($text, 'pembelian tbs') || preg_match('/\btbs\b/', $text))) {
+                return [
+                    'kategori' => $findInMap($kategoriMap, 'Payment Requirement for Exploitation Activity'),
+                    'sub' => $findInMap($subKriteriaMap, 'Purchase Volume'),
+                    'item' => $findInMap($itemSubKritMap, 'TBS FFB'),
+                ];
+            }
+
+            return [
+                'kategori' => null,
+                'sub' => null,
+                'item' => null,
+            ];
         };
 
         $handle = fopen($csvPath, 'r');
@@ -2888,7 +2983,9 @@ class BankKeluarController extends Controller
             }
 
             // Ambil nilai dari kolom CSV (support beragam nama header)
-            $agendaRaw = trim($data['agenda_tahun'] ?? $data['no_agenda'] ?? '');
+            // Catatan: di ekspor Google Sheets "Bank Keluar", kolom nomor agenda
+            // (mis. 0004_2026) ada di kolom PERTAMA yang TANPA judul → key-nya ''.
+            $agendaRaw = trim($data['agenda_tahun'] ?? $data['no_agenda'] ?? $data['nomor_agenda'] ?? $data['agenda'] ?? $data[''] ?? '');
             $tanggalRaw = trim($data['tanggal'] ?? '');
             $sumberRaw = trim($data['sumber_dana'] ?? '');
             $bankRaw = trim($data['bank_tujuan'] ?? '');
@@ -2914,11 +3011,12 @@ class BankKeluarController extends Controller
                 continue;
 
             // Lookup referensi
+            $inferred = $inferKeluarReferences($kategoriRaw, $subKritRaw, $itemSubKritRaw);
             $sumberFound = $findInMap($sumberDanaMap, $sumberRaw);
             $bankFound = $findInMap($bankTujuanMap, $bankRaw);
-            $kategoriFound = $findInMap($kategoriMap, $kategoriRaw);
-            $subKritFound = $findInMap($subKriteriaMap, $subKritRaw);
-            $itemSubKritFound = $findInMap($itemSubKritMap, $itemSubKritRaw);
+            $kategoriFound = $findInMap($kategoriMap, $kategoriRaw) ?? $inferred['kategori'];
+            $subKritFound = $findInMap($subKriteriaMap, $subKritRaw) ?? $inferred['sub'];
+            $itemSubKritFound = $findInMap($itemSubKritMap, $itemSubKritRaw) ?? $inferred['item'];
             $jenisFound = $findInMap($jenisPembMap, $jenisRaw);
 
             $hasWarning = ($sumberRaw && !$sumberFound)

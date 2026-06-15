@@ -38,43 +38,37 @@ class ImportKeluarCsv
         // Sumber Dana
         $sumberDanas = SumberDana::all();
         foreach ($sumberDanas as $sd) {
-            $key = strtolower(trim($sd->nama_sumber_dana));
-            $this->sumberDanaCache[$key] = $sd->id_sumber_dana;
+            $this->addReferenceCache($this->sumberDanaCache, $sd->nama_sumber_dana, $sd->id_sumber_dana);
         }
 
         // Bank Tujuan
         $bankTujuans = BankTujuan::all();
         foreach ($bankTujuans as $bt) {
-            $key = strtolower(trim($bt->nama_tujuan));
-            $this->bankTujuanCache[$key] = $bt->id_bank_tujuan;
+            $this->addReferenceCache($this->bankTujuanCache, $bt->nama_tujuan, $bt->id_bank_tujuan);
         }
 
         // Kategori Kriteria
         $kategoris = KategoriKriteria::all();
         foreach ($kategoris as $k) {
-            $key = strtolower(trim($k->nama_kriteria));
-            $this->kategoriCache[$key] = $k->id_kategori_kriteria;
+            $this->addReferenceCache($this->kategoriCache, $k->nama_kriteria, $k->id_kategori_kriteria);
         }
 
         // Sub Kriteria
         $subs = SubKriteria::all();
         foreach ($subs as $s) {
-            $key = strtolower(trim($s->nama_sub_kriteria));
-            $this->subKriteriaCache[$key] = $s->id_sub_kriteria;
+            $this->addReferenceCache($this->subKriteriaCache, $s->nama_sub_kriteria, $s->id_sub_kriteria);
         }
 
         // Item Sub Kriteria
         $items = ItemSubKriteria::all();
         foreach ($items as $i) {
-            $key = strtolower(trim($i->nama_item_sub_kriteria));
-            $this->itemSubKriteriaCache[$key] = $i->id_item_sub_kriteria;
+            $this->addReferenceCache($this->itemSubKriteriaCache, $i->nama_item_sub_kriteria, $i->id_item_sub_kriteria);
         }
 
         // Jenis Pembayaran
         $jenis = JenisPembayaran::all();
         foreach ($jenis as $j) {
-            $key = strtolower(trim($j->nama_jenis_pembayaran));
-            $this->jenisPembayaranCache[$key] = $j->id_jenis_pembayaran;
+            $this->addReferenceCache($this->jenisPembayaranCache, $j->nama_jenis_pembayaran, $j->id_jenis_pembayaran);
         }
 
         Log::info('Caches loaded: ' . count($this->sumberDanaCache) . ' sumber dana, ' .
@@ -82,29 +76,102 @@ class ImportKeluarCsv
             count($this->kategoriCache) . ' kategori');
     }
 
+    private function addReferenceCache(array &$cache, ?string $name, $id): void
+    {
+        $cache[] = [
+            'id' => $id,
+            'name' => (string) $name,
+            'normalized' => $this->normalizeReferenceText($name),
+            'numbers' => $this->extractReferenceNumbers($name),
+        ];
+    }
+
+    private function normalizeReferenceText(?string $value): string
+    {
+        $value = strtolower(trim((string) $value));
+        $value = str_replace('&', ' dan ', $value);
+        $value = preg_replace('/\bpt\b\.?/i', ' ', $value);
+        $value = preg_replace('/\bcab\b\.?/i', ' cabang ', $value);
+        $value = preg_replace('/[^a-z0-9]+/i', ' ', $value);
+        $value = preg_replace('/\s+/', ' ', $value);
+
+        return trim($value ?? '');
+    }
+
+    private function extractReferenceNumbers(?string $value): array
+    {
+        preg_match_all('/\b\d[\d\-\/\s]{5,}\d\b/', (string) $value, $matches);
+
+        return collect($matches[0] ?? [])
+            ->map(fn($number) => preg_replace('/\D+/', '', $number))
+            ->filter(fn($number) => strlen($number) >= 6)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     /**
-     * Cari ID dari cache dengan partial match
+     * Cari ID dari cache dengan exact, nomor rekening, partial text, dan token overlap.
      */
     private function findInCache($cache, $search)
     {
         if (empty($search))
             return null;
 
-        $searchLower = strtolower(trim($search));
+        $searchText = $this->normalizeReferenceText($search);
+        $searchNumbers = $this->extractReferenceNumbers($search);
 
-        // Exact match first
-        if (isset($cache[$searchLower])) {
-            return $cache[$searchLower];
+        foreach ($cache as $entry) {
+            if ($entry['normalized'] === $searchText) {
+                return $entry['id'];
+            }
         }
 
-        // Partial match (LIKE %search%)
-        foreach ($cache as $key => $id) {
-            if (strpos($key, $searchLower) !== false || strpos($searchLower, $key) !== false) {
-                return $id;
+        if (!empty($searchNumbers)) {
+            foreach ($cache as $entry) {
+                if (array_intersect($searchNumbers, $entry['numbers'])) {
+                    return $entry['id'];
+                }
+            }
+        }
+
+        foreach ($cache as $entry) {
+            $nameText = $entry['normalized'];
+            if ($nameText === '' || $searchText === '') {
+                continue;
+            }
+
+            if (str_contains($nameText, $searchText) || str_contains($searchText, $nameText)) {
+                return $entry['id'];
+            }
+
+            $searchTokens = array_filter(explode(' ', $searchText), fn($token) => strlen($token) >= 3);
+            $nameTokens = array_filter(explode(' ', $nameText), fn($token) => strlen($token) >= 3);
+            if (!empty($searchTokens) && count(array_intersect($searchTokens, $nameTokens)) >= min(2, count($searchTokens))) {
+                return $entry['id'];
             }
         }
 
         return null;
+    }
+
+    private function inferKeluarReferenceIds(string $kategori, string $subKriteria, string $itemSubKriteria): array
+    {
+        $text = $this->normalizeReferenceText($kategori . ' ' . $subKriteria . ' ' . $itemSubKriteria);
+
+        if ($text !== '' && (str_contains($text, 'pembelian tbs') || preg_match('/\btbs\b/', $text))) {
+            return [
+                'kategori' => $this->findInCache($this->kategoriCache, 'Payment Requirement for Exploitation Activity'),
+                'sub' => $this->findInCache($this->subKriteriaCache, 'Purchase Volume'),
+                'item' => $this->findInCache($this->itemSubKriteriaCache, 'TBS FFB'),
+            ];
+        }
+
+        return [
+            'kategori' => null,
+            'sub' => null,
+            'item' => null,
+        ];
     }
 
     /**
@@ -244,7 +311,17 @@ class ImportKeluarCsv
      */
     private function processRow($data)
     {
-        $agendaTahun = $this->cleanText($data['agenda_tahun'] ?? $data['no_agenda'] ?? '');
+        // Catatan: pada file ekspor Google Sheets "Bank Keluar", kolom nomor agenda
+        // (mis. 0004_2026) berada di kolom PERTAMA yang TANPA judul, sehingga setelah
+        // normalisasi header key-nya menjadi string kosong ''. Sertakan sebagai fallback.
+        $agendaTahun = $this->cleanText(
+            $data['agenda_tahun']
+            ?? $data['no_agenda']
+            ?? $data['nomor_agenda']
+            ?? $data['agenda']
+            ?? $data['']
+            ?? ''
+        );
         $tanggal = $this->parseTanggal($data['tanggal'] ?? '');
         $sumberDana = $this->cleanText($data['sumber_dana'] ?? '');
         $bankTujuan = $this->cleanText($data['bank_tujuan'] ?? '');
@@ -292,15 +369,21 @@ class ImportKeluarCsv
         // =====================================
         // BUILD RECORD (using cache - no query!)
         // =====================================
+        $inferred = $this->inferKeluarReferenceIds(
+            $kategori,
+            $data['sub_kriteria'] ?? '',
+            $data['item_sub_kriteria'] ?? ''
+        );
+
         return [
             'agenda_tahun' => $agendaTahun ?: null,
             'dokumen_id' => $dokumenId,
             'tanggal' => $tanggal,
             'id_sumber_dana' => $this->findInCache($this->sumberDanaCache, $sumberDana),
             'id_bank_tujuan' => $this->findInCache($this->bankTujuanCache, $bankTujuan),
-            'id_kategori_kriteria' => $this->findInCache($this->kategoriCache, $kategori),
-            'id_sub_kriteria' => $this->findInCache($this->subKriteriaCache, $data['sub_kriteria'] ?? ''),
-            'id_item_sub_kriteria' => $this->findInCache($this->itemSubKriteriaCache, $data['item_sub_kriteria'] ?? ''),
+            'id_kategori_kriteria' => $this->findInCache($this->kategoriCache, $kategori) ?? $inferred['kategori'],
+            'id_sub_kriteria' => $this->findInCache($this->subKriteriaCache, $data['sub_kriteria'] ?? '') ?? $inferred['sub'],
+            'id_item_sub_kriteria' => $this->findInCache($this->itemSubKriteriaCache, $data['item_sub_kriteria'] ?? '') ?? $inferred['item'],
             'id_jenis_pembayaran' => $this->findInCache($this->jenisPembayaranCache, $jenisPembayaran),
             'penerima' => $penerima ?: null,
             'uraian' => $uraian ?: null,

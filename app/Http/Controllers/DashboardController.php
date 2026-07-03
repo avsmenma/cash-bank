@@ -793,8 +793,10 @@ class dashboardController extends Controller
         };
 
         // Running balance dua rekening opex (Mandiri 408 & Mandiri TBS 200).
+        // Rek Opex Operasional (Mandiri 408) : 146-00-9702740-8
+        // Rek Overdraft "TBS" (Mandiri 200)  : 146-00-1201420-0
         $opex408 = $this->opexRekeningBalance($tahun, ['9702740']);
-        $opex200 = $this->opexRekeningBalance($tahun, ['TBS', 'Mandiri 200', '200-']);
+        $opex200 = $this->opexRekeningBalance($tahun, ['1201420']);
 
         $saldoAwalModalSendiri = [];       // baris 1
         $pembayaranModalSendiri = [];      // baris 2 (penggunaan modal sendiri)

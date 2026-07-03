@@ -11,6 +11,7 @@ use App\Models\BankKeluar;
 use App\Models\Permintaan;
 use Illuminate\Http\Request;
 use App\Models\KategoriKriteria;
+use App\Support\DashboardKriteriaHierarchy;
 use Illuminate\Support\Facades\DB;
 use App\Models\GabunganMasukKeluar;
 use Maatwebsite\Excel\Facades\Excel;
@@ -176,6 +177,11 @@ class dashboardController extends Controller
         $bulanAktif[$bulan] = true;
     }
 
+    $periodKeys = range((int) $bulanDari, (int) $bulanSampai);
+    $result['permintaan'] = DashboardKriteriaHierarchy::ensureFlatRows($result['permintaan'], $periodKeys);
+    $result['dropping'] = DashboardKriteriaHierarchy::ensureFlatRows($result['dropping'], $periodKeys);
+    $result['pembayaran'] = DashboardKriteriaHierarchy::ensureFlatRows($result['pembayaran'], $periodKeys);
+
     // Filter bulan
     $bulanListFiltered = [];
     if (!empty($bulanAktif)) {
@@ -325,6 +331,11 @@ class dashboardController extends Controller
             $result['pembayaran'][$key]['data'][$bulan] += $p->total;
             $bulanAktif[$bulan] = true;
         }
+
+        $periodKeys = range((int) $bulanDari, (int) $bulanSampai);
+        $result['permintaan'] = DashboardKriteriaHierarchy::ensureFlatRows($result['permintaan'], $periodKeys);
+        $result['dropping'] = DashboardKriteriaHierarchy::ensureFlatRows($result['dropping'], $periodKeys);
+        $result['pembayaran'] = DashboardKriteriaHierarchy::ensureFlatRows($result['pembayaran'], $periodKeys);
 
         // Filter bulan
         $bulanListFiltered = [];
@@ -541,6 +552,11 @@ class dashboardController extends Controller
             $bulanAktif[$bulan] = true;
         }
 
+        $periodKeys = range((int) $bulanDari, (int) $bulanSampai);
+        $result['permintaan'] = DashboardKriteriaHierarchy::ensureFlatRows($result['permintaan'], $periodKeys);
+        $result['dropping'] = DashboardKriteriaHierarchy::ensureFlatRows($result['dropping'], $periodKeys);
+        $result['pembayaran'] = DashboardKriteriaHierarchy::ensureFlatRows($result['pembayaran'], $periodKeys);
+
         // Filter bulan
         $bulanListFiltered = [];
         if (!empty($bulanAktif)) {
@@ -710,6 +726,127 @@ class dashboardController extends Controller
             else                              { $pembayaranData[$b][$k][$s][$i]['w4'] += $nilai; }
         }
 
+        $permintaanData = DashboardKriteriaHierarchy::normalizeByMonth($permintaanData);
+        $droppingData = DashboardKriteriaHierarchy::normalizeByMonth($droppingData);
+        $pembayaranData = DashboardKriteriaHierarchy::normalizeByMonth($pembayaranData);
+
+        $penerimaanPengembalianDana = \App\Models\BankMasuk::query()
+            ->leftJoin('bank_tujuan', 'bank_tujuan.id_bank_tujuan', '=', 'bank_masuk.id_bank_tujuan')
+            ->selectRaw('MONTH(bank_masuk.tanggal) as bulan')
+            ->selectRaw('SUM(CAST(COALESCE(bank_masuk.debet, 0) AS DECIMAL(20,2))) / 1000 as total')
+            ->whereYear('bank_masuk.tanggal', $tahun)
+            ->whereBetween(DB::raw('MONTH(bank_masuk.tanggal)'), [$bulanDari, $bulanSampai])
+            ->where('bank_masuk.debet', '>', 0)
+            ->where(function ($query) {
+                $query->whereNull('bank_tujuan.nama_tujuan')
+                    ->orWhereRaw("bank_tujuan.nama_tujuan NOT REGEXP '[0-9]{6,}'");
+            })
+            ->whereRaw("LOWER(COALESCE(bank_masuk.uraian, '')) NOT REGEXP 'region[[:space:]]*v[[:space:]-]*dropping'")
+            ->whereRaw("LOWER(COALESCE(bank_masuk.uraian, '')) NOT LIKE '%saldo awal%'")
+            ->groupBy(DB::raw('MONTH(bank_masuk.tanggal)'))
+            ->pluck('total', 'bulan')
+            ->map(fn ($value) => (float) $value)
+            ->toArray();
+
+        $biayaAdminKeywords = [
+            'biaya adm 14602',
+            'pajak 14602',
+            'biaya administrasi mcm',
+            'telkomsel ad tagihan 99105',
+            '020001160160812064651901 dr ca payment autodb',
+        ];
+
+        $biayaAdminBankLainnya = BankKeluar::query()
+            ->selectRaw('MONTH(tanggal) as bulan')
+            ->selectRaw('SUM(CAST(COALESCE(kredit, 0) AS DECIMAL(20,2))) / 1000 as total')
+            ->whereYear('tanggal', $tahun)
+            ->whereBetween(DB::raw('MONTH(tanggal)'), [$bulanDari, $bulanSampai])
+            ->where('kredit', '>', 0)
+            ->where(function ($query) use ($biayaAdminKeywords) {
+                foreach ($biayaAdminKeywords as $keyword) {
+                    $query->orWhereRaw("LOWER(COALESCE(uraian, '')) LIKE ?", ['%' . $keyword . '%']);
+                }
+            })
+            ->groupBy(DB::raw('MONTH(tanggal)'))
+            ->pluck('total', 'bulan')
+            ->map(fn ($value) => (float) $value)
+            ->toArray();
+
+        // ================================================================
+        // RINGKASAN MODAL KERJA (footer waterfall) — semua satuan ribuan.
+        // Meniru sheet PMK Jan_W..Des_W baris 216-229. Dihitung oleh sistem
+        // dari data transaksi (bukan input manual). Lihat docs/superpowers/
+        // specs/2026-07-03-modal-kerja-footer-summary-design.md
+        // ================================================================
+
+        // Total Dropping & Pembayaran per bulan (dipakai baris 8 & 9).
+        $sumByMonth = function (array $bySection, int $bulan): float {
+            $total = 0.0;
+            foreach (($bySection[$bulan] ?? []) as $subs) {
+                foreach ($subs as $items) {
+                    foreach ($items as $weeks) {
+                        $total += (float) array_sum($weeks);
+                    }
+                }
+            }
+            return $total;
+        };
+
+        // Running balance dua rekening opex (Mandiri 408 & Mandiri TBS 200).
+        $opex408 = $this->opexRekeningBalance($tahun, ['9702740']);
+        $opex200 = $this->opexRekeningBalance($tahun, ['TBS', 'Mandiri 200', '200-']);
+
+        $saldoAwalModalSendiri = [];       // baris 1
+        $pembayaranModalSendiri = [];      // baris 2 (penggunaan modal sendiri)
+        $saldoAkhirModalSendiri = [];      // baris 5
+        $saldoAwalModalKerja = [];         // baris 6
+        $saldoAwalBankOpex = [];           // baris 7
+        $pembayaranModalKerja = [];        // baris 8
+        $penerimaanModalKerja = [];        // baris 9
+        $sisaModalKerja = [];              // baris 10
+        $saldoAkhirBankOpex = [];          // baris 11
+        $posisiRek408 = [];                // baris 12
+        $posisiRek200 = [];                // baris 13
+        $jumlahSaldoOpex = [];             // baris 14
+
+        for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+            $msOpen  = $saldoAwalModalSendiri[$b] = 0.0;
+            $msPay   = $pembayaranModalSendiri[$b] = 0.0;
+            $msRecv  = (float) ($penerimaanPengembalianDana[$b] ?? 0);
+            $msAdmin = (float) ($biayaAdminBankLainnya[$b] ?? 0);
+            $msEnd   = $saldoAkhirModalSendiri[$b] = $msOpen - $msPay + $msRecv - $msAdmin;
+
+            $mkOpen  = $saldoAwalModalKerja[$b] =
+                ($opex408['start'][$b] ?? 0) + ($opex200['start'][$b] ?? 0);
+            $saldoAwalBankOpex[$b] = $msOpen + $mkOpen;
+
+            $mkPay   = $pembayaranModalKerja[$b] = $sumByMonth($pembayaranData, $b) - $msPay;
+            $mkRecv  = $penerimaanModalKerja[$b] = $sumByMonth($droppingData, $b);
+            $mkSisa  = $sisaModalKerja[$b] = $mkOpen - $mkPay + $mkRecv;
+            $saldoAkhirBankOpex[$b] = $msEnd + $mkSisa;
+
+            $p408 = $posisiRek408[$b] = (float) ($opex408['end'][$b] ?? 0);
+            $p200 = $posisiRek200[$b] = (float) ($opex200['end'][$b] ?? 0);
+            $jumlahSaldoOpex[$b] = $p408 + $p200;
+        }
+
+        $modalKerjaSummaryData = [
+            'saldo_awal_modal_sendiri'          => $saldoAwalModalSendiri,
+            'pembayaran_modal_sendiri_tahun_lalu' => $pembayaranModalSendiri,
+            'penerimaan_pengembalian_dana'      => $penerimaanPengembalianDana,
+            'biaya_admin_bank_lainnya'          => $biayaAdminBankLainnya,
+            'saldo_akhir_modal_sendiri'         => $saldoAkhirModalSendiri,
+            'saldo_awal_modal_kerja'            => $saldoAwalModalKerja,
+            'saldo_awal_bank_opex'              => $saldoAwalBankOpex,
+            'pembayaran_modal_kerja'            => $pembayaranModalKerja,
+            'penerimaan_modal_kerja'            => $penerimaanModalKerja,
+            'sisa_modal_kerja'                  => $sisaModalKerja,
+            'saldo_akhir_bank_opex'             => $saldoAkhirBankOpex,
+            'posisi_rek_408'                    => $posisiRek408,
+            'posisi_rek_200'                    => $posisiRek200,
+            'jumlah_saldo_opex'                 => $jumlahSaldoOpex,
+        ];
+
         // ================================================================
         // Bangun daftar baris terurut (superset dari semua section)
         // struktur: [kategori][sub][item] => ada/tidak
@@ -727,62 +864,75 @@ class dashboardController extends Controller
             }
         }
 
-        // ================================================================
-        // Urutkan allKeys sesuai referensi gambar:
-        // Sub kriteria dan item kriteria diurutkan by priority
-        // Item yg tidak ada di daftar ditempatkan di akhir (priority 999)
-        // ================================================================
-        $subPriority = [
-            'Karyawan Pimpinan'  => 1,
-            'Karyawan Pelaksana' => 2,
-        ];
-
-        $itemPriority = [
-            'Gaji dan Tunjangan'        => 1,
-            'Lembur'                    => 2,
-            'Premi'                     => 3,
-            'Cuti Tahunan'              => 4,
-            'Cuti Panjang'              => 5,
-            'T H R'                     => 6,
-            'THR'                       => 6,
-            'Bonus'                     => 7,
-            'PPh pasal 21'              => 8,
-            'PPh Pasal 21'              => 8,
-            'Iuran Dapenbun (Normal)'   => 9,
-            'Iuran Dapenbun (Tambahan)' => 10,
-            'Penghargaan Masa Kerja'    => 11,
-            'Iuran BPJS B. Perusahaan'  => 12,
-            'SHT (Cicilan)'             => 13,
-            'Lainnya'                   => 14,
-        ];
-
-        foreach ($allKeys as $kat => &$subs) {
-            // Sort sub_kriteria
-            uksort($subs, function($a, $b) use ($subPriority) {
-                $pA = $subPriority[$a] ?? 999;
-                $pB = $subPriority[$b] ?? 999;
-                if ($pA !== $pB) return $pA <=> $pB;
-                return strcmp($a, $b);
-            });
-
-            // Sort item_kriteria di tiap sub
-            foreach ($subs as $sub => &$items) {
-                uksort($items, function($a, $b) use ($itemPriority) {
-                    $pA = $itemPriority[$a] ?? 999;
-                    $pB = $itemPriority[$b] ?? 999;
-                    if ($pA !== $pB) return $pA <=> $pB;
-                    return strcmp($a, $b);
-                });
-            }
-            unset($items);
-        }
-        unset($subs);
+        $allKeys = DashboardKriteriaHierarchy::ensureNestedRows($allKeys, true);
 
         return view('cash_bank.modalKerjaTable', compact(
             'permintaanData', 'droppingData', 'pembayaranData',
             'allKeys', 'bulanAktif', 'tahun', 'bulanMap',
-            'bulanDari', 'bulanSampai', 'weekCuts'
+            'bulanDari', 'bulanSampai', 'weekCuts', 'modalKerjaSummaryData'
         ));
+    }
+
+    /**
+     * Running balance rekening opex (satuan ribuan) untuk baris ringkasan
+     * Modal Kerja. Identik konsep dgn DashboardController::bank() untuk Rek 408.
+     *
+     * @param  array<int,string> $patterns  pola nama_sumber_dana (LIKE %..%)
+     * @return array{start: array<int,float>, end: array<int,float>}
+     *   start[b] = posisi awal bulan b (opening + gerakan bulan < b)
+     *   end[b]   = posisi akhir bulan b (opening + gerakan bulan <= b)
+     */
+    private function opexRekeningBalance($tahun, array $patterns): array
+    {
+        $ids = \App\Models\SumberDana::query()
+            ->where(function ($q) use ($patterns) {
+                foreach ($patterns as $p) {
+                    $q->orWhere('nama_sumber_dana', 'like', '%' . $p . '%');
+                }
+            })
+            ->pluck('id_sumber_dana')
+            ->all();
+
+        $start = [];
+        $end = [];
+        if (empty($ids)) {
+            foreach (range(1, 12) as $b) { $start[$b] = 0.0; $end[$b] = 0.0; }
+            return ['start' => $start, 'end' => $end];
+        }
+
+        // Opening = entri "saldo awal" pada bank_masuk untuk rekening tsb.
+        $opening = (float) BankMasuk::whereIn('id_sumber_dana', $ids)
+            ->whereRaw("LOWER(COALESCE(uraian,'')) LIKE '%saldo awal%'")
+            ->sum(DB::raw('CAST(COALESCE(debet,0) AS DECIMAL(20,2))'));
+
+        // Gerakan (non saldo-awal) per bulan: masuk (debet) - keluar (kredit).
+        $masuk = BankMasuk::whereIn('id_sumber_dana', $ids)
+            ->whereYear('tanggal', $tahun)
+            ->whereRaw("LOWER(COALESCE(uraian,'')) NOT LIKE '%saldo awal%'")
+            ->selectRaw('MONTH(tanggal) as bulan')
+            ->selectRaw('SUM(CAST(COALESCE(debet,0) AS DECIMAL(20,2))) as total')
+            ->groupBy(DB::raw('MONTH(tanggal)'))
+            ->pluck('total', 'bulan')
+            ->map(fn ($v) => (float) $v)
+            ->all();
+
+        $keluar = BankKeluar::whereIn('id_sumber_dana', $ids)
+            ->whereYear('tanggal', $tahun)
+            ->selectRaw('MONTH(tanggal) as bulan')
+            ->selectRaw('SUM(CAST(COALESCE(kredit,0) AS DECIMAL(20,2))) as total')
+            ->groupBy(DB::raw('MONTH(tanggal)'))
+            ->pluck('total', 'bulan')
+            ->map(fn ($v) => (float) $v)
+            ->all();
+
+        $running = $opening;
+        for ($b = 1; $b <= 12; $b++) {
+            $start[$b] = $running / 1000;
+            $running += ($masuk[$b] ?? 0) - ($keluar[$b] ?? 0);
+            $end[$b] = $running / 1000;
+        }
+
+        return ['start' => $start, 'end' => $end];
     }
 
     private function inferModalKerjaPaymentPath($row): ?array
@@ -792,7 +942,7 @@ class dashboardController extends Controller
         $item = trim((string)($row->itemSubKriteria->nama_item_sub_kriteria ?? ''));
 
         if ($kategori !== '' && $sub !== '' && $item !== '') {
-            return [$kategori, $sub, $item];
+            return DashboardKriteriaHierarchy::normalizePath($kategori, $sub, $item);
         }
 
         $text = $this->normalizeModalKerjaText(

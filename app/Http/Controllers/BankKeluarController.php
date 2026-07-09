@@ -115,7 +115,9 @@ class BankKeluarController extends Controller
             'subKriteria:id_sub_kriteria,nama_sub_kriteria',
             'itemSubKriteria:id_item_sub_kriteria,nama_item_sub_kriteria',
             'jenisPembayaran:id_jenis_pembayaran,nama_jenis_pembayaran',
-        ])->orderBy('tanggal', 'asc');
+            // Tie-breaker id: banyak baris bertanggal sama — tanpa urutan
+            // deterministik, chunk LIMIT/OFFSET bisa duplikat/melewatkan baris.
+        ])->orderBy('tanggal', 'asc')->orderBy('id_bank_keluar', 'asc');
 
         // Date range filter from header popup
         if ($request->filled('filter_tgl_dari')) {

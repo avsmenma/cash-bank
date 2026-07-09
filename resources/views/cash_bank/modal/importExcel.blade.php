@@ -186,7 +186,7 @@ $(document).ready(function () {
                 alert('✅ ' + res.success);
                 // Reload DataTable
                 if ($.fn.DataTable.isDataTable('#example3')) {
-                    $('#example3').DataTable().ajax.reload(null, false);
+                    window.cbTableReload('#example3');
                 }
             },
             error: function (xhr) {

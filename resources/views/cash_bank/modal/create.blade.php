@@ -349,7 +349,7 @@ $(function () {
             success: function (res) {
                 $('#ModalPreviewAgendaKeluar').modal('hide');
                 if ($.fn.DataTable.isDataTable('#example3')) {
-                    $('#example3').DataTable().ajax.reload(null, false);
+                    window.cbTableReload('#example3');
                 }
                 showInfo('Berhasil', res.success || 'Data berhasil disimpan.', 'success');
             },
@@ -505,7 +505,7 @@ $(function () {
             success: function (res) {
                 $('#ModalManualKeluar').modal('hide');
                 if ($.fn.DataTable.isDataTable('#example3')) {
-                    $('#example3').DataTable().ajax.reload(null, false);
+                    window.cbTableReload('#example3');
                 }
                 showInfo('Berhasil', (res && res.success) ? res.success : 'Data berhasil disimpan.', 'success');
             },

@@ -352,43 +352,23 @@
                 return type === 'display' ? escapeHtml(data || '-') : (data || '');
             }
 
+            // Tanpa pagination: data dimuat bertahap per 100 baris oleh
+            // CbInfiniteTable (append saat scroll mendekati dasar tabel), baris
+            // yang sudah tampil tidak dibuang. Pencarian & filter kolom tetap
+            // dieksekusi server terhadap SELURUH data via cbLoader.applyFilters().
             var table = $('#example3').DataTable({
                 processing: true,
-                serverSide: true,
-                deferRender: true,
+                serverSide: false,
+                paging: false,
                 ordering: false,
                 autoWidth: false,
-                searchDelay: 350,
                 rowId: function (row) {
                     return row && row.id_bank_keluar ? 'bank-keluar-' + row.id_bank_keluar : null;
                 },
                 scrollX: true,
                 scrollY: '60vh',
                 scrollCollapse: true,
-                // Scroller (virtual scroll) dilepas: ekstensi itu mengasumsikan tinggi baris
-                // seragam, sedangkan kolom Kriteria/Sub/Item/Uraian dibungkus (wrap) sehingga
-                // tinggi baris bervariasi -> Scroller salah hitung & hanya menggambar sebagian
-                // baris. Gunakan paging standar di dalam scrollY agar tahan tinggi baris apa pun.
-                paging: true,
-                pageLength: 50,
-                lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-                ajax: {
-                    url: "{{ route('bank-keluar.data') }}",
-                    data: function(d) {
-                        d.filter_tgl_dari   = $('#filter-tgl-dari').val() || '';
-                        d.filter_tgl_sampai = $('#filter-tgl-sampai').val() || '';
-                    },
-                    dataSrc: function (json) {
-                        return json && Array.isArray(json.data) ? json.data : [];
-                    },
-                    error: function (xhr) {
-                        var message = 'Gagal memuat data Bank Keluar.';
-                        if (xhr.responseJSON && (xhr.responseJSON.message || xhr.responseJSON.error)) {
-                            message = xhr.responseJSON.message || xhr.responseJSON.error;
-                        }
-                        console.error(message, xhr.responseText || xhr);
-                    }
-                },
+                dom: 'frti',
                 columns: [
                     { data: 'checkbox',            width: '35px' },
                     { data: 'DT_RowIndex',         width: '45px',  orderable: false, searchable: false, title: 'No', render: renderInlineText },
@@ -431,6 +411,17 @@
                         }
                     }
                 ]
+            });
+
+            var cbLoader = CbInfiniteTable.init('#example3', {
+                url: "{{ route('bank-keluar.data') }}",
+                chunkSize: 100,
+                extraParams: function () {
+                    return {
+                        filter_tgl_dari: $('#filter-tgl-dari').val() || '',
+                        filter_tgl_sampai: $('#filter-tgl-sampai').val() || ''
+                    };
+                }
             });
 
             var activeCell = null;
@@ -1232,15 +1223,15 @@
                     $('#filter-tgl-dari').val('');
                     $('#filter-tgl-sampai').val('');
                     delete activeFilters.tanggal;
-                    table.draw();
+                    cbLoader.applyFilters();
                 } else if (filter === 'sumber') {
                     $('#filter-sumber-dana').val('');
                     delete activeFilters.sumber;
-                    table.column(COL_SUMBER).search('').draw();
+                    cbLoader.setColumnSearch(COL_SUMBER, ''); cbLoader.applyFilters();
                 } else if (filter === 'uraian') {
                     $('#uraian-search-input').val('');
                     delete activeFilters.uraian;
-                    table.column(COL_URAIAN).search('').draw();
+                    cbLoader.setColumnSearch(COL_URAIAN, ''); cbLoader.applyFilters();
                 }
                 updateFilterBar();
             });
@@ -1252,9 +1243,9 @@
                 $('#filter-sumber-dana').val('');
                 $('#uraian-search-input').val('');
                 activeFilters = {};
-                table.column(COL_SUMBER).search('');
-                table.column(COL_URAIAN).search('');
-                table.draw();
+                cbLoader.setColumnSearch(COL_SUMBER, '');
+                cbLoader.setColumnSearch(COL_URAIAN, '');
+                cbLoader.applyFilters();
                 updateFilterBar();
             });
 
@@ -1301,12 +1292,12 @@
                     $('#filter-tgl-dari').val('');
                     $('#filter-tgl-sampai').val('');
                     delete activeFilters[key];
-                    table.draw();
+                    cbLoader.applyFilters();
                     return;
                 }
 
                 delete activeFilters[key];
-                table.column(config.col).search('').draw();
+                cbLoader.setColumnSearch(config.col, ''); cbLoader.applyFilters();
             }
 
             function buildGenericFilterControl(key) {
@@ -1374,7 +1365,7 @@
                     } else {
                         delete activeFilters[key];
                     }
-                    table.draw();
+                    cbLoader.applyFilters();
                 } else {
                     var value = ($('#generic-filter-input').val() || '').trim();
                     if (value) {
@@ -1382,7 +1373,7 @@
                     } else {
                         delete activeFilters[key];
                     }
-                    table.column(config.col).search(value).draw();
+                    cbLoader.setColumnSearch(config.col, value); cbLoader.applyFilters();
                 }
 
                 updateFilterBar();
@@ -1399,10 +1390,10 @@
                 $('#filter-tgl-sampai').val('');
                 Object.keys(columnFilters).forEach(function (key) {
                     var config = columnFilters[key];
-                    if (config.type !== 'date') table.column(config.col).search('');
+                    if (config.type !== 'date') cbLoader.setColumnSearch(config.col, '');
                 });
                 activeFilters = {};
-                table.draw();
+                cbLoader.applyFilters();
                 updateFilterBar();
             });
 
@@ -1446,7 +1437,7 @@
                 } else {
                     delete activeFilters.tanggal;
                 }
-                table.draw();
+                cbLoader.applyFilters();
                 updateFilterBar();
                 closeAllPopups();
             });
@@ -1455,7 +1446,7 @@
                 $('#filter-tgl-dari').val('');
                 $('#filter-tgl-sampai').val('');
                 delete activeFilters.tanggal;
-                table.draw();
+                cbLoader.applyFilters();
                 updateFilterBar();
                 closeAllPopups();
             });
@@ -1472,7 +1463,7 @@
 
             $('#btn-cari-sumber').on('click', function() {
                 var val = $('#filter-sumber-dana').val();
-                table.column(COL_SUMBER).search(val).draw();
+                cbLoader.setColumnSearch(COL_SUMBER, val); cbLoader.applyFilters();
                 if (val) {
                     activeFilters.sumber = val;
                 } else {
@@ -1485,7 +1476,7 @@
             // Also apply on change
             $('#filter-sumber-dana').on('change', function() {
                 var val = $(this).val();
-                table.column(COL_SUMBER).search(val).draw();
+                cbLoader.setColumnSearch(COL_SUMBER, val); cbLoader.applyFilters();
                 if (val) {
                     activeFilters.sumber = val;
                 } else {
@@ -1497,7 +1488,7 @@
             $('#btn-reset-sumber').on('click', function() {
                 $('#filter-sumber-dana').val('');
                 delete activeFilters.sumber;
-                table.column(COL_SUMBER).search('').draw();
+                cbLoader.setColumnSearch(COL_SUMBER, ''); cbLoader.applyFilters();
                 updateFilterBar();
                 closeAllPopups();
             });
@@ -1520,7 +1511,7 @@
 
             function doUraianSearch() {
                 var keyword = $('#uraian-search-input').val().trim();
-                table.column(COL_URAIAN).search(keyword).draw();
+                cbLoader.setColumnSearch(COL_URAIAN, keyword); cbLoader.applyFilters();
                 if (keyword) {
                     activeFilters.uraian = keyword;
                 } else {
@@ -1533,7 +1524,7 @@
             $('#btn-reset-uraian').on('click', function() {
                 $('#uraian-search-input').val('');
                 delete activeFilters.uraian;
-                table.column(COL_URAIAN).search('').draw();
+                cbLoader.setColumnSearch(COL_URAIAN, ''); cbLoader.applyFilters();
                 updateFilterBar();
                 closeAllPopups();
             });

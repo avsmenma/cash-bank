@@ -102,7 +102,7 @@
       <a href="javascript:void(0)" class="btn btn-success btn-sm" data-toggle="modal" data-target="#ModalCreateKeluar">
         <i class="fas fa-plus mr-1"></i>Tambah Data
       </a>
-      <button type="button" class="btn btn-info btn-sm" id="btnRefreshTable" onclick="$('#example3').DataTable().ajax.reload(null, false);">
+      <button type="button" class="btn btn-info btn-sm" id="btnRefreshTable" onclick="window.cbTableReload('#example3');">
         <i class="fas fa-sync-alt mr-1"></i>Refresh
       </button>
       <div class="ml-auto d-flex" style="gap:8px;">
@@ -397,7 +397,7 @@
             success: function (res) {
                 $('#editKeluar').modal('hide');
                 // Reload DataTable tanpa reset halaman/entries
-                $('#example3').DataTable().ajax.reload(null, false);
+                window.cbTableReload('#example3');
                 // Tampilkan notifikasi
                 $('#modalInfoTitle').text('Berhasil');
                 $('#modalInfoIcon').attr('class', 'fas fa-check-circle text-success mr-2');
@@ -449,7 +449,7 @@
             data: JSON.stringify({ ids: _pendingDeleteIds, _token: '{{ csrf_token() }}' }),
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
             success: function (res) {
-                $('#example3').DataTable().ajax.reload(null, false);
+                window.cbTableReload('#example3');
                 $('#select_all_ids').prop('checked', false);
                 $('#modalInfoTitle').text('Berhasil');
                 $('#modalInfoIcon').attr('class', 'fas fa-check-circle text-success mr-2');

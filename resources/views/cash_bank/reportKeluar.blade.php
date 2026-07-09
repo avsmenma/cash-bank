@@ -84,23 +84,9 @@
 
         {{-- TABLE --}}
         <div class="card shadow cb-fullscreen-table" style="border:none;">
-            {{-- Show Entries + Info --}}
-            <div class="d-flex align-items-center justify-content-between px-3 pt-3 pb-2 cb-fullscreen-hide">
-                <div class="d-flex align-items-center">
-                    <label class="mb-0 small font-weight-bold text-secondary mr-2">Tampilkan</label>
-                    <select id="showEntriesSelect" name="per_page" form="filterForm" class="form-control form-control-sm" style="width:90px;">
-                        <option value="10" {{ request('per_page') == '10' ? 'selected' : '' }}>10</option>
-                        <option value="25" {{ request('per_page') == '25' ? 'selected' : '' }}>25</option>
-                        <option value="50" {{ request('per_page', '50') == '50' ? 'selected' : '' }}>50</option>
-                        <option value="100" {{ request('per_page') == '100' ? 'selected' : '' }}>100</option>
-                    </select>
-                    <label class="mb-0 small font-weight-bold text-secondary ml-2">entri</label>
-                </div>
-                <div id="rkEntriesInfo" class="small text-secondary">
-                    @if($data->total() > 0)
-                        Menampilkan {{ $data->firstItem() }} - {{ $data->lastItem() }} dari {{ $data->total() }} entri
-                    @endif
-                </div>
+            {{-- Info muat bertahap (tanpa pagination — semua entri dimuat saat scroll) --}}
+            <div class="d-flex align-items-center justify-content-end px-3 pt-3 pb-2 cb-fullscreen-hide">
+                <div id="rkEntriesInfo" class="small text-secondary">Memuat data...</div>
             </div>
             <div class="card-body p-0 table-responsive">
                 <table class="table table-bordered mb-0" id="rkTable">
@@ -140,17 +126,6 @@
                         </tr>
                     </tfoot>
                 </table>
-            </div>
-            {{-- Pagination Controls --}}
-            <div class="d-none align-items-center justify-content-between px-3 py-2 cb-fullscreen-hide" id="rkPaginationWrap">
-                <div id="rkPageInfo" class="small text-secondary">
-                    @if($data->total() > 0)
-                        Menampilkan {{ $data->firstItem() }} - {{ $data->lastItem() }} dari {{ $data->total() }} entri
-                    @endif
-                </div>
-                <nav>
-                    {{ $data->links('pagination::bootstrap-4') }}
-                </nav>
             </div>
         </div>
     </section>
@@ -276,33 +251,22 @@ function resetFilter() {
 $(function () {
     if (!$.fn.DataTable) return;
 
-    var initialLength = parseInt($('#showEntriesSelect').val(), 10) || 50;
     var reportParams = @json(request()->query());
-    var $entriesInfo = $('#rkEntriesInfo, #rkPageInfo');
 
+    // Tanpa pagination: entri dimuat bertahap per 100 baris oleh CbInfiniteTable
+    // (append saat scroll mendekati dasar). Nomor urut & saldo berjalan dihitung
+    // server dari offset chunk sehingga tetap kontinu.
     var table = $('#rkTable').DataTable({
         processing: true,
-        serverSide: true,
-        deferRender: true,
+        serverSide: false,
+        paging: false,
         ordering: false,
         searching: false,
         autoWidth: false,
         scrollX: true,
         scrollY: '60vh',
-        scroller: {
-            loadingIndicator: true,
-            displayBuffer: 9
-        },
+        scrollCollapse: true,
         dom: 'rt',
-        pageLength: initialLength,
-        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-        ajax: {
-            url: "{{ route('bank-keluar.report.data') }}",
-            data: function (d) {
-                $.extend(d, reportParams);
-                d.per_page = $('#showEntriesSelect').val() || initialLength;
-            }
-        },
         columns: [
             { data: 'no', className: 'text-center rk-td', width: '55px' },
             { data: 'no_agenda', className: 'rk-td', width: '120px' },
@@ -345,26 +309,19 @@ $(function () {
         }
     });
 
-    function updateInfo() {
-        var info = table.page.info();
-        if (!info.recordsDisplay) {
-            $entriesInfo.text('Tidak ada data');
-            return;
+    CbInfiniteTable.init('#rkTable', {
+        url: "{{ route('bank-keluar.report.data') }}",
+        chunkSize: 100,
+        infoTarget: '#rkEntriesInfo',
+        extraParams: function () {
+            return reportParams;
+        },
+        onResponse: function (json) {
+            if (!json || !json.totals) return;
+            $('#rkTable tfoot .rk-debet').text(json.totals.debet);
+            $('#rkTable tfoot .rk-kredit').text(json.totals.kredit);
+            $('#rkTable tfoot .rk-saldo').text(json.totals.saldo);
         }
-        $entriesInfo.text('Menampilkan ' + (info.start + 1) + ' - ' + info.end + ' dari ' + info.recordsDisplay + ' entri');
-    }
-
-    table.on('xhr.dt', function (e, settings, json) {
-        if (!json || !json.totals) return;
-        $('#rkTable tfoot .rk-debet').text(json.totals.debet);
-        $('#rkTable tfoot .rk-kredit').text(json.totals.kredit);
-        $('#rkTable tfoot .rk-saldo').text(json.totals.saldo);
-    });
-
-    table.on('draw', updateInfo);
-
-    $('#showEntriesSelect').on('change', function () {
-        table.page.len(parseInt(this.value, 10) || 50).draw(false);
     });
 });
 </script>

@@ -72,14 +72,6 @@
                                             @endfor
                                         </select>
 
-                                        {{-- Filter Kategori --}}
-                                        <select class="filter-select2 form-control form-control-sm" id="filterKategoriRealisasi" style="width:180px;">
-                                            <option value="">— Semua Kategori —</option>
-                                            @foreach($kategoriKriteria as $k)
-                                                <option value="{{ $k->id_kategori_kriteria }}">{{ $k->nama_kriteria }}</option>
-                                            @endforeach
-                                        </select>
-
                                         {{-- Filter Dari Bulan --}}
                                         <select class="form-control form-control-sm" id="filterBulanDariRealisasi" style="width:115px;">
                                             <option value="">Dari Bulan</option>
@@ -128,6 +120,43 @@
                             </div>
 
 
+
+                            {{-- ================================================================
+                                 TAB KATEGORI: pengganti dropdown kategori.
+                                 Tab Semua menampilkan seluruh kategori; tab lain memfilter tabel
+                                 berdasarkan kategori terpilih. Filter yang tersisa hanya bulan & tahun.
+                                 ================================================================ --}}
+                            <style>
+                                .pn-tabbar {
+                                    display: flex;
+                                    flex-wrap: wrap;
+                                    gap: 6px;
+                                    margin-bottom: 12px;
+                                }
+                                .pn-tabbar .pn-tab {
+                                    border: 1px solid #d0d5dd;
+                                    background: #fff;
+                                    color: #344054;
+                                    padding: 6px 16px;
+                                    border-radius: 6px;
+                                    font-size: 12.5px;
+                                    font-weight: 600;
+                                    cursor: pointer;
+                                    transition: all .15s ease;
+                                }
+                                .pn-tabbar .pn-tab:hover { background: #f0f4f8; }
+                                .pn-tabbar .pn-tab.active {
+                                    background: #1e3a5f;
+                                    border-color: #1e3a5f;
+                                    color: #fff;
+                                }
+                            </style>
+                            <div class="pn-tabbar" id="penerimaKategoriTabs">
+                                <button type="button" class="pn-tab active" data-kategori="">Semua</button>
+                                @foreach($kategoriKriteria as $k)
+                                    <button type="button" class="pn-tab" data-kategori="{{ $k->id_kategori_kriteria }}">{{ $k->nama_kriteria }}</button>
+                                @endforeach
+                            </div>
 
                             <div id="realisasi-content">
                                 <div class="text-center p-5">
@@ -306,9 +335,12 @@
                 }
 
                 // ===== REALISASI / DROPPING TAB =====
+                // Kategori dipilih lewat tab bar (bukan dropdown lagi)
+                let kategoriRealisasiAktif = '';
+
                 function loadRealisasi() {
                     let tahun      = $('#filterTahunRealisasi').val();
-                    let kategori   = $('#filterKategoriRealisasi').val();
+                    let kategori   = kategoriRealisasiAktif;
                     let bulanDari  = $('#filterBulanDariRealisasi').val();
                     let bulanSampai = $('#filterBulanSampaiRealisasi').val();
 
@@ -346,17 +378,29 @@
                 // Load on page load
                 loadRealisasi();
 
+                // Klik tab kategori: set kategori aktif lalu muat ulang tabel
+                $('#penerimaKategoriTabs').on('click', '.pn-tab', function () {
+                    kategoriRealisasiAktif = $(this).data('kategori') !== undefined
+                        ? String($(this).data('kategori'))
+                        : '';
+                    $('#penerimaKategoriTabs .pn-tab').removeClass('active');
+                    $(this).addClass('active');
+                    loadRealisasi();
+                });
+
                 // Terapkan filter
                 $('#terapkanFilterRealisasi').on('click', function () {
                     loadRealisasi();
                 });
 
-                // Reset Filter
+                // Reset Filter (kategori kembali ke tab Semua)
                 $('#resetFilterRealisasi').on('click', function () {
                     $('#filterTahunRealisasi').val({{ date('Y') }}).trigger('change');
-                    $('#filterKategoriRealisasi').val('').trigger('change');
                     $('#filterBulanDariRealisasi').val('');
                     $('#filterBulanSampaiRealisasi').val('');
+                    kategoriRealisasiAktif = '';
+                    $('#penerimaKategoriTabs .pn-tab').removeClass('active');
+                    $('#penerimaKategoriTabs .pn-tab[data-kategori=""]').addClass('active');
                     loadRealisasi();
                 });
 

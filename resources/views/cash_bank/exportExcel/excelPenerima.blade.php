@@ -4,7 +4,7 @@
         {{-- Month title --}}
         <tr>
             <td colspan="12" style="background-color: #1a5632; color: #ffffff; font-weight: bold; font-size: 14px;">
-                PENERIMAAN ATAS PENJUALAN CPO, KERNEL, SIR 20, TBS, KSO & LAINNYA — {{ $bulanNames[$bulanNum] ?? '' }} {{ $tahun }}
+                {{ $judulPenerimaan ?? 'PENERIMAAN ATAS PENJUALAN CPO, KERNEL, SIR 20, TBS, KSO & LAINNYA' }} — {{ $bulanNames[$bulanNum] ?? '' }} {{ $tahun }}
             </td>
         </tr>
         {{-- Column headers --}}

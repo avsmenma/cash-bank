@@ -71,7 +71,7 @@
                     <tr class="row-month-title">
                         <td colspan="14">
                             <i class="fas fa-calendar-alt mr-2"></i>
-                            PENERIMAAN ATAS PENJUALAN CPO, KERNEL, SIR 20, TBS, KSO & LAINNYA — {{ $bulanNames[$bulanNum] ?? '' }} {{ $tahun }}
+                            {{ $judulPenerimaan ?? 'PENERIMAAN ATAS PENJUALAN CPO, KERNEL, SIR 20, TBS, KSO & LAINNYA' }} — {{ $bulanNames[$bulanNum] ?? '' }} {{ $tahun }}
                         </td>
                     </tr>
                     {{-- Column header row --}}

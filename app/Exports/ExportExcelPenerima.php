@@ -85,6 +85,15 @@ class ExportExcelPenerima implements FromView
 
         $tahun = $this->tahun;
 
-        return view('cash_bank.exportExcel.excelPenerima', compact('grouped', 'bulanNames', 'tahun'));
+        // Judul mengikuti kategori terpilih (tab kategori); tanpa filter = judul umum.
+        $judulPenerimaan = 'PENERIMAAN ATAS PENJUALAN CPO, KERNEL, SIR 20, TBS, KSO & LAINNYA';
+        if ($this->kategori) {
+            $namaKategori = KategoriKriteria::where('id_kategori_kriteria', $this->kategori)->value('nama_kriteria');
+            if ($namaKategori) {
+                $judulPenerimaan = 'PENERIMAAN ATAS ' . strtoupper($namaKategori);
+            }
+        }
+
+        return view('cash_bank.exportExcel.excelPenerima', compact('grouped', 'bulanNames', 'tahun', 'judulPenerimaan'));
     }
 }

@@ -105,7 +105,7 @@
     @endphp
 
     <div class="header">
-        <h3>PENERIMAAN ATAS PENJUALAN CPO, KERNEL, SIR 20, TBS, KSO & LAINNYA</h3>
+        <h3>{{ $judulPenerimaan ?? 'PENERIMAAN ATAS PENJUALAN CPO, KERNEL, SIR 20, TBS, KSO & LAINNYA' }}</h3>
         <p>{{ $bulanLabels[$firstMonth] ?? '' }} {{ $firstMonth !== $lastMonth ? '- ' . ($bulanLabels[$lastMonth] ?? '') . ' ' : '' }}{{ $tahun }}</p>
     </div>
 

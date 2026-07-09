@@ -118,6 +118,22 @@ class penerimaController extends Controller
     /**
      * Return server-rendered HTML grouped by month → kategori
      */
+    /**
+     * Judul header tabel penerimaan mengikuti kategori yang dipilih
+     * (tab kategori); tanpa kategori memakai judul umum.
+     */
+    private function judulPenerimaan($kategoriId): string
+    {
+        if ($kategoriId) {
+            $nama = KategoriKriteria::where('id_kategori_kriteria', $kategoriId)->value('nama_kriteria');
+            if ($nama) {
+                return 'PENERIMAAN ATAS ' . strtoupper($nama);
+            }
+        }
+
+        return 'PENERIMAAN ATAS PENJUALAN CPO, KERNEL, SIR 20, TBS, KSO & LAINNYA';
+    }
+
     public function dataGrouped(Request $request)
     {
         try {
@@ -184,7 +200,9 @@ class penerimaController extends Controller
                 9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'
             ];
 
-            return view('cash_bank.pembayaran.dataPenerima', compact('grouped', 'bulanNames', 'tahun'));
+            $judulPenerimaan = $this->judulPenerimaan($request->kategori);
+
+            return view('cash_bank.pembayaran.dataPenerima', compact('grouped', 'bulanNames', 'tahun', 'judulPenerimaan'));
         } catch (\Exception $e) {
             \Log::error('dataGrouped error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
             return response('<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>', 500);
@@ -617,7 +635,9 @@ class penerimaController extends Controller
             9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'
         ];
 
-        $pdf = Pdf::loadView('cash_bank.exportPDF.pdfPenerima', compact('grouped', 'bulanNames', 'tahun'));
+        $judulPenerimaan = $this->judulPenerimaan($request->kategori);
+
+        $pdf = Pdf::loadView('cash_bank.exportPDF.pdfPenerima', compact('grouped', 'bulanNames', 'tahun', 'judulPenerimaan'));
         $pdf->setPaper('a4', 'landscape');
 
         return $pdf->download('penerima-' . $tahun . '.pdf');

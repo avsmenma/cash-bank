@@ -306,6 +306,10 @@
     }
     unset($agg, $subs);
 
+    $permAgg = \App\Support\DashboardKriteriaHierarchy::sortCategorySub($permAgg);
+    $dropAgg = \App\Support\DashboardKriteriaHierarchy::sortCategorySub($dropAgg);
+    $payAgg = \App\Support\DashboardKriteriaHierarchy::sortCategorySub($payAgg);
+
     // ================================================================
     // Helper: hitung total per bulan untuk satu kategori
     // ================================================================
@@ -377,6 +381,48 @@
     $nCol = count($bulanListFiltered) + 2; // uraian + bulan + total
 @endphp
 
+{{-- ================================================================
+     TAB BAR: filter tampilan per bagian.
+     Tab SEMUA menampilkan kondisi lengkap (termasuk baris SELISIH dan
+     ringkasan kuning yang membandingkan antar bagian); tab lain hanya
+     menampilkan tabel bagiannya masing-masing.
+     ================================================================ --}}
+<style>
+    .cf-tabbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 12px;
+    }
+    .cf-tabbar .cf-tab {
+        border: 1px solid #d0d5dd;
+        background: #fff;
+        color: #344054;
+        padding: 6px 16px;
+        border-radius: 6px;
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .15s ease;
+    }
+    .cf-tabbar .cf-tab:hover { background: #f0f4f8; }
+    .cf-tabbar .cf-tab.active {
+        background: #1e3a5f;
+        border-color: #1e3a5f;
+        color: #fff;
+    }
+</style>
+<div class="row">
+<div class="col-12">
+    <div class="cf-tabbar" id="cfTabBar">
+        <button type="button" class="cf-tab active" data-cf-tab="semua">Semua</button>
+        <button type="button" class="cf-tab" data-cf-tab="penerimaan">Penerimaan</button>
+        <button type="button" class="cf-tab" data-cf-tab="permintaan">Permintaan</button>
+        <button type="button" class="cf-tab" data-cf-tab="dropping">Dropping HO</button>
+        <button type="button" class="cf-tab" data-cf-tab="pembayaran">Pembayaran</button>
+    </div>
+</div>
+</div>
 <div class="row">
 <div class="col-12 table-responsive">
 <table class="table table-bordered table-sm" id="cashflow-table">
@@ -392,7 +438,7 @@
             @endforeach
         </tr>
     </thead>
-    <tbody>
+    <tbody data-cf-section="penerimaan">
 
         {{-- ================================================================
              PENERIMAAN
@@ -425,9 +471,13 @@
             @endforeach
             <td class="val">{{ fmtBold($gTP) }}</td>
         </tr>
+    </tbody>
 
+    <tbody data-cf-section="semua-only">
         <tr><td colspan="{{ $nCol }}" style="background:#f5f5f5;height:6px;"></td></tr>
+    </tbody>
 
+    <tbody data-cf-section="permintaan">
         {{-- ================================================================
              PERMINTAAN
              ================================================================ --}}
@@ -485,9 +535,13 @@
             @endforeach
             <td class="val">{{ fmtBold($gTPerm) }}</td>
         </tr>
+    </tbody>
 
+    <tbody data-cf-section="semua-only">
         <tr><td colspan="{{ $nCol }}" style="background:#f5f5f5;height:6px;"></td></tr>
+    </tbody>
 
+    <tbody data-cf-section="dropping">
         {{-- ================================================================
              DROPPING HO
              ================================================================ --}}
@@ -547,7 +601,9 @@
             @endforeach
             <td class="val">{{ fmtBold($gTD) }}</td>
         </tr>
+    </tbody>
 
+    <tbody data-cf-section="semua-only">
         {{-- SELISIH PENERIMAAN TERHADAP DROPPING --}}
         <tr class="row-selisih-pdn-drop">
             <td><strong>SELISIH PENERIMAAN TERHADAP DROPPING</strong></td>
@@ -560,7 +616,9 @@
         </tr>
 
         <tr><td colspan="{{ $nCol }}" style="background:#f5f5f5;height:6px;"></td></tr>
+    </tbody>
 
+    <tbody data-cf-section="pembayaran">
         {{-- ================================================================
              PEMBAYARAN
              ================================================================ --}}
@@ -618,7 +676,9 @@
             @endforeach
             <td class="val">{{ fmtBold($gTP2) }}</td>
         </tr>
+    </tbody>
 
+    <tbody data-cf-section="semua-only">
         {{-- SELISIH PEMBAYARAN TERHADAP PENERIMAAN --}}
         <tr class="row-selisih-pay-pdn">
             <td><strong>SELISIH PEMBAYARAN TERHADAP PENERIMAAN</strong></td>
@@ -680,3 +740,31 @@
 </table>
 </div>
 </div>
+
+<script>
+    (function () {
+        // Filter tab: tampilkan tbody sesuai tab terpilih.
+        // 'semua' menampilkan seluruh bagian termasuk baris lintas-bagian
+        // (SELISIH & ringkasan kuning) yang diberi tanda data-cf-section="semua-only".
+        var tabBar = document.getElementById('cfTabBar');
+        var table = document.getElementById('cashflow-table');
+        if (!tabBar || !table) return;
+
+        function applyTab(tab) {
+            table.querySelectorAll('tbody[data-cf-section]').forEach(function (body) {
+                var section = body.getAttribute('data-cf-section');
+                var visible = tab === 'semua' ? true : section === tab;
+                body.style.display = visible ? '' : 'none';
+            });
+            tabBar.querySelectorAll('.cf-tab').forEach(function (btn) {
+                btn.classList.toggle('active', btn.getAttribute('data-cf-tab') === tab);
+            });
+        }
+
+        tabBar.addEventListener('click', function (e) {
+            var btn = e.target.closest('.cf-tab');
+            if (!btn) return;
+            applyTab(btn.getAttribute('data-cf-tab'));
+        });
+    })();
+</script>

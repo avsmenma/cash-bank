@@ -69,21 +69,19 @@
 @push('scripts')
     <script>
         $(document).ready(function () {
+            // Tanpa pagination: data dimuat bertahap per 100 baris oleh
+            // CbInfiniteTable (append saat scroll mendekati dasar tabel).
+            // Pencarian tetap dieksekusi di server terhadap seluruh data.
             $('#example2').DataTable({
                 processing: true,
-                serverSide: true,
-                deferRender: true,
+                serverSide: false,
+                paging: false,
                 ordering: false,
                 autoWidth: false,
                 scrollX: true,
                 scrollY: '60vh',
-                scroller: {
-                    loadingIndicator: true,
-                    displayBuffer: 9
-                },
-                pageLength: 50,
-                lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-                ajax: "{{ route('bank-masuk.data') }}",
+                scrollCollapse: true,
+                dom: 'frti',
                 columns: [
                     { data: 'checkbox',          width: '35px' },
                     { data: 'DT_RowIndex',       width: '45px',  orderable: false, searchable: false, title: 'No' },
@@ -100,6 +98,11 @@
                     { data: 'keterangan',        width: '240px' },
                     { data: 'aksi',              width: '70px', orderable: false, searchable: false }
                 ]
+            });
+
+            CbInfiniteTable.init('#example2', {
+                url: "{{ route('bank-masuk.data') }}",
+                chunkSize: 100
             });
         });
     </script>

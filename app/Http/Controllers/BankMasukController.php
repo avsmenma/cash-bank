@@ -83,7 +83,9 @@ class BankMasukController extends Controller
             'bankTujuan:id_bank_tujuan,nama_tujuan',
             'kategori:id_kategori_kriteria,nama_kriteria',
             'jenisPembayaran:id_jenis_pembayaran,nama_jenis_pembayaran',
-        ])->orderBy('tanggal', 'asc');
+            // Tie-breaker id: banyak baris bertanggal sama — tanpa urutan
+            // deterministik, chunk LIMIT/OFFSET bisa duplikat/melewatkan baris.
+        ])->orderBy('tanggal', 'asc')->orderBy('id_bank_masuk', 'asc');
 
         return DataTables::of($query)
             ->addIndexColumn()

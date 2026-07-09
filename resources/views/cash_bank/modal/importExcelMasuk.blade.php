@@ -180,7 +180,7 @@ $(document).ready(function () {
                 alert('✅ ' + res.success);
                 // Reload DataTable
                 if ($.fn.DataTable.isDataTable('#example2')) {
-                    $('#example2').DataTable().ajax.reload(null, false);
+                    window.cbTableReload('#example2');
                 }
             },
             error: function (xhr) {

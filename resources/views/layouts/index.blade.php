@@ -515,6 +515,9 @@
     <script src="{{ asset('adminLTE/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
     <script src="{{ asset('adminLTE/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
 
+    <!--  Muat data bertahap saat scroll (pengganti pagination) -->
+    <script src="{{ asset('js/cb-infinite-table.js') }}?v=1"></script>
+
     <!--  DataTables Buttons -->
     <script src="{{ asset('adminLTE/plugins/datatables-buttons/js/dataTables.buttons.min.js') }}"></script>
     <script src="{{ asset('adminLTE/plugins/datatables-buttons/js/buttons.bootstrap4.min.js') }}"></script>

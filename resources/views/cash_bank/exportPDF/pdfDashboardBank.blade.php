@@ -22,6 +22,35 @@
         .signature-title { color: #222; }
         .clearfix::after { content: ''; display: table; clear: both; }
 
+        /* Kartu Informasi Saldo (ikut layar /dashboard-bank) */
+        .info-saldo {
+            margin-top: 16px;
+            width: 100%;
+            max-width: 680px;
+            border: 1px solid #aaa;
+            border-left: 4px solid #0d3b6e;
+            border-radius: 4px;
+            padding: 10px 14px;
+            page-break-inside: avoid;
+        }
+        .info-saldo .info-title { font-weight: bold; color: #0d3b6e; margin-bottom: 6px; font-size: 12px; }
+        .info-saldo table { border-collapse: collapse; width: 100%; }
+        .info-saldo td { border: none; padding: 3px 0; }
+        .info-saldo .info-sep { padding: 3px 8px; width: 20px; text-align: center; }
+        .info-saldo .info-val { text-align: right; font-weight: bold; }
+        .info-saldo tr.info-total td {
+            border-top: 2px solid #0d3b6e;
+            font-weight: bold;
+            color: #0d3b6e;
+            padding-top: 6px;
+        }
+        .neg { color: #c0392b; }
+
+        /* Tabel Saldo VA di halaman berikutnya */
+        .page-break { page-break-before: always; }
+        .va-table thead th { background-color: #1a5276; color: #fff; }
+        .va-table .va-total-row td { background-color: #1a5276; color: #fff; font-weight: bold; }
+
         /* Hapus header & footer browser saat print (tanggal, judul, URL) */
         @page {
             margin: 0;
@@ -123,6 +152,46 @@
     </tbody>
 </table>
 
+{{-- INFORMASI SALDO (sama seperti kartu di halaman /dashboard-bank) --}}
+<div class="info-saldo">
+    <div class="info-title">Informasi Saldo</div>
+    <table>
+        <tr>
+            <td style="white-space:nowrap;">Saldo Rek {{ $digitAkhirRek }} <span style="color:#888; font-size:10px;">({{ $noRek408 }})</span></td>
+            <td class="info-sep">:</td>
+            <td class="info-val">
+                @if($saldoRek408 < 0)
+                    <span class="neg">({{ number_format(abs($saldoRek408), 0, ',', '.') }})</span>
+                @else
+                    {{ number_format($saldoRek408, 0, ',', '.') }}
+                @endif
+            </td>
+        </tr>
+        <tr>
+            <td>Saldo Virtual Account (VA) Unit</td>
+            <td class="info-sep">:</td>
+            <td class="info-val">
+                @if($totalSaldoVA < 0)
+                    <span class="neg">({{ number_format(abs($totalSaldoVA), 0, ',', '.') }})</span>
+                @else
+                    {{ number_format($totalSaldoVA, 0, ',', '.') }}
+                @endif
+            </td>
+        </tr>
+        <tr class="info-total">
+            <td>Saldo Rek {{ $digitAkhirRek }} yg digunakan Region</td>
+            <td class="info-sep">:</td>
+            <td class="info-val">
+                @if($saldoRegion < 0)
+                    <span class="neg">({{ number_format(abs($saldoRegion), 0, ',', '.') }})</span>
+                @else
+                    {{ number_format($saldoRegion, 0, ',', '.') }}
+                @endif
+            </td>
+        </tr>
+    </table>
+</div>
+
 {{-- FOOTER TANDA TANGAN --}}
 <div class="footer-section clearfix" style="margin-top:30px;">
     <div class="footer-right">
@@ -131,6 +200,53 @@
         <p class="signature-name">{{ $nama }}</p>
         <p class="signature-title">{{ $jabatan }}</p>
     </div>
+</div>
+
+{{-- HALAMAN 2 DST: SALDO BANK VIRTUAL ACCOUNT --}}
+<div class="page-break">
+    <h2>Saldo Bank Virtual Account (VA)</h2>
+    <table class="va-table">
+        <thead>
+            <tr>
+                <th class="text-center" style="width:40px;">No.</th>
+                <th>Nama Bank / VA</th>
+                <th class="text-center" style="min-width:150px;">Saldo Akhir (Rp)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($bankVAList as $index => $va)
+            <tr>
+                <td class="text-center">{{ $index + 1 }}.</td>
+                <td>{{ $va->nama_tujuan }}</td>
+                <td class="text-right {{ $va->saldo != 0 ? 'font-bold' : '' }}" style="color:{{ $va->saldo != 0 ? '#222' : '#888' }};">
+                    @if($va->saldo < 0)
+                        <span class="neg">({{ number_format(abs($va->saldo), 0, ',', '.') }})</span>
+                    @elseif($va->saldo > 0)
+                        {{ number_format($va->saldo, 0, ',', '.') }}
+                    @else
+                        -
+                    @endif
+                </td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="3" class="text-center" style="color:#888; padding:10px 0;">Tidak ada data Bank Virtual Account</td>
+            </tr>
+            @endforelse
+            {{-- Total sebagai baris tbody biasa (bukan tfoot) agar saat print
+                 tidak diulang di setiap halaman --}}
+            <tr class="va-total-row">
+                <td colspan="2" class="text-center">Total Saldo VA</td>
+                <td class="text-right">
+                    @if($totalSaldoVA < 0)
+                        ({{ number_format(abs($totalSaldoVA), 0, ',', '.') }})
+                    @else
+                        {{ number_format($totalSaldoVA, 0, ',', '.') }}
+                    @endif
+                </td>
+            </tr>
+        </tbody>
+    </table>
 </div>
 
 <script type="text/javascript">

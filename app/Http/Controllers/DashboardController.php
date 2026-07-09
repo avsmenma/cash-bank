@@ -1060,7 +1060,11 @@ class dashboardController extends Controller
         return trim(preg_replace('/\s+/', ' ', $value));
     }
 
-    public function bank(Request $request)
+    /**
+     * Data bersama dashboard Saldo Kas & Bank — dipakai halaman web DAN export
+     * PDF agar isi keduanya selalu identik (saldo bank, Informasi Saldo, saldo VA).
+     */
+    private function buildBankDashboardData(): array
     {
         // Ambil semua sumber dana beserta saldo VA-nya
         // Saldo VA = SUM(bank_masuk.debet) - SUM(bank_keluars.kredit) per sumber_dana
@@ -1117,7 +1121,7 @@ class dashboardController extends Controller
         // Saldo Rek 408 yang digunakan region = Saldo Rek 408 - Total Saldo VA
         $saldoRegion = $saldoRek408 - $totalSaldoVA;
 
-        return view('cash_bank.dashboardBank', compact(
+        return compact(
             'sumberDanaList',
             'totalSaldoBank',
             'bankVAList',
@@ -1126,7 +1130,12 @@ class dashboardController extends Controller
             'noRek408',
             'digitAkhirRek',
             'saldoRegion'
-        ));
+        );
+    }
+
+    public function bank(Request $request)
+    {
+        return view('cash_bank.dashboardBank', $this->buildBankDashboardData());
     }
     public function bankExportExcel(Request $request)
     {
@@ -1146,25 +1155,9 @@ class dashboardController extends Controller
         $nama    = $request->nama    ?? 'Herry Wahyudi';
         $jabatan = $request->jabatan ?? 'Kepala Bagian Akuntansi & Keuangan';
 
-        $sumberDanaList = DB::table('sumber_dana')
-            ->select('sumber_dana.id_sumber_dana', 'sumber_dana.nama_sumber_dana')
-            ->selectRaw('COALESCE((SELECT SUM(debet) FROM bank_masuk WHERE bank_masuk.id_sumber_dana = sumber_dana.id_sumber_dana), 0) as total_masuk')
-            ->selectRaw('COALESCE((SELECT SUM(kredit) FROM bank_keluars WHERE bank_keluars.id_sumber_dana = sumber_dana.id_sumber_dana), 0) as total_keluar')
-            ->orderBy('sumber_dana.id_sumber_dana')
-            ->get()
-            ->map(function ($sd) {
-                $sd->saldo_va = (float) $sd->total_masuk - (float) $sd->total_keluar;
-                return $sd;
-            });
-
-        $totalSaldoBank = $sumberDanaList->sum('saldo_va');
-
-        return view('cash_bank.exportPDF.pdfDashboardBank', compact(
-            'sumberDanaList',
-            'totalSaldoBank',
-            'tanggal',
-            'nama',
-            'jabatan'
+        return view('cash_bank.exportPDF.pdfDashboardBank', array_merge(
+            $this->buildBankDashboardData(),
+            compact('tanggal', 'nama', 'jabatan')
         ));
     }
 }

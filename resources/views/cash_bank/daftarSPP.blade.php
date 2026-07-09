@@ -102,18 +102,8 @@
                             </div>
                         </div>
 
-                        {{-- Show Entries & Search Bar --}}
-                        <div class="d-flex justify-content-between align-items-center flex-wrap mb-2 cb-fullscreen-hide" style="gap:10px;">
-                            <div class="d-flex align-items-center" style="gap:6px; font-size:13px; color:#444; font-weight:500;">
-                                Show
-                                <select class="form-control form-control-sm" id="sppPerPage" style="width:70px; display:inline-block;">
-                                    <option value="10" selected>10</option>
-                                    <option value="25">25</option>
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                </select>
-                                entries
-                            </div>
+                        {{-- Search Bar (semua data tampil bertahap saat scroll, tanpa pagination) --}}
+                        <div class="d-flex justify-content-end align-items-center flex-wrap mb-2 cb-fullscreen-hide" style="gap:10px;">
                             <div>
                                 <input type="text" class="form-control form-control-sm" id="sppSearch"
                                     placeholder="Search..." style="width:220px; display:inline-block;">
@@ -138,35 +128,113 @@
 <script>
     $(document).ready(function () {
         var currentStatus = '';
-        var currentPage = 1;
         var searchTimer = null;
 
-        function loadSPP(page) {
-            page = page || 1;
-            currentPage = page;
+        // Infinite scroll: semua data dimuat bertahap per 100 baris — chunk
+        // berikutnya di-fetch saat scroll mendekati dasar tabel, lalu di-append.
+        var CHUNK_SIZE = 100;
+        var PREFETCH_PX = 600;
+        var loadedPage = 1;
+        var totalRecords = 0;
+        var loadingNext = false;
 
-            var tahun = $('#filterTahunSPP').val();
-            var bulanDari = $('#filterBulanDariSPP').val();
-            var bulanSampai = $('#filterBulanSampaiSPP').val();
-            var perPage = $('#sppPerPage').val();
-            var search = $('#sppSearch').val();
+        function filterParams(page) {
+            return {
+                tahun: $('#filterTahunSPP').val(),
+                status: currentStatus,
+                bulan_dari: $('#filterBulanDariSPP').val(),
+                bulan_sampai: $('#filterBulanSampaiSPP').val(),
+                per_page: CHUNK_SIZE,
+                page: page,
+                search: $('#sppSearch').val(),
+                infinite: 1
+            };
+        }
 
+        function loadedCount() {
+            return $('#sppTableBody tr.spp-row-data').length;
+        }
+
+        function updateLoadInfo(errorText) {
+            var $info = $('#sppLoadInfo');
+            if (!$info.length) return;
+            if (errorText) {
+                $info.text(errorText);
+                return;
+            }
+            var count = loadedCount();
+            $info.text(count >= totalRecords
+                ? 'Semua ' + totalRecords.toLocaleString('id-ID') + ' data telah dimuat.'
+                : count.toLocaleString('id-ID') + ' dari ' + totalRecords.toLocaleString('id-ID') +
+                  ' data dimuat — scroll ke bawah untuk memuat berikutnya.');
+        }
+
+        function removeLoaderRow() {
+            $('#sppTableBody tr.spp-loader-row').remove();
+        }
+
+        function showLoaderRow(message, isError) {
+            removeLoaderRow();
+            var colspan = $('#sppScrollBox thead th').length || 13;
+            var $row = $('<tr class="spp-loader-row' + (isError ? ' has-error' : '') + '">' +
+                '<td colspan="' + colspan + '">' + message + '</td></tr>');
+            if (isError) {
+                $row.on('click', function () { loadNextChunk(true); });
+            }
+            $('#sppTableBody').append($row);
+        }
+
+        function loadNextChunk(force) {
+            var box = document.getElementById('sppScrollBox');
+            if (!box || loadingNext) return;
+            if (loadedCount() >= totalRecords) return;
+            if (!force && box.scrollTop + box.clientHeight < box.scrollHeight - PREFETCH_PX) return;
+
+            loadingNext = true;
+            showLoaderRow('<i class="fas fa-spinner fa-spin"></i> Memuat data berikutnya...', false);
+
+            $.ajax({
+                url: "{{ route('daftar-spp.data-grouped') }}",
+                method: 'GET',
+                data: filterParams(loadedPage + 1),
+                success: function (rowsHtml) {
+                    removeLoaderRow();
+                    $('#sppTableBody').append(rowsHtml);
+                    loadedPage++;
+                    updateLoadInfo();
+                    // Layar tinggi: pastikan viewport terisi tanpa menunggu scroll baru.
+                    window.requestAnimationFrame(function () { loadNextChunk(false); });
+                },
+                error: function (xhr) {
+                    console.error('SPP chunk error:', xhr);
+                    showLoaderRow('<i class="fas fa-exclamation-triangle"></i> Gagal memuat data berikutnya. Klik di sini untuk mencoba lagi.', true);
+                },
+                complete: function () {
+                    loadingNext = false;
+                }
+            });
+        }
+
+        function bindScrollBox() {
+            var box = document.getElementById('sppScrollBox');
+            if (!box) return;
+            totalRecords = parseInt(box.dataset.total, 10) || 0;
+            loadedPage = parseInt(box.dataset.page, 10) || 1;
+            updateLoadInfo();
+            box.addEventListener('scroll', function () { loadNextChunk(false); }, { passive: true });
+            loadNextChunk(false);
+        }
+
+        function loadSPP() {
             $('#spp-content').html('<div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2 text-muted">Memuat data...</p></div>');
 
             $.ajax({
                 url: "{{ route('daftar-spp.data-grouped') }}",
                 method: 'GET',
-                data: {
-                    tahun: tahun,
-                    status: currentStatus,
-                    bulan_dari: bulanDari,
-                    bulan_sampai: bulanSampai,
-                    per_page: perPage,
-                    page: page,
-                    search: search
-                },
+                data: filterParams(1),
                 success: function (response) {
                     $('#spp-content').html(response);
+                    bindScrollBox();
                 },
                 error: function (xhr) {
                     console.error('SPP error:', xhr);
@@ -176,24 +244,13 @@
         }
 
         // Load on page load
-        loadSPP(1);
-
-        // Pagination clicks (delegated)
-        $(document).on('click', '.spp-page-btn:not(:disabled)', function () {
-            var page = $(this).data('page');
-            if (page) loadSPP(page);
-        });
-
-        // Per page change
-        $('#sppPerPage').on('change', function () {
-            loadSPP(1);
-        });
+        loadSPP();
 
         // Search with debounce
         $('#sppSearch').on('input', function () {
             if (searchTimer) clearTimeout(searchTimer);
             searchTimer = setTimeout(function () {
-                loadSPP(1);
+                loadSPP();
             }, 400);
         });
 
@@ -228,12 +285,12 @@
                 });
             }
 
-            loadSPP(1);
+            loadSPP();
         });
 
         // Terapkan filter
         $('#terapkanFilterSPP').on('click', function () {
-            loadSPP(1);
+            loadSPP();
         });
 
         // Reset filter
@@ -251,7 +308,7 @@
                     'border-color': $b.data('inactive-border')
                 });
             });
-            loadSPP(1);
+            loadSPP();
         });
     });
 </script>

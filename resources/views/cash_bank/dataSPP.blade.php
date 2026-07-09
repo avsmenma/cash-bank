@@ -1,15 +1,25 @@
 <style>
     .spp-grouped-table {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0;
         font-size: 13px;
     }
     .spp-grouped-table th,
     .spp-grouped-table td {
         border: 1px solid #bbb;
+        border-top: 0;
+        border-left: 0;
         padding: 4px 8px;
         white-space: nowrap;
         vertical-align: middle;
+    }
+    .spp-grouped-table th:first-child,
+    .spp-grouped-table td:first-child {
+        border-left: 1px solid #bbb;
+    }
+    .spp-grouped-table thead th {
+        border-top: 1px solid #bbb;
     }
     .spp-row-header th {
         background-color: #2c5282 !important;
@@ -42,8 +52,21 @@
     .badge-siap { background: #b8daff; color: #004085; }
     .badge-sudah { background: #c3e6cb; color: #155724; }
 
-    /* Pagination */
-    .spp-pagination-bar {
+    /* Scrollbox infinite scroll: header menempel, baris berikutnya dimuat saat
+       scroll mendekati dasar (tanpa pagination). */
+    .spp-scroll {
+        max-height: calc(100vh - 330px);
+        min-height: 300px;
+        overflow: auto;
+        position: relative;
+    }
+    .spp-scroll thead th {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+
+    .spp-load-status {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -52,30 +75,27 @@
         color: #555;
         flex-wrap: wrap;
         gap: 8px;
-    }
-    .spp-pagination-bar .spp-page-info { font-weight: 500; }
-    .spp-pagination-bar .spp-page-buttons {
-        display: flex;
-        gap: 4px;
-    }
-    .spp-pagination-bar .spp-page-btn {
-        border: 1px solid #ccc;
-        background: #fff;
-        color: #333;
-        padding: 4px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
         font-weight: 500;
-        transition: all .15s;
     }
-    .spp-pagination-bar .spp-page-btn:hover { background: #e8eef5; border-color: #2c5282; color: #2c5282; }
-    .spp-pagination-bar .spp-page-btn.active { background: #2c5282; color: #fff; border-color: #2c5282; }
-    .spp-pagination-bar .spp-page-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .spp-loader-row td {
+        text-align: center !important;
+        padding: 12px !important;
+        font-weight: 600;
+        color: #2c5282;
+        background: #f0f5fb;
+    }
+    .spp-loader-row.has-error td {
+        color: #b02a37;
+        background: #fdf0f1;
+        cursor: pointer;
+    }
 </style>
 
 @if(isset($allData) && count($allData) > 0)
-    <div class="table-responsive">
+    <div class="table-responsive spp-scroll" id="sppScrollBox"
+         data-total="{{ $pagination['total_records'] ?? count($allData) }}"
+         data-page="{{ $pagination['current_page'] ?? 1 }}"
+         data-per-page="{{ $pagination['per_page'] ?? count($allData) }}">
         <table class="spp-grouped-table">
             <thead>
                 <tr class="spp-row-header">
@@ -94,80 +114,18 @@
                     <th>Status</th>
                 </tr>
             </thead>
-            <tbody>
-                @php $rowNo = $startIndex + 1; @endphp
-                @foreach($allData as $row)
-                    @php
-                        $nilai = (float) ($row->nilai_rupiah ?? 0);
-
-                        $statusLabel = '-';
-                        $statusClass = '';
-                        if ($row->status_pembayaran === 'sudah_dibayar') {
-                            $statusLabel = 'Sudah Dibayar';
-                            $statusClass = 'badge-sudah';
-                        } elseif ($row->status_pembayaran === 'siap_dibayar') {
-                            $statusLabel = 'Siap Bayar';
-                            $statusClass = 'badge-siap';
-                        } else {
-                            $statusLabel = 'Belum Siap';
-                            $statusClass = 'badge-belum';
-                        }
-                    @endphp
-                    <tr class="spp-row-data">
-                        <td class="text-center">{{ $rowNo++ }}</td>
-                        <td>{{ $row->nomor_agenda ?? '-' }}</td>
-                        <td class="text-center">{{ $row->tanggal_masuk ? \Carbon\Carbon::parse($row->tanggal_masuk)->translatedFormat('d M Y') : '-' }}</td>
-                        <td>{{ $row->nomor_spp ?? '-' }}</td>
-                        <td class="text-center">{{ $row->tanggal_spp ? \Carbon\Carbon::parse($row->tanggal_spp)->translatedFormat('d M Y') : '-' }}</td>
-                        <td style="white-space:normal; max-width:250px;">{{ $row->uraian_spp ?? '-' }}</td>
-                        <td class="text-center">{{ $row->tanggal_spk ? \Carbon\Carbon::parse($row->tanggal_spk)->translatedFormat('d M Y') : '-' }}</td>
-                        <td class="text-center">{{ $row->tanggal_berakhir_spk ? \Carbon\Carbon::parse($row->tanggal_berakhir_spk)->translatedFormat('d M Y') : '-' }}</td>
-                        <td class="text-center">{{ $row->tanggal_berita_acara ? \Carbon\Carbon::parse($row->tanggal_berita_acara)->translatedFormat('d M Y') : '-' }}</td>
-                        <td>{{ $row->dibayar_kepada ?? '-' }}</td>
-                        <td class="text-right">{{ number_format($nilai, 0, ',', '.') }}</td>
-                        <td>{{ $row->current_handler ?? '-' }}</td>
-                        <td class="text-center">
-                            <span class="badge-status {{ $statusClass }}">{{ $statusLabel }}</span>
-                        </td>
-                    </tr>
-                @endforeach
+            <tbody id="sppTableBody">
+                @include('cash_bank.dataSPPRows', ['allData' => $allData, 'startIndex' => $startIndex])
             </tbody>
         </table>
     </div>
 
-    {{-- Pagination Controls --}}
-    @if(isset($pagination))
-    <div class="spp-pagination-bar">
-        <div class="spp-page-info">
-            Menampilkan {{ $pagination['from'] }} - {{ $pagination['to'] }} dari {{ number_format($pagination['total_records'], 0, ',', '.') }} data
+    <div class="spp-load-status">
+        <div id="sppLoadInfo">
+            {{ number_format(min(($startIndex ?? 0) + count($allData), $pagination['total_records'] ?? count($allData)), 0, ',', '.') }}
+            dari {{ number_format($pagination['total_records'] ?? count($allData), 0, ',', '.') }} data dimuat
         </div>
-        @if($pagination['total_pages'] > 1)
-        <div class="spp-page-buttons">
-            <button class="spp-page-btn" data-page="1" {{ $pagination['current_page'] <= 1 ? 'disabled' : '' }}>
-                <i class="fas fa-angle-double-left"></i>
-            </button>
-            <button class="spp-page-btn" data-page="{{ $pagination['current_page'] - 1 }}" {{ $pagination['current_page'] <= 1 ? 'disabled' : '' }}>
-                <i class="fas fa-angle-left"></i>
-            </button>
-
-            @php
-                $startP = max(1, $pagination['current_page'] - 2);
-                $endP = min($pagination['total_pages'], $pagination['current_page'] + 2);
-            @endphp
-            @for($p = $startP; $p <= $endP; $p++)
-                <button class="spp-page-btn {{ $p == $pagination['current_page'] ? 'active' : '' }}" data-page="{{ $p }}">{{ $p }}</button>
-            @endfor
-
-            <button class="spp-page-btn" data-page="{{ $pagination['current_page'] + 1 }}" {{ $pagination['current_page'] >= $pagination['total_pages'] ? 'disabled' : '' }}>
-                <i class="fas fa-angle-right"></i>
-            </button>
-            <button class="spp-page-btn" data-page="{{ $pagination['total_pages'] }}" {{ $pagination['current_page'] >= $pagination['total_pages'] ? 'disabled' : '' }}>
-                <i class="fas fa-angle-double-right"></i>
-            </button>
-        </div>
-        @endif
     </div>
-    @endif
 @else
     <div class="spp-empty-state">
         <i class="fas fa-inbox"></i>

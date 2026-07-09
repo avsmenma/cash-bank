@@ -60,10 +60,13 @@ class daftarSPPController extends Controller
             $page = (int) ($request->page ?? 1);
             $search = $request->search;
 
+            // Tie-breaker id: banyak baris bertanggal sama — tanpa urutan deterministik,
+            // LIMIT/OFFSET antar chunk bisa menduplikasi/melewatkan baris.
             $query = DB::connection('mysql_agenda_online')
                 ->table('dokumens')
                 ->whereYear('tanggal_masuk', $tahun)
-                ->orderBy('tanggal_masuk');
+                ->orderBy('tanggal_masuk')
+                ->orderBy('id');
 
             if ($filterStatus === 'belum') {
                 $query->whereNotIn('status_pembayaran', ['siap_dibayar', 'sudah_dibayar']);
@@ -119,6 +122,12 @@ class daftarSPPController extends Controller
                 'from' => $totalRecords > 0 ? $startIndex + 1 : 0,
                 'to' => $totalRecords > 0 ? min($startIndex + $perPage, $totalRecords) : 0,
             ];
+
+            // Infinite scroll: halaman lanjutan cukup baris <tr> saja (di-append
+            // oleh JS), tanpa mengulang shell tabel/style.
+            if ($request->boolean('infinite') && $page > 1) {
+                return view('cash_bank.dataSPPRows', compact('allData', 'startIndex'));
+            }
 
             return view('cash_bank.dataSPP', compact('allData', 'bulanNames', 'tahun', 'pagination', 'startIndex'));
         } catch (\Exception $e) {

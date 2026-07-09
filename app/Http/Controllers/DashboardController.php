@@ -31,11 +31,14 @@ class dashboardController extends Controller
     $bulanSampai = $request->bulan_sampai ?? 12;
 
     // ========== PENERIMA ==========
+    // Dibagi 1000: nilai_inc_ppn tersimpan rupiah penuh, sedangkan Permintaan &
+    // Dropping (M1-M4) tersimpan dalam ribuan — tanpa ini tabel PENERIMAAN dan
+    // baris SELISIH mencampur satuan.
     $penerima = Penerima::with('kategori')
         ->select(
             'id_kategori_kriteria',
             DB::raw('MONTH(tanggal) as bulan'),
-            DB::raw('SUM(nilai_inc_ppn) as total')
+            DB::raw('SUM(nilai_inc_ppn) / 1000 as total')
         )
         ->whereYear('tanggal', $tahun)
         ->whereBetween(DB::raw('MONTH(tanggal)'), [$bulanDari, $bulanSampai])
@@ -55,13 +58,15 @@ class dashboardController extends Controller
         ->get();
 
     // ========== PEMBAYARAN (BANK KELUAR) ==========
+    // Dibagi 1000: kredit tersimpan rupiah penuh — samakan ke ribuan seperti
+    // Permintaan/Dropping agar baris SELISIH konsisten satuannya.
     $pembayaran = BankKeluar::with(['kategori', 'subKriteria', 'itemSubKriteria'])
         ->select(
             'id_kategori_kriteria',
             'id_sub_kriteria',
             'id_item_sub_kriteria',
             DB::raw('MONTH(tanggal) as bulan'),
-            DB::raw('SUM(CAST(kredit AS DECIMAL(15,2))) as total')
+            DB::raw('SUM(CAST(kredit AS DECIMAL(15,2))) / 1000 as total')
         )
         ->whereYear('tanggal', $tahun)
         ->whereBetween(DB::raw('MONTH(tanggal)'), [$bulanDari, $bulanSampai])

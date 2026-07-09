@@ -5,10 +5,12 @@
     <title>Saldo Kas &amp; Bank</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; font-size: 11px; color: #222; padding: 20px; }
-        h2 { font-size: 13px; margin-bottom: 12px; color: #0d3b6e; }
-        table { border-collapse: collapse; width: 100%; max-width: 680px; }
-        th, td { border: 1px solid #aaa; padding: 5px 7px; }
+        /* Ukuran diset untuk kertas A4 penuh: tabel melebar 100% area cetak,
+           font & padding diperbesar agar hasil print tidak kecil di pojok kertas. */
+        body { font-family: Arial, sans-serif; font-size: 13.5px; color: #222; padding: 20px; }
+        h2 { font-size: 16px; margin-bottom: 14px; color: #0d3b6e; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #aaa; padding: 7px 9px; }
         .bg-header { background-color: #bdc3c7; font-weight: bold; text-align: center; }
         .bg-subheader { background-color: #ecf0f1; font-weight: bold; }
         .bg-yellow { background-color: #f9e400; font-weight: bold; }
@@ -16,7 +18,7 @@
         .text-center { text-align: center; }
         .font-bold { font-weight: bold; }
         .no-border td { border: none; padding: 4px 0; }
-        .footer-section { margin-top: 20px; width: 100%; max-width: 680px; }
+        .footer-section { margin-top: 24px; width: 100%; }
         .footer-right { text-align: center; float: right; width: 45%; }
         .signature-name { font-weight: bold; text-decoration: underline; }
         .signature-title { color: #222; }
@@ -24,16 +26,15 @@
 
         /* Kartu Informasi Saldo (ikut layar /dashboard-bank) */
         .info-saldo {
-            margin-top: 16px;
+            margin-top: 18px;
             width: 100%;
-            max-width: 680px;
             border: 1px solid #aaa;
             border-left: 4px solid #0d3b6e;
             border-radius: 4px;
             padding: 10px 14px;
             page-break-inside: avoid;
         }
-        .info-saldo .info-title { font-weight: bold; color: #0d3b6e; margin-bottom: 6px; font-size: 12px; }
+        .info-saldo .info-title { font-weight: bold; color: #0d3b6e; margin-bottom: 6px; font-size: 14px; }
         .info-saldo table { border-collapse: collapse; width: 100%; }
         .info-saldo td { border: none; padding: 3px 0; }
         .info-saldo .info-sep { padding: 3px 8px; width: 20px; text-align: center; }
@@ -53,6 +54,7 @@
 
         /* Hapus header & footer browser saat print (tanggal, judul, URL) */
         @page {
+            size: A4 portrait;
             margin: 0;
         }
         @media print {
@@ -120,7 +122,7 @@
         <tr>
             <td></td>
             <td>- {{ $namaBersih }}</td>
-            <td class="text-center" style="font-size:10px; white-space:nowrap;">{{ $noRek }}</td>
+            <td class="text-center" style="font-size:12px; white-space:nowrap;">{{ $noRek }}</td>
             <td class="text-right {{ $sd->saldo_va != 0 ? 'font-bold' : '' }}" style="color:{{ $sd->saldo_va != 0 ? '#222' : '#888' }};">
                 @if($sd->saldo_va < 0)
                     ({{ number_format(abs($sd->saldo_va), 0, ',', '.') }})
@@ -157,7 +159,7 @@
     <div class="info-title">Informasi Saldo</div>
     <table>
         <tr>
-            <td style="white-space:nowrap;">Saldo Rek {{ $digitAkhirRek }} <span style="color:#888; font-size:10px;">({{ $noRek408 }})</span></td>
+            <td style="white-space:nowrap;">Saldo Rek {{ $digitAkhirRek }} <span style="color:#888; font-size:12px;">({{ $noRek408 }})</span></td>
             <td class="info-sep">:</td>
             <td class="info-val">
                 @if($saldoRek408 < 0)

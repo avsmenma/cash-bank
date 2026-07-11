@@ -24,6 +24,11 @@
         border-color: #ffffff !important;
         border-right: 1px solid #ffffff !important;
     }
+    /* Kolom terakhir di dalam grup tidak perlu garis sendiri —
+       garis batas sudah dipegang grup induknya (hindari garis dobel) */
+    #cashflow-table-pvd .tabulator-header .tabulator-col-group-cols > .tabulator-col:last-child {
+        border-right: none !important;
+    }
     #cashflow-table-pvd .tabulator-header .tabulator-col .tabulator-col-title {
         color: #f0f4f8;
         text-align: center;

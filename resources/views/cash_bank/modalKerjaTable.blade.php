@@ -1,20 +1,4 @@
 @php
-    if (!function_exists('fmtMK')) {
-        function fmtMK($v) {
-            if ($v == 0) return '-';
-            return $v < 0
-                ? '(' . number_format(abs($v), 0, ',', '.') . ')'
-                : number_format($v, 0, ',', '.');
-        }
-    }
-    if (!function_exists('fmtMKBold')) {
-        function fmtMKBold($v) {
-            if ($v == 0) return '0';
-            return $v < 0
-                ? '(' . number_format(abs($v), 0, ',', '.') . ')'
-                : number_format($v, 0, ',', '.');
-        }
-    }
     $weekTemplate = ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
     $bulanShort = [
         1=>'JAN', 2=>'FEB', 3=>'MAR', 4=>'APR', 5=>'MEI', 6=>'JUN',
@@ -23,122 +7,122 @@
 @endphp
 
 <style>
+    /* ============================================================
+       MODAL KERJA — Tabulator (tabel ala spreadsheet).
+       Kolom bisa ditarik-lebarkan manual; warna header mengikuti
+       referensi Excel lama (kuning/biru/hijau/oranye dst).
+       ============================================================ */
     #mk-table {
-        font-size: 10px;
-        white-space: nowrap;
-        border-collapse: collapse;
-    }
-    #mk-table th, #mk-table td {
-        padding: 3px 6px;
-        border: 1px solid #aaa;
-        vertical-align: middle;
-    }
-    #mk-table .th-uraian { min-width: 300px; max-width: 400px; white-space: normal; }
-    #mk-table .col-num   { width: 28px; text-align: center; }
-
-    /* Nilai rupiah: rata KANAN */
-    #mk-table .td-val      { text-align: right; min-width: 85px; }
-    #mk-table .td-val-bold { text-align: right; font-weight: bold; min-width: 85px; }
-
-    /* Header section warna (referensi Excel) */
-    .th-no-uraian  { background: #2F4F4F !important; color: #fff !important; }
-
-    /* Permintaan: kuning */
-    .th-permintaan, .th-permintaan-sub {
-        background: #FFD700 !important; color: #000 !important;
-    }
-    /* Dropping: biru */
-    .th-dropping, .th-dropping-sub {
-        background: #4472C4 !important; color: #fff !important;
-    }
-    /* Pembayaran: hijau */
-    .th-pembayaran, .th-pembayaran-sub {
-        background: #70AD47 !important; color: #fff !important;
-    }
-    /* Saldo */
-    .th-saldo { background: #ED7D31 !important; color: #fff !important; }
-    .th-saldo-prev { background: #ff00e6 !important; color: #fff !important; }
-    .th-modal-sendiri { background: #00f51f !important; color: #fff !important; }
-    .th-saldo-now { background: #3b82e8 !important; color: #fff !important; }
-
-    /* Nomor kolom */
-    .th-colnum { background: #D6DCE4 !important; color: #000; text-align: center; }
-
-    /* Data sel warna per section */
-    .bg-p  { background: #FFFACD; }           /* W1-W4 Permintaan */
-    .bg-pt { background: #FFD700; font-weight: bold; } /* Total Permintaan */
-    .bg-d  { background: #DDEEFF; }           /* W1-W4 Dropping */
-    .bg-dt { background: #4472C4; color: #fff; font-weight: bold; }  /* Total Dropping */
-    .bg-b  { background: #E2EFDA; }           /* W1-W4 Pembayaran */
-    .bg-bt { background: #70AD47; color: #fff; font-weight: bold; }  /* Total Pembayaran */
-    .bg-s     { background: #FCE4D6; font-weight: bold; }
-    .bg-s-neg { background: #FCE4D6; font-weight: bold; color: #c00000; }
-    .bg-sprev { background: #f8dcff; font-weight: bold; }
-    .bg-ms    { background: #e4ffe6; font-weight: bold; }
-    .bg-snow  { background: #dbeafe; font-weight: bold; }
-
-    /* Row jenis */
-    .row-kategori td { background: #2F4F4F !important; color: #fff !important; font-weight: bold; }
-    .row-sub td      { background: #D9E1F2 !important; font-weight: bold; }
-    .row-item td     { background: #ffffff; }
-    .row-subtotal td { background: #BDD7EE !important; font-weight: bold; }
-    .row-kattotal td { background: #1F3864 !important; color: #fff !important; font-weight: bold; }
-    .row-grandtotal td { background: #C00000 !important; color: #fff !important; font-weight: bold; }
-    .row-ui-summary td { background: #fff; }
-    .row-ui-summary .summary-label { font-weight: 600; text-align: right; }
-    .row-ui-summary-green td { background: #00f51f !important; font-weight: bold; }
-    .row-ui-summary-yellow td { background: #fff200 !important; font-weight: bold; }
-    .row-ui-summary-cyan td { background: #00f3ff !important; font-weight: bold; }
-    .row-ui-summary-orange td { background: #f59e0b !important; font-weight: bold; }
-    .row-ui-summary-softgreen td { background: #c6e0b4 !important; font-weight: bold; }
-
-    /* Sticky */
-    .table-scroll {
         border: 1px solid #8da0b3;
-        max-height: calc(100vh - 185px);
-        max-width: 100%;
-        overflow: auto;
-        position: relative;
-        scrollbar-gutter: stable;
+        border-radius: 8px;
+        font-size: 10.5px;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    #mk-table .tabulator-header {
+        background: #2F4F4F;
+        border-bottom: 2px solid #1f3737;
+    }
+    #mk-table .tabulator-header .tabulator-col,
+    #mk-table .tabulator-header .tabulator-col-group {
+        background: #2F4F4F;
+        color: #fff;
+        font-weight: 600;
+        font-size: 10px;
+        border-color: #ffffff !important;
+        border-right: 1px solid #ffffff !important;
+    }
+    #mk-table .tabulator-header .tabulator-col-group-cols > .tabulator-col:last-child {
+        border-right: none !important;
+    }
+    #mk-table .tabulator-header .tabulator-col .tabulator-col-title {
+        text-align: center;
+        white-space: normal;
     }
 
-    .sticky-col  { position: sticky; left: 0;    z-index: 6; }
-    .sticky-col2 { position: sticky; left: 28px; z-index: 6; }
-
-    #mk-table thead th {
-        position: sticky;
-        z-index: 30;
-        background-clip: padding-box;
-        box-shadow: inset 0 -1px 0 #8796a8;
+    /* Takik penanda kolom bisa ditarik (hanya kolom terbawah) */
+    #mk-table .tabulator-header .tabulator-col-resize-handle {
+        width: 7px;
+        cursor: col-resize;
+        background: none;
+    }
+    #mk-table .tabulator-header .tabulator-col:not(.tabulator-col-group) > .tabulator-col-resize-handle {
+        background: linear-gradient(
+            to bottom,
+            transparent 32%,
+            rgba(255, 255, 255, 0.55) 32%,
+            rgba(255, 255, 255, 0.55) 68%,
+            transparent 68%
+        );
+        background-size: 2px 100%;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    #mk-table .tabulator-header .tabulator-col-resize-handle:hover {
+        background: rgba(255, 255, 255, 0.30);
     }
 
-    #mk-table thead tr:nth-child(1) th {
-        height: 28px;
-        top: 0;
+    /* Warna header per bagian (referensi Excel) */
+    #mk-table .tabulator-col.mk-h-p,
+    #mk-table .tabulator-col-group.mk-h-p { background: #FFD700 !important; color: #000 !important; }
+    #mk-table .tabulator-col.mk-h-p .tabulator-col-title { color: #000; }
+    #mk-table .tabulator-col.mk-h-d,
+    #mk-table .tabulator-col-group.mk-h-d { background: #4472C4 !important; color: #fff !important; }
+    #mk-table .tabulator-col.mk-h-b,
+    #mk-table .tabulator-col-group.mk-h-b { background: #70AD47 !important; color: #fff !important; }
+    #mk-table .tabulator-col.mk-h-s { background: #ED7D31 !important; }
+    #mk-table .tabulator-col.mk-h-sprev { background: #ff00e6 !important; }
+    #mk-table .tabulator-col.mk-h-ms { background: #00f51f !important; color: #000 !important; }
+    #mk-table .tabulator-col.mk-h-ms .tabulator-col-title { color: #000; }
+    #mk-table .tabulator-col.mk-h-snow { background: #3b82e8 !important; }
+
+    /* Label minggu (klik untuk ubah tanggal) & nomor kolom di header */
+    #mk-table .mk-week-label {
+        cursor: pointer;
+        border-bottom: 1px dashed #333;
+    }
+    #mk-table .mk-colnum {
+        display: block;
+        margin-top: 2px;
+        background: #D6DCE4;
+        color: #000;
+        border-radius: 2px;
+        font-weight: 600;
+        text-align: center;
     }
 
-    #mk-table thead tr:nth-child(2) th {
-        height: 45px;
-        top: 28px;
+    /* Garis kolom & baris tegas */
+    #mk-table .tabulator-cell {
+        border-right: 1px solid #b3bfcc;
+        border-color: #b3bfcc;
+    }
+    #mk-table .tabulator-row {
+        border-bottom: 1px solid #b3bfcc;
     }
 
-    #mk-table thead tr:nth-child(3) th {
-        height: 24px;
-        top: 73px;
-    }
+    /* Kolom total per blok: tebal */
+    #mk-table .tabulator-cell.mk-c-bold { font-weight: 700; }
+    #mk-table .tabulator-cell.mk-neg { color: #c00000 !important; font-weight: 700; }
 
-    #mk-table thead th[rowspan="3"] {
-        top: 0;
-        z-index: 55;
-        box-shadow: inset 0 -1px 0 #8796a8, 1px 0 0 #8796a8;
-    }
+    /* ---------- Jenis baris ---------- */
+    #mk-table .tabulator-row.mk-r-kategori .tabulator-cell { background: #2F4F4F !important; color: #fff !important; font-weight: 700; }
+    #mk-table .tabulator-row.mk-r-sub .tabulator-cell { background: #D9E1F2 !important; font-weight: 700; }
+    #mk-table .tabulator-row.mk-r-item .tabulator-cell { background: #ffffff; }
+    #mk-table .tabulator-row.mk-r-item:hover .tabulator-cell { background: #f8fbff; }
+    #mk-table .tabulator-row.mk-r-subtotal .tabulator-cell { background: #BDD7EE !important; font-weight: 700; }
+    #mk-table .tabulator-row.mk-r-kattotal .tabulator-cell { background: #1F3864 !important; color: #fff !important; font-weight: 700; }
+    #mk-table .tabulator-row.mk-r-grandtotal .tabulator-cell { background: #C00000 !important; color: #fff !important; font-weight: 700; }
+    #mk-table .tabulator-row.mk-r-sumplain .tabulator-cell { background: #ffffff; font-weight: 700; }
+    #mk-table .tabulator-row.mk-r-sumgreen .tabulator-cell { background: #00f51f !important; font-weight: 700; }
+    #mk-table .tabulator-row.mk-r-sumyellow .tabulator-cell { background: #fff200 !important; font-weight: 700; }
+    #mk-table .tabulator-row.mk-r-sumcyan .tabulator-cell { background: #00f3ff !important; font-weight: 700; }
+    #mk-table .tabulator-row.mk-r-sumorange .tabulator-cell { background: #f59e0b !important; font-weight: 700; }
+    #mk-table .tabulator-row.mk-r-sumsoft .tabulator-cell { background: #c6e0b4 !important; font-weight: 700; }
 
-    #mk-table thead th.sticky-col {
-        z-index: 65;
-    }
-
-    #mk-table thead th.sticky-col2 {
-        z-index: 64;
+    @media print {
+        #mk-table .tabulator-tableholder {
+            overflow: visible !important;
+            max-height: none !important;
+        }
     }
 </style>
 
@@ -146,395 +130,263 @@
     <div class="alert alert-info m-3">Tidak ada data untuk filter yang dipilih.</div>
 @else
 
-{{-- drag-scroll: tahan-klik lalu geser untuk scroll HORIZONTAL saja
-     (handler global di layouts/index hanya menggeser scrollLeft) --}}
-<div class="table-scroll drag-scroll">
-<table id="mk-table" class="table table-bordered table-sm">
-    <thead>
-        {{-- ROW 1 --}}
-        <tr>
-            <th rowspan="3" class="col-num sticky-col th-no-uraian text-center">No.</th>
-            <th rowspan="3" class="th-uraian sticky-col2 th-no-uraian text-center" style="left:28px;">
-                Payments for {{ $tahun }} transactions - Accounts
-            </th>
-            @foreach($bulanAktif as $bNo => $bNama)
-                @php
-                    $currentMonthDate = \Carbon\Carbon::create((int) $tahun, (int) $bNo, 1);
-                    $previousMonthDate = $currentMonthDate->copy()->subMonth();
-                    $prevShort = $bulanShort[(int) $previousMonthDate->month] ?? strtoupper($previousMonthDate->format('M'));
-                    $currentShort = $bulanShort[(int) $currentMonthDate->month] ?? strtoupper($currentMonthDate->format('M'));
-                    $prevYearShort = $previousMonthDate->format('y');
-                    $currentYearShort = $currentMonthDate->format('y');
-                @endphp
-                <th colspan="5" class="th-permintaan text-center">Permintaan Weekly-{{ $bNama }}</th>
-                <th colspan="5" class="th-dropping text-center">Dropping Weekly-{{ $bNama }}</th>
-                <th colspan="5" class="th-pembayaran text-center">Pembayaran Weekly-{{ $bNama }}</th>
-                <th rowspan="3" class="th-saldo text-center" style="min-width:90px;">
-                    SALDO MODAL KERJA<br>Per {{ $bNama }} {{ $tahun }}
-                </th>
-                <th rowspan="3" class="th-saldo-prev text-center" style="min-width:100px;">
-                    SALDO<br>MOKER SD<br>{{ $prevShort }} {{ $prevYearShort }}<br>
-                    <small><i>Per {{ $previousMonthDate->endOfMonth()->format('d') }} {{ $prevShort }} {{ $prevYearShort }}</i></small>
-                </th>
-                <th rowspan="3" class="th-modal-sendiri text-center" style="min-width:110px;">
-                    PENGGUNAAN<br>MODAL<br>SENDIRI<br>
-                    <small><i>{{ $bNama }} {{ $tahun }}</i></small>
-                </th>
-                <th rowspan="3" class="th-saldo-now text-center" style="min-width:100px;">
-                    SALDO MOKER<br>SD {{ $currentShort }} {{ $currentYearShort }}<br>
-                    <small><i>Per {{ $currentMonthDate->endOfMonth()->format('d') }} {{ $currentShort }} {{ $currentYearShort }}</i></small>
-                </th>
-            @endforeach
-        </tr>
-        {{-- ROW 2 --}}
-        <tr>
-            @foreach($bulanAktif as $bNo => $bNama)
-                @php $wc = $weekCuts[$bNo] ?? ['w1_start'=>1,'w1_end'=>7,'w2_start'=>8,'w2_end'=>14,'w3_start'=>15,'w3_end'=>21,'w4_start'=>22,'w4_end'=>31]; @endphp
-                <th class="th-permintaan-sub text-center">{{ $bNama }}-W1<br>
-                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w1"
-                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #333;">
-                        ({{ $wc['w1_start'] }}-{{ $wc['w1_end'] }})
-                    </small>
-                </th>
-                <th class="th-permintaan-sub text-center">{{ $bNama }}-W2<br>
-                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w2"
-                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #333;">
-                        ({{ $wc['w2_start'] }}-{{ $wc['w2_end'] }})
-                    </small>
-                </th>
-                <th class="th-permintaan-sub text-center">{{ $bNama }}-W3<br>
-                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w3"
-                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #333;">
-                        ({{ $wc['w3_start'] }}-{{ $wc['w3_end'] }})
-                    </small>
-                </th>
-                <th class="th-permintaan-sub text-center">{{ $bNama }}-W4<br>
-                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w4"
-                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #333;">
-                        ({{ $wc['w4_start'] }}-{{ $wc['w4_end'] }})
-                    </small>
-                </th>
-                <th class="th-permintaan-sub text-center">Weekly-{{ $bNama }}<br><small>(1-31)</small></th>
+@php
+    // ================================================================
+    // Rakit BARIS sebagai data Tabulator (logika hitung lama utuh).
+    // Field per bulan: m{no}_p1..p4,pt / d1..d4,dt / b1..b4,bt / s,sprev,ms,snow
+    // ================================================================
+    $mkRows = [];
+    $mkPush = function ($type, $no, $uraian, $cells = []) use (&$mkRows) {
+        $mkRows[] = array_merge(['type' => $type, 'no' => $no, 'uraian' => $uraian], $cells);
+    };
 
-                <th class="th-dropping-sub text-center">{{ $bNama }}-W1<br>
-                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w1"
-                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #adf;">
-                        ({{ $wc['w1_start'] }}-{{ $wc['w1_end'] }})
-                    </small>
-                </th>
-                <th class="th-dropping-sub text-center">{{ $bNama }}-W2<br>
-                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w2"
-                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #adf;">
-                        ({{ $wc['w2_start'] }}-{{ $wc['w2_end'] }})
-                    </small>
-                </th>
-                <th class="th-dropping-sub text-center">{{ $bNama }}-W3<br>
-                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w3"
-                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #adf;">
-                        ({{ $wc['w3_start'] }}-{{ $wc['w3_end'] }})
-                    </small>
-                </th>
-                <th class="th-dropping-sub text-center">{{ $bNama }}-W4<br>
-                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w4"
-                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #adf;">
-                        ({{ $wc['w4_start'] }}-{{ $wc['w4_end'] }})
-                    </small>
-                </th>
-                <th class="th-dropping-sub text-center">Weekly-{{ $bNama }}<br><small>(1-31)</small></th>
+    $mkCells = function ($perBulan) use ($bulanAktif) {
+        // $perBulan: [bNo => ['p'=>[w1..w4],'d'=>..,'b'=>.., 'sprev'=>..,'ms'=>..,'snow'=>..]]
+        $cells = [];
+        foreach ($bulanAktif as $bNo => $bNama) {
+            $p = $perBulan[$bNo]['p'] ?? ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
+            $d = $perBulan[$bNo]['d'] ?? ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
+            $b = $perBulan[$bNo]['b'] ?? ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
+            $pTot = array_sum($p); $dTot = array_sum($d); $bTot = array_sum($b);
+            foreach ([1,2,3,4] as $i) {
+                $cells["m{$bNo}_p{$i}"] = $p['w'.$i];
+                $cells["m{$bNo}_d{$i}"] = $d['w'.$i];
+                $cells["m{$bNo}_b{$i}"] = $b['w'.$i];
+            }
+            $cells["m{$bNo}_pt"] = $pTot;
+            $cells["m{$bNo}_dt"] = $dTot;
+            $cells["m{$bNo}_bt"] = $bTot;
+            $cells["m{$bNo}_s"] = $dTot - $bTot;
+            $cells["m{$bNo}_sprev"] = $perBulan[$bNo]['sprev'] ?? 0;
+            $cells["m{$bNo}_ms"] = $perBulan[$bNo]['ms'] ?? 0;
+            $cells["m{$bNo}_snow"] = $perBulan[$bNo]['snow'] ?? 0;
+        }
+        return $cells;
+    };
 
-                <th class="th-pembayaran-sub text-center">{{ $bNama }}-W1<br>
-                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w1"
-                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #bfb;">
-                        ({{ $wc['w1_start'] }}-{{ $wc['w1_end'] }})
-                    </small>
-                </th>
-                <th class="th-pembayaran-sub text-center">{{ $bNama }}-W2<br>
-                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w2"
-                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #bfb;">
-                        ({{ $wc['w2_start'] }}-{{ $wc['w2_end'] }})
-                    </small>
-                </th>
-                <th class="th-pembayaran-sub text-center">{{ $bNama }}-W3<br>
-                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w3"
-                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #bfb;">
-                        ({{ $wc['w3_start'] }}-{{ $wc['w3_end'] }})
-                    </small>
-                </th>
-                <th class="th-pembayaran-sub text-center">{{ $bNama }}-W4<br>
-                    <small class="mk-week-label" data-bulan="{{ $bNo }}" data-week="w4"
-                        title="Klik untuk ubah tanggal" style="cursor:pointer;border-bottom:1px dashed #bfb;">
-                        ({{ $wc['w4_start'] }}-{{ $wc['w4_end'] }})
-                    </small>
-                </th>
-                <th class="th-pembayaran-sub text-center">Weekly-{{ $bNama }}<br><small>(1-31)</small></th>
-            @endforeach
-        </tr>
+    $rowNo = 1;
+    foreach ($allKeys as $kat => $subs) {
+        $katTotal = [];
+        foreach ($bulanAktif as $bNo => $n) $katTotal[$bNo] = ['p' => $weekTemplate, 'd' => $weekTemplate, 'b' => $weekTemplate];
 
-        {{-- ROW 3: Nomor kolom --}}
-        <tr>
-            @php $colIdx = 1; @endphp
-            @foreach($bulanAktif as $bNo => $bNama)
-                @for($c = 0; $c < 15; $c++)
-                    <th class="th-colnum">{{ $colIdx++ }}</th>
-                @endfor
-            @endforeach
-        </tr>
-    </thead>
-    <tbody>
-        @php $rowNo = 1; @endphp
+        $mkPush('kategori', $rowNo++, $kat);
 
-        @foreach($allKeys as $kat => $subs)
-            @php
-                $katTotalP = []; $katTotalD = []; $katTotalB = [];
-                foreach($bulanAktif as $bNo => $bNama) {
-                    $katTotalP[$bNo] = ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                    $katTotalD[$bNo] = ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                    $katTotalB[$bNo] = ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                }
-            @endphp
+        foreach ($subs as $sub => $items) {
+            $subTotal = [];
+            foreach ($bulanAktif as $bNo => $n) $subTotal[$bNo] = ['p' => $weekTemplate, 'd' => $weekTemplate, 'b' => $weekTemplate];
 
-            {{-- BARIS KATEGORI --}}
-            <tr class="row-kategori">
-                <td class="col-num sticky-col text-center">{{ $rowNo++ }}</td>
-                <td class="sticky-col2" style="left:28px;">{{ $kat }}</td>
-                @foreach($bulanAktif as $bNo => $bNama)
-                    @for($c=0;$c<19;$c++)<td></td>@endfor
-                @endforeach
-            </tr>
+            $mkPush('sub', null, $sub);
 
-            @foreach($subs as $sub => $items)
-                @php
-                    $subTotalP = []; $subTotalD = []; $subTotalB = [];
-                    foreach($bulanAktif as $bNo => $bNama) {
-                        $subTotalP[$bNo] = ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                        $subTotalD[$bNo] = ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                        $subTotalB[$bNo] = ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                        foreach($items as $item => $_x) {
-                            $pV2 = $permintaanData[$bNo][$kat][$sub][$item] ?? ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                            $dV2 = $droppingData[$bNo][$kat][$sub][$item]   ?? ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                            $bV2 = $pembayaranData[$bNo][$kat][$sub][$item] ?? ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                            foreach(['w1','w2','w3','w4'] as $w) {
-                                $subTotalP[$bNo][$w] += $pV2[$w];
-                                $subTotalD[$bNo][$w] += $dV2[$w];
-                                $subTotalB[$bNo][$w] += $bV2[$w];
-                                $katTotalP[$bNo][$w] += $pV2[$w];
-                                $katTotalD[$bNo][$w] += $dV2[$w];
-                                $katTotalB[$bNo][$w] += $bV2[$w];
-                            }
-                        }
-                    }
-                @endphp
-
-                {{-- BARIS SUB KRITERIA --}}
-                <tr class="row-sub">
-                    <td class="col-num sticky-col text-center"></td>
-                    <td class="sticky-col2" style="left:28px;padding-left:14px;">{{ $sub }}</td>
-                    @foreach($bulanAktif as $bNo => $bNama)
-                        @for($c=0;$c<19;$c++)<td></td>@endfor
-                    @endforeach
-                </tr>
-
-                @foreach($items as $item => $_x)
-                    <tr class="row-item">
-                        <td class="col-num sticky-col text-center"></td>
-                        <td class="sticky-col2" style="left:28px;padding-left:28px;">{{ $item === '' ? '' : '- ' . $item }}</td>
-                        @foreach($bulanAktif as $bNo => $bNama)
-                            @php
-                                $pV = $permintaanData[$bNo][$kat][$sub][$item] ?? ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                                $dV = $droppingData[$bNo][$kat][$sub][$item]   ?? ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                                $bV = $pembayaranData[$bNo][$kat][$sub][$item] ?? ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                                $pTot = array_sum($pV); $dTot = array_sum($dV); $bTot = array_sum($bV);
-                                $saldo = $dTot - $bTot;
-                            @endphp
-                            <td class="td-val bg-p">{{ fmtMK($pV['w1']) }}</td>
-                            <td class="td-val bg-p">{{ fmtMK($pV['w2']) }}</td>
-                            <td class="td-val bg-p">{{ fmtMK($pV['w3']) }}</td>
-                            <td class="td-val bg-p">{{ fmtMK($pV['w4']) }}</td>
-                            <td class="td-val-bold bg-pt">{{ fmtMK($pTot) }}</td>
-                            <td class="td-val bg-d">{{ fmtMK($dV['w1']) }}</td>
-                            <td class="td-val bg-d">{{ fmtMK($dV['w2']) }}</td>
-                            <td class="td-val bg-d">{{ fmtMK($dV['w3']) }}</td>
-                            <td class="td-val bg-d">{{ fmtMK($dV['w4']) }}</td>
-                            <td class="td-val-bold bg-dt">{{ fmtMK($dTot) }}</td>
-                            <td class="td-val bg-b">{{ fmtMK($bV['w1']) }}</td>
-                            <td class="td-val bg-b">{{ fmtMK($bV['w2']) }}</td>
-                            <td class="td-val bg-b">{{ fmtMK($bV['w3']) }}</td>
-                            <td class="td-val bg-b">{{ fmtMK($bV['w4']) }}</td>
-                            <td class="td-val-bold bg-bt">{{ fmtMK($bTot) }}</td>
-                            <td class="td-val-bold {{ $saldo < 0 ? 'bg-s-neg' : 'bg-s' }}">{{ fmtMK($saldo) }}</td>
-                            <td class="td-val-bold bg-sprev">-</td>
-                            <td class="td-val-bold bg-ms">-</td>
-                            <td class="td-val-bold bg-snow">-</td>
-                        @endforeach
-                    </tr>
-                @endforeach
-
-                {{-- Sub Total --}}
-                <tr class="row-subtotal">
-                    <td class="col-num sticky-col text-center"></td>
-                    <td class="sticky-col2" style="left:28px;padding-left:14px;"><strong>Sub Total {{ $sub }}</strong></td>
-                    @foreach($bulanAktif as $bNo => $bNama)
-                        @php
-                            $spTot = array_sum($subTotalP[$bNo]);
-                            $sdTot = array_sum($subTotalD[$bNo]);
-                            $sbTot = array_sum($subTotalB[$bNo]);
-                            $sSaldo = $sdTot - $sbTot;
-                        @endphp
-                        <td class="td-val bg-p">{{ fmtMKBold($subTotalP[$bNo]['w1']) }}</td>
-                        <td class="td-val bg-p">{{ fmtMKBold($subTotalP[$bNo]['w2']) }}</td>
-                        <td class="td-val bg-p">{{ fmtMKBold($subTotalP[$bNo]['w3']) }}</td>
-                        <td class="td-val bg-p">{{ fmtMKBold($subTotalP[$bNo]['w4']) }}</td>
-                        <td class="td-val-bold bg-pt">{{ fmtMKBold($spTot) }}</td>
-                        <td class="td-val bg-d">{{ fmtMKBold($subTotalD[$bNo]['w1']) }}</td>
-                        <td class="td-val bg-d">{{ fmtMKBold($subTotalD[$bNo]['w2']) }}</td>
-                        <td class="td-val bg-d">{{ fmtMKBold($subTotalD[$bNo]['w3']) }}</td>
-                        <td class="td-val bg-d">{{ fmtMKBold($subTotalD[$bNo]['w4']) }}</td>
-                        <td class="td-val-bold bg-dt">{{ fmtMKBold($sdTot) }}</td>
-                        <td class="td-val bg-b">{{ fmtMKBold($subTotalB[$bNo]['w1']) }}</td>
-                        <td class="td-val bg-b">{{ fmtMKBold($subTotalB[$bNo]['w2']) }}</td>
-                        <td class="td-val bg-b">{{ fmtMKBold($subTotalB[$bNo]['w3']) }}</td>
-                        <td class="td-val bg-b">{{ fmtMKBold($subTotalB[$bNo]['w4']) }}</td>
-                        <td class="td-val-bold bg-bt">{{ fmtMKBold($sbTot) }}</td>
-                        <td class="td-val-bold {{ $sSaldo < 0 ? 'bg-s-neg' : 'bg-s' }}">{{ fmtMKBold($sSaldo) }}</td>
-                        <td class="td-val-bold bg-sprev">0</td>
-                        <td class="td-val-bold bg-ms">0</td>
-                        <td class="td-val-bold bg-snow">0</td>
-                    @endforeach
-                </tr>
-            @endforeach
-
-            {{-- Total Kategori --}}
-            <tr class="row-kattotal">
-                <td class="col-num sticky-col text-center"></td>
-                <td class="sticky-col2" style="left:28px;"><strong>Total {{ $kat }}</strong></td>
-                @foreach($bulanAktif as $bNo => $bNama)
-                    @php
-                        $kpTot = array_sum($katTotalP[$bNo]);
-                        $kdTot = array_sum($katTotalD[$bNo]);
-                        $kbTot = array_sum($katTotalB[$bNo]);
-                        $kSaldo = $kdTot - $kbTot;
-                    @endphp
-                    <td class="td-val">{{ fmtMKBold($katTotalP[$bNo]['w1']) }}</td>
-                    <td class="td-val">{{ fmtMKBold($katTotalP[$bNo]['w2']) }}</td>
-                    <td class="td-val">{{ fmtMKBold($katTotalP[$bNo]['w3']) }}</td>
-                    <td class="td-val">{{ fmtMKBold($katTotalP[$bNo]['w4']) }}</td>
-                    <td class="td-val">{{ fmtMKBold($kpTot) }}</td>
-                    <td class="td-val">{{ fmtMKBold($katTotalD[$bNo]['w1']) }}</td>
-                    <td class="td-val">{{ fmtMKBold($katTotalD[$bNo]['w2']) }}</td>
-                    <td class="td-val">{{ fmtMKBold($katTotalD[$bNo]['w3']) }}</td>
-                    <td class="td-val">{{ fmtMKBold($katTotalD[$bNo]['w4']) }}</td>
-                    <td class="td-val">{{ fmtMKBold($kdTot) }}</td>
-                    <td class="td-val">{{ fmtMKBold($katTotalB[$bNo]['w1']) }}</td>
-                    <td class="td-val">{{ fmtMKBold($katTotalB[$bNo]['w2']) }}</td>
-                    <td class="td-val">{{ fmtMKBold($katTotalB[$bNo]['w3']) }}</td>
-                    <td class="td-val">{{ fmtMKBold($katTotalB[$bNo]['w4']) }}</td>
-                    <td class="td-val">{{ fmtMKBold($kbTot) }}</td>
-                    <td class="td-val">{{ fmtMKBold($kSaldo) }}</td>
-                    <td class="td-val">0</td>
-                    <td class="td-val">0</td>
-                    <td class="td-val">0</td>
-                @endforeach
-            </tr>
-        @endforeach
-
-        {{-- GRAND TOTAL --}}
-        @php
-            $gTotalP = []; $gTotalD = []; $gTotalB = [];
-            foreach($bulanAktif as $bNo => $bNama) {
-                $gTotalP[$bNo] = ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                $gTotalD[$bNo] = ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                $gTotalB[$bNo] = ['w1'=>0,'w2'=>0,'w3'=>0,'w4'=>0];
-                foreach($permintaanData[$bNo] ?? [] as $k => $ss) {
-                    foreach($ss as $s => $ii) {
-                        foreach($ii as $i => $v) {
-                            foreach(['w1','w2','w3','w4'] as $w) $gTotalP[$bNo][$w] += $v[$w];
-                        }
+            foreach ($items as $item => $_x) {
+                $perBulan = [];
+                foreach ($bulanAktif as $bNo => $n) {
+                    $pV = $permintaanData[$bNo][$kat][$sub][$item] ?? $weekTemplate;
+                    $dV = $droppingData[$bNo][$kat][$sub][$item] ?? $weekTemplate;
+                    $bV = $pembayaranData[$bNo][$kat][$sub][$item] ?? $weekTemplate;
+                    $perBulan[$bNo] = ['p' => $pV, 'd' => $dV, 'b' => $bV, 'sprev' => '-', 'ms' => '-', 'snow' => '-'];
+                    foreach (['w1','w2','w3','w4'] as $w) {
+                        $subTotal[$bNo]['p'][$w] += $pV[$w];
+                        $subTotal[$bNo]['d'][$w] += $dV[$w];
+                        $subTotal[$bNo]['b'][$w] += $bV[$w];
+                        $katTotal[$bNo]['p'][$w] += $pV[$w];
+                        $katTotal[$bNo]['d'][$w] += $dV[$w];
+                        $katTotal[$bNo]['b'][$w] += $bV[$w];
                     }
                 }
-                foreach($droppingData[$bNo] ?? [] as $k => $ss) {
-                    foreach($ss as $s => $ii) {
-                        foreach($ii as $i => $v) {
-                            foreach(['w1','w2','w3','w4'] as $w) $gTotalD[$bNo][$w] += $v[$w];
-                        }
-                    }
-                }
-                foreach($pembayaranData[$bNo] ?? [] as $k => $ss) {
-                    foreach($ss as $s => $ii) {
-                        foreach($ii as $i => $v) {
-                            foreach(['w1','w2','w3','w4'] as $w) $gTotalB[$bNo][$w] += $v[$w];
-                        }
+                $mkPush('item', null, $item === '' ? '' : '- ' . $item, $mkCells($perBulan));
+            }
+
+            $mkPush('subtotal', null, 'Sub Total ' . $sub, $mkCells($subTotal));
+        }
+
+        $mkPush('kattotal', null, 'Total ' . $kat, $mkCells($katTotal));
+    }
+
+    // ---------- GRAND TOTAL (dihitung dari seluruh data mentah) ----------
+    $gTotal = [];
+    foreach ($bulanAktif as $bNo => $n) {
+        $gTotal[$bNo] = ['p' => $weekTemplate, 'd' => $weekTemplate, 'b' => $weekTemplate];
+        foreach (['p' => $permintaanData, 'd' => $droppingData, 'b' => $pembayaranData] as $kunci => $sumber) {
+            foreach ($sumber[$bNo] ?? [] as $k => $ss) {
+                foreach ($ss as $s => $ii) {
+                    foreach ($ii as $i => $v) {
+                        foreach (['w1','w2','w3','w4'] as $w) $gTotal[$bNo][$kunci][$w] += $v[$w];
                     }
                 }
             }
-        @endphp
+        }
+    }
+    $mkPush('grandtotal', null, 'TOTAL KESELURUHAN', $mkCells($gTotal));
 
-        <tr class="row-grandtotal">
-            <td class="col-num sticky-col text-center"></td>
-            <td class="sticky-col2" style="left:28px;"><strong>TOTAL KESELURUHAN</strong></td>
-            @foreach($bulanAktif as $bNo => $bNama)
-                @php
-                    $gP = array_sum($gTotalP[$bNo]);
-                    $gD = array_sum($gTotalD[$bNo]);
-                    $gB = array_sum($gTotalB[$bNo]);
-                    $gSaldo = $gD - $gB;
-                @endphp
-                <td class="td-val">{{ fmtMKBold($gTotalP[$bNo]['w1']) }}</td>
-                <td class="td-val">{{ fmtMKBold($gTotalP[$bNo]['w2']) }}</td>
-                <td class="td-val">{{ fmtMKBold($gTotalP[$bNo]['w3']) }}</td>
-                <td class="td-val">{{ fmtMKBold($gTotalP[$bNo]['w4']) }}</td>
-                <td class="td-val">{{ fmtMKBold($gP) }}</td>
-                <td class="td-val">{{ fmtMKBold($gTotalD[$bNo]['w1']) }}</td>
-                <td class="td-val">{{ fmtMKBold($gTotalD[$bNo]['w2']) }}</td>
-                <td class="td-val">{{ fmtMKBold($gTotalD[$bNo]['w3']) }}</td>
-                <td class="td-val">{{ fmtMKBold($gTotalD[$bNo]['w4']) }}</td>
-                <td class="td-val">{{ fmtMKBold($gD) }}</td>
-                <td class="td-val">{{ fmtMKBold($gTotalB[$bNo]['w1']) }}</td>
-                <td class="td-val">{{ fmtMKBold($gTotalB[$bNo]['w2']) }}</td>
-                <td class="td-val">{{ fmtMKBold($gTotalB[$bNo]['w3']) }}</td>
-                <td class="td-val">{{ fmtMKBold($gTotalB[$bNo]['w4']) }}</td>
-                <td class="td-val">{{ fmtMKBold($gB) }}</td>
-                <td class="td-val">{{ fmtMKBold($gSaldo) }}</td>
-                <td class="td-val">0</td>
-                <td class="td-val">0</td>
-                <td class="td-val">0</td>
-            @endforeach
-        </tr>
+    // ---------- BARIS RINGKASAN (nilai bulanan tunggal di kolom terakhir blok bulan) ----------
+    $summaryRows = [
+        ['type' => 'sumplain',  'label' => 'Saldo Awal (Modal Sendiri)',                            'key' => 'saldo_awal_modal_sendiri'],
+        ['type' => 'sumplain',  'label' => 'Pembayaran Menggunakan Modal Sendiri',                  'key' => 'pembayaran_modal_sendiri_tahun_lalu'],
+        ['type' => 'sumplain',  'label' => 'Penerimaan Pengembalian Dana Kebun-Unit & Angsuran',    'key' => 'penerimaan_pengembalian_dana'],
+        ['type' => 'sumplain',  'label' => 'Biaya Admin Bank & Lainnya',                            'key' => 'biaya_admin_bank_lainnya'],
+        ['type' => 'sumgreen',  'label' => 'Saldo Akhir (Modal Sendiri)',                           'key' => 'saldo_akhir_modal_sendiri'],
+        ['type' => 'sumplain',  'label' => 'Saldo Awal Modal Kerja (01 / Awal Bulan)',              'key' => 'saldo_awal_modal_kerja'],
+        ['type' => 'sumyellow', 'label' => 'Saldo Awal Bank Opex (01 / Awal Bulan)',                'key' => 'saldo_awal_bank_opex'],
+        ['type' => 'sumplain',  'label' => 'Pembayaran Menggunakan Modal Kerja',                    'key' => 'pembayaran_modal_kerja'],
+        ['type' => 'sumplain',  'label' => 'Penerimaan Dana Modal Kerja',                           'key' => 'penerimaan_modal_kerja'],
+        ['type' => 'sumyellow', 'label' => 'Sisa Modal Kerja Tersedia',                             'key' => 'sisa_modal_kerja'],
+        ['type' => 'sumcyan',   'label' => 'Saldo Akhir Bank Opex (Akhir Bulan)',                   'key' => 'saldo_akhir_bank_opex'],
+        ['type' => 'sumorange', 'label' => 'Posisi Saldo Di Rekg Opex Operasional (Mandiri 408)',   'key' => 'posisi_rek_408'],
+        ['type' => 'sumorange', 'label' => 'Posisi Saldo Di Rekg TBS (Mandiri 200)',                'key' => 'posisi_rek_200'],
+        ['type' => 'sumsoft',   'label' => 'Jumlah Saldo Opex',                                     'key' => 'jumlah_saldo_opex'],
+    ];
+    foreach ($summaryRows as $summary) {
+        $cells = [];
+        foreach ($bulanAktif as $bNo => $n) {
+            $cells["m{$bNo}_snow"] = $modalKerjaSummaryData[$summary['key']][$bNo] ?? 0;
+        }
+        $mkPush($summary['type'], null, $summary['label'], $cells);
+    }
 
-        @php
-            // Setiap nilai ringkasan = 1 angka bulanan (satuan ribuan), dihitung
-            // penuh di controller (single source of truth). Dirender sebagai satu
-            // sel gabungan (colspan=19) per blok bulan.
-            $summaryRows = [
-                ['class' => 'row-ui-summary',          'label' => 'Saldo Awal (Modal Sendiri)',                              'key' => 'saldo_awal_modal_sendiri'],
-                ['class' => 'row-ui-summary',          'label' => 'Pembayaran Menggunakan Modal Sendiri',                    'key' => 'pembayaran_modal_sendiri_tahun_lalu'],
-                ['class' => 'row-ui-summary',          'label' => 'Penerimaan Pengembalian Dana Kebun-Unit & Angsuran',     'key' => 'penerimaan_pengembalian_dana'],
-                ['class' => 'row-ui-summary',          'label' => 'Biaya Admin Bank & Lainnya',                             'key' => 'biaya_admin_bank_lainnya'],
-                ['class' => 'row-ui-summary-green',    'label' => 'Saldo Akhir (Modal Sendiri)',                            'key' => 'saldo_akhir_modal_sendiri'],
-                ['class' => 'row-ui-summary',          'label' => 'Saldo Awal Modal Kerja (01 / Awal Bulan)',               'key' => 'saldo_awal_modal_kerja'],
-                ['class' => 'row-ui-summary-yellow',   'label' => 'Saldo Awal Bank Opex (01 / Awal Bulan)',                 'key' => 'saldo_awal_bank_opex'],
-                ['class' => 'row-ui-summary',          'label' => 'Pembayaran Menggunakan Modal Kerja',                     'key' => 'pembayaran_modal_kerja'],
-                ['class' => 'row-ui-summary',          'label' => 'Penerimaan Dana Modal Kerja',                            'key' => 'penerimaan_modal_kerja'],
-                ['class' => 'row-ui-summary-yellow',   'label' => 'Sisa Modal Kerja Tersedia',                              'key' => 'sisa_modal_kerja'],
-                ['class' => 'row-ui-summary-cyan',     'label' => 'Saldo Akhir Bank Opex (Akhir Bulan)',                    'key' => 'saldo_akhir_bank_opex'],
-                ['class' => 'row-ui-summary-orange',   'label' => 'Posisi Saldo Di Rekg Opex Operasional (Mandiri 408)',   'key' => 'posisi_rek_408'],
-                ['class' => 'row-ui-summary-orange',   'label' => 'Posisi Saldo Di Rekg TBS (Mandiri 200)',                'key' => 'posisi_rek_200'],
-                ['class' => 'row-ui-summary-softgreen','label' => 'Jumlah Saldo Opex',                                     'key' => 'jumlah_saldo_opex'],
-            ];
-        @endphp
+    // ================================================================
+    // Rakit DEFINISI KOLOM (judul HTML: label minggu klik-ubah + nomor kolom)
+    // ================================================================
+    $mkCols = [
+        ['title' => 'No.', 'field' => 'no', 'frozen' => true, 'width' => 46, 'hozAlign' => 'center', 'headerHozAlign' => 'center'],
+        ['title' => 'Payments for ' . $tahun . ' transactions - Accounts', 'field' => 'uraian', 'frozen' => true, 'minWidth' => 280, 'widthGrow' => 2, 'headerHozAlign' => 'center'],
+    ];
 
-        @foreach($summaryRows as $summary)
-            <tr class="{{ $summary['class'] }}">
-                <td class="col-num sticky-col text-center"></td>
-                <td class="sticky-col2 summary-label" style="left:28px;">{{ $summary['label'] }}</td>
-                @foreach($bulanAktif as $bNo => $bNama)
-                    @php $summaryValue = $modalKerjaSummaryData[$summary['key']][$bNo] ?? 0; @endphp
-                    <td class="td-val-bold" colspan="19" style="text-align:right;">{{ fmtMKBold($summaryValue) }}</td>
-                @endforeach
-            </tr>
-        @endforeach
+    $colIdx = 1;
+    foreach ($bulanAktif as $bNo => $bNama) {
+        $wc = $weekCuts[$bNo] ?? ['w1_start'=>1,'w1_end'=>7,'w2_start'=>8,'w2_end'=>14,'w3_start'=>15,'w3_end'=>21,'w4_start'=>22,'w4_end'=>31];
 
-    </tbody>
-</table>
-</div>
+        $currentMonthDate = \Carbon\Carbon::create((int) $tahun, (int) $bNo, 1);
+        $previousMonthDate = $currentMonthDate->copy()->subMonth();
+        $prevShort = $bulanShort[(int) $previousMonthDate->month] ?? strtoupper($previousMonthDate->format('M'));
+        $currentShort = $bulanShort[(int) $currentMonthDate->month] ?? strtoupper($currentMonthDate->format('M'));
+        $prevYearShort = $previousMonthDate->format('y');
+        $currentYearShort = $currentMonthDate->format('y');
+
+        $weekLeaf = function ($prefix, $i) use ($bNama, $bNo, $wc, &$colIdx) {
+            $title = $bNama . '-W' . $i
+                . '<br><small class="mk-week-label" data-bulan="' . $bNo . '" data-week="w' . $i . '" title="Klik untuk ubah tanggal">'
+                . '(' . $wc['w' . $i . '_start'] . '-' . $wc['w' . $i . '_end'] . ')</small>'
+                . '<span class="mk-colnum">' . $colIdx++ . '</span>';
+            return ['title' => $title, 'titleFormatter' => 'html', 'field' => $prefix . $i, 'minWidth' => 84];
+        };
+        $totalLeaf = function ($field) use ($bNama, &$colIdx) {
+            $title = 'Weekly-' . $bNama . '<br><small>(1-31)</small><span class="mk-colnum">' . $colIdx++ . '</span>';
+            return ['title' => $title, 'titleFormatter' => 'html', 'field' => $field, 'minWidth' => 92, 'cssClass' => 'mk-c-bold'];
+        };
+
+        $mkCols[] = ['title' => 'Permintaan Weekly-' . $bNama, 'cssClass' => 'mk-h-p', 'columns' => [
+            array_merge($weekLeaf("m{$bNo}_p", 1), ['cssClass' => 'mk-h-p']),
+            array_merge($weekLeaf("m{$bNo}_p", 2), ['cssClass' => 'mk-h-p']),
+            array_merge($weekLeaf("m{$bNo}_p", 3), ['cssClass' => 'mk-h-p']),
+            array_merge($weekLeaf("m{$bNo}_p", 4), ['cssClass' => 'mk-h-p']),
+            array_merge($totalLeaf("m{$bNo}_pt"), ['cssClass' => 'mk-h-p mk-c-bold']),
+        ]];
+        $mkCols[] = ['title' => 'Dropping Weekly-' . $bNama, 'cssClass' => 'mk-h-d', 'columns' => [
+            array_merge($weekLeaf("m{$bNo}_d", 1), ['cssClass' => 'mk-h-d']),
+            array_merge($weekLeaf("m{$bNo}_d", 2), ['cssClass' => 'mk-h-d']),
+            array_merge($weekLeaf("m{$bNo}_d", 3), ['cssClass' => 'mk-h-d']),
+            array_merge($weekLeaf("m{$bNo}_d", 4), ['cssClass' => 'mk-h-d']),
+            array_merge($totalLeaf("m{$bNo}_dt"), ['cssClass' => 'mk-h-d mk-c-bold']),
+        ]];
+        $mkCols[] = ['title' => 'Pembayaran Weekly-' . $bNama, 'cssClass' => 'mk-h-b', 'columns' => [
+            array_merge($weekLeaf("m{$bNo}_b", 1), ['cssClass' => 'mk-h-b']),
+            array_merge($weekLeaf("m{$bNo}_b", 2), ['cssClass' => 'mk-h-b']),
+            array_merge($weekLeaf("m{$bNo}_b", 3), ['cssClass' => 'mk-h-b']),
+            array_merge($weekLeaf("m{$bNo}_b", 4), ['cssClass' => 'mk-h-b']),
+            array_merge($totalLeaf("m{$bNo}_bt"), ['cssClass' => 'mk-h-b mk-c-bold']),
+        ]];
+
+        $mkCols[] = ['title' => 'SALDO MODAL KERJA<br>Per ' . $bNama . ' ' . $tahun, 'titleFormatter' => 'html',
+            'field' => "m{$bNo}_s", 'cssClass' => 'mk-h-s mk-c-bold', 'minWidth' => 100];
+        $mkCols[] = ['title' => 'SALDO<br>MOKER SD<br>' . $prevShort . ' ' . $prevYearShort
+            . '<br><small><i>Per ' . $previousMonthDate->endOfMonth()->format('d') . ' ' . $prevShort . ' ' . $prevYearShort . '</i></small>',
+            'titleFormatter' => 'html', 'field' => "m{$bNo}_sprev", 'cssClass' => 'mk-h-sprev mk-c-bold', 'minWidth' => 100];
+        $mkCols[] = ['title' => 'PENGGUNAAN<br>MODAL<br>SENDIRI<br><small><i>' . $bNama . ' ' . $tahun . '</i></small>',
+            'titleFormatter' => 'html', 'field' => "m{$bNo}_ms", 'cssClass' => 'mk-h-ms mk-c-bold', 'minWidth' => 110];
+        $mkCols[] = ['title' => 'SALDO MOKER<br>SD ' . $currentShort . ' ' . $currentYearShort
+            . '<br><small><i>Per ' . $currentMonthDate->endOfMonth()->format('d') . ' ' . $currentShort . ' ' . $currentYearShort . '</i></small>',
+            'titleFormatter' => 'html', 'field' => "m{$bNo}_snow", 'cssClass' => 'mk-h-snow mk-c-bold', 'minWidth' => 100];
+    }
+@endphp
+
+<div id="mk-table"></div>
+
+<script>
+(function () {
+    var mkRows = @json($mkRows);
+    var mkCols = @json($mkCols);
+
+    // Format ala fmtMK: item 0 -> '-', lainnya 0 -> '0'; negatif -> (x);
+    // saldo negatif diberi warna merah; string ('-') diteruskan apa adanya.
+    function mkFmt(cell) {
+        var v = cell.getValue();
+        if (v === null || v === undefined || v === '') return '';
+        if (typeof v === 'string') return v;
+        v = Number(v);
+        var d = cell.getRow().getData();
+        if (v === 0) return d.type === 'item' ? '-' : '0';
+        var s = Math.round(Math.abs(v)).toLocaleString('id-ID');
+        if (v < 0) {
+            if (cell.getField().slice(-2) === '_s') cell.getElement().classList.add('mk-neg');
+            return '(' + s + ')';
+        }
+        return s;
+    }
+
+    // Pasang formatter & perataan pada semua kolom nilai (rekursif)
+    function decorate(cols) {
+        cols.forEach(function (c) {
+            if (c.columns) { decorate(c.columns); return; }
+            if (c.field && c.field !== 'no' && c.field !== 'uraian') {
+                c.formatter = mkFmt;
+                c.hozAlign = 'right';
+                c.headerHozAlign = 'center';
+                c.widthGrow = 1;
+            }
+        });
+    }
+    decorate(mkCols);
+
+    var mkTypes = ['kategori', 'sub', 'item', 'subtotal', 'kattotal', 'grandtotal',
+        'sumplain', 'sumgreen', 'sumyellow', 'sumcyan', 'sumorange', 'sumsoft'];
+
+    function mkRowFormatter(row) {
+        var t = row.getData().type;
+        var el = row.getElement();
+        mkTypes.forEach(function (k) {
+            el.classList.toggle('mk-r-' + k, t === k);
+        });
+    }
+
+    function initMk() {
+        var el = document.getElementById('mk-table');
+        if (!el || !window.Tabulator) return;
+
+        var table = new Tabulator(el, {
+            data: mkRows,
+            columns: mkCols,
+            layout: 'fitColumns',
+            height: 'calc(100vh - 185px)',
+            columnHeaderVertAlign: 'middle',
+            movableColumns: false,
+            columnDefaults: { headerSort: false },
+            rowFormatter: mkRowFormatter,
+            placeholder: 'Tidak ada data'
+        });
+
+        // Aktifkan tahan-klik geser horizontal (handler global layouts/index)
+        table.on('tableBuilt', function () {
+            var holder = el.querySelector('.tabulator-tableholder');
+            if (holder) holder.classList.add('drag-scroll');
+        });
+    }
+
+    if (window.Tabulator) {
+        initMk();
+    } else {
+        document.addEventListener('DOMContentLoaded', initMk);
+    }
+})();
+</script>
 
 @endif

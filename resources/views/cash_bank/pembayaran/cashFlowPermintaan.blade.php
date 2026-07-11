@@ -1,4 +1,5 @@
-@push('styles')
+{{-- CSS ditulis inline (bukan @push) karena partial ini dimuat via AJAX
+     sehingga stack 'styles' layout tidak pernah dirender --}}
 <style>
     #cashflow-table {
     table-layout: auto !important;
@@ -24,7 +25,6 @@
         color: #ffffff !important;
     }
 </style>
-@endpush
 <div class="card-body">
     <div class="mb-3">
         <h5>Cash Flow Permintaan - Tahun {{ $tahun }}</h5>

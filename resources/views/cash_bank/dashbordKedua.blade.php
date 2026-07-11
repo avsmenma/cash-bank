@@ -308,6 +308,8 @@
         if (!el || !window.Tabulator) return;
 
         new Tabulator(el, {
+            persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
+            persistenceID: 'cb-cashflow-pvd',
             data: pvdRows,
             columns: buildColumns(),
             // fitColumns: kolom mengisi penuh lebar wadah; tetap bisa ditarik

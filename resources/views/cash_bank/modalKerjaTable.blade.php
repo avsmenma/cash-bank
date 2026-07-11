@@ -363,6 +363,8 @@
         if (!el || !window.Tabulator) return;
 
         var table = new Tabulator(el, {
+            persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
+            persistenceID: 'cb-modal-kerja',
             data: mkRows,
             columns: mkCols,
             layout: 'fitColumns',

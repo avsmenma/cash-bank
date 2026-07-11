@@ -119,6 +119,8 @@
         cols.push({ title: 'Total', field: 'total', hozAlign: 'right', minWidth: 110, widthGrow: 1, formatter: totalFmt, headerHozAlign: 'center' });
 
         new Tabulator(el, {
+            persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
+            persistenceID: 'cb-penerima-rencana',
             data: rpRows,
             columns: cols,
             layout: 'fitColumns',

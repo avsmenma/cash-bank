@@ -520,6 +520,8 @@
         if (!el || !window.Tabulator) return;
 
         var table = new Tabulator(el, {
+            persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
+            persistenceID: 'cb-cashflow-pd',
             data: cfRows,
             columns: buildColumns(),
             // fitColumns: kolom melar mengisi penuh lebar wadah (tidak ada area

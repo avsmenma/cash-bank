@@ -113,6 +113,8 @@
         cols.push(group(evTotalTitle, 'tot'));
 
         new Tabulator(el, {
+            persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
+            persistenceID: 'cb-penerima-evaluasi',
             data: evRows,
             columns: cols,
             layout: 'fitColumns',

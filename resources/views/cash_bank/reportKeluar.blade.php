@@ -163,6 +163,8 @@ function resetFilter() {
         }
 
         var table = new Tabulator(el, {
+            persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
+            persistenceID: 'cb-rekening-koran',
             layout: 'fitColumns',
             height: '62vh',
             columnHeaderVertAlign: 'middle',

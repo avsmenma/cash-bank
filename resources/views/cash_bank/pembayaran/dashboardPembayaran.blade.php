@@ -278,6 +278,8 @@
         if (!el || !window.Tabulator) return;
 
         new Tabulator(el, {
+            persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
+            persistenceID: 'cb-dashboard-pembayaran',
             data: dpRows,
             columns: buildColumns(),
             layout: 'fitColumns',

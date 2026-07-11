@@ -39,42 +39,19 @@
         filter: brightness(.97);
     }
 
-    /* ---------- SECTION HEADERS ---------- */
-    .sec-penerimaan {
-        background: #0d9488 !important;
-        color: #ffffff !important;
-        font-weight: 700;
-        font-size: 11.5px;
-        letter-spacing: .5px;
-        text-transform: uppercase;
-        border-bottom: 2px solid #0b7c73;
-    }
-    .sec-dropping {
-        background: #1e40af !important;
-        color: #ffffff !important;
-        font-weight: 700;
-        font-size: 11.5px;
-        letter-spacing: .5px;
-        text-transform: uppercase;
-        border-bottom: 2px solid #1a369a;
-    }
-    .sec-permintaan {
-        background: #c2410c !important;
-        color: #ffffff !important;
-        font-weight: 700;
-        font-size: 11.5px;
-        letter-spacing: .5px;
-        text-transform: uppercase;
-        border-bottom: 2px solid #9a3412;
-    }
+    /* ---------- SECTION HEADERS ----------
+       Semua label seksi memakai navy header (#1e3a5f) dengan opacity sangat tipis */
+    .sec-penerimaan,
+    .sec-dropping,
+    .sec-permintaan,
     .sec-pembayaran {
-        background: #9333ea !important;
-        color: #ffffff !important;
+        background: rgba(30, 58, 95, 0.07) !important;
+        color: #1e3a5f !important;
         font-weight: 700;
         font-size: 11.5px;
         letter-spacing: .5px;
         text-transform: uppercase;
-        border-bottom: 2px solid #7e22ce;
+        border-bottom: 2px solid rgba(30, 58, 95, 0.25);
     }
 
     /* ---------- ROW TYPES ---------- */

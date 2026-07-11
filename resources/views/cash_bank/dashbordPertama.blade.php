@@ -1,179 +1,96 @@
 <style>
     /* ============================================================
-       PROFESSIONAL DASHBOARD TABLE — Refined Corporate Palette
+       CASHFLOW — Tabulator (tabel ala spreadsheet seperti project LM).
+       Kolom bisa ditarik-lebarkan manual lewat garis antar kolom header.
        ============================================================ */
-    /* PENTING: jangan beri overflow:hidden di tabel ini — itu mematikan
-       position:sticky header. Border-radius dipotong oleh .cf-table-scroll. */
     #cashflow-table {
-        table-layout: auto !important;
-        font-size: 11.5px;
-        border-collapse: separate;
-        border-spacing: 0;
         border: 1px solid #d0d5dd;
-        box-shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 1px 2px rgba(16, 24, 40, .04);
+        border-radius: 8px;
+        font-size: 12px;
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
-    #cashflow-table thead th {
+    #cashflow-table .tabulator-header {
+        background: #1e3a5f;
+        border-bottom: 2px solid #0f2137;
+    }
+    #cashflow-table .tabulator-header .tabulator-col,
+    #cashflow-table .tabulator-header .tabulator-col-group {
         background: #1e3a5f !important;
         color: #f0f4f8 !important;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: .4px;
-        font-size: 10.5px;
-        border-bottom: 2px solid #0f2137;
-        position: sticky;
-        z-index: 5;
+        letter-spacing: .3px;
+        font-size: 11px;
+        border-color: #17324b !important;
     }
-    /* Baris 1 (URAIAN + TAHUN) menempel di atas; baris 2 (nama bulan) di bawahnya */
-    #cashflow-table thead tr:first-child th {
-        top: 0;
-        height: 36px;
+    #cashflow-table .tabulator-header .tabulator-col .tabulator-col-title {
+        color: #f0f4f8;
     }
-    #cashflow-table thead tr:nth-child(2) th {
-        top: 36px;
-    }
-    /* Scroll vertikal terjadi di dalam wadah ini agar header sticky bekerja */
-    .cf-table-scroll {
-        max-height: calc(100vh - 170px);
-        overflow: auto;
-        border-radius: 8px;
-    }
-    @media print {
-        .cf-table-scroll {
-            max-height: none;
-            overflow: visible;
-        }
-    }
-    #cashflow-table th,
-    #cashflow-table td {
-        white-space: nowrap;
-        vertical-align: middle;
-        padding: 7px 10px;
+    #cashflow-table .tabulator-cell {
         border-color: #e4e7ec;
     }
-    #cashflow-table tbody tr {
-        transition: background-color .15s ease;
-    }
-    #cashflow-table tbody tr:hover {
-        filter: brightness(.97);
-    }
 
-    /* ---------- SECTION HEADERS ----------
-       Semua label seksi memakai navy header (#1e3a5f) dengan opacity sangat tipis */
-    .sec-penerimaan,
-    .sec-dropping,
-    .sec-permintaan,
-    .sec-pembayaran {
-        background: rgba(30, 58, 95, 0.07) !important;
-        color: #1e3a5f !important;
+    /* ---------- Jenis baris (diberi kelas oleh rowFormatter) ---------- */
+    #cashflow-table .tabulator-row.cf-r-section .tabulator-cell {
+        background: rgba(30, 58, 95, 0.07);
+        color: #1e3a5f;
         font-weight: 700;
-        font-size: 11.5px;
         letter-spacing: .5px;
-        text-transform: uppercase;
-        border-bottom: 2px solid rgba(30, 58, 95, 0.25);
     }
-
-    /* ---------- ROW TYPES ---------- */
-    .row-kat-header td {
-        background-color: #f0f4f8 !important;
+    #cashflow-table .tabulator-row.cf-r-kat .tabulator-cell {
+        background: #f0f4f8;
+        color: #1e3a5f;
         font-weight: 700;
-        color: #1e3a5f !important;
+    }
+    #cashflow-table .tabulator-row.cf-r-kat .tabulator-cell:first-child {
         border-left: 3px solid #3b82f6;
-        font-size: 11px;
     }
-    .row-item td {
-        background-color: #ffffff !important;
-        color: #344054 !important;
+    #cashflow-table .tabulator-row.cf-r-item .tabulator-cell {
+        background: #ffffff;
+        color: #344054;
     }
-    .row-item:hover td {
-        background-color: #f8fafc !important;
+    #cashflow-table .tabulator-row.cf-r-item:hover .tabulator-cell {
+        background: #f8fafc;
     }
-    .row-sub-total td {
-        background-color: #eef2f7 !important;
+    #cashflow-table .tabulator-row.cf-r-subtotal .tabulator-cell,
+    #cashflow-table .tabulator-row.cf-r-gaji .tabulator-cell {
+        background: #eef2f7;
+        color: #1e3a5f;
         font-weight: 600;
-        color: #1e3a5f !important;
         border-top: 1px solid #cbd5e1;
     }
-    .row-gaji-group td {
-        background-color: #f0f4f8 !important;
+    #cashflow-table .tabulator-row.cf-r-total .tabulator-cell {
+        background: #1e3a5f;
+        color: #ffffff;
         font-weight: 700;
-        color: #1e3a5f !important;
     }
-
-    /* ---------- TOTAL ROWS (navy solid → white text) ---------- */
-    .row-total-penerimaan td,
-    .row-total-penerimaan td strong,
-    .row-total-permintaan td,
-    .row-total-permintaan td strong,
-    .row-total-dropping td,
-    .row-total-dropping td strong,
-    .row-total-pembayaran td,
-    .row-total-pembayaran td strong {
-        background: #1e3a5f !important;
-        color: #ffffff !important;
-        font-weight: 700;
-        border-top: 2px solid #0f2137;
-    }
-    .row-total-penerimaan td,
-    .row-total-penerimaan td strong {
-        text-align: right;
-    }
-
-    /* ---------- SELISIH / DIFF ROWS (light bg → dark text) ---------- */
-    .row-selisih-pdn-drop td,
-    .row-selisih-pdn-drop td strong {
-        background-color: #fef3c7 !important;
+    #cashflow-table .tabulator-row.cf-r-selisih .tabulator-cell {
+        background: #fef3c7;
+        color: #1a1a1a;
         font-weight: 600;
-        color: #1a1a1a !important;
+    }
+    #cashflow-table .tabulator-row.cf-r-selisih .tabulator-cell:first-child {
         border-left: 3px solid #f59e0b;
     }
-    .row-selisih-pay-pdn td,
-    .row-selisih-pay-pdn td strong {
-        background-color: #fef3c7 !important;
+    #cashflow-table .tabulator-row.cf-r-summary .tabulator-cell {
+        background: #f1f5f9;
+        color: #1a1a1a;
         font-weight: 600;
-        color: #1a1a1a !important;
-        border-left: 3px solid #f59e0b;
+        border-top: 1px solid #cbd5e1;
     }
-    .row-selisih-pay-drop td,
-    .row-selisih-pay-drop td strong {
-        background-color: #fef3c7 !important;
-        font-weight: 600;
-        color: #1a1a1a !important;
-        border-left: 3px solid #f59e0b;
-    }
-    /* Negative values in selisih rows stay red for emphasis */
-    .row-selisih-pdn-drop td.neg,
-    .row-selisih-pay-pdn td.neg,
-    .row-selisih-pay-drop td.neg {
+    #cashflow-table .tabulator-cell.cf-neg {
         color: #dc2626 !important;
-    }
-
-    /* ---------- SUMMARY ROWS (light bg → dark text) ---------- */
-    .row-summary-cpo td,
-    .row-summary-cpo td strong,
-    .row-summary-dtbs td,
-    .row-summary-dtbs td strong,
-    .row-summary-ptbs td,
-    .row-summary-ptbs td strong {
-        background-color: #f1f5f9 !important;
         font-weight: 600;
-        color: #1a1a1a !important;
-        border-top: 1px solid #cbd5e1;
+    }
+    #cashflow-table .tabulator-cell.cf-col-total {
+        font-weight: 700;
     }
 
-    /* ---------- VALUE & TOTAL COLUMN ---------- */
-    .val { text-align: right; }
-    .neg { color: #dc2626 !important; font-weight: 600; }
-
-    .kolom-total {
-        background: #1e3a5f !important;
-        color: #f0f4f8 !important;
-    }
-
-    /* ---------- SPACER ROWS ---------- */
-    #cashflow-table tr td[colspan] {
-        border-left: none;
-        border-right: none;
+    @media print {
+        #cashflow-table .tabulator-tableholder {
+            overflow: visible !important;
+            max-height: none !important;
+        }
     }
 </style>
 
@@ -407,348 +324,200 @@
     </div>
 </div>
 </div>
+@php
+    // ================================================================
+    // Susun baris tabel sebagai DATA untuk Tabulator (menggantikan
+    // tabel HTML lama). Semua perhitungan di atas tetap dipakai.
+    // ================================================================
+    $cfRows = [];
+    $cfPush = function ($section, $type, $uraian, $vals = null, $total = null) use (&$cfRows, $bulanListFiltered) {
+        $row = ['section' => $section, 'type' => $type, 'uraian' => $uraian, 'total' => $total];
+        foreach ($bulanListFiltered as $b => $n) {
+            $row['m' . $b] = $vals === null ? null : ($vals[$b] ?? 0);
+        }
+        $cfRows[] = $row;
+    };
+
+    // Satu bagian (Permintaan/Dropping/Pembayaran): kategori -> sub -> jumlah
+    $cfBagian = function ($agg, $sectionKey) use ($cfPush, $sumKat, $groupedKat, $bulanListFiltered) {
+        foreach ($agg as $kat => $subs) {
+            if (in_array($kat, $groupedKat)) {
+                $katTot = $sumKat($agg, $kat, $bulanListFiltered);
+                $cfPush($sectionKey, 'gaji', $kat, $katTot, array_sum($katTot));
+            } else {
+                $cfPush($sectionKey, 'kat', $kat);
+                $subTotB = [];
+                foreach ($bulanListFiltered as $b => $n) $subTotB[$b] = 0;
+                $subAll = 0;
+                foreach ($subs as $sub => $bData) {
+                    $vals = [];
+                    $rt = 0;
+                    foreach ($bulanListFiltered as $b => $n) {
+                        $v = $bData[$b] ?? 0;
+                        $vals[$b] = $v;
+                        $rt += $v;
+                        $subTotB[$b] += $v;
+                    }
+                    $subAll += $rt;
+                    $cfPush($sectionKey, 'item', '- ' . $sub, $vals, $rt);
+                }
+                $cfPush($sectionKey, 'subtotal', 'Jumlah ' . $kat, $subTotB, $subAll);
+            }
+        }
+    };
+
+    // ---------- PENERIMAAN ----------
+    $cfPush('penerimaan', 'section', 'PENERIMAAN');
+    foreach ($result['penerima'] as $kat => $bData) {
+        $vals = [];
+        $rowTotal = 0;
+        foreach ($bulanListFiltered as $b => $n) { $v = $bData[$b] ?? 0; $vals[$b] = $v; $rowTotal += $v; }
+        $cfPush('penerimaan', 'item', '- ' . $kat, $vals, $rowTotal);
+    }
+    $cfPush('penerimaan', 'total', 'TOTAL PENERIMAAN', $totalPenerima, array_sum($totalPenerima));
+
+    // ---------- PERMINTAAN ----------
+    $cfPush('permintaan', 'section', 'PERMINTAAN');
+    $cfBagian($permAgg, 'permintaan');
+    $cfPush('permintaan', 'total', 'TOTAL PERMINTAAN', $totalPermAll, array_sum($totalPermAll));
+
+    // ---------- DROPPING HO ----------
+    $cfPush('dropping', 'section', 'DROPPING HO');
+    $cfBagian($dropAgg, 'dropping');
+    $cfPush('dropping', 'total', 'TOTAL DROPPING HO', $totalDropAll, array_sum($totalDropAll));
+
+    // ---------- SELISIH & RINGKASAN (hanya tab Semua) ----------
+    $selPD = [];
+    foreach ($bulanListFiltered as $b => $n) $selPD[$b] = $totalPenerima[$b] - $totalDropAll[$b];
+    $cfPush('semua-only', 'selisih', 'SELISIH PENERIMAAN TERHADAP DROPPING', $selPD, array_sum($selPD));
+
+    // ---------- PEMBAYARAN ----------
+    $cfPush('pembayaran', 'section', 'PEMBAYARAN');
+    $cfBagian($payAgg, 'pembayaran');
+    $cfPush('pembayaran', 'total', 'TOTAL PEMBAYARAN', $totalPayAll, array_sum($totalPayAll));
+
+    $selPP = [];
+    foreach ($bulanListFiltered as $b => $n) $selPP[$b] = $totalPenerima[$b] - $totalPayAll[$b];
+    $cfPush('semua-only', 'selisih', 'SELISIH PEMBAYARAN TERHADAP PENERIMAAN', $selPP, array_sum($selPP));
+
+    $selDP = [];
+    foreach ($bulanListFiltered as $b => $n) $selDP[$b] = $totalDropAll[$b] - $totalPayAll[$b];
+    $cfPush('semua-only', 'selisih', 'SELISIH PEMBAYARAN TERHADAP DROPPING', $selDP, array_sum($selDP));
+
+    $cfPush('semua-only', 'summary', 'PENERIMAAN PENJUALAN CPO & KERNEL', $cpnKernel, array_sum($cpnKernel));
+    $cfPush('semua-only', 'summary', 'DROPPING TBS', $dropTBS, array_sum($dropTBS));
+    $cfPush('semua-only', 'summary', 'PEMBAYARAN TBS', $payTBS, array_sum($payTBS));
+
+    // Definisi kolom bulan untuk Tabulator
+    $cfMonths = [];
+    foreach ($bulanListFiltered as $b => $nm) $cfMonths[] = ['field' => 'm' . $b, 'title' => $nm];
+@endphp
+
 <div class="row">
-<div class="col-12 table-responsive cf-table-scroll">
-<table class="table table-bordered table-sm" id="cashflow-table">
-    <thead class="text-center">
-        <tr>
-            <th rowspan="2" style="min-width:260px;vertical-align:middle;">URAIAN</th>
-            <th colspan="{{ count($bulanListFiltered) }}">TAHUN {{ $tahun }}</th>
-            <th rowspan="2" class="kolom-total" style="min-width:120px;vertical-align:middle;">Sd {{ collect($bulanListFiltered)->last() }} Tahun {{ $tahun }}</th>
-        </tr>
-        <tr>
-            @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                <th style="min-width:120px;">{{ $namaBulan }}</th>
-            @endforeach
-        </tr>
-    </thead>
-    <tbody data-cf-section="penerimaan">
-
-        {{-- ================================================================
-             PENERIMAAN
-             ================================================================ --}}
-        <tr>
-            <td colspan="{{ $nCol }}" class="sec-penerimaan">PENERIMAAN</td>
-        </tr>
-
-        @php $totalPnAll = 0; @endphp
-        @foreach($result['penerima'] as $kat => $bData)
-            @php $rowTotal = 0; @endphp
-            <tr class="row-item">
-                <td>- {{ $kat }}</td>
-                @foreach($bulanListFiltered as $b => $nm)
-                    @php $v = $bData[$b] ?? 0; $rowTotal += $v; @endphp
-                    <td class="val">{{ fmtDash($v) }}</td>
-                @endforeach
-                @php $totalPnAll += $rowTotal; @endphp
-                <td class="val font-weight-bold">{{ fmtBold($rowTotal) }}</td>
-            </tr>
-        @endforeach
-
-        {{-- TOTAL PENERIMAAN --}}
-        <tr class="row-total-penerimaan">
-            <td class="text-right"><strong>TOTAL PENERIMAAN</strong></td>
-            @php $gTP = 0; @endphp
-            @foreach($bulanListFiltered as $b => $nm)
-                <td class="val">{{ fmtBold($totalPenerima[$b]) }}</td>
-                @php $gTP += $totalPenerima[$b]; @endphp
-            @endforeach
-            <td class="val">{{ fmtBold($gTP) }}</td>
-        </tr>
-    </tbody>
-
-    <tbody data-cf-section="semua-only">
-        <tr><td colspan="{{ $nCol }}" style="background:#f5f5f5;height:6px;"></td></tr>
-    </tbody>
-
-    <tbody data-cf-section="permintaan">
-        {{-- ================================================================
-             PERMINTAAN
-             ================================================================ --}}
-        <tr>
-            <td colspan="{{ $nCol }}" class="sec-permintaan">PERMINTAAN</td>
-        </tr>
-
-        @foreach($permAgg as $kat => $subs)
-            @php $katTotPerBulanPerm = $sumKat($permAgg, $kat, $bulanListFiltered); @endphp
-
-            @if(in_array($kat, $groupedKat))
-                @php $gKatPerm = 0; @endphp
-                <tr class="row-gaji-group">
-                    <td><strong>{{ $kat }}</strong></td>
-                    @foreach($bulanListFiltered as $b => $nm)
-                        <td class="val">{{ fmtBold($katTotPerBulanPerm[$b]) }}</td>
-                        @php $gKatPerm += $katTotPerBulanPerm[$b]; @endphp
-                    @endforeach
-                    <td class="val">{{ fmtBold($gKatPerm) }}</td>
-                </tr>
-            @else
-                <tr class="row-kat-header">
-                    <td colspan="{{ $nCol }}">{{ $kat }}</td>
-                </tr>
-                @php $subTotAllPerm = 0; $subTotPerBulanPerm = []; foreach($bulanListFiltered as $b=>$n) $subTotPerBulanPerm[$b]=0; @endphp
-                @foreach($subs as $sub => $bData)
-                    @php $rowTotPerm = 0; @endphp
-                    <tr class="row-item">
-                        <td>- {{ $sub }}</td>
-                        @foreach($bulanListFiltered as $b => $nm)
-                            @php $v = $bData[$b] ?? 0; $rowTotPerm += $v; $subTotPerBulanPerm[$b] += $v; @endphp
-                            <td class="val">{{ fmtDash($v) }}</td>
-                        @endforeach
-                        @php $subTotAllPerm += $rowTotPerm; @endphp
-                        <td class="val font-weight-bold">{{ fmtBold($rowTotPerm) }}</td>
-                    </tr>
-                @endforeach
-                <tr class="row-sub-total">
-                    <td>Jumlah {{ $kat }}</td>
-                    @foreach($bulanListFiltered as $b => $nm)
-                        <td class="val">{{ fmtBold($subTotPerBulanPerm[$b]) }}</td>
-                    @endforeach
-                    <td class="val">{{ fmtBold($subTotAllPerm) }}</td>
-                </tr>
-            @endif
-        @endforeach
-
-        {{-- TOTAL PERMINTAAN --}}
-        <tr class="row-total-permintaan">
-            <td class="text-right"><strong>TOTAL PERMINTAAN</strong></td>
-            @php $gTPerm = 0; @endphp
-            @foreach($bulanListFiltered as $b => $nm)
-                <td class="val">{{ fmtBold($totalPermAll[$b]) }}</td>
-                @php $gTPerm += $totalPermAll[$b]; @endphp
-            @endforeach
-            <td class="val">{{ fmtBold($gTPerm) }}</td>
-        </tr>
-    </tbody>
-
-    <tbody data-cf-section="semua-only">
-        <tr><td colspan="{{ $nCol }}" style="background:#f5f5f5;height:6px;"></td></tr>
-    </tbody>
-
-    <tbody data-cf-section="dropping">
-        {{-- ================================================================
-             DROPPING HO
-             ================================================================ --}}
-        <tr>
-            <td colspan="{{ $nCol }}" class="sec-dropping">DROPPING HO</td>
-        </tr>
-
-        @foreach($dropAgg as $kat => $subs)
-            @php $katTotPerBulan = $sumKat($dropAgg, $kat, $bulanListFiltered); @endphp
-
-            @if(in_array($kat, $groupedKat))
-                {{-- KATEGORI DIGRUP: Tampilkan 1 baris total saja --}}
-                @php $gKat = 0; @endphp
-                <tr class="row-gaji-group">
-                    <td><strong>{{ $kat }}</strong></td>
-                    @foreach($bulanListFiltered as $b => $nm)
-                        <td class="val">{{ fmtBold($katTotPerBulan[$b]) }}</td>
-                        @php $gKat += $katTotPerBulan[$b]; @endphp
-                    @endforeach
-                    <td class="val">{{ fmtBold($gKat) }}</td>
-                </tr>
-            @else
-                {{-- KATEGORI DITAMPILKAN DETAIL --}}
-                <tr class="row-kat-header">
-                    <td colspan="{{ $nCol }}">{{ $kat }}</td>
-                </tr>
-                @php $subTotAll = 0; $subTotPerBulan = []; foreach($bulanListFiltered as $b=>$n) $subTotPerBulan[$b]=0; @endphp
-                @foreach($subs as $sub => $bData)
-                    @php $rowTot = 0; @endphp
-                    <tr class="row-item">
-                        <td>- {{ $sub }}</td>
-                        @foreach($bulanListFiltered as $b => $nm)
-                            @php $v = $bData[$b] ?? 0; $rowTot += $v; $subTotPerBulan[$b] += $v; @endphp
-                            <td class="val">{{ fmtDash($v) }}</td>
-                        @endforeach
-                        @php $subTotAll += $rowTot; @endphp
-                        <td class="val font-weight-bold">{{ fmtBold($rowTot) }}</td>
-                    </tr>
-                @endforeach
-                <tr class="row-sub-total">
-                    <td>Jumlah {{ $kat }}</td>
-                    @foreach($bulanListFiltered as $b => $nm)
-                        <td class="val">{{ fmtBold($subTotPerBulan[$b]) }}</td>
-                    @endforeach
-                    <td class="val">{{ fmtBold($subTotAll) }}</td>
-                </tr>
-            @endif
-        @endforeach
-
-        {{-- TOTAL DROPPING HO --}}
-        <tr class="row-total-dropping">
-            <td class="text-right"><strong>TOTAL DROPPING HO</strong></td>
-            @php $gTD = 0; @endphp
-            @foreach($bulanListFiltered as $b => $nm)
-                <td class="val">{{ fmtBold($totalDropAll[$b]) }}</td>
-                @php $gTD += $totalDropAll[$b]; @endphp
-            @endforeach
-            <td class="val">{{ fmtBold($gTD) }}</td>
-        </tr>
-    </tbody>
-
-    <tbody data-cf-section="semua-only">
-        {{-- SELISIH PENERIMAAN TERHADAP DROPPING --}}
-        <tr class="row-selisih-pdn-drop">
-            <td><strong>SELISIH PENERIMAAN TERHADAP DROPPING</strong></td>
-            @php $gSPD = 0; @endphp
-            @foreach($bulanListFiltered as $b => $nm)
-                @php $sel = $totalPenerima[$b] - $totalDropAll[$b]; $gSPD += $sel; @endphp
-                <td class="val {{ $sel < 0 ? 'neg' : '' }}">{{ fmtDash($sel) }}</td>
-            @endforeach
-            <td class="val {{ $gSPD < 0 ? 'neg' : '' }}">{{ fmtDash($gSPD) }}</td>
-        </tr>
-
-        <tr><td colspan="{{ $nCol }}" style="background:#f5f5f5;height:6px;"></td></tr>
-    </tbody>
-
-    <tbody data-cf-section="pembayaran">
-        {{-- ================================================================
-             PEMBAYARAN
-             ================================================================ --}}
-        <tr>
-            <td colspan="{{ $nCol }}" class="sec-pembayaran">PEMBAYARAN</td>
-        </tr>
-
-        @foreach($payAgg as $kat => $subs)
-            @php $katTotPerBulanP = $sumKat($payAgg, $kat, $bulanListFiltered); @endphp
-
-            @if(in_array($kat, $groupedKat))
-                @php $gKatP = 0; @endphp
-                <tr class="row-gaji-group">
-                    <td><strong>{{ $kat }}</strong></td>
-                    @foreach($bulanListFiltered as $b => $nm)
-                        <td class="val">{{ fmtBold($katTotPerBulanP[$b]) }}</td>
-                        @php $gKatP += $katTotPerBulanP[$b]; @endphp
-                    @endforeach
-                    <td class="val">{{ fmtBold($gKatP) }}</td>
-                </tr>
-            @else
-                <tr class="row-kat-header">
-                    <td colspan="{{ $nCol }}">{{ $kat }}</td>
-                </tr>
-                @php $subTotAllP = 0; $subTotPerBulanP = []; foreach($bulanListFiltered as $b=>$n) $subTotPerBulanP[$b]=0; @endphp
-                @foreach($subs as $sub => $bData)
-                    @php $rowTotP = 0; @endphp
-                    <tr class="row-item">
-                        <td>- {{ $sub }}</td>
-                        @foreach($bulanListFiltered as $b => $nm)
-                            @php $v = $bData[$b] ?? 0; $rowTotP += $v; $subTotPerBulanP[$b] += $v; @endphp
-                            <td class="val">{{ fmtDash($v) }}</td>
-                        @endforeach
-                        @php $subTotAllP += $rowTotP; @endphp
-                        <td class="val font-weight-bold">{{ fmtBold($rowTotP) }}</td>
-                    </tr>
-                @endforeach
-                <tr class="row-sub-total">
-                    <td>Jumlah {{ $kat }}</td>
-                    @foreach($bulanListFiltered as $b => $nm)
-                        <td class="val">{{ fmtBold($subTotPerBulanP[$b]) }}</td>
-                    @endforeach
-                    <td class="val">{{ fmtBold($subTotAllP) }}</td>
-                </tr>
-            @endif
-        @endforeach
-
-        {{-- TOTAL PEMBAYARAN --}}
-        <tr class="row-total-pembayaran">
-            <td class="text-right"><strong>TOTAL PEMBAYARAN</strong></td>
-            @php $gTP2 = 0; @endphp
-            @foreach($bulanListFiltered as $b => $nm)
-                <td class="val">{{ fmtBold($totalPayAll[$b]) }}</td>
-                @php $gTP2 += $totalPayAll[$b]; @endphp
-            @endforeach
-            <td class="val">{{ fmtBold($gTP2) }}</td>
-        </tr>
-    </tbody>
-
-    <tbody data-cf-section="semua-only">
-        {{-- SELISIH PEMBAYARAN TERHADAP PENERIMAAN --}}
-        <tr class="row-selisih-pay-pdn">
-            <td><strong>SELISIH PEMBAYARAN TERHADAP PENERIMAAN</strong></td>
-            @php $gSeiPP = 0; @endphp
-            @foreach($bulanListFiltered as $b => $nm)
-                @php $s2 = $totalPenerima[$b] - $totalPayAll[$b]; $gSeiPP += $s2; @endphp
-                <td class="val {{ $s2 < 0 ? 'neg' : '' }}">{{ fmtDash($s2) }}</td>
-            @endforeach
-            <td class="val {{ $gSeiPP < 0 ? 'neg' : '' }}">{{ fmtDash($gSeiPP) }}</td>
-        </tr>
-
-        {{-- SELISIH PEMBAYARAN TERHADAP DROPPING --}}
-        <tr class="row-selisih-pay-drop">
-            <td><strong>SELISIH PEMBAYARAN TERHADAP DROPPING</strong></td>
-            @php $gSeiDP = 0; @endphp
-            @foreach($bulanListFiltered as $b => $nm)
-                @php $s3 = $totalDropAll[$b] - $totalPayAll[$b]; $gSeiDP += $s3; @endphp
-                <td class="val {{ $s3 < 0 ? 'neg' : '' }}">{{ fmtDash($s3) }}</td>
-            @endforeach
-            <td class="val {{ $gSeiDP < 0 ? 'neg' : '' }}">{{ fmtDash($gSeiDP) }}</td>
-        </tr>
-
-        <tr><td colspan="{{ $nCol }}" style="height:6px;"></td></tr>
-
-        {{-- ================================================================
-             BARIS SUMMARY KUNING
-             ================================================================ --}}
-        <tr class="row-summary-cpo">
-            <td><strong>PENERIMAAN PENJUALAN CPO &amp; KERNEL</strong></td>
-            @php $gCPK = 0; @endphp
-            @foreach($bulanListFiltered as $b => $nm)
-                <td class="val">{{ fmtBold($cpnKernel[$b]) }}</td>
-                @php $gCPK += $cpnKernel[$b]; @endphp
-            @endforeach
-            <td class="val">{{ fmtBold($gCPK) }}</td>
-        </tr>
-
-        <tr class="row-summary-dtbs">
-            <td><strong>DROPPING TBS</strong></td>
-            @php $gDTBS = 0; @endphp
-            @foreach($bulanListFiltered as $b => $nm)
-                <td class="val">{{ fmtBold($dropTBS[$b]) }}</td>
-                @php $gDTBS += $dropTBS[$b]; @endphp
-            @endforeach
-            <td class="val">{{ fmtBold($gDTBS) }}</td>
-        </tr>
-
-        <tr class="row-summary-ptbs">
-            <td><strong>PEMBAYARAN TBS</strong></td>
-            @php $gPTBS = 0; @endphp
-            @foreach($bulanListFiltered as $b => $nm)
-                <td class="val">{{ fmtBold($payTBS[$b]) }}</td>
-                @php $gPTBS += $payTBS[$b]; @endphp
-            @endforeach
-            <td class="val">{{ fmtBold($gPTBS) }}</td>
-        </tr>
-
-    </tbody>
-</table>
+<div class="col-12">
+    <div id="cashflow-table"></div>
 </div>
 </div>
 
 <script>
-    (function () {
-        // Filter tab: tampilkan tbody sesuai tab terpilih.
-        // 'semua' menampilkan seluruh bagian termasuk baris lintas-bagian
-        // (SELISIH & ringkasan kuning) yang diberi tanda data-cf-section="semua-only".
-        var tabBar = document.getElementById('cfTabBar');
-        var table = document.getElementById('cashflow-table');
-        if (!tabBar || !table) return;
+(function () {
+    var cfRows = @json($cfRows);
+    var cfMonths = @json($cfMonths);
+    var cfTitleTahun = @json('TAHUN ' . $tahun);
+    var cfTitleTotal = @json('Sd ' . collect($bulanListFiltered)->last() . ' Tahun ' . $tahun);
 
-        function applyTab(tab) {
-            table.querySelectorAll('tbody[data-cf-section]').forEach(function (body) {
-                var section = body.getAttribute('data-cf-section');
-                var visible = tab === 'semua' ? true : section === tab;
-                body.style.display = visible ? '' : 'none';
-            });
-            tabBar.querySelectorAll('.cf-tab').forEach(function (btn) {
-                btn.classList.toggle('active', btn.getAttribute('data-cf-tab') === tab);
+    // Format angka: 0 -> '-' (baris item/selisih), negatif -> (x) + merah utk selisih
+    function cfFormatter(cell) {
+        var v = cell.getValue();
+        if (v === null || v === undefined || v === '') return '';
+        v = Number(v);
+        var d = cell.getRow().getData();
+        if (v === 0) return (d.type === 'item' || d.type === 'selisih') ? '-' : '0';
+        var s = Math.round(Math.abs(v)).toLocaleString('id-ID');
+        if (v < 0 && d.type === 'selisih') cell.getElement().classList.add('cf-neg');
+        return v < 0 ? '(' + s + ')' : s;
+    }
+
+    function buildColumns() {
+        var monthCols = cfMonths.map(function (m) {
+            return {
+                title: m.title,
+                field: m.field,
+                hozAlign: 'right',
+                minWidth: 105,
+                formatter: cfFormatter,
+                headerHozAlign: 'center'
+            };
+        });
+        return [
+            { title: 'URAIAN', field: 'uraian', frozen: true, minWidth: 260, headerHozAlign: 'center' },
+            { title: cfTitleTahun, columns: monthCols },
+            {
+                title: cfTitleTotal,
+                field: 'total',
+                hozAlign: 'right',
+                minWidth: 120,
+                formatter: cfFormatter,
+                headerHozAlign: 'center',
+                cssClass: 'cf-col-total'
+            }
+        ];
+    }
+
+    // Kelas per jenis baris untuk pewarnaan (pola rowFormatter project LM)
+    function cfRowFormatter(row) {
+        var t = row.getData().type;
+        var el = row.getElement();
+        ['section', 'kat', 'item', 'subtotal', 'gaji', 'total', 'selisih', 'summary'].forEach(function (k) {
+            el.classList.toggle('cf-r-' + k, t === k);
+        });
+    }
+
+    var cfCurrentTab = 'semua';
+
+    function initCF() {
+        var el = document.getElementById('cashflow-table');
+        if (!el || !window.Tabulator) return;
+
+        var table = new Tabulator(el, {
+            data: cfRows,
+            columns: buildColumns(),
+            layout: 'fitData',              // lebar mengikuti isi; kolom bisa ditarik manual
+            height: '68vh',                 // header otomatis menempel saat scroll
+            columnHeaderVertAlign: 'bottom',
+            movableColumns: false,
+            columnDefaults: { headerSort: false },
+            rowFormatter: cfRowFormatter,
+            placeholder: 'Tidak ada data'
+        });
+
+        // Tab bar: filter baris per bagian (Semua menampilkan seluruhnya)
+        var tabBar = document.getElementById('cfTabBar');
+        if (tabBar) {
+            tabBar.addEventListener('click', function (e) {
+                var btn = e.target.closest('.cf-tab');
+                if (!btn) return;
+                cfCurrentTab = btn.getAttribute('data-cf-tab');
+                tabBar.querySelectorAll('.cf-tab').forEach(function (b) {
+                    b.classList.toggle('active', b === btn);
+                });
+                if (cfCurrentTab === 'semua') {
+                    table.clearFilter(true);
+                } else {
+                    table.setFilter(function (data) {
+                        return data.section === cfCurrentTab;
+                    });
+                }
             });
         }
+    }
 
-        tabBar.addEventListener('click', function (e) {
-            var btn = e.target.closest('.cf-tab');
-            if (!btn) return;
-            applyTab(btn.getAttribute('data-cf-tab'));
-        });
-    })();
+    // Saat render penuh halaman, script ini jalan sebelum Tabulator dimuat;
+    // saat dimuat via AJAX, Tabulator sudah tersedia dan langsung jalan.
+    if (window.Tabulator) {
+        initCF();
+    } else {
+        document.addEventListener('DOMContentLoaded', initCF);
+    }
+})();
 </script>

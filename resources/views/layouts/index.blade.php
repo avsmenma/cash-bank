@@ -38,6 +38,9 @@
     <link rel="stylesheet" href="{{ asset('adminLTE/plugins/dropzone/min/dropzone.min.css')}}">
     <link rel="stylesheet" href="{{ asset('adminLTE/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css')}}">
     <link rel="stylesheet" href="https://unpkg.com/virtual-select-plugin@1.0.37/dist/virtual-select.min.css">
+    <!-- Tabulator (tabel ala spreadsheet, kolom bisa ditarik-lebarkan) -->
+    <link rel="stylesheet" href="{{ asset('plugins/tabulator/tabulator_semanticui.min.css') }}">
+    <script src="{{ asset('plugins/tabulator/tabulator.min.js') }}"></script>
 
     @stack('styles')
     <style>

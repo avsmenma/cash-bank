@@ -74,14 +74,14 @@
         max-width: 100px;
     }
 
-    /* Kategori header row (light bg → dark text) */
+    /* Kategori header row: navy transparan (opacity sedang) */
     #cashflow-table-pvd tr.bg-yellow td,
     #cashflow-table-pvd tr.bg-yellow td strong,
     #cashflow-table-pvd tr.bg-yellow {
-        background: #f0f4f8 !important;
-        color: #1a1a1a !important;
+        background: rgba(30, 58, 95, 0.15) !important;
+        color: #1e3a5f !important;
         font-weight: 700;
-        border-left: 3px solid #3b82f6;
+        border-left: 3px solid #1e3a5f;
     }
 
     /* Sub kategori row (light bg → dark text) */
@@ -109,23 +109,23 @@
         border-top: 1px solid #cbd5e1;
     }
 
-    /* Kategori total row (dark bg → white text) */
+    /* Kategori total row: navy solid seperti header */
     #cashflow-table-pvd tbody tr.bg-navy td,
     #cashflow-table-pvd tbody tr.bg-navy td strong {
-        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%) !important;
+        background: #1e3a5f !important;
         color: #ffffff !important;
         font-weight: 700;
-        border-top: 2px solid #1e40af;
+        border-top: 2px solid #0f2137;
     }
 
-    /* Grand total row (dark bg → white text) */
+    /* Grand total row: navy solid seperti header */
     #cashflow-table-pvd tr.total-section td,
     #cashflow-table-pvd tr.total-section td strong {
-        background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%) !important;
+        background: #1e3a5f !important;
         color: #ffffff !important;
         font-weight: 700;
         font-size: 11px;
-        border-top: 2px solid #0d9488;
+        border-top: 2px solid #0f2137;
     }
 </style>
 @php

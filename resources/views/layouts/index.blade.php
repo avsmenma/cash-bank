@@ -47,7 +47,11 @@
            - Tombol buka/tutup sidebar di pojok kiri, di kanannya logo + judul.
            - Sidebar mulai tepat di bawah header.
            ============================================================ */
-        .main-header {
+        /* margin-left ditulis ulang dengan spesifisitas lebih tinggi karena
+           AdminLTE memasang margin-left ber-!important saat sidebar-collapse */
+        .main-header,
+        body.sidebar-mini .main-header,
+        body.sidebar-mini.sidebar-collapse .main-header {
             margin-left: 0 !important;
             position: sticky;
             top: 0;
@@ -55,6 +59,10 @@
         }
         body.layout-fixed .main-sidebar {
             top: calc(3.5rem + 1px) !important;
+        }
+        /* Menu sidebar mulai rapat di bawah header (tanpa ruang kosong) */
+        .main-sidebar .sidebar {
+            padding-top: 6px;
         }
 
         /* Tombol buka/tutup sidebar bergaya kotak (ala LM) */
@@ -119,24 +127,76 @@
         }
 
         /* ============================================================
-           SIDEBAR TERTUTUP TIDAK TERBUKA SAAT DISENTUH KURSOR
-           (perilaku hover-expand bawaan AdminLTE dimatikan;
-           buka/tutup hanya lewat tombol di pojok kiri atas)
+           SIDEBAR TERTUTUP:
+           - TIDAK terbuka saat disentuh kursor (hover-expand AdminLTE mati;
+             buka/tutup hanya lewat tombol di pojok kiri atas).
+           - Submenu yang sedang terbuka ikut disembunyikan (hanya ikon
+             menu utama yang tampil).
+           - Arahkan kursor ke menu utama -> submenu muncul sebagai panel
+             mengapung (flyout) di sebelah kanan, seperti project LM.
            ============================================================ */
         body.sidebar-mini.sidebar-collapse .main-sidebar:hover,
         body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused {
             width: 4.6rem !important;
         }
-        body.sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar .nav-sidebar .nav-link p,
+        body.sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar .nav-sidebar > .nav-item > .nav-link p,
         body.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-sidebar > .nav-item > .nav-link > span,
-        body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused .sidebar .nav-sidebar .nav-link p,
+        body.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-sidebar > .nav-item > .nav-link .right,
+        body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused .sidebar .nav-sidebar > .nav-item > .nav-link p,
         body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused .nav-sidebar > .nav-item > .nav-link > span {
             display: none !important;
             visibility: hidden !important;
         }
-        body.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-treeview,
-        body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused .nav-treeview {
+
+        /* Submenu disembunyikan total saat sidebar tertutup (termasuk menu-open) */
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar .nav-treeview {
             display: none !important;
+        }
+
+        /* Flyout: sidebar boleh "meluber" agar panel tidak terpotong */
+        body.sidebar-mini.sidebar-collapse .main-sidebar,
+        body.sidebar-mini.sidebar-collapse .main-sidebar .sidebar {
+            overflow: visible !important;
+        }
+        body.sidebar-mini.sidebar-collapse .nav-sidebar > .nav-item {
+            position: relative;
+        }
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item:hover > .nav-treeview {
+            display: block !important;
+            position: absolute;
+            left: calc(100% + 6px);
+            top: 0;
+            min-width: 215px;
+            margin-left: 0 !important;
+            padding: 6px !important;
+            background: #1a2332 !important;
+            border: 1px solid rgba(255, 255, 255, .10);
+            border-radius: 10px;
+            box-shadow: 0 12px 34px rgba(0, 0, 0, .45);
+            z-index: 1050;
+        }
+        /* Jembatan tak terlihat menutup celah 6px agar flyout tidak berkedip */
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item:hover > .nav-treeview::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -12px;
+            width: 12px;
+            height: 100%;
+        }
+        /* Teks link di dalam flyout harus tampil normal */
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item:hover > .nav-treeview .nav-link {
+            width: auto;
+            padding-left: 1rem !important;
+            white-space: nowrap;
+            border-radius: 7px;
+        }
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item:hover > .nav-treeview .nav-link p {
+            display: inline !important;
+            visibility: visible !important;
+            width: auto !important;
+            margin-left: 0 !important;
+            animation: none !important;
         }
 
         .sidebar .nav-item {
@@ -414,7 +474,7 @@
             <div class="sidebar">
 
                 <!-- Sidebar Menu -->
-                <nav class="mt-3">
+                <nav class="mt-1">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                         data-accordion="false">
                         @if($isProgrammer)

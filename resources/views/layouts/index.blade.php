@@ -153,9 +153,16 @@
             display: none !important;
         }
 
-        /* Flyout: sidebar boleh "meluber" agar panel tidak terpotong */
+        /* Flyout: sidebar boleh "meluber" agar panel tidak terpotong.
+           Termasuk lapisan pembungkus plugin OverlayScrollbars (os-*) yang
+           memaksa overflow hidden — tanpa ini flyout tergunting di dalam sidebar. */
         body.sidebar-mini.sidebar-collapse .main-sidebar,
-        body.sidebar-mini.sidebar-collapse .main-sidebar .sidebar {
+        body.sidebar-mini.sidebar-collapse .main-sidebar .sidebar,
+        body.sidebar-mini.sidebar-collapse .main-sidebar .os-host,
+        body.sidebar-mini.sidebar-collapse .main-sidebar .os-host-overflow,
+        body.sidebar-mini.sidebar-collapse .main-sidebar .os-padding,
+        body.sidebar-mini.sidebar-collapse .main-sidebar .os-viewport,
+        body.sidebar-mini.sidebar-collapse .main-sidebar .os-content {
             overflow: visible !important;
         }
         body.sidebar-mini.sidebar-collapse .nav-sidebar > .nav-item {

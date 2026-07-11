@@ -19,7 +19,10 @@
         color: #f0f4f8 !important;
         font-weight: 600;
         font-size: 11px;
-        border-color: #ffffff !important; /* garis header putih agar jelas */
+        /* garis header putih; border-right dipasang eksplisit karena tema
+           tidak memberi garis pada elemen grup (batas antar bulan) */
+        border-color: #ffffff !important;
+        border-right: 1px solid #ffffff !important;
     }
     #cashflow-table-pvd .tabulator-header .tabulator-col .tabulator-col-title {
         color: #f0f4f8;

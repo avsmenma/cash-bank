@@ -11,13 +11,15 @@
         white-space: nowrap;
         vertical-align: middle;
     }
-    /* Kolom Kontrak dikunci lebarnya; teks panjang dibungkus ke baris berikutnya */
+    /* Kolom Kontrak dikunci lebarnya; teks panjang dibungkus ke baris berikutnya.
+       min-width wajib ada agar kolom tidak diperas browser saat ruang sempit. */
     .penerima-grouped-table th.col-kontrak,
     .penerima-grouped-table td.col-kontrak {
         width: 180px;
+        min-width: 180px;
         max-width: 180px;
         white-space: normal;
-        word-break: break-word;
+        overflow-wrap: break-word;
     }
     .row-month-title td {
         background-color: #1a5632 !important;

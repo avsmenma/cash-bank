@@ -98,31 +98,6 @@
     </section>
 </div>
 
-{{-- Modal Detail Mingguan --}}
-<div class="modal fade" id="weeklyDetailModal" tabindex="-1" role="dialog" aria-labelledby="weeklyDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="weeklyDetailModalLabel">
-                    <i class="fas fa-calendar-week"></i> Detail Mingguan
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body" id="weeklyDetailContent">
-                <div class="text-center py-5">
-                    <i class="fas fa-spinner fa-spin fa-2x"></i>
-                    <p class="mt-2">Memuat data...</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 @push('scripts')
 <script>
 $(document).ready(function() {
@@ -192,28 +167,6 @@ $(document).ready(function() {
         $('a[href*="dashboard.pembayaran.pdf"]').attr('href', pdfUrl);
         $('a[href*="dashboard.pembayaran.excel"]').attr('href', excelUrl);
     }
-
-    // Click handler for weekly detail
-    $(document).on('click', '.btn-weekly-detail', function () {
-        var bulan = $(this).data('bulan');
-        var tahun = $('#tahun').val();
-
-        // Show modal with loading
-        $('#weeklyDetailContent').html('<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Memuat data...</p></div>');
-        $('#weeklyDetailModal').modal('show');
-
-        $.ajax({
-            url: '{{ route("dashboard.pembayaran.weeklyDetail") }}',
-            type: 'GET',
-            data: { tahun: tahun, bulan: bulan },
-            success: function (response) {
-                $('#weeklyDetailContent').html(response);
-            },
-            error: function () {
-                $('#weeklyDetailContent').html('<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Gagal memuat data mingguan.</div>');
-            }
-        });
-    });
 });
 </script>
 @endpush

@@ -37,29 +37,7 @@
                 </th>
 
                 @foreach ($bulanListFiltered as $bulan)
-                    @php
-                        $bulanToAngka = [
-                            'januari' => 1,
-                            'februari' => 2,
-                            'maret' => 3,
-                            'april' => 4,
-                            'mei' => 5,
-                            'juni' => 6,
-                            'juli' => 7,
-                            'agustus' => 8,
-                            'september' => 9,
-                            'oktober' => 10,
-                            'november' => 11,
-                            'desember' => 12
-                        ];
-                        $bulanAngka = $bulanToAngka[$bulan] ?? 0;
-                    @endphp
-                    <th colspan="4">
-                        <a href="javascript:void(0)" class="btn-weekly-detail text-white" data-bulan="{{ $bulanAngka }}"
-                            style="text-decoration: underline; cursor: pointer;">
-                            {{ ucfirst($bulan) }} <i class="fas fa-search-plus" style="font-size:10px;"></i>
-                        </a>
-                    </th>
+                    <th colspan="4">{{ ucfirst($bulan) }}</th>
                 @endforeach
 
                 <th colspan="4">TOTAL</th>

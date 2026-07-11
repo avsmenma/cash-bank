@@ -418,9 +418,6 @@ Route::middleware(['auth'])->prefix('dashboard-pembayaran')->name('dashboard.pem
     // Export Excel
     Route::get('/export-excel', [DashboardPembayaranController::class, 'exportExcel'])->name('excel');
 
-    // AJAX: Detail mingguan per bulan
-    Route::get('/weekly-detail', [DashboardPembayaranController::class, 'weeklyDetail'])->name('weeklyDetail');
-
 });
 // Route::get('/dashboard-detail-pd',fn()=> view('cash_bank.detailPd_detailPvD.detailPvd'))->name('dashboard-detail-pd');
 // Route::get('/penerima',fn()=> view('cash_bank.pembayaran.penerima'))->name('penerima');

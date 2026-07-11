@@ -100,7 +100,7 @@
                 <div class="col-12">
                   <div class="d-flex gap-2 align-items-center">
                     <div class="form-group mb-0">
-                      <select class="select2" name="tahun_cashflow" id="tahun_cashflow" style="width: 250px;">
+                      <select class="select2" name="tahun_cashflow" id="tahun_cashflow" style="width: 150px;">
                         <option value="">-- Pilih Tahun --</option>
                         @for($y = date('Y'); $y <= date('Y') + 5; $y++)
                           <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>
@@ -141,7 +141,7 @@
                         </select>
                       </div>
                       <div class="form-group mb-0">
-                        <select class="select2" id="tahunRencana">
+                        <select class="select2" id="tahunRencana" style="width: 150px;">
                           @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
                             <option value="{{ $t }}">{{ $t }}</option>
                           @endfor

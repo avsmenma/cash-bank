@@ -1,4 +1,5 @@
-@push('styles')
+{{-- CSS ditulis inline (bukan @push) karena partial ini dimuat via AJAX
+     sehingga stack 'styles' layout tidak pernah dirender --}}
 <style>
     #cashflow-table {
     table-layout: auto !important;
@@ -9,8 +10,21 @@
         white-space: nowrap;
         vertical-align: middle;
     }
+
+    /* Baris kategori (1 baris full): navy dengan opacity diturunkan */
+    #cashflow-table tbody tr.cf-kategori-row td {
+        background: rgba(30, 58, 95, 0.15) !important;
+        color: #1e3a5f !important;
+    }
+
+    /* Baris Sub Total & Total (kategori + keseluruhan): navy solid */
+    #cashflow-table tbody tr.cf-subtotal-row td,
+    #cashflow-table tbody tr.cf-total-row td,
+    #cashflow-table tfoot th {
+        background: #1e3a5f !important;
+        color: #ffffff !important;
+    }
 </style>
-@endpush
 <div class="card-body">
     <div class="mb-3">
         <h5>Cash Flow Permintaan - Tahun {{ $tahun }}</h5>
@@ -42,7 +56,7 @@
                 
                 @forelse($result as $kategoriName => $kategoriData)
                     {{-- Kategori Row --}}
-                    <tr class="bg-navy text-white font-weight-bold">
+                    <tr class="cf-kategori-row font-weight-bold">
                         <td class="text-center">{{ $no++ }}</td>
                         <td ><u>{{ $kategoriName }}</u></td>
                         <td colspan="13"></td>
@@ -77,7 +91,7 @@
                                 <td class="text-right">{{ number_format($itemRowTotal, 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
-                        <tr class="bg-light">
+                        <tr class="cf-subtotal-row font-weight-bold">
                             <td></td>
                             <td>{{"Sub Total " . $subName }}</td>
                             @php
@@ -94,7 +108,7 @@
                         </tr>
                         
                     @endforeach
-                    <tr class="table-primary font-weight-bold">
+                    <tr class="cf-total-row font-weight-bold">
                             <td colspan="2">{{ $kategoriName }}</td>
                             @php
                                 $kategoriRowTotal = 0;
@@ -118,7 +132,7 @@
                     </tr>
                 @endforelse
             </tbody>
-            <tfoot class="table-danger font-weight-bold">
+            <tfoot class="font-weight-bold">
                 <tr>
                     <th colspan="2">TOTAL Keseluruhan</th>
                     @for($m = 1; $m <= 12; $m++)

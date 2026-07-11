@@ -19,7 +19,7 @@
         color: #f0f4f8 !important;
         font-weight: 600;
         font-size: 11px;
-        border-color: #17324b !important;
+        border-color: #ffffff !important; /* garis header putih agar jelas */
     }
     #cashflow-table-pvd .tabulator-header .tabulator-col .tabulator-col-title {
         color: #f0f4f8;

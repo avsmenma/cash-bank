@@ -21,7 +21,7 @@
         text-transform: uppercase;
         letter-spacing: .3px;
         font-size: 11px;
-        border-color: #17324b !important;
+        border-color: #ffffff !important; /* garis header putih agar jelas */
     }
     #cashflow-table .tabulator-header .tabulator-col .tabulator-col-title {
         color: #f0f4f8;

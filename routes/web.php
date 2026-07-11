@@ -400,6 +400,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('dropping.rencana.saveRencana');
     Route::delete('/dropping/delete', [DroppingController::class, 'deleteData'])->name('dropping.delete');
     Route::post('/dropping/import', [DroppingController::class, 'importExcel'])->name('dropping.import');
+    Route::get('/dropping/export_excel', [DroppingController::class, 'export_excel'])->name('dropping.export_excel');
+    Route::get('/dropping/export_pdf', [DroppingController::class, 'export_pdf'])->name('dropping.export_pdf');
     Route::resource('dropping', DroppingController::class);
 
 });

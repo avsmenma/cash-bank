@@ -37,20 +37,11 @@ class DroppingController extends Controller
             ->get();
     }
 
-    public function getTable(Request $request)
+    /**
+     * Item sub kriteria dengan urutan tampil yang baku (dipakai tabel & export).
+     */
+    private function sortedItems($subKriteriaId)
     {
-        $subKriteriaId = $request->sub;
-        $tahun = $request->tahun;
-        $bulan = $request->bulan;
-
-        if (!$subKriteriaId || !$tahun || !$bulan) {
-            return response()->json(['error' => 'Parameter tidak lengkap'], 400);
-        }
-
-        // Get items from sub kriteria
-        $items = ItemSubKriteria::where('id_sub_kriteria', $subKriteriaId)
-            ->get();
-
         // Custom sort order matching reference document
         $sortOrder = [
             'Gaji dan Tunjangan',
@@ -66,23 +57,34 @@ class DroppingController extends Controller
             'Lainnya',
         ];
 
-        $items = $items->sort(function ($a, $b) use ($sortOrder) {
+        $items = ItemSubKriteria::where('id_sub_kriteria', $subKriteriaId)->get();
+
+        return $items->sort(function ($a, $b) use ($sortOrder) {
             $posA = array_search($a->nama_item_sub_kriteria, $sortOrder);
             $posB = array_search($b->nama_item_sub_kriteria, $sortOrder);
 
-            // If both are in the sort order, sort by position
             if ($posA !== false && $posB !== false) {
                 return $posA - $posB;
             }
-            // If only A is in the sort order, A comes first
             if ($posA !== false)
                 return -1;
-            // If only B is in the sort order, B comes first
             if ($posB !== false)
                 return 1;
-            // Both not in sort order, sort alphabetically
             return strcmp($a->nama_item_sub_kriteria, $b->nama_item_sub_kriteria);
         })->values();
+    }
+
+    public function getTable(Request $request)
+    {
+        $subKriteriaId = $request->sub;
+        $tahun = $request->tahun;
+        $bulan = $request->bulan;
+
+        if (!$subKriteriaId || !$tahun || !$bulan) {
+            return response()->json(['error' => 'Parameter tidak lengkap'], 400);
+        }
+
+        $items = $this->sortedItems($subKriteriaId);
 
         if ($items->isEmpty()) {
             return view('cash_bank.pembayaran.createDropping', [
@@ -116,6 +118,82 @@ class DroppingController extends Controller
         }
 
         return view('cash_bank.pembayaran.createDropping', compact('items', 'data', 'bulan', 'tahun', 'subKriteriaId'));
+    }
+
+    /**
+     * Susun data dropping (item + nilai M1-M4) untuk kebutuhan export.
+     */
+    private function buildExportData($subKriteriaId, $tahun, $bulan)
+    {
+        $sub = SubKriteria::findOrFail($subKriteriaId);
+        $kategori = KategoriKriteria::find($sub->id_kategori_kriteria);
+
+        $items = $this->sortedItems($subKriteriaId);
+
+        $existingData = Dropping::where('id_sub_kriteria', $subKriteriaId)
+            ->where('tahun', $tahun)
+            ->where('bulan', $bulan)
+            ->whereIn('id_item_sub_kriteria', $items->pluck('id_item_sub_kriteria'))
+            ->get()
+            ->keyBy('id_item_sub_kriteria');
+
+        $data = [];
+        foreach ($items as $item) {
+            $d = $existingData->get($item->id_item_sub_kriteria);
+            $data[$item->id_item_sub_kriteria] = [
+                'M1' => $d ? $d->M1 : 0,
+                'M2' => $d ? $d->M2 : 0,
+                'M3' => $d ? $d->M3 : 0,
+                'M4' => $d ? $d->M4 : 0,
+            ];
+        }
+
+        $bulanNames = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        return [
+            'items' => $items,
+            'data' => $data,
+            'namaKategori' => $kategori->nama_kriteria ?? '-',
+            'namaSub' => $sub->nama_sub_kriteria,
+            'namaBulan' => $bulanNames[(int) $bulan] ?? '-',
+            'tahun' => $tahun,
+        ];
+    }
+
+    public function export_excel(Request $request)
+    {
+        $request->validate([
+            'sub' => 'required|exists:sub_kriteria,id_sub_kriteria',
+            'tahun' => 'required|integer',
+            'bulan' => 'required|integer|between:1,12',
+        ]);
+
+        $payload = $this->buildExportData($request->sub, $request->tahun, $request->bulan);
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\ExportExcelDropping($payload),
+            'dropping-' . $request->tahun . '-' . $request->bulan . '.xlsx'
+        );
+    }
+
+    public function export_pdf(Request $request)
+    {
+        $request->validate([
+            'sub' => 'required|exists:sub_kriteria,id_sub_kriteria',
+            'tahun' => 'required|integer',
+            'bulan' => 'required|integer|between:1,12',
+        ]);
+
+        $payload = $this->buildExportData($request->sub, $request->tahun, $request->bulan);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('cash_bank.exportPDF.pdfDropping', $payload);
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->stream('dropping-' . $request->tahun . '-' . $request->bulan . '.pdf');
     }
 
     public function saveData(Request $request)

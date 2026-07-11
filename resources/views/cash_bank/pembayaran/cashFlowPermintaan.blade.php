@@ -1,209 +1,120 @@
-{{-- CSS ditulis inline (bukan @push) karena partial ini dimuat via AJAX
-     sehingga stack 'styles' layout tidak pernah dirender --}}
+{{-- CSS & script inline karena partial ini dimuat via AJAX --}}
 <style>
-    #cashflow-table {
-    table-layout: auto !important;
-    width: 100% !important;
+    /* CASHFLOW PERMINTAAN — Tabulator ala spreadsheet */
+    #cashflow-table { border: 1px solid #d0d5dd; border-radius: 8px; font-size: 12px; font-family: 'Segoe UI', system-ui, sans-serif; }
+    #cashflow-table .tabulator-header { background: #1e3a5f; border-bottom: 2px solid #0f2137; }
+    #cashflow-table .tabulator-header .tabulator-col {
+        background: #1e3a5f !important; color: #f0f4f8 !important; font-weight: 600; font-size: 11px;
+        border-color: #ffffff !important; border-right: 1px solid #ffffff !important;
     }
+    #cashflow-table .tabulator-header .tabulator-col .tabulator-col-title { color: #f0f4f8; text-align: center; }
+    #cashflow-table .tabulator-header .tabulator-col-resize-handle { width: 6px; cursor: col-resize; background: none; }
+    #cashflow-table .tabulator-header .tabulator-col:not(.tabulator-col-group) > .tabulator-col-resize-handle {
+        background: linear-gradient(to bottom, transparent 32%, rgba(255,255,255,.45) 32%, rgba(255,255,255,.45) 68%, transparent 68%)
+            center / 2px 100% no-repeat;
+    }
+    #cashflow-table .tabulator-header .tabulator-col-resize-handle:hover { background: rgba(255,255,255,.3); }
+    #cashflow-table .tabulator-cell { border-right: 1px solid #b3bfcc; border-color: #b3bfcc; }
+    #cashflow-table .tabulator-row { border-bottom: 1px solid #b3bfcc; }
 
-    #cashflow-table td {
-        white-space: nowrap;
-        vertical-align: middle;
-    }
-
-    /* Baris kategori (1 baris full): navy dengan opacity diturunkan */
-    #cashflow-table tbody tr.cf-kategori-row td {
-        background: rgba(30, 58, 95, 0.15) !important;
-        color: #1e3a5f !important;
-    }
-
-    /* Baris Sub Total & Total (kategori + keseluruhan): navy solid */
-    #cashflow-table tbody tr.cf-subtotal-row td,
-    #cashflow-table tbody tr.cf-total-row td,
-    #cashflow-table tfoot th {
-        background: #1e3a5f !important;
-        color: #ffffff !important;
-    }
-
-    /* Header frozen: scroll terjadi di dalam wadah, th menempel di atas */
-    .cf-table-scroll {
-        max-height: calc(100vh - 170px);
-        overflow: auto;
-    }
-    @media print {
-        .cf-table-scroll {
-            max-height: none;
-            overflow: visible;
-        }
-    }
-    #cashflow-table thead th {
-        position: sticky;
-        top: 0;
-        z-index: 5;
-        background: #1e3a5f !important;
-        color: #ffffff !important;
-    }
+    #cashflow-table .tabulator-row.cf-r-kategori .tabulator-cell { background: rgba(30,58,95,.15); color: #1e3a5f; font-weight: 800; }
+    #cashflow-table .tabulator-row.cf-r-sub .tabulator-cell { background: #f8fafc; font-weight: 700; }
+    #cashflow-table .tabulator-row.cf-r-item .tabulator-cell { background: #fff; }
+    #cashflow-table .tabulator-row.cf-r-item:hover .tabulator-cell { background: #f8fbff; }
+    #cashflow-table .tabulator-row.cf-r-subtotal .tabulator-cell,
+    #cashflow-table .tabulator-row.cf-r-total .tabulator-cell,
+    #cashflow-table .tabulator-row.cf-r-grand .tabulator-cell { background: #1e3a5f; color: #fff; font-weight: 700; }
+    @media print { #cashflow-table .tabulator-tableholder { overflow: visible !important; max-height: none !important; } }
 </style>
+
+@php
+    // Rakit baris data Tabulator (logika hitung lama utuh)
+    $cfRows = [];
+    $no = 1;
+    foreach ($result as $kategoriName => $kategoriData) {
+        $cfRows[] = ['type' => 'kategori', 'no' => $no++, 'uraian' => $kategoriName];
+
+        foreach ($kategoriData['subs'] as $subName => $subData) {
+            $cfRows[] = ['type' => 'sub', 'uraian' => $subName];
+
+            foreach ($subData['items'] as $itemName => $itemData) {
+                $row = ['type' => 'item', 'uraian' => '- ' . $itemName];
+                $t = 0;
+                for ($m = 1; $m <= 12; $m++) { $v = $itemData[$m] ?? 0; $row['m' . $m] = $v; $t += $v; }
+                $row['total'] = $t;
+                $cfRows[] = $row;
+            }
+
+            $row = ['type' => 'subtotal', 'uraian' => 'Sub Total ' . $subName];
+            $t = 0;
+            for ($m = 1; $m <= 12; $m++) { $v = $subData['totals'][$m] ?? 0; $row['m' . $m] = $v; $t += $v; }
+            $row['total'] = $t;
+            $cfRows[] = $row;
+        }
+
+        $row = ['type' => 'total', 'uraian' => $kategoriName];
+        $t = 0;
+        for ($m = 1; $m <= 12; $m++) { $v = $kategoriData['totals'][$m] ?? 0; $row['m' . $m] = $v; $t += $v; }
+        $row['total'] = $t;
+        $cfRows[] = $row;
+    }
+    $row = ['type' => 'grand', 'uraian' => 'TOTAL Keseluruhan'];
+    for ($m = 1; $m <= 12; $m++) $row['m' . $m] = $totals[$m] ?? 0;
+    $row['total'] = $grandTotal ?? 0;
+    $cfRows[] = $row;
+@endphp
+
 <div class="card-body">
-    <div class="mb-3">
-        <h5>Cash Flow Permintaan - Tahun {{ $tahun }}</h5>
-    </div>
-
-    <div class="table-responsive cf-table-scroll">
-        <table id="cashflow-table" class="table table-bordered table-sm">
-            <thead class="bg-navy">
-                <tr>
-                    <th class="text-center">No</th>
-                    <th class="text-center">Payments for 2025 transactions - Accounts</th>
-                    <th class="text-center">Jan</th>
-                    <th class="text-center">Feb</th>
-                    <th class="text-center">Mar</th>
-                    <th class="text-center">Apr</th>
-                    <th class="text-center">Mei</th>
-                    <th class="text-center">Jun</th>
-                    <th class="text-center">Jul</th>
-                    <th class="text-center">Agu</th>
-                    <th class="text-center">Sep</th>
-                    <th class="text-center">Okt</th>
-                    <th class="text-center">Nov</th>
-                    <th class="text-center">Des</th>
-                    <th class="text-center">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php $no = 1; @endphp
-                
-                @forelse($result as $kategoriName => $kategoriData)
-                    {{-- Kategori Row --}}
-                    <tr class="cf-kategori-row font-weight-bold">
-                        <td>{{ $no++ }}</td>
-                        <td><u>{{ $kategoriName }}</u></td>
-                        <td colspan="13"></td>
-                    </tr>
-
-                    {{-- Sub Kriteria Rows --}}
-                    @foreach($kategoriData['subs'] as $subName => $subData)
-                        <tr class="font-weight-bold">
-                            <td></td>
-                            <td class="pl-1">{{ $subName }}</td>
-                            <td colspan="13"></td>
-                        </tr>
-
-                        {{-- Item Rows --}}
-                        @foreach($subData['items'] as $itemName => $itemData)
-                            <tr>
-                                <td></td>
-                                <td class="pl-2 text-muted">
-                                    <small>{{"- " . $itemName }}</small>
-                                </td>
-                                @php
-                                    $itemRowTotal = 0;
-                                @endphp
-                                @for($m = 1; $m <= 12; $m++)
-                                    @php
-                                        $nilai = $itemData[$m] ?? 0;
-                                        $itemRowTotal += $nilai;
-                                    @endphp
-                                    <td class="text-right">{{ number_format($nilai, 0, ',', '.') }}</td>
-                                @endfor
-                                <td class="text-right">{{ number_format($itemRowTotal, 0, ',', '.') }}</td>
-                            </tr>
-                        @endforeach
-                        <tr class="cf-subtotal-row font-weight-bold">
-                            <td></td>
-                            <td class="pl-1">{{"Sub Total ". $subName }}</td>
-                            @php
-                                $subRowTotal = 0;
-                            @endphp
-                            @for($m = 1; $m <= 12; $m++)
-                                @php
-                                    $nilai = $subData['totals'][$m] ?? 0;
-                                    $subRowTotal += $nilai;
-                                @endphp
-                                <td class="text-right">{{ number_format($nilai, 0, ',', '.') }}</td>
-                            @endfor
-                            <td class="text-right">{{ number_format($subRowTotal, 0, ',', '.') }}</td>
-                        </tr>
-                       
-                    @endforeach
-                    <tr class="cf-total-row font-weight-bold">
-                            <td colspan="2">{{ $kategoriName }}</td>
-                            @php
-                                $kategoriRowTotal = 0;
-                            @endphp
-                            @for($m = 1; $m <= 12; $m++)
-                                @php
-                                    $nilai = $kategoriData['totals'][$m] ?? 0;
-                                    $kategoriRowTotal += $nilai;
-                                @endphp
-                                <td class="text-right">{{ number_format($nilai, 0, ',', '.') }}</td>
-                            @endfor
-                            <td class="text-right">{{ number_format($kategoriRowTotal, 0, ',', '.') }}</td>
-                        </tr>
-                    
-
-                @empty
-                    <tr>
-                        <td colspan="15" class="text-center text-muted">
-                            <i class="fas fa-info-circle"></i> Tidak ada data untuk tahun {{ $tahun }}
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-            <tfoot class="font-weight-bold">
-                <tr>
-                    <th colspan="2">TOTAL Keseluruhan</th>
-                    @for($m = 1; $m <= 12; $m++)
-                        <th class="text-right">{{ number_format($totals[$m] ?? 0, 0, ',', '.') }}</th>
-                    @endfor
-                    <th class="text-right">{{ number_format($grandTotal ?? 0, 0, ',', '.') }}</th>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
+    <div class="mb-3"><h5>Cash Flow Permintaan - Tahun {{ $tahun }}</h5></div>
+    <div id="cashflow-table"></div>
 </div>
 
-@push('scripts')
 <script>
-$(function () {
-    $('#cashflow-table').DataTable({
-        "responsive": true, 
-        "lengthChange": false, 
-        "autoWidth": false,
-        "ordering": false,
-        "paging": false,
-        "searching": true,
-        "info": false,
-        "dom": 'Bfrtip',
-        "buttons": [
-            {
-                extend: 'excel',
-                text: '<i class="fas fa-file-excel"></i> Export Excel',
-                className: 'btn btn-success btn-sm',
-                exportOptions: {
-                    columns: ':visible'
-                }
+(function () {
+    var cfRows = @json($cfRows);
+    var cfBulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    var cfUraianTitle = @json('Payments for ' . $tahun . ' transactions - Accounts');
+
+    function cfFmt(cell) {
+        var v = cell.getValue();
+        if (v === null || v === undefined) return '';
+        v = Number(v);
+        var s = Math.round(Math.abs(v)).toLocaleString('id-ID');
+        return v < 0 ? '(' + s + ')' : s;
+    }
+
+    function init() {
+        var el = document.getElementById('cashflow-table');
+        if (!el || !window.Tabulator) return;
+
+        var cols = [
+            { title: 'No', field: 'no', frozen: true, width: 48, hozAlign: 'center', headerHozAlign: 'center' },
+            { title: cfUraianTitle, field: 'uraian', frozen: true, minWidth: 260, widthGrow: 3, headerHozAlign: 'center' }
+        ];
+        cfBulan.forEach(function (nm, i) {
+            cols.push({ title: nm, field: 'm' + (i + 1), hozAlign: 'right', minWidth: 92, widthGrow: 1, formatter: cfFmt, headerHozAlign: 'center' });
+        });
+        cols.push({ title: 'Total', field: 'total', hozAlign: 'right', minWidth: 115, widthGrow: 1, formatter: cfFmt, headerHozAlign: 'center' });
+
+        new Tabulator(el, {
+            data: cfRows,
+            columns: cols,
+            layout: 'fitColumns',
+            height: '65vh',
+            columnHeaderVertAlign: 'middle',
+            movableColumns: false,
+            columnDefaults: { headerSort: false },
+            rowFormatter: function (row) {
+                var t = row.getData().type;
+                var e2 = row.getElement();
+                ['kategori', 'sub', 'item', 'subtotal', 'total', 'grand'].forEach(function (k) {
+                    e2.classList.toggle('cf-r-' + k, t === k);
+                });
             },
-            {
-                extend: 'pdf',
-                text: '<i class="fas fa-file-pdf"></i> Export PDF',
-                className: 'btn btn-danger btn-sm',
-                orientation: 'landscape',
-                pageSize: 'A4',
-                exportOptions: {
-                    columns: ':visible'
-                }
-            },
-            {
-                extend: 'print',
-                text: '<i class="fas fa-print"></i> Print',
-                className: 'btn btn-info btn-sm',
-                exportOptions: {
-                    columns: ':visible'
-                }
-            }
-        ]
-    });
-});
+            placeholder: 'Tidak ada data untuk tahun {{ $tahun }}'
+        });
+    }
+
+    if (window.Tabulator) { init(); } else { document.addEventListener('DOMContentLoaded', init); }
+})();
 </script>
-@endpush

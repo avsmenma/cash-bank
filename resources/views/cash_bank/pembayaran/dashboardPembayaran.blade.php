@@ -1,421 +1,299 @@
 <style>
-    #example.dashboard-payment-table {
-        table-layout: auto;
-        /* Jangan paksa lebar penuh halaman — kolom mengikuti lebar fix di bawah */
-        width: auto !important;
-        border-collapse: separate;
-        border-spacing: 0;
-        font-size: 12.5px;
+    /* ============================================================
+       DASHBOARD PD & PvD — Tabulator (tabel ala spreadsheet).
+       Kolom bisa ditarik-lebarkan manual lewat garis antar kolom header.
+       ============================================================ */
+    #dp-table {
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        font-size: 12px;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    #dp-table .tabulator-header {
+        background: #1e3a5f;
+        border-bottom: 2px solid #0f2137;
+    }
+    #dp-table .tabulator-header .tabulator-col,
+    #dp-table .tabulator-header .tabulator-col-group {
+        background: #1e3a5f !important;
+        color: #f0f4f8 !important;
+        font-weight: 600;
+        font-size: 11px;
+        border-color: #ffffff !important;
+        border-right: 1px solid #ffffff !important;
+    }
+    /* Kolom terakhir di dalam grup: garis batas dipegang grup induk */
+    #dp-table .tabulator-header .tabulator-col-group-cols > .tabulator-col:last-child {
+        border-right: none !important;
+    }
+    #dp-table .tabulator-header .tabulator-col .tabulator-col-title {
+        color: #f0f4f8;
+        text-align: center;
     }
 
-    #example.dashboard-payment-table th,
-    #example.dashboard-payment-table td {
-        border-color: #d5dce5;
-        padding: 7px 9px;
-        vertical-align: middle;
+    /* Penanda kolom bisa ditarik-lebarkan (takik hanya di kolom terbawah) */
+    #dp-table .tabulator-header .tabulator-col-resize-handle {
+        width: 7px;
+        cursor: col-resize;
+        background: none;
+    }
+    #dp-table .tabulator-header .tabulator-col:not(.tabulator-col-group) > .tabulator-col-resize-handle {
+        background: linear-gradient(
+            to bottom,
+            transparent 32%,
+            rgba(255, 255, 255, 0.45) 32%,
+            rgba(255, 255, 255, 0.45) 68%,
+            transparent 68%
+        );
+        background-size: 2px 100%;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    #dp-table .tabulator-header .tabulator-col-resize-handle:hover {
+        background: rgba(255, 255, 255, 0.30);
     }
 
-    /* Kolom URAIAN: HANYA th ber-class dp-uraian dan td pertama di tbody.
-       Jangan pakai th:first-child — ikut mengenai th "Rencana" bulan pertama
-       di baris header kedua sehingga kolom itu melar. */
-    #example.dashboard-payment-table th.dp-uraian,
-    #example.dashboard-payment-table tbody td:first-child {
-        width: 240px;
-        min-width: 240px;
-        max-width: 240px;
-        text-align: left;
-        white-space: normal;
-        overflow-wrap: break-word;
+    /* Garis kolom & baris tegas */
+    #dp-table .tabulator-cell {
+        border-right: 1px solid #b3bfcc;
+        border-color: #b3bfcc;
+    }
+    #dp-table .tabulator-row {
+        border-bottom: 1px solid #b3bfcc;
     }
 
-    #example.dashboard-payment-table th:not(.dp-uraian),
-    #example.dashboard-payment-table tbody td:not(:first-child) {
-        width: 100px;
-        min-width: 100px;
-        text-align: right;
-        white-space: nowrap;
-        font-variant-numeric: tabular-nums;
-    }
-
-    /* Scroll vertikal terjadi di dalam wadah ini agar header bisa sticky */
-    .dp-table-scroll {
-        max-height: calc(100vh - 170px);
-        overflow: auto;
-    }
-    @media print {
-        .dp-table-scroll {
-            max-height: none;
-            overflow: visible;
-        }
-    }
-
-    #example.dashboard-payment-table thead th {
-        background: #1f3d5a !important;
-        color: #fff !important;
-        border-color: #17324b;
-        font-weight: 700;
-        text-align: center !important;
-        position: sticky;
-        z-index: 5;
-    }
-
-    /* Baris 1 (URAIAN + nama bulan) menempel di atas; baris 2 tepat di bawahnya */
-    #example.dashboard-payment-table thead tr:first-child th {
-        top: 0;
-        height: 36px;
-    }
-
-    #example.dashboard-payment-table thead tr:nth-child(2) th {
-        top: 36px;
-    }
-
-    /* Label seksi (PENERIMA/DROPPING): navy header dengan opacity tipis */
-    #example.dashboard-payment-table .dp-section td {
-        background: rgba(30, 58, 95, 0.07) !important;
+    /* ---------- Jenis baris ---------- */
+    #dp-table .tabulator-row.dp-r-section .tabulator-cell {
+        background: rgba(30, 58, 95, 0.07);
         color: #1e3a5f;
-        font-size: 14px;
         font-weight: 800;
         letter-spacing: .2px;
-        border-top: 2px solid rgba(30, 58, 95, 0.25);
-        border-bottom: 2px solid rgba(30, 58, 95, 0.25);
     }
-
-    #example.dashboard-payment-table .dp-category-row td {
-        background: #d7dde3 !important;
+    #dp-table .tabulator-row.dp-r-kat .tabulator-cell {
+        background: #d7dde3;
         color: #172033;
-        font-size: 14px;
         font-weight: 800;
-        border-top: 2px solid #9aa7b4;
-        border-bottom: 1px solid #aeb8c4;
     }
-
-    #example.dashboard-payment-table .dp-category-label {
-        display: block;
-        border-left: 5px solid #334e68;
-        padding: 3px 0 3px 10px;
-    }
-
-    #example.dashboard-payment-table .dp-sub-row td {
-        background: #eef4fb !important;
+    #dp-table .tabulator-row.dp-r-sub .tabulator-cell {
+        background: #eef4fb;
         color: #17324b;
-        font-weight: 800;
-        border-top: 2px solid #7f95ad;
-        border-bottom: 1px solid #c6d3e1;
+        font-weight: 700;
     }
-
-    #example.dashboard-payment-table .dp-sub-label {
-        display: block;
-        margin-left: 16px;
-        padding: 4px 0 4px 12px;
-        border-left: 4px solid #2f80aa;
+    #dp-table .tabulator-row.dp-r-item .tabulator-cell {
+        background: #ffffff;
+        color: #344054;
     }
-
-    #example.dashboard-payment-table .dp-item-row td {
-        background: #fff;
-        border-bottom: 1px solid #e3e8ef;
-    }
-
-    #example.dashboard-payment-table .dp-item-row td:first-child {
-        color: #1f2937;
-        padding-left: 58px;
-    }
-
-    #example.dashboard-payment-table .dp-item-row:hover td {
+    #dp-table .tabulator-row.dp-r-item:hover .tabulator-cell {
         background: #f8fbff;
     }
-
-    #example.dashboard-payment-table .dp-total-row td,
-    #example.dashboard-payment-table .dp-footer-row th {
-        font-weight: 800;
+    #dp-table .tabulator-row.dp-r-total .tabulator-cell {
+        background: #1e3a5f;
+        color: #ffffff;
+        font-weight: 700;
+    }
+    #dp-table .tabulator-row.dp-r-footer .tabulator-cell {
+        background: #fef3c7;
+        color: #1a1a1a;
+        font-weight: 700;
+    }
+    #dp-table .tabulator-row.dp-r-footer .tabulator-cell:first-child {
+        border-left: 3px solid #f59e0b;
     }
 
-    /* Baris total (Total Penerima/Total Dropping): navy solid seperti header */
-    #example.dashboard-payment-table .dp-total-row td {
-        background: #1e3a5f !important;
-        color: #ffffff !important;
-        border-top: 2px solid #0f2137;
+    @media print {
+        #dp-table .tabulator-tableholder {
+            overflow: visible !important;
+            max-height: none !important;
+        }
     }
 </style>
 
 @php
-    function formatMinus($angka, $desimal = 0)
-    {
-        return $angka < 0
-            ? '(' . number_format(abs($angka), $desimal, ',', '.') . ')'
-            : number_format($angka, $desimal, ',', '.');
+    // ================================================================
+    // Susun baris tabel sebagai DATA untuk Tabulator.
+    // Bulan diacu lewat indeks (nama bulan jadi judul kolom).
+    // ================================================================
+    $dpMonths = array_values($bulanListFiltered);
+    $dpRows = [];
+
+    $dpPush = function ($type, $uraian, $vals = null, $tot = null) use (&$dpRows, $dpMonths) {
+        $row = ['type' => $type, 'uraian' => $uraian];
+        foreach ($dpMonths as $i => $b) {
+            $row['m' . $i . '_r'] = $vals[$b]['r'] ?? null;
+            $row['m' . $i . '_re'] = $vals[$b]['re'] ?? null;
+            $row['m' . $i . '_s'] = $vals[$b]['s'] ?? null;
+            $row['m' . $i . '_p'] = $vals[$b]['p'] ?? null;
+        }
+        $row['tot_r'] = $tot['r'] ?? null;
+        $row['tot_re'] = $tot['re'] ?? null;
+        $row['tot_s'] = $tot['s'] ?? null;
+        $row['tot_p'] = $tot['p'] ?? null;
+        $dpRows[] = $row;
+    };
+
+    // Baris nilai per bulan + total baris dari array [bulan => rencana/realisasi/selisih/persen]
+    $dpBuild = function ($bulanData) use ($dpMonths) {
+        $vals = [];
+        $tr = 0;
+        $tre = 0;
+        foreach ($dpMonths as $b) {
+            $r = $bulanData[$b]['rencana'] ?? 0;
+            $re = $bulanData[$b]['realisasi'] ?? 0;
+            $vals[$b] = [
+                'r' => $r,
+                're' => $re,
+                's' => $bulanData[$b]['selisih'] ?? 0,
+                'p' => $bulanData[$b]['persen'] ?? 0,
+            ];
+            $tr += $r;
+            $tre += $re;
+        }
+        return [$vals, [
+            'r' => $tr,
+            're' => $tre,
+            's' => $tre - $tr,
+            'p' => $tr > 0 ? ($tre / $tr) * 100 : 0,
+        ]];
+    };
+
+    // ---------- PENERIMA ----------
+    $dpPush('section', 'PENERIMA');
+    foreach ($dataPenerima as $kategori => $bulanData) {
+        [$vals, $tot] = $dpBuild($bulanData);
+        $dpPush('item', $kategori, $vals, $tot);
     }
+    [$vals, $tot] = $dpBuild($totalPenerima);
+    $dpPush('total', 'Total Penerima', $vals, $tot);
+
+    // ---------- DROPPING ----------
+    $dpPush('section', 'DROPPING');
+    foreach ($dataDropping as $kategori => $subs) {
+        $dpPush('kat', $kategori);
+        foreach ($subs as $sub => $items) {
+            $dpPush('sub', $sub);
+            foreach ($items as $item => $bulanData) {
+                [$vals, $tot] = $dpBuild($bulanData);
+                $dpPush('item', $item === '' ? '' : '- ' . $item, $vals, $tot);
+            }
+        }
+    }
+    [$vals, $tot] = $dpBuild($totalDropping);
+    $dpPush('total', 'Total Dropping', $vals, $tot);
+
+    // ---------- SELISIH PENERIMA - DROPPING ----------
+    $selVals = [];
+    $selTr = 0;
+    $selTre = 0;
+    foreach ($dpMonths as $b) {
+        $r = ($totalPenerima[$b]['rencana'] ?? 0) - ($totalDropping[$b]['rencana'] ?? 0);
+        $re = ($totalPenerima[$b]['realisasi'] ?? 0) - ($totalDropping[$b]['realisasi'] ?? 0);
+        $selVals[$b] = [
+            'r' => $r,
+            're' => $re,
+            's' => $re - $r,
+            'p' => $r != 0 ? ($re / $r) * 100 : 0,
+        ];
+        $selTr += $r;
+        $selTre += $re;
+    }
+    $dpPush('footer', 'Selisih Penerima - Dropping', $selVals, [
+        'r' => $selTr,
+        're' => $selTre,
+        's' => $selTre - $selTr,
+        'p' => $selTr != 0 ? ($selTre / $selTr) * 100 : 0,
+    ]);
+
+    $dpMonthTitles = [];
+    foreach ($dpMonths as $i => $b) $dpMonthTitles[] = ['i' => $i, 'title' => ucfirst($b)];
 @endphp
 
-<div class="table-responsive dp-table-scroll">
-    <table class="table table-bordered table-sm dashboard-payment-table" id="example">
-
-        {{-- ================= HEADER ================= --}}
-        <thead class="bg-navy text-center">
-            <tr>
-                <th rowspan="2" class="dp-uraian" style="vertical-align: middle">
-                    URAIAN
-                </th>
-
-                @foreach ($bulanListFiltered as $bulan)
-                    <th colspan="4">{{ ucfirst($bulan) }}</th>
-                @endforeach
-
-                <th colspan="4">TOTAL</th>
-            </tr>
-
-            <tr>
-                @foreach ($bulanListFiltered as $bulan)
-                    <th>Rencana</th>
-                    <th>Realisasi</th>
-                    <th>Selisih</th>
-                    <th>%</th>
-                @endforeach
-
-                <th>Rencana</th>
-                <th>Realisasi</th>
-                <th>Selisih</th>
-                <th>%</th>
-            </tr>
-        </thead>
-
-        <tbody>
-
-            {{-- ================= PENERIMA ================= --}}
-            <tr class="dp-section font-weight-bold">
-                <td colspan="{{ 1 + count($bulanListFiltered) * 4 + 4 }}">
-                    PENERIMA
-                </td>
-            </tr>
-
-            @foreach ($dataPenerima as $kategori => $bulanData)
-                @php
-                    $totalRencana = 0;
-                    $totalRealisasi = 0;
-                @endphp
-
-                <tr>
-                    <td>{{ $kategori }}</td>
-
-                    @foreach ($bulanListFiltered as $b)
-                        @php
-                            $r = $bulanData[$b]['rencana'] ?? 0;
-                            $re = $bulanData[$b]['realisasi'] ?? 0;
-                            $s = $bulanData[$b]['selisih'] ?? 0;
-                            $p = $bulanData[$b]['persen'] ?? 0;
-
-                            $totalRencana += $r;
-                            $totalRealisasi += $re;
-                        @endphp
-
-                        <td class="text-right">{{ formatMinus($r) }}</td>
-                        <td class="text-right">{{ formatMinus($re) }}</td>
-                        <td class="text-right">{{ formatMinus($s) }}</td>
-                        <td class="text-right">{{ formatMinus($p, 2) }}%</td>
-                    @endforeach
-
-                    @php
-                        $totalSelisih = $totalRealisasi - $totalRencana;
-                        $totalPersen = $totalRencana > 0
-                            ? ($totalRealisasi / $totalRencana) * 100
-                            : 0;
-                    @endphp
-
-                    <td>{{ formatMinus($totalRencana) }}</td>
-                    <td>{{ formatMinus($totalRealisasi) }}</td>
-                    <td>{{ formatMinus($totalSelisih) }}</td>
-                    <td>{{ formatMinus($totalPersen, 2) }}%</td>
-                </tr>
-            @endforeach
-
-            {{-- ================= TOTAL PENERIMA ================= --}}
-            @php
-                $totalRencana = 0;
-                $totalRealisasi = 0;
-            @endphp
-
-            <tr class="table-info font-weight-bold dp-total-row">
-                <td class="text-right">Total Penerima</td>
-
-                @foreach ($bulanListFiltered as $b)
-                    @php
-                        $r = $totalPenerima[$b]['rencana'] ?? 0;
-                        $re = $totalPenerima[$b]['realisasi'] ?? 0;
-                        $s = $totalPenerima[$b]['selisih'] ?? 0;
-                        $p = $totalPenerima[$b]['persen'] ?? 0;
-
-                        $totalRencana += $r;
-                        $totalRealisasi += $re;
-                    @endphp
-
-                    <td class="text-right">{{ formatMinus($r) }}</td>
-                    <td class="text-right">{{ formatMinus($re) }}</td>
-                    <td class="text-right">{{ formatMinus($s) }}</td>
-                    <td class="text-right">{{ formatMinus($p, 2) }}%</td>
-                @endforeach
-
-                @php
-                    $totalSelisih = $totalRealisasi - $totalRencana;
-                    $totalPersen = $totalRencana > 0
-                        ? ($totalRealisasi / $totalRencana) * 100
-                        : 0;
-                @endphp
-
-                <td class="text-right">{{ formatMinus($totalRencana) }}</td>
-                <td class="text-right">{{ formatMinus($totalRealisasi) }}</td>
-                <td class="text-right">{{ formatMinus($totalSelisih) }}</td>
-                <td class="text-right">{{ formatMinus($totalPersen, 2) }}%</td>
-            </tr>
-
-            {{-- ================= DROPPING ================= --}}
-            <tr class="dp-section font-weight-bold">
-                <td colspan="{{ 1 + count($bulanListFiltered) * 4 + 4 }}">
-                    DROPPING
-                </td>
-            </tr>
-
-            @foreach ($dataDropping as $kategori => $subs)
-                <tr class="dp-category-row">
-                    <td colspan="{{ 1 + count($bulanListFiltered) * 4 + 4 }}">
-                        <span class="dp-category-label">{{ $kategori }}</span>
-                    </td>
-                </tr>
-
-                @foreach ($subs as $sub => $items)
-                    <tr class="dp-sub-row">
-                        <td colspan="{{ 1 + count($bulanListFiltered) * 4 + 4 }}">
-                            <span class="dp-sub-label">{{ $sub }}</span>
-                        </td>
-                    </tr>
-
-                    @foreach ($items as $item => $bulanData)
-                        @php
-                            $totalRencana = 0;
-                            $totalRealisasi = 0;
-                        @endphp
-
-                        <tr class="dp-item-row">
-                            <td>{{ $item === '' ? '' : '- ' . $item }}</td>
-
-                            @foreach ($bulanListFiltered as $b)
-                                @php
-                                    $r = $bulanData[$b]['rencana'] ?? 0;
-                                    $re = $bulanData[$b]['realisasi'] ?? 0;
-                                    $s = $bulanData[$b]['selisih'] ?? 0;
-                                    $p = $bulanData[$b]['persen'] ?? 0;
-
-                                    $totalRencana += $r;
-                                    $totalRealisasi += $re;
-                                @endphp
-
-                                <td class="text-right">{{ formatMinus($r) }}</td>
-                                <td class="text-right">{{ formatMinus($re) }}</td>
-                                <td class="text-right">{{ formatMinus($s) }}</td>
-                                <td class="text-right">{{ formatMinus($p, 2) }}%</td>
-                            @endforeach
-
-                            @php
-                                $totalSelisih = $totalRealisasi - $totalRencana;
-                                $totalPersen = $totalRencana > 0
-                                    ? ($totalRealisasi / $totalRencana) * 100
-                                    : 0;
-                            @endphp
-
-                            <td class="text-right">{{ formatMinus($totalRencana) }}</td>
-                            <td class="text-right">{{ formatMinus($totalRealisasi) }}</td>
-                            <td class="text-right">{{ formatMinus($totalSelisih) }}</td>
-                            <td class="text-right">{{ formatMinus($totalPersen, 2) }}%</td>
-                        </tr>
-                    @endforeach
-                @endforeach
-            @endforeach
-
-            {{-- ================= TOTAL DROPPING ================= --}}
-            @php
-                $totalRencana = 0;
-                $totalRealisasi = 0;
-            @endphp
-
-            <tr class="table-primary font-weight-bold dp-total-row">
-                <td class="text-right">Total Dropping</td>
-
-                @foreach ($bulanListFiltered as $b)
-                    @php
-                        $r = $totalDropping[$b]['rencana'] ?? 0;
-                        $re = $totalDropping[$b]['realisasi'] ?? 0;
-                        $s = $totalDropping[$b]['selisih'] ?? 0;
-                        $p = $totalDropping[$b]['persen'] ?? 0;
-
-                        $totalRencana += $r;
-                        $totalRealisasi += $re;
-                    @endphp
-
-                    <td class="text-right">{{ formatMinus($r) }}</td>
-                    <td class="text-right">{{ formatMinus($re) }}</td>
-                    <td class="text-right">{{ formatMinus($s) }}</td>
-                    <td class="text-right">{{ formatMinus($p, 2) }}%</td>
-                @endforeach
-
-                @php
-                    $totalSelisih = $totalRealisasi - $totalRencana;
-                    $totalPersen = $totalRencana > 0
-                        ? ($totalRealisasi / $totalRencana) * 100
-                        : 0;
-                @endphp
-
-                <td class="text-right">{{ formatMinus($totalRencana) }}</td>
-                <td class="text-right">{{ formatMinus($totalRealisasi) }}</td>
-                <td class="text-right">{{ formatMinus($totalSelisih) }}</td>
-                <td class="text-right">{{ formatMinus($totalPersen, 2) }}%</td>
-            </tr>
-
-        </tbody>
-
-        {{-- ================= FOOTER ================= --}}
-        <tfoot class="bg-dark text-white font-weight-bold">
-            @php
-                $totalRencana = 0;
-                $totalRealisasi = 0;
-            @endphp
-
-            <tr class="bg-orange dp-footer-row">
-                <th class="text-right">
-                    Selisih Penerima - Dropping
-                </th>
-
-                @foreach ($bulanListFiltered as $b)
-                    @php
-                        $r = ($totalPenerima[$b]['rencana'] ?? 0)
-                            - ($totalDropping[$b]['rencana'] ?? 0);
-
-                        $re = ($totalPenerima[$b]['realisasi'] ?? 0)
-                            - ($totalDropping[$b]['realisasi'] ?? 0);
-
-                        $s = $re - $r;
-                        $p = $r != 0 ? ($re / $r) * 100 : 0;
-
-                        $totalRencana += $r;
-                        $totalRealisasi += $re;
-                    @endphp
-
-                    <th>{{ formatMinus($r) }}</th>
-                    <th>{{ formatMinus($re) }}</th>
-                    <th>{{ formatMinus($s) }}</th>
-                    <th>{{ formatMinus($p, 2) }}%</th>
-                @endforeach
-
-                @php
-                    $totalSelisih = $totalRealisasi - $totalRencana;
-                    $totalPersen = $totalRencana != 0
-                        ? ($totalRealisasi / $totalRencana) * 100
-                        : 0;
-                @endphp
-
-                <th>{{ formatMinus($totalRencana) }}</th>
-                <th>{{ formatMinus($totalRealisasi) }}</th>
-                <th>{{ formatMinus($totalSelisih) }}</th>
-                <th>{{ formatMinus($totalPersen, 2) }}%</th>
-            </tr>
-        </tfoot>
-
-    </table>
+<div class="table-responsive">
+    <div id="dp-table"></div>
 </div>
+
+<script>
+(function () {
+    var dpRows = @json($dpRows);
+    var dpMonths = @json($dpMonthTitles);
+
+    // Format ala formatMinus: negatif -> (x); kolom % -> 2 desimal + '%'
+    function dpFmt(cell) {
+        var v = cell.getValue();
+        if (v === null || v === undefined || v === '') return '';
+        v = Number(v);
+        var isPct = cell.getField().slice(-2) === '_p';
+        var s = Math.abs(v).toLocaleString('id-ID', {
+            minimumFractionDigits: isPct ? 2 : 0,
+            maximumFractionDigits: isPct ? 2 : 0
+        });
+        if (isPct) s += '%';
+        return v < 0 ? '(' + s + ')' : s;
+    }
+
+    function numCol(title, field, minW) {
+        return {
+            title: title,
+            field: field,
+            hozAlign: 'right',
+            minWidth: minW || 100,
+            widthGrow: 1,
+            formatter: dpFmt,
+            headerHozAlign: 'center'
+        };
+    }
+
+    function monthGroup(title, prefix) {
+        return {
+            title: title,
+            columns: [
+                numCol('Rencana', prefix + '_r'),
+                numCol('Realisasi', prefix + '_re'),
+                numCol('Selisih', prefix + '_s'),
+                numCol('%', prefix + '_p', 85)
+            ]
+        };
+    }
+
+    function buildColumns() {
+        var cols = [
+            { title: 'URAIAN', field: 'uraian', frozen: true, minWidth: 250, widthGrow: 2, headerHozAlign: 'center' }
+        ];
+        dpMonths.forEach(function (m) {
+            cols.push(monthGroup(m.title, 'm' + m.i));
+        });
+        cols.push(monthGroup('TOTAL', 'tot'));
+        return cols;
+    }
+
+    function dpRowFormatter(row) {
+        var t = row.getData().type;
+        var el = row.getElement();
+        ['section', 'kat', 'sub', 'item', 'total', 'footer'].forEach(function (k) {
+            el.classList.toggle('dp-r-' + k, t === k);
+        });
+    }
+
+    function initDp() {
+        var el = document.getElementById('dp-table');
+        if (!el || !window.Tabulator) return;
+
+        new Tabulator(el, {
+            data: dpRows,
+            columns: buildColumns(),
+            layout: 'fitColumns',
+            height: '68vh',
+            columnHeaderVertAlign: 'middle',
+            movableColumns: false,
+            columnDefaults: { headerSort: false },
+            rowFormatter: dpRowFormatter,
+            placeholder: 'Tidak ada data'
+        });
+    }
+
+    if (window.Tabulator) {
+        initDp();
+    } else {
+        document.addEventListener('DOMContentLoaded', initDp);
+    }
+})();
+</script>

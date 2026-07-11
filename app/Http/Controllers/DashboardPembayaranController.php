@@ -13,6 +13,7 @@ use App\Models\RencanaDropping;
 use App\Models\RencanaPenerima;
 use App\Exports\ExcelPembayaran;
 use App\Models\KategoriKriteria;
+use App\Support\DashboardKriteriaHierarchy;
 use Maatwebsite\Excel\Facades\Excel;
 
 class DashboardPembayaranController extends Controller
@@ -184,9 +185,11 @@ class DashboardPembayaranController extends Controller
             if (!$bulan)
                 continue;
 
-            $k = $row->kategori->nama_kriteria ?? 'Tidak Dikategorikan';
-            $s = $row->subKriteria->nama_sub_kriteria ?? 'Tidak Ada Sub';
-            $i = $row->itemSubKriteria->nama_item_sub_kriteria ?? 'Tidak Ada Item';
+            [$k, $s, $i] = DashboardKriteriaHierarchy::normalizePath(
+                $row->kategori->nama_kriteria ?? 'Tidak Dikategorikan',
+                $row->subKriteria->nama_sub_kriteria ?? 'Tidak Ada Sub',
+                $row->itemSubKriteria->nama_item_sub_kriteria ?? 'Tidak Ada Item'
+            );
 
             if (!isset($dataDropping[$k])) {
                 $dataDropping[$k] = [];
@@ -224,9 +227,11 @@ class DashboardPembayaranController extends Controller
             if (!$bulan)
                 continue;
 
-            $k = $row->kategori->nama_kriteria ?? 'Tidak Dikategorikan';
-            $s = $row->subKriteria->nama_sub_kriteria ?? 'Tidak Ada Sub';
-            $i = $row->itemSubKriteria->nama_item_sub_kriteria ?? 'Tidak Ada Item';
+            [$k, $s, $i] = DashboardKriteriaHierarchy::normalizePath(
+                $row->kategori->nama_kriteria ?? 'Tidak Dikategorikan',
+                $row->subKriteria->nama_sub_kriteria ?? 'Tidak Ada Sub',
+                $row->itemSubKriteria->nama_item_sub_kriteria ?? 'Tidak Ada Item'
+            );
 
             if (!isset($dataDropping[$k])) {
                 $dataDropping[$k] = [];
@@ -263,6 +268,8 @@ class DashboardPembayaranController extends Controller
             $totalDropping[$b]['selisih'] = $v['realisasi'] - $v['rencana'];
             $totalDropping[$b]['persen'] = $v['rencana'] > 0 ? ($v['realisasi'] / $v['rencana']) * 100 : 0;
         }
+
+        $dataDropping = DashboardKriteriaHierarchy::ensureNestedRows($dataDropping, $templateBulan);
 
         // ✅ FILTER BULAN: Hanya bulan yang ada transaksi DAN dalam range
         $bulanListFiltered = [];

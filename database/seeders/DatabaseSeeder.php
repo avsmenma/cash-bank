@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             KategoriKriteriaSeeder::class,
             SubKriteriaSeeder::class,
             ItemSubKriteriaSeeder::class,
+            DashboardKriteriaMasterSeeder::class,
             JenisPembayaranSeeder::class,
             SumberDanaSeeder::class,
             BankTujuanSeeder::class,

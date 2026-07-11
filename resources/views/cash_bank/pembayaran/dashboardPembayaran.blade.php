@@ -1,21 +1,100 @@
-@push('styles')
-    <style>
-        #example {
-            table-layout: auto;
-        }
+<style>
+    #example.dashboard-payment-table {
+        table-layout: auto;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 12.5px;
+    }
 
-        #example th:first-child,
-        #example td:first-child {
-            min-width: 250px;
-        }
+    #example.dashboard-payment-table th,
+    #example.dashboard-payment-table td {
+        border-color: #d5dce5;
+        padding: 7px 9px;
+        vertical-align: middle;
+    }
 
-        #example th:not(:first-child),
-        #example td:not(:first-child) {
-            min-width: 100px;
-            text-align: right;
-        }
-    </style>
-@endpush
+    #example.dashboard-payment-table th:first-child,
+    #example.dashboard-payment-table td:first-child {
+        min-width: 500px;
+        text-align: left;
+        white-space: normal;
+    }
+
+    #example.dashboard-payment-table th:not(:first-child),
+    #example.dashboard-payment-table td:not(:first-child) {
+        min-width: 108px;
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    #example.dashboard-payment-table thead th {
+        background: #1f3d5a !important;
+        color: #fff !important;
+        border-color: #17324b;
+        font-weight: 700;
+        text-align: center !important;
+    }
+
+    #example.dashboard-payment-table .dp-section td {
+        background: #1597a7 !important;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: .2px;
+        border-top: 2px solid #0f7280;
+        border-bottom: 2px solid #0f7280;
+    }
+
+    #example.dashboard-payment-table .dp-category-row td {
+        background: #d7dde3 !important;
+        color: #172033;
+        font-size: 14px;
+        font-weight: 800;
+        border-top: 2px solid #9aa7b4;
+        border-bottom: 1px solid #aeb8c4;
+    }
+
+    #example.dashboard-payment-table .dp-category-label {
+        display: block;
+        border-left: 5px solid #334e68;
+        padding: 3px 0 3px 10px;
+    }
+
+    #example.dashboard-payment-table .dp-sub-row td {
+        background: #eef4fb !important;
+        color: #17324b;
+        font-weight: 800;
+        border-top: 2px solid #7f95ad;
+        border-bottom: 1px solid #c6d3e1;
+    }
+
+    #example.dashboard-payment-table .dp-sub-label {
+        display: block;
+        margin-left: 16px;
+        padding: 4px 0 4px 12px;
+        border-left: 4px solid #2f80aa;
+    }
+
+    #example.dashboard-payment-table .dp-item-row td {
+        background: #fff;
+        border-bottom: 1px solid #e3e8ef;
+    }
+
+    #example.dashboard-payment-table .dp-item-row td:first-child {
+        color: #1f2937;
+        padding-left: 58px;
+    }
+
+    #example.dashboard-payment-table .dp-item-row:hover td {
+        background: #f8fbff;
+    }
+
+    #example.dashboard-payment-table .dp-total-row td,
+    #example.dashboard-payment-table .dp-footer-row th {
+        font-weight: 800;
+    }
+</style>
 
 @php
     function formatMinus($angka, $desimal = 0)
@@ -27,7 +106,7 @@
 @endphp
 
 <div class="table-responsive">
-    <table class="table table-bordered table-sm" id="example">
+    <table class="table table-bordered table-sm dashboard-payment-table" id="example">
 
         {{-- ================= HEADER ================= --}}
         <thead class="bg-navy text-center">
@@ -61,7 +140,7 @@
         <tbody>
 
             {{-- ================= PENERIMA ================= --}}
-            <tr class="bg-orange font-weight-bold">
+            <tr class="dp-section font-weight-bold">
                 <td colspan="{{ 1 + count($bulanListFiltered) * 4 + 4 }}">
                     PENERIMA
                 </td>
@@ -113,7 +192,7 @@
                 $totalRealisasi = 0;
             @endphp
 
-            <tr class="table-info font-weight-bold">
+            <tr class="table-info font-weight-bold dp-total-row">
                 <td class="text-right">Total Penerima</td>
 
                 @foreach ($bulanListFiltered as $b)
@@ -147,23 +226,23 @@
             </tr>
 
             {{-- ================= DROPPING ================= --}}
-            <tr class="bg-cyan font-weight-bold">
+            <tr class="dp-section font-weight-bold">
                 <td colspan="{{ 1 + count($bulanListFiltered) * 4 + 4 }}">
                     DROPPING
                 </td>
             </tr>
 
             @foreach ($dataDropping as $kategori => $subs)
-                <tr class="table-secondary font-weight-bold">
+                <tr class="dp-category-row">
                     <td colspan="{{ 1 + count($bulanListFiltered) * 4 + 4 }}">
-                        {{ $kategori }}
+                        <span class="dp-category-label">{{ $kategori }}</span>
                     </td>
                 </tr>
 
                 @foreach ($subs as $sub => $items)
-                    <tr class="table-light">
+                    <tr class="dp-sub-row">
                         <td colspan="{{ 1 + count($bulanListFiltered) * 4 + 4 }}">
-                            {{ $sub }}
+                            <span class="dp-sub-label">{{ $sub }}</span>
                         </td>
                     </tr>
 
@@ -173,8 +252,8 @@
                             $totalRealisasi = 0;
                         @endphp
 
-                        <tr>
-                            <td>- {{ $item }}</td>
+                        <tr class="dp-item-row">
+                            <td>{{ $item === '' ? '' : '- ' . $item }}</td>
 
                             @foreach ($bulanListFiltered as $b)
                                 @php
@@ -215,7 +294,7 @@
                 $totalRealisasi = 0;
             @endphp
 
-            <tr class="table-primary font-weight-bold">
+            <tr class="table-primary font-weight-bold dp-total-row">
                 <td class="text-right">Total Dropping</td>
 
                 @foreach ($bulanListFiltered as $b)
@@ -257,7 +336,7 @@
                 $totalRealisasi = 0;
             @endphp
 
-            <tr class="bg-orange">
+            <tr class="bg-orange dp-footer-row">
                 <th class="text-right">
                     Selisih Penerima - Dropping
                 </th>

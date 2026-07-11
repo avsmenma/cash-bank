@@ -249,6 +249,8 @@
                         $organizedData[$kategori][$subKriteria][$itemKriteria]['pembayaran'] = $item['data'];
                     }
                 }
+
+                    $organizedData = \App\Support\DashboardKriteriaHierarchy::sortNested($organizedData);
                     
                     // Initialize totals
                     $grandTotalPermintaan = [];
@@ -322,7 +324,7 @@
                             {{-- Item Detail Row --}}
                             <tr class="item-row">
                                 <td></td>
-                                <td>{{"- " . $itemKriteria }}</td>
+                                <td>{{ $itemKriteria === '' ? '' : "- " . $itemKriteria }}</td>
                                 @php
                                     $totalPermintaanItem = 0;
                                     $totalDroppingItem = 0;

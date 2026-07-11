@@ -152,18 +152,20 @@
                 <th style="min-width:150px;vertical-align: middle;" class="text-center">Dropping</th>
             </tr>
                 
+                {{-- Nomor minggu: di-reset 1-2-3 untuk tiap bulan (bukan penomoran kolom berlanjut) --}}
                 <tr>
-                    @php $colNum = 1; @endphp
                     @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                        <th style="vertical-align: middle;" class="text-center">{{ $colNum++ }}</th>
-                        <th style="vertical-align: middle;" class="text-center">{{ $colNum++ }}</th>
-                        <th style="vertical-align: middle;" class="text-center">{{ $colNum++ }}</th>
+                        <th style="vertical-align: middle;" class="text-center">1</th>
+                        <th style="vertical-align: middle;" class="text-center">2</th>
+                        <th style="vertical-align: middle;" class="text-center">3</th>
                     @endforeach
-                    <th style="vertical-align: middle;" class="text-center">{{ $colNum++ }}</th>
-                    <th style="vertical-align: middle;" class="text-center">{{ $colNum++ }}</th>
-                    <th style="vertical-align: middle;" class="text-center">{{ $colNum++ }}</th>
-                    <th style="vertical-align: middle;" class="text-center">{{ $colNum++ }}</th>
-                    <th style="vertical-align: middle;" class="text-center">{{ $colNum++ }}</th>
+                    {{-- Blok Total --}}
+                    <th style="vertical-align: middle;" class="text-center">1</th>
+                    <th style="vertical-align: middle;" class="text-center">2</th>
+                    <th style="vertical-align: middle;" class="text-center">3</th>
+                    {{-- Blok %Tase Pembayaran Thdp --}}
+                    <th style="vertical-align: middle;" class="text-center">1</th>
+                    <th style="vertical-align: middle;" class="text-center">2</th>
                 </tr>
             </thead>
             

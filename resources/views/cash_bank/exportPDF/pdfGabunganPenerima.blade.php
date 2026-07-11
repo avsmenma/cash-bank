@@ -37,7 +37,7 @@
         }
 
         th {
-            background-color: #343a40;
+            background-color: #1e3a5f;
             color: white;
             text-align: center;
         }
@@ -49,18 +49,6 @@
         td:first-child {
             text-align: left;
             white-space: nowrap;
-        }
-
-        .bg-rencana {
-            background-color: #e2e3e5;
-        }
-
-        .bg-realisasi {
-            background-color: #d4edda;
-        }
-
-        .bg-selisih {
-            background-color: #fff3cd;
         }
     </style>
 </head>
@@ -97,9 +85,9 @@
                         @php
                             $d = $bulanData[$namaBulan] ?? ['rencana' => 0, 'realisasi' => 0, 'selisih' => 0, 'persen' => 0];
                         @endphp
-                        <td class="bg-rencana">{{ number_format($d['rencana'], 0, ',', '.') }}</td>
-                        <td class="bg-realisasi">{{ number_format($d['realisasi'], 0, ',', '.') }}</td>
-                        <td class="bg-selisih">{{ number_format($d['selisih'], 0, ',', '.') }}</td>
+                        <td>{{ number_format($d['rencana'], 0, ',', '.') }}</td>
+                        <td>{{ number_format($d['realisasi'], 0, ',', '.') }}</td>
+                        <td>{{ number_format($d['selisih'], 0, ',', '.') }}</td>
                         <td>{{ number_format($d['persen'], 1, ',', '.') }}%</td>
                     @endforeach
                 </tr>

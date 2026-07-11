@@ -2,19 +2,19 @@
     <thead>
         <tr>
             <th rowspan="2"
-                style="background-color: #343a40; color: white; font-weight: bold; vertical-align: middle; text-align: center;">
+                style="background-color: #1e3a5f; color: white; font-weight: bold; vertical-align: middle; text-align: center;">
                 Kategori</th>
             @foreach($bulanListFiltered as $namaBulan => $noBulan)
-                <th colspan="4" style="background-color: #343a40; color: white; font-weight: bold; text-align: center;">
+                <th colspan="4" style="background-color: #1e3a5f; color: white; font-weight: bold; text-align: center;">
                     {{ ucfirst($namaBulan) }}</th>
             @endforeach
         </tr>
         <tr>
             @foreach($bulanListFiltered as $namaBulan => $noBulan)
-                <th style="background-color: #17a2b8; color: white; text-align: center;">Rencana</th>
-                <th style="background-color: #28a745; color: white; text-align: center;">Realisasi</th>
-                <th style="background-color: #ffc107; color: black; text-align: center;">Selisih</th>
-                <th style="background-color: #6c757d; color: white; text-align: center;">%</th>
+                <th style="background-color: #1e3a5f; color: white; font-weight: bold; text-align: center;">Rencana</th>
+                <th style="background-color: #1e3a5f; color: white; font-weight: bold; text-align: center;">Realisasi</th>
+                <th style="background-color: #1e3a5f; color: white; font-weight: bold; text-align: center;">Selisih</th>
+                <th style="background-color: #1e3a5f; color: white; font-weight: bold; text-align: center;">%</th>
             @endforeach
         </tr>
     </thead>

@@ -227,10 +227,8 @@
                         <div class="row no-print mb-3">
                             <div class="col-12">
                                 <div class="d-flex gap-2 align-items-center">
-                                    <a href="{{ route('penerima.export_pdf_gabungan') }}" id="btnDownloadPdfGabungan" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download
-                                        PDF</a>
-                                    <a href="{{ route('penerima.export_excel_gabungan') }}" id="btnDownloadExcelGabungan" class="btn btn-outline-danger"><i class="fas fa-file-excel"></i> Download
-                                        Excel</a>
+                                    <a href="{{ route('penerima.export_pdf_gabungan') }}" id="btnDownloadPdfGabungan" class="btn btn-outline-primary"><i class="fas fa-print"></i> Download PDF</a>
+                                    <a href="{{ route('penerima.export_excel_gabungan') }}" id="btnDownloadExcelGabungan" class="btn btn-outline-danger"><i class="fas fa-file-excel"></i> Download Excel</a>
                                     <div class="col-md-2">
                                         <label>Tahun:</label>
                                         <select class="select2" id="tahunGabungan">
@@ -282,14 +280,6 @@
                                             <i class="fas fa-filter"></i> Filter
                                         </button>
                                     </div>
-                                    <div class="col-4">
-
-                                    </div>
-                                    <div class="col-1">
-                                        <a href="#" class="btn btn-outline-danger"><i class="fas fa-file-excel"></i>
-                                            Download Excel</a>
-                                    </div>
-
                                 </div>
                             </div>
                         </div>
@@ -479,6 +469,12 @@
                         alert('Bulan dari tidak boleh lebih besar dari bulan sampai');
                         return;
                     }
+
+                    // Link export ikut filter terpilih (tanpa ini export selalu pakai default)
+                    var paramsGabungan = '?tahun=' + tahun + '&bulan_dari=' + bulanDari + '&bulan_sampai=' + bulanSampai;
+                    $('#btnDownloadPdfGabungan').attr('href', '{{ route("penerima.export_pdf_gabungan") }}' + paramsGabungan);
+                    $('#btnDownloadExcelGabungan').attr('href', '{{ route("penerima.export_excel_gabungan") }}' + paramsGabungan);
+
                     $('#gabungan-content').html('<div class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>');
                     $.ajax({
                         url: '{{ route("penerima.gabungan") }}',

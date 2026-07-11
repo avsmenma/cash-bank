@@ -762,9 +762,11 @@ class penerimaController extends Controller
 
         foreach ($kategori as $k) {
             foreach ($bulanListFiltered as $namaBulan => $noBulan) {
+                // Kolom tahun bertipe angka — jangan whereYear (fungsi YEAR()
+                // untuk kolom tanggal), hasilnya rencana selalu 0.
                 $rencana = DB::table('rencana_penerimas')
                     ->where('id_kategori_kriteria', $k->id_kategori_kriteria)
-                    ->whereYear('tahun', $tahun)
+                    ->where('tahun', $tahun)
                     ->sum($namaBulan);
 
                 $nilai = DB::table('penerimas')

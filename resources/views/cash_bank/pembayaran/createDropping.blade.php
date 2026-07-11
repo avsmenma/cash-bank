@@ -1,6 +1,15 @@
+<style>
+    /* Warna header & footer mengikuti hasil export PDF (navy) */
+    #tabelDropping thead th,
+    #tabelDropping tfoot th {
+        background-color: #1e3a5f !important;
+        color: #ffffff !important;
+        border-color: #17324b !important;
+    }
+</style>
 <div class="table-responsive">
-    <table class="table table-bordered table-striped table-hover">
-        <thead class="table-dark">
+    <table class="table table-bordered table-striped table-hover" id="tabelDropping">
+        <thead>
             <tr>
                 <th style="width: 200px;">#</th>
                 <th style="width: 150px;">M1</th>
@@ -51,7 +60,7 @@
                 </tr>
             @endforeach
         </tbody>
-        <tfoot class="table-dark">
+        <tfoot>
             <tr>
                 <th>Total</th>
                 <th class="text-right">{{ number_format($totalM1, 0, ',', '.') }}</th>

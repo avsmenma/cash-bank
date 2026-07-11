@@ -116,6 +116,9 @@
         center / 2px 100% no-repeat;
 }
 #rkTable .tabulator-header .tabulator-col-resize-handle:hover { background: rgba(255,255,255,.3); }
+/* Pesan tempat scrollbar sejak awal: tanpa ini scrollbar muncul SETELAH
+   lebar kolom dihitung, sehingga isi tabel bergeser tidak sejajar header */
+#rkTable .tabulator-tableholder { scrollbar-gutter: stable; }
 #rkTable .tabulator-cell { border-right: 1px solid #c3d2e0; border-color: #c3d2e0; }
 #rkTable .tabulator-row { border-bottom: 1px solid #c3d2e0; }
 #rkTable .tabulator-row:hover .tabulator-cell { background: #f5f8fc; }
@@ -225,6 +228,15 @@ function resetFilter() {
         }
         table.on('dataProcessed', updateInfo);
         table.on('renderComplete', updateInfo);
+
+        // Hitung ulang lebar kolom SEKALI setelah data pertama masuk —
+        // menyelaraskan header vs isi setelah scrollbar vertikal muncul.
+        var rkRealigned = false;
+        table.on('dataProcessed', function () {
+            if (rkRealigned) return;
+            rkRealigned = true;
+            window.requestAnimationFrame(function () { table.redraw(true); });
+        });
     }
 
     if (window.Tabulator) {

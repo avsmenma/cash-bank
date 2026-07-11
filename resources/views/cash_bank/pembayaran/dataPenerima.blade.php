@@ -36,10 +36,11 @@
 
     $pnRows = [];
     foreach ($grouped as $bulanNum => $kategoriGroup) {
+        // Judul lengkap tampil sekali di atas tabel; baris bulan cukup nama bulan
         $pnRows[] = [
             'type' => 'monthtitle',
             'sel' => '<input type="checkbox" class="select-all-month" data-month="' . $bulanNum . '">',
-            'penerimaan' => $judul . ' — ' . ($bulanNames[$bulanNum] ?? '') . ' ' . $tahun,
+            'penerimaan' => ($bulanNames[$bulanNum] ?? '') . ' ' . $tahun,
         ];
 
         $monthTot = ['volume' => 0, 'nilai' => 0, 'ppn' => 0, 'potppn' => 0, 'inc' => 0];
@@ -112,6 +113,9 @@
     }
 @endphp
 
+<div style="background:#1a5632; color:#fff; font-weight:700; font-size:13px; padding:8px 12px; border-radius:8px 8px 0 0;">
+    <i class="fas fa-calendar-alt mr-2"></i>{{ $judul }} — {{ $tahun }}
+</div>
 <div id="pn-real-table"></div>
 
 <script>
@@ -136,12 +140,12 @@
                 col('Pembeli', 'pembeli', { minWidth: 90 }),
                 col('Tgl. Diterima', 'tanggal', { hozAlign: 'center', minWidth: 105 }),
                 col('No. Rekg. Penerima', 'no_reg', { minWidth: 130 }),
-                col('Volume (Kg)', 'volume', { hozAlign: 'right' }),
-                col('Harga (Rp)', 'harga', { hozAlign: 'right' }),
-                col('Nilai', 'nilai', { hozAlign: 'right', minWidth: 110 }),
-                col('PPN', 'ppn', { hozAlign: 'right' }),
-                col('Pot PPh', 'potppn', { hozAlign: 'right' }),
-                col('Nilai Inc. PPN', 'inc', { hozAlign: 'right', minWidth: 115 }),
+                col('Volume (Kg)', 'volume', { hozAlign: 'right', minWidth: 100 }),
+                col('Harga (Rp)', 'harga', { hozAlign: 'right', minWidth: 95 }),
+                col('Nilai', 'nilai', { hozAlign: 'right', minWidth: 125 }),
+                col('PPN', 'ppn', { hozAlign: 'right', minWidth: 115 }),
+                col('Pot PPh', 'potppn', { hozAlign: 'right', minWidth: 95 }),
+                col('Nilai Inc. PPN', 'inc', { hozAlign: 'right', minWidth: 130 }),
                 col('Aksi', 'aksi', { formatter: 'html', width: 92, hozAlign: 'center', resizable: false })
             ],
             layout: 'fitColumns',

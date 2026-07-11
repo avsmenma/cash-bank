@@ -15,20 +15,23 @@
         vertical-align: middle;
     }
 
-    #example.dashboard-payment-table th:first-child,
-    #example.dashboard-payment-table td:first-child {
-        width: 300px;
-        min-width: 300px;
-        max-width: 300px;
+    /* Kolom URAIAN: HANYA th ber-class dp-uraian dan td pertama di tbody.
+       Jangan pakai th:first-child — ikut mengenai th "Rencana" bulan pertama
+       di baris header kedua sehingga kolom itu melar. */
+    #example.dashboard-payment-table th.dp-uraian,
+    #example.dashboard-payment-table tbody td:first-child {
+        width: 240px;
+        min-width: 240px;
+        max-width: 240px;
         text-align: left;
         white-space: normal;
         overflow-wrap: break-word;
     }
 
-    #example.dashboard-payment-table th:not(:first-child),
-    #example.dashboard-payment-table td:not(:first-child) {
-        width: 110px;
-        min-width: 110px;
+    #example.dashboard-payment-table th:not(.dp-uraian),
+    #example.dashboard-payment-table tbody td:not(:first-child) {
+        width: 100px;
+        min-width: 100px;
         text-align: right;
         white-space: nowrap;
         font-variant-numeric: tabular-nums;
@@ -117,7 +120,7 @@
         {{-- ================= HEADER ================= --}}
         <thead class="bg-navy text-center">
             <tr>
-                <th rowspan="2" style="vertical-align: middle">
+                <th rowspan="2" class="dp-uraian" style="vertical-align: middle">
                     URAIAN
                 </th>
 

@@ -11,6 +11,14 @@
         white-space: nowrap;
         vertical-align: middle;
     }
+    /* Kolom Kontrak dikunci lebarnya; teks panjang dibungkus ke baris berikutnya */
+    .penerima-grouped-table th.col-kontrak,
+    .penerima-grouped-table td.col-kontrak {
+        width: 180px;
+        max-width: 180px;
+        white-space: normal;
+        word-break: break-word;
+    }
     .row-month-title td {
         background-color: #1a5632 !important;
         color: #fff !important;
@@ -79,7 +87,7 @@
                         <th style="width:30px;"><input type="checkbox" class="select-all-month" data-month="{{ $bulanNum }}"></th>
                         <th style="width:30px;">No</th>
                         <th>Penerimaan</th>
-                        <th>Kontrak</th>
+                        <th class="col-kontrak">Kontrak</th>
                         <th>Pembeli</th>
                         <th>Tgl. Diterima</th>
                         <th>No. Rekg. Penerima</th>
@@ -132,7 +140,7 @@
                                 </td>
                                 <td class="text-center">{{ $catNo++ }}</td>
                                 <td>{{ $kategoriName }}</td>
-                                <td>{{ $row->kontrak }}</td>
+                                <td class="col-kontrak">{{ $row->kontrak }}</td>
                                 <td>{{ $row->pembeli }}</td>
                                 <td class="text-center">{{ ($row->tanggal && $row->tanggal !== '0000-00-00') ? \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d M Y') : '-' }}</td>
                                 <td>{{ $row->no_reg }}</td>

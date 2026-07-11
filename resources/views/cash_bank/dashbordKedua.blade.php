@@ -18,15 +18,16 @@
     #cashflow-table-pvd td.text-right {
         white-space: nowrap;
     }
+    /* Gaya header disamakan dengan tabel dashboard-pembayaran:
+       navy polos (tanpa gradasi/uppercase), font & garis yang sama */
     #cashflow-table-pvd thead th {
-        background: linear-gradient(180deg, #1e3a5f 0%, #162d4a 100%) !important;
+        background: #1f3d5a !important;
         color: #ffffff !important;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: .3px;
-        font-size: 10px;
-        border-color: #0f2137 !important;
+        font-weight: 700;
+        font-size: 12.5px;
+        border-color: #17324b !important;
         vertical-align: middle;
+        text-align: center !important;
     }
     #cashflow-table-pvd th,
     #cashflow-table-pvd td {

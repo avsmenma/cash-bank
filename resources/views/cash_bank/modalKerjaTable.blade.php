@@ -146,7 +146,9 @@
     <div class="alert alert-info m-3">Tidak ada data untuk filter yang dipilih.</div>
 @else
 
-<div class="table-scroll">
+{{-- drag-scroll: tahan-klik lalu geser untuk scroll HORIZONTAL saja
+     (handler global di layouts/index hanya menggeser scrollLeft) --}}
+<div class="table-scroll drag-scroll">
 <table id="mk-table" class="table table-bordered table-sm">
     <thead>
         {{-- ROW 1 --}}

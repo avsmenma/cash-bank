@@ -9,6 +9,20 @@
         white-space: nowrap;
         vertical-align: middle;
     }
+
+    /* Baris kategori (1 baris full): navy dengan opacity diturunkan */
+    #cashflow-table tbody tr.cf-kategori-row td {
+        background: rgba(30, 58, 95, 0.15) !important;
+        color: #1e3a5f !important;
+    }
+
+    /* Baris Sub Total & Total (kategori + keseluruhan): navy solid */
+    #cashflow-table tbody tr.cf-subtotal-row td,
+    #cashflow-table tbody tr.cf-total-row td,
+    #cashflow-table tfoot th {
+        background: #1e3a5f !important;
+        color: #ffffff !important;
+    }
 </style>
 @endpush
 <div class="card-body">
@@ -42,7 +56,7 @@
                 
                 @forelse($result as $kategoriName => $kategoriData)
                     {{-- Kategori Row --}}
-                    <tr class="bg-navy font-weight-bold">
+                    <tr class="cf-kategori-row font-weight-bold">
                         <td>{{ $no++ }}</td>
                         <td><u>{{ $kategoriName }}</u></td>
                         <td colspan="13"></td>
@@ -76,9 +90,9 @@
                                 <td class="text-right">{{ number_format($itemRowTotal, 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
-                        <tr class="bg-light">
+                        <tr class="cf-subtotal-row font-weight-bold">
                             <td></td>
-                            <td class="pl-1 bg-light">{{"Sub Total ". $subName }}</td>
+                            <td class="pl-1">{{"Sub Total ". $subName }}</td>
                             @php
                                 $subRowTotal = 0;
                             @endphp
@@ -93,7 +107,7 @@
                         </tr>
                        
                     @endforeach
-                    <tr class="table-primary font-weight-bold">
+                    <tr class="cf-total-row font-weight-bold">
                             <td colspan="2">{{ $kategoriName }}</td>
                             @php
                                 $kategoriRowTotal = 0;
@@ -117,7 +131,7 @@
                     </tr>
                 @endforelse
             </tbody>
-            <tfoot class="table-danger font-weight-bold">
+            <tfoot class="font-weight-bold">
                 <tr>
                     <th colspan="2">TOTAL Keseluruhan</th>
                     @for($m = 1; $m <= 12; $m++)

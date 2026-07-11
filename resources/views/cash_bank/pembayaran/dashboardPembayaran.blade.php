@@ -42,6 +42,12 @@
         max-height: calc(100vh - 170px);
         overflow: auto;
     }
+    @media print {
+        .dp-table-scroll {
+            max-height: none;
+            overflow: visible;
+        }
+    }
 
     #example.dashboard-payment-table thead th {
         background: #1f3d5a !important;

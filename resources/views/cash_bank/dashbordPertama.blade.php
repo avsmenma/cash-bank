@@ -22,8 +22,26 @@
         font-size: 10.5px;
         border-bottom: 2px solid #0f2137;
         position: sticky;
+        z-index: 5;
+    }
+    /* Baris 1 (URAIAN + TAHUN) menempel di atas; baris 2 (nama bulan) di bawahnya */
+    #cashflow-table thead tr:first-child th {
         top: 0;
-        z-index: 2;
+        height: 36px;
+    }
+    #cashflow-table thead tr:nth-child(2) th {
+        top: 36px;
+    }
+    /* Scroll vertikal terjadi di dalam wadah ini agar header sticky bekerja */
+    .cf-table-scroll {
+        max-height: calc(100vh - 170px);
+        overflow: auto;
+    }
+    @media print {
+        .cf-table-scroll {
+            max-height: none;
+            overflow: visible;
+        }
     }
     #cashflow-table th,
     #cashflow-table td {
@@ -389,7 +407,7 @@
 </div>
 </div>
 <div class="row">
-<div class="col-12 table-responsive">
+<div class="col-12 table-responsive cf-table-scroll">
 <table class="table table-bordered table-sm" id="cashflow-table">
     <thead class="text-center">
         <tr>

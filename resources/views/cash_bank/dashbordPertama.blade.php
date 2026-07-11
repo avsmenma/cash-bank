@@ -2,14 +2,14 @@
     /* ============================================================
        PROFESSIONAL DASHBOARD TABLE — Refined Corporate Palette
        ============================================================ */
+    /* PENTING: jangan beri overflow:hidden di tabel ini — itu mematikan
+       position:sticky header. Border-radius dipotong oleh .cf-table-scroll. */
     #cashflow-table {
         table-layout: auto !important;
         font-size: 11.5px;
         border-collapse: separate;
         border-spacing: 0;
         border: 1px solid #d0d5dd;
-        border-radius: 8px;
-        overflow: hidden;
         box-shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 1px 2px rgba(16, 24, 40, .04);
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
@@ -36,6 +36,7 @@
     .cf-table-scroll {
         max-height: calc(100vh - 170px);
         overflow: auto;
+        border-radius: 8px;
     }
     @media print {
         .cf-table-scroll {

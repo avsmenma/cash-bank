@@ -81,35 +81,23 @@
         color: #1e3a5f !important;
     }
 
-    /* ---------- TOTAL ROWS (dark bg → white text) ---------- */
+    /* ---------- TOTAL ROWS (navy solid → white text) ---------- */
     .row-total-penerimaan td,
-    .row-total-penerimaan td strong {
-        background: #0d9488 !important;
-        color: #ffffff !important;
-        font-weight: 700;
-        text-align: right;
-        border-top: 2px solid #0b7c73;
-    }
+    .row-total-penerimaan td strong,
     .row-total-permintaan td,
-    .row-total-permintaan td strong {
-        background: #c2410c !important;
-        color: #ffffff !important;
-        font-weight: 700;
-        border-top: 2px solid #9a3412;
-    }
+    .row-total-permintaan td strong,
     .row-total-dropping td,
-    .row-total-dropping td strong {
-        background: #1e40af !important;
-        color: #ffffff !important;
-        font-weight: 700;
-        border-top: 2px solid #1a369a;
-    }
+    .row-total-dropping td strong,
     .row-total-pembayaran td,
     .row-total-pembayaran td strong {
-        background: #9333ea !important;
+        background: #1e3a5f !important;
         color: #ffffff !important;
         font-weight: 700;
-        border-top: 2px solid #7e22ce;
+        border-top: 2px solid #0f2137;
+    }
+    .row-total-penerimaan td,
+    .row-total-penerimaan td strong {
+        text-align: right;
     }
 
     /* ---------- SELISIH / DIFF ROWS (light bg → dark text) ---------- */

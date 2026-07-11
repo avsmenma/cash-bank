@@ -1,6 +1,8 @@
 <style>
     #example.dashboard-payment-table {
         table-layout: auto;
+        /* Jangan paksa lebar penuh halaman — kolom mengikuti lebar fix di bawah */
+        width: auto !important;
         border-collapse: separate;
         border-spacing: 0;
         font-size: 12.5px;
@@ -15,14 +17,18 @@
 
     #example.dashboard-payment-table th:first-child,
     #example.dashboard-payment-table td:first-child {
-        min-width: 500px;
+        width: 300px;
+        min-width: 300px;
+        max-width: 300px;
         text-align: left;
         white-space: normal;
+        overflow-wrap: break-word;
     }
 
     #example.dashboard-payment-table th:not(:first-child),
     #example.dashboard-payment-table td:not(:first-child) {
-        min-width: 108px;
+        width: 110px;
+        min-width: 110px;
         text-align: right;
         white-space: nowrap;
         font-variant-numeric: tabular-nums;
@@ -111,7 +117,7 @@
         {{-- ================= HEADER ================= --}}
         <thead class="bg-navy text-center">
             <tr>
-                <th rowspan="2" style="min-width:400px; vertical-align: middle">
+                <th rowspan="2" style="vertical-align: middle">
                     URAIAN
                 </th>
 

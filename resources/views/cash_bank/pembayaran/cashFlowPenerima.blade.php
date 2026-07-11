@@ -1,10 +1,19 @@
 <!-- Tabel DataTable -->
+<style>
+    /* Header & baris total navy, konsisten dengan tabel lain */
+    #example1 thead th,
+    #example1 tfoot th {
+        background-color: #1e3a5f !important;
+        color: #ffffff !important;
+        border-color: #17324b !important;
+    }
+</style>
 <div class=" table-responsive">
 
 
 <div class="card-body">
     <table id="example1" class="table table-bordered table-striped">
-        <thead class="table-dark">
+        <thead>
             <tr>
                 <th>PENERIMAAN</th>
                 <th>Januari</th>
@@ -48,7 +57,7 @@
         @endforeach
         </tbody>
 
-        <tfoot class="bg-light font-weight-bold">
+        <tfoot class="font-weight-bold">
         <tr>
             <th>Total</th>
             @for($i = 1; $i <= 12; $i++)

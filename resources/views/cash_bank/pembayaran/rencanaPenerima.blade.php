@@ -5,10 +5,19 @@ $bulanList = ['januari','februari','maret','april','mei','juni','juli','agustus'
 $totalPerBulan = array_fill_keys($bulanList, 0);
 $grandTotal = 0;
 @endphp
+<style>
+    /* Header & footer navy, konsisten dengan tabel lain */
+    #tabel-rencana-penerima thead th,
+    #tabel-rencana-penerima tfoot th {
+        background-color: #1e3a5f !important;
+        color: #ffffff !important;
+        border-color: #17324b !important;
+    }
+</style>
 <div class="row">
     <div class="col-12 table-responsive">
         <table class="table table-bordered" id="tabel-rencana-penerima">
-            <thead class="table-dark">
+            <thead>
                 <tr>
                     <th>Kategori</th>
                     @foreach($bulanList as $b)
@@ -51,7 +60,7 @@ $grandTotal = 0;
                     </tr>
                 @endforeach
             </tbody>
-            <tfoot class="table-dark">
+            <tfoot>
                 <tr>
                     <th>Total</th>
                     @foreach($bulanList as $b)

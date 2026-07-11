@@ -153,6 +153,23 @@
             display: none !important;
         }
 
+        /* Saat tertutup, lebar item menu benar-benar disempitkan seukuran ikon.
+           PENTING: overflow sidebar dibuka untuk flyout, jadi isi menu tidak lagi
+           "disembunyikan" oleh overflow — tanpa aturan ini hover menu menjulur
+           keluar sidebar dan flyout muncul jauh dari ikon. */
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item,
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item > .nav-link {
+            width: 3.6rem !important;
+        }
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item > .nav-link {
+            overflow: hidden;
+            text-align: center;
+        }
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item > .nav-link .nav-icon,
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item > .nav-link > i:first-child {
+            margin: 0 auto;
+        }
+
         /* Flyout: sidebar boleh "meluber" agar panel tidak terpotong.
            Termasuk lapisan pembungkus plugin OverlayScrollbars (os-*) yang
            memaksa overflow hidden — tanpa ini flyout tergunting di dalam sidebar. */
@@ -168,19 +185,34 @@
         body.sidebar-mini.sidebar-collapse .nav-sidebar > .nav-item {
             position: relative;
         }
+
+        /* Panel flyout bergaya LM: putih, judul menu induk di atas, item rapi */
         body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item:hover > .nav-treeview {
             display: block !important;
             position: absolute;
             left: calc(100% + 6px);
-            top: 0;
-            min-width: 215px;
+            top: -6px;
+            min-width: 210px;
             margin-left: 0 !important;
             padding: 6px !important;
-            background: #1a2332 !important;
-            border: 1px solid rgba(255, 255, 255, .10);
+            background: #ffffff !important;
+            border: 1px solid #d5dce5;
             border-radius: 10px;
-            box-shadow: 0 12px 34px rgba(0, 0, 0, .45);
+            box-shadow: 0 12px 34px rgba(0, 0, 0, .18);
             z-index: 1050;
+        }
+        /* Judul flyout = nama menu induk (dari atribut data-flyout) */
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item:hover > .nav-treeview::before {
+            content: attr(data-flyout);
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            color: #6a7681;
+            padding: 4px 10px 8px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #e4e9ee;
         }
         /* Jembatan tak terlihat menutup celah 6px agar flyout tidak berkedip */
         body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item:hover > .nav-treeview::after {
@@ -191,12 +223,24 @@
             width: 12px;
             height: 100%;
         }
-        /* Teks link di dalam flyout harus tampil normal */
+        /* Item di dalam flyout: teks gelap di panel putih */
         body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item:hover > .nav-treeview .nav-link {
-            width: auto;
-            padding-left: 1rem !important;
+            width: auto !important;
+            padding: 8px 12px !important;
             white-space: nowrap;
             border-radius: 7px;
+            border-left: none !important;
+            color: #33414d !important;
+            background: transparent !important;
+        }
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item:hover > .nav-treeview .nav-link:hover {
+            background: #eef4f0 !important;
+            color: #14342a !important;
+        }
+        body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item:hover > .nav-treeview .nav-link.active {
+            background: #e8f5e9 !important;
+            color: #1a5632 !important;
+            font-weight: 600;
         }
         body.sidebar-mini.sidebar-collapse .main-sidebar .nav-sidebar > .nav-item:hover > .nav-treeview .nav-link p {
             display: inline !important;
@@ -204,6 +248,7 @@
             width: auto !important;
             margin-left: 0 !important;
             animation: none !important;
+            color: inherit !important;
         }
 
         .sidebar .nav-item {
@@ -504,7 +549,7 @@
                                 <i class="right fas fa-angle-left"></i>
                             </a>
 
-                            <ul class="nav nav-treeview">
+                            <ul class="nav nav-treeview" data-flyout="Dashboard">
                                 <li class="nav-item">
                                     <a href="{{ route('dashboard.index') }}"
                                         class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
@@ -586,7 +631,7 @@
                                 <i class="right fas fa-angle-left"></i>
                             </a>
 
-                            <ul class="nav nav-treeview">
+                            <ul class="nav nav-treeview" data-flyout="Transaksi Bank">
                                 <li class="nav-item">
                                     <a href="{{ route('bank-masuk.index') }}"
                                         class="nav-link {{ request()->routeIs('bank-masuk.index') ? 'active' : '' }}">

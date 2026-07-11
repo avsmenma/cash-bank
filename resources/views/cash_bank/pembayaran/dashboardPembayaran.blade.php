@@ -114,6 +114,7 @@
     }
 @endphp
 
+<p class="text-muted mb-1" style="font-size: 12px; font-style: italic;">*Seluruh nilai dalam ribuan rupiah</p>
 <div class="table-responsive">
     <table class="table table-bordered table-sm dashboard-payment-table" id="example">
 

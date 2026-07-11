@@ -146,7 +146,10 @@ class DashboardPembayaranController extends Controller
                 $dataPenerima[$namaKategori] = $templateBulan;
             }
 
-            $nilaiRealisasi = ($row->nilai ?? 0) + ($row->ppn ?? 0) - ($row->potppn ?? 0);
+            // Dibagi 1000: nilai/ppn/potppn tersimpan rupiah penuh, sedangkan
+            // rencana penerima & seluruh data dropping dalam ribuan — tanpa ini
+            // kolom rencana vs realisasi beda satuan dan persennya kacau.
+            $nilaiRealisasi = (($row->nilai ?? 0) + ($row->ppn ?? 0) - ($row->potppn ?? 0)) / 1000;
 
             if ($nilaiRealisasi > 0) {
                 $dataPenerima[$namaKategori][$bulan]['realisasi'] += $nilaiRealisasi;

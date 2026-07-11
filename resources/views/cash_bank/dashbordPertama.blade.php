@@ -445,18 +445,20 @@
                 field: m.field,
                 hozAlign: 'right',
                 minWidth: 105,
+                widthGrow: 1,
                 formatter: cfFormatter,
                 headerHozAlign: 'center'
             };
         });
         return [
-            { title: 'URAIAN', field: 'uraian', frozen: true, minWidth: 260, headerHozAlign: 'center' },
+            { title: 'URAIAN', field: 'uraian', frozen: true, minWidth: 260, widthGrow: 2, headerHozAlign: 'center' },
             { title: cfTitleTahun, columns: monthCols },
             {
                 title: cfTitleTotal,
                 field: 'total',
                 hozAlign: 'right',
-                minWidth: 120,
+                minWidth: 130,
+                widthGrow: 1,
                 formatter: cfFormatter,
                 headerHozAlign: 'center',
                 cssClass: 'cf-col-total'
@@ -482,7 +484,10 @@
         var table = new Tabulator(el, {
             data: cfRows,
             columns: buildColumns(),
-            layout: 'fitData',              // lebar mengikuti isi; kolom bisa ditarik manual
+            // fitColumns: kolom melar mengisi penuh lebar wadah (tidak ada area
+            // kosong saat bulan sedikit); tetap bisa ditarik-lebarkan manual dan
+            // otomatis scroll horizontal bila jumlah bulan banyak (minWidth).
+            layout: 'fitColumns',
             height: '68vh',                 // header otomatis menempel saat scroll
             columnHeaderVertAlign: 'bottom',
             movableColumns: false,

@@ -26,9 +26,14 @@
         text-align: center;
     }
 
-    /* Penanda kolom bisa ditarik-lebarkan (takik putih ala project LM) */
+    /* Penanda kolom bisa ditarik-lebarkan: takik putih HANYA di kolom
+       terbawah (bukan di tiap tingkat grup, agar header tidak ramai) */
     #cashflow-table-pvd .tabulator-header .tabulator-col-resize-handle {
         width: 7px;
+        cursor: col-resize;
+        background: none;
+    }
+    #cashflow-table-pvd .tabulator-header .tabulator-col:not(.tabulator-col-group) > .tabulator-col-resize-handle {
         background: linear-gradient(
             to bottom,
             transparent 32%,
@@ -39,18 +44,18 @@
         background-size: 2px 100%;
         background-position: center;
         background-repeat: no-repeat;
-        cursor: col-resize;
     }
     #cashflow-table-pvd .tabulator-header .tabulator-col-resize-handle:hover {
         background: rgba(255, 255, 255, 0.30);
     }
 
-    /* Garis antar baris dipertebal agar lebih terbaca */
+    /* Garis kolom & baris tegas agar mudah ditelusuri */
     #cashflow-table-pvd .tabulator-cell {
-        border-color: #c9d2dc;
+        border-right: 1px solid #b3bfcc;
+        border-color: #b3bfcc;
     }
     #cashflow-table-pvd .tabulator-row {
-        border-bottom: 1px solid #c9d2dc;
+        border-bottom: 1px solid #b3bfcc;
     }
 
     /* ---------- Jenis baris (kelas dari rowFormatter) ---------- */

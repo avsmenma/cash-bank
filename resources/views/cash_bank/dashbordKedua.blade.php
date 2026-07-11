@@ -1,537 +1,320 @@
-
 <style>
     /* ============================================================
-       PROFESSIONAL PVD TABLE — Corporate Palette (matches PD tab)
+       CASHFLOW PvD — Tabulator (tabel ala spreadsheet seperti project LM).
+       Kolom bisa ditarik-lebarkan manual lewat garis antar kolom header.
        ============================================================ */
-    /* PENTING: jangan beri overflow:hidden di tabel ini — itu mematikan
-       position:sticky header. Border-radius dipotong oleh .pvd-table-scroll. */
     #cashflow-table-pvd {
-        table-layout: auto !important;
-        font-size: 10.5px;
-        border-collapse: separate;
-        border-spacing: 0;
         border: 1px solid #d0d5dd;
-        box-shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 1px 2px rgba(16, 24, 40, .04);
-        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        width: 100%;
-    }
-
-    /* Scroll vertikal terjadi di dalam wadah ini agar header sticky bekerja */
-    .pvd-table-scroll {
-        max-height: calc(100vh - 170px);
-        overflow: auto;
         border-radius: 8px;
+        font-size: 11.5px;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
-    @media print {
-        .pvd-table-scroll {
-            max-height: none;
-            overflow: visible;
-        }
+    #cashflow-table-pvd .tabulator-header {
+        background: #1e3a5f;
+        border-bottom: 2px solid #0f2137;
     }
-    #cashflow-table-pvd td.text-right {
-        white-space: nowrap;
-    }
-    /* Gaya header disamakan dengan tabel dashboard-pembayaran:
-       navy polos (tanpa gradasi/uppercase), font & garis yang sama */
-    #cashflow-table-pvd thead th {
-        background: #1f3d5a !important;
-        color: #ffffff !important;
-        font-weight: 700;
-        font-size: 12.5px;
+    #cashflow-table-pvd .tabulator-header .tabulator-col,
+    #cashflow-table-pvd .tabulator-header .tabulator-col-group {
+        background: #1e3a5f !important;
+        color: #f0f4f8 !important;
+        font-weight: 600;
+        font-size: 11px;
         border-color: #17324b !important;
-        vertical-align: middle;
-        text-align: center !important;
-        position: sticky;
-        z-index: 5;
     }
-    /* Tiga baris header menempel bertingkat saat scroll.
-       Nilai top baris 2 & 3 hanya fallback — dikoreksi oleh
-       pvdStickyOffsets() sesuai tinggi baris sesungguhnya. */
-    #cashflow-table-pvd thead tr:nth-child(1) th {
-        top: 0;
-    }
-    #cashflow-table-pvd thead tr:nth-child(2) th {
-        top: 37px;
-    }
-    #cashflow-table-pvd thead tr:nth-child(3) th {
-        top: 74px;
-    }
-    #cashflow-table-pvd th,
-    #cashflow-table-pvd td {
-        border-color: #e4e7ec;
-        padding: 6px 8px;
-    }
-    #cashflow-table-pvd tbody tr {
-        transition: background-color .15s ease;
-    }
-    #cashflow-table-pvd tbody tr.item-row:hover td {
-        background-color: #f8fafc !important;
-    }
-    .col-permintaan,
-    .col-dropping,
-    .col-pembayaran {
-        min-width: 100px;
-        max-width: 100px;
+    #cashflow-table-pvd .tabulator-header .tabulator-col .tabulator-col-title {
+        color: #f0f4f8;
+        text-align: center;
     }
 
-    /* Kategori header row: navy transparan (opacity sedang) */
-    #cashflow-table-pvd tr.bg-yellow td,
-    #cashflow-table-pvd tr.bg-yellow td strong,
-    #cashflow-table-pvd tr.bg-yellow {
-        background: rgba(30, 58, 95, 0.15) !important;
-        color: #1e3a5f !important;
-        font-weight: 700;
-        border-left: 3px solid #1e3a5f;
+    /* Penanda kolom bisa ditarik-lebarkan (takik putih ala project LM) */
+    #cashflow-table-pvd .tabulator-header .tabulator-col-resize-handle {
+        width: 7px;
+        background: linear-gradient(
+            to bottom,
+            transparent 32%,
+            rgba(255, 255, 255, 0.45) 32%,
+            rgba(255, 255, 255, 0.45) 68%,
+            transparent 68%
+        );
+        background-size: 2px 100%;
+        background-position: center;
+        background-repeat: no-repeat;
+        cursor: col-resize;
+    }
+    #cashflow-table-pvd .tabulator-header .tabulator-col-resize-handle:hover {
+        background: rgba(255, 255, 255, 0.30);
     }
 
-    /* Sub kategori row (light bg → dark text) */
-    #cashflow-table-pvd tr.sub-kategori-row td {
-        background-color: #f8fafc !important;
-        color: #1a1a1a !important;
+    /* Garis antar baris dipertebal agar lebih terbaca */
+    #cashflow-table-pvd .tabulator-cell {
+        border-color: #c9d2dc;
+    }
+    #cashflow-table-pvd .tabulator-row {
+        border-bottom: 1px solid #c9d2dc;
+    }
+
+    /* ---------- Jenis baris (kelas dari rowFormatter) ---------- */
+    #cashflow-table-pvd .tabulator-row.pvd-r-kat .tabulator-cell {
+        background: rgba(30, 58, 95, 0.15);
+        color: #1e3a5f;
+        font-weight: 800;
+    }
+    #cashflow-table-pvd .tabulator-row.pvd-r-sub .tabulator-cell {
+        background: #f8fafc;
+        color: #1a1a1a;
         font-weight: 600;
         font-style: italic;
     }
-
-    /* Item row */
-    #cashflow-table-pvd tr.item-row td {
-        background-color: #ffffff !important;
-        color: #344054 !important;
+    #cashflow-table-pvd .tabulator-row.pvd-r-item .tabulator-cell {
+        background: #ffffff;
+        color: #344054;
     }
-
-    /* Sub total row (light bg → dark text) */
-    #cashflow-table-pvd tr.bg-orange td,
-    #cashflow-table-pvd tr.bg-orange td strong,
-    #cashflow-table-pvd tr.table-info.bg-orange td,
-    #cashflow-table-pvd tr.table-info.bg-orange td strong {
-        background: #eef2f7 !important;
-        color: #1a1a1a !important;
+    #cashflow-table-pvd .tabulator-row.pvd-r-item:hover .tabulator-cell {
+        background: #f8fafc;
+    }
+    #cashflow-table-pvd .tabulator-row.pvd-r-subtotal .tabulator-cell {
+        background: #eef2f7;
+        color: #1a1a1a;
         font-weight: 600;
         border-top: 1px solid #cbd5e1;
     }
-
-    /* Kategori total row: navy solid seperti header */
-    #cashflow-table-pvd tbody tr.bg-navy td,
-    #cashflow-table-pvd tbody tr.bg-navy td strong {
-        background: #1e3a5f !important;
-        color: #ffffff !important;
+    #cashflow-table-pvd .tabulator-row.pvd-r-kattotal .tabulator-cell,
+    #cashflow-table-pvd .tabulator-row.pvd-r-grand .tabulator-cell {
+        background: #1e3a5f;
+        color: #ffffff;
         font-weight: 700;
-        border-top: 2px solid #0f2137;
     }
 
-    /* Grand total row: navy solid seperti header */
-    #cashflow-table-pvd tr.total-section td,
-    #cashflow-table-pvd tr.total-section td strong {
-        background: #1e3a5f !important;
-        color: #ffffff !important;
-        font-weight: 700;
-        font-size: 11px;
-        border-top: 2px solid #0f2137;
+    @media print {
+        #cashflow-table-pvd .tabulator-tableholder {
+            overflow: visible !important;
+            max-height: none !important;
+        }
     }
 </style>
+
 @php
-    $bulanColors = [
-        1 => 'bg-januari',
-        2 => 'bg-februari', 
-        3 => 'bg-maret',
-        4 => 'bg-april',
-        5 => 'bg-mei',
-        6 => 'bg-juni',
-        7 => 'bg-juli',
-        8 => 'bg-agustus',
-        9 => 'bg-september',
-        10 => 'bg-oktober',
-        11 => 'bg-november',
-        12 => 'bg-desember'
-    ];
+    // ================================================================
+    // Susun data kategori -> sub kriteria -> item (logika lama utuh),
+    // lalu rakit menjadi baris DATA untuk Tabulator.
+    // ================================================================
+    $organizedData = [];
+
+    foreach (['dropping', 'permintaan', 'pembayaran'] as $sumber) {
+        if (!isset($result[$sumber])) continue;
+        foreach ($result[$sumber] as $item) {
+            $kategori = $item['kategori'];
+            $subKriteria = $item['sub_kriteria'];
+            $itemKriteria = $item['item_kriteria'];
+
+            if (!isset($organizedData[$kategori][$subKriteria][$itemKriteria])) {
+                $organizedData[$kategori][$subKriteria][$itemKriteria] = [
+                    'permintaan' => [],
+                    'dropping' => [],
+                    'pembayaran' => []
+                ];
+            }
+            $organizedData[$kategori][$subKriteria][$itemKriteria][$sumber] = $item['data'];
+        }
+    }
+
+    $organizedData = \App\Support\DashboardKriteriaHierarchy::sortNested($organizedData);
+
+    $pvdRows = [];
+    $pvdPush = function ($type, $no, $uraian, $perBulan = null, $tot = null, $pct = null) use (&$pvdRows, $bulanListFiltered) {
+        // $perBulan: [$noBulan => ['p'=>..,'d'=>..,'b'=>..]]
+        $row = ['type' => $type, 'no' => $no, 'uraian' => $uraian];
+        foreach ($bulanListFiltered as $noBulan => $nm) {
+            $row['m' . $noBulan . '_p'] = $perBulan[$noBulan]['p'] ?? null;
+            $row['m' . $noBulan . '_d'] = $perBulan[$noBulan]['d'] ?? null;
+            $row['m' . $noBulan . '_b'] = $perBulan[$noBulan]['b'] ?? null;
+        }
+        $row['tot_p'] = $tot['p'] ?? null;
+        $row['tot_d'] = $tot['d'] ?? null;
+        $row['tot_b'] = $tot['b'] ?? null;
+        $row['pct_p'] = $pct['p'] ?? null;
+        $row['pct_d'] = $pct['d'] ?? null;
+        $pvdRows[] = $row;
+    };
+
+    $grandTotal = [];
+    foreach ($bulanListFiltered as $b => $n) $grandTotal[$b] = ['p' => 0, 'd' => 0, 'b' => 0];
+    $grandAll = ['p' => 0, 'd' => 0, 'b' => 0];
+
+    $rowNumber = 1;
+    foreach ($organizedData as $kategori => $subKriterias) {
+        $katTotal = [];
+        foreach ($bulanListFiltered as $b => $n) $katTotal[$b] = ['p' => 0, 'd' => 0, 'b' => 0];
+        $katAll = ['p' => 0, 'd' => 0, 'b' => 0];
+
+        $pvdPush('kat', $rowNumber++, $kategori);
+
+        foreach ($subKriterias as $subKriteria => $items) {
+            $subTotal = [];
+            foreach ($bulanListFiltered as $b => $n) $subTotal[$b] = ['p' => 0, 'd' => 0, 'b' => 0];
+            $subAll = ['p' => 0, 'd' => 0, 'b' => 0];
+
+            $pvdPush('sub', null, $subKriteria);
+
+            foreach ($items as $itemKriteria => $data) {
+                $perBulan = [];
+                $itemAll = ['p' => 0, 'd' => 0, 'b' => 0];
+                foreach ($bulanListFiltered as $noBulan => $nm) {
+                    $p = $data['permintaan'][$noBulan] ?? 0;
+                    $d = $data['dropping'][$noBulan] ?? 0;
+                    $bb = $data['pembayaran'][$noBulan] ?? 0;
+                    $perBulan[$noBulan] = ['p' => $p, 'd' => $d, 'b' => $bb];
+
+                    $itemAll['p'] += $p; $itemAll['d'] += $d; $itemAll['b'] += $bb;
+                    $subTotal[$noBulan]['p'] += $p; $subTotal[$noBulan]['d'] += $d; $subTotal[$noBulan]['b'] += $bb;
+                    $katTotal[$noBulan]['p'] += $p; $katTotal[$noBulan]['d'] += $d; $katTotal[$noBulan]['b'] += $bb;
+                    $grandTotal[$noBulan]['p'] += $p; $grandTotal[$noBulan]['d'] += $d; $grandTotal[$noBulan]['b'] += $bb;
+                }
+                $subAll['p'] += $itemAll['p']; $subAll['d'] += $itemAll['d']; $subAll['b'] += $itemAll['b'];
+                $katAll['p'] += $itemAll['p']; $katAll['d'] += $itemAll['d']; $katAll['b'] += $itemAll['b'];
+
+                $pvdPush('item', null, $itemKriteria === '' ? '' : '- ' . $itemKriteria, $perBulan, $itemAll, [
+                    'p' => $itemAll['p'] > 0 ? ($itemAll['b'] / $itemAll['p'] * 100) : 0,
+                    'd' => $itemAll['d'] > 0 ? ($itemAll['b'] / $itemAll['d'] * 100) : 0,
+                ]);
+            }
+
+            $pvdPush('subtotal', null, 'Sub Total ' . $subKriteria, $subTotal, $subAll, [
+                'p' => $subAll['p'] > 0 ? ($subAll['b'] / $subAll['p'] * 100) : 0,
+                'd' => $subAll['d'] > 0 ? ($subAll['b'] / $subAll['d'] * 100) : 0,
+            ]);
+        }
+
+        $grandAll['p'] += $katAll['p']; $grandAll['d'] += $katAll['d']; $grandAll['b'] += $katAll['b'];
+
+        $pvdPush('kattotal', null, 'Total ' . $kategori, $katTotal, $katAll, [
+            'p' => $katAll['p'] > 0 ? ($katAll['b'] / $katAll['p'] * 100) : 0,
+            'd' => $katAll['d'] > 0 ? ($katAll['b'] / $katAll['d'] * 100) : 0,
+        ]);
+    }
+
+    $pvdPush('grand', null, 'TOTAL KESELURUHAN', $grandTotal, $grandAll, [
+        'p' => $grandAll['p'] > 0 ? ($grandAll['b'] / $grandAll['p'] * 100) : 0,
+        'd' => $grandAll['d'] > 0 ? ($grandAll['b'] / $grandAll['d'] * 100) : 0,
+    ]);
+
+    $pvdMonths = [];
+    foreach ($bulanListFiltered as $noBulan => $namaBulan) {
+        $pvdMonths[] = ['no' => $noBulan, 'title' => ucfirst($namaBulan) . ' ' . $tahun];
+    }
 @endphp
 
 <div class="row">
-    <div class="col-12 table-responsive pvd-table-scroll">
-        <table class="table table-bordered table-sm" id="cashflow-table-pvd">
-            <thead class="bg-navy">
-                <!-- Row 1: Header Bulan -->
-                <tr>
-                <th rowspan="3" style="vertical-align: middle;" class="text-center">No.</th>
-                <th rowspan="3" style="min-width: 400px; max-width:500px;vertical-align: middle;" class="text-center">Payments for {{ $tahun }} transactions - Accounts</th>
-                @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                    @php
-                        $colorClass = $bulanColors[$noBulan] ?? 'bg-primary';
-                    @endphp
-                    <th colspan="3" style="min-width: 250px; vertical-align: middle;" class="text-center">
-                        {{ ucfirst($namaBulan) }} {{ $tahun }}
-                    </th>
-                @endforeach
-                    <th colspan="3" class="text-center">Total</th>
-                    <th colspan="2" class="text-center">%Tase Pembayaran Thdp</th>
-            </tr>
-            
-            <!-- Row 2: Sub Header Permintaan RD, Dropping HO, Pembayaran -->
-            <tr>
-                @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                    <th style="min-width:150px;vertical-align: middle;" class="text-center">Permintaan RD</th>
-                    <th style="min-width:150px;vertical-align: middle;" class="text-center">Dropping HO</th>
-                    <th style="min-width:150px;vertical-align: middle;" class="text-center">Pembayaran</th>
-                @endforeach
-                <th class="col-permintaan">Permintaan RD</th>
-                <th style="min-width:150px;vertical-align: middle;" class="text-center">Dropping HO</th>
-                <th style="min-width:150px;vertical-align: middle;" class="text-center">Pembayaran</th>
-                <th style="min-width:150px;vertical-align: middle;" class="text-center">Permintaan</th>
-                <th style="min-width:150px;vertical-align: middle;" class="text-center">Dropping</th>
-            </tr>
-                
-                {{-- Nomor minggu: di-reset 1-2-3 untuk tiap bulan (bukan penomoran kolom berlanjut) --}}
-                <tr>
-                    @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                        <th style="vertical-align: middle;" class="text-center">1</th>
-                        <th style="vertical-align: middle;" class="text-center">2</th>
-                        <th style="vertical-align: middle;" class="text-center">3</th>
-                    @endforeach
-                    {{-- Blok Total --}}
-                    <th style="vertical-align: middle;" class="text-center">1</th>
-                    <th style="vertical-align: middle;" class="text-center">2</th>
-                    <th style="vertical-align: middle;" class="text-center">3</th>
-                    {{-- Blok %Tase Pembayaran Thdp --}}
-                    <th style="vertical-align: middle;" class="text-center">1</th>
-                    <th style="vertical-align: middle;" class="text-center">2</th>
-                </tr>
-            </thead>
-            
-            <tbody>
-                @php
-                    $rowNumber = 1;
-                    $currentKategori = null;
-                    $currentSubKategori = null;
-                    
-                    // Reorganize data by kategori -> sub_kriteria -> item_kriteria
-                    $organizedData = [];
-                    
-                    // Combine dropping and pembayaran data
-                    if (isset($result['dropping'])) {
-                        foreach($result['dropping'] as $key => $item) {
-                            $kategori = $item['kategori'];
-                            $subKriteria = $item['sub_kriteria'];
-                            $itemKriteria = $item['item_kriteria'];
-                            
-                            if (!isset($organizedData[$kategori])) {
-                                $organizedData[$kategori] = [];
-                            }
-                            if (!isset($organizedData[$kategori][$subKriteria])) {
-                                $organizedData[$kategori][$subKriteria] = [];
-                            }
-                            if (!isset($organizedData[$kategori][$subKriteria][$itemKriteria])) {
-                                $organizedData[$kategori][$subKriteria][$itemKriteria] = [
-                                    'permintaan' => [],
-                                    'dropping' => [],
-                                    'pembayaran' => []
-                                ];
-                            }
-                            
-                            $organizedData[$kategori][$subKriteria][$itemKriteria]['dropping'] = $item['data'];
-                        }
-                    }
-                    
-                    // Add permintaan data
-                    if (isset($result['permintaan'])) {
-                        foreach($result['permintaan'] as $key => $item) {
-                            $kategori = $item['kategori'];
-                            $subKriteria = $item['sub_kriteria'];
-                            $itemKriteria = $item['item_kriteria'];
-                            
-                            if (!isset($organizedData[$kategori])) {
-                                $organizedData[$kategori] = [];
-                            }
-                            if (!isset($organizedData[$kategori][$subKriteria])) {
-                                $organizedData[$kategori][$subKriteria] = [];
-                            }
-                            if (!isset($organizedData[$kategori][$subKriteria][$itemKriteria])) {
-                                $organizedData[$kategori][$subKriteria][$itemKriteria] = [
-                                    'permintaan' => [],
-                                    'dropping' => [],
-                                    'pembayaran' => []
-                                ];
-                            }
-                            
-                            $organizedData[$kategori][$subKriteria][$itemKriteria]['permintaan'] = $item['data'];
-                        }
-                    }
-                    
-                    // Add pembayaran data
-                    if (isset($result['pembayaran'])) {
-                        foreach($result['pembayaran'] as $key => $item) {
-                        $kategori = $item['kategori'];
-                        $subKriteria = $item['sub_kriteria'];
-                        $itemKriteria = $item['item_kriteria'];
-                        
-                        if (!isset($organizedData[$kategori])) {
-                            $organizedData[$kategori] = [];
-                        }
-                        if (!isset($organizedData[$kategori][$subKriteria])) {
-                            $organizedData[$kategori][$subKriteria] = [];
-                        }
-                        if (!isset($organizedData[$kategori][$subKriteria][$itemKriteria])) {
-                            $organizedData[$kategori][$subKriteria][$itemKriteria] = [
-                                'permintaan' => [],
-                                'dropping' => [],
-                                'pembayaran' => []
-                            ];
-                        }
-                        
-                        $organizedData[$kategori][$subKriteria][$itemKriteria]['pembayaran'] = $item['data'];
-                    }
-                }
-
-                    $organizedData = \App\Support\DashboardKriteriaHierarchy::sortNested($organizedData);
-                    
-                    // Initialize totals
-                    $grandTotalPermintaan = [];
-                    $grandTotalDropping = [];
-                    $grandTotalPembayaran = [];
-                    foreach($bulanListFiltered as $b => $n) {
-                        $grandTotalPermintaan[$b] = 0;
-                        $grandTotalDropping[$b] = 0;
-                        $grandTotalPembayaran[$b] = 0;
-                    }
-                    
-                    $grandTotalPermintaanAll = 0;
-                    $grandTotalDroppingAll = 0;
-                    $grandTotalPembayaranAll = 0;
-                @endphp
-                
-                @foreach($organizedData as $kategori => $subKriterias)
-                    @php
-                        $kategoriTotalPermintaan = [];
-                        $kategoriTotalDropping = [];
-                        $kategoriTotalPembayaran = [];
-                        foreach($bulanListFiltered as $b => $n) {
-                            $kategoriTotalPermintaan[$b] = 0;
-                            $kategoriTotalDropping[$b] = 0;
-                            $kategoriTotalPembayaran[$b] = 0;
-                        }
-                        $kategoriTotalPermintaanAll = 0;
-                        $kategoriTotalDroppingAll = 0;
-                        $kategoriTotalPembayaranAll = 0;
-                    @endphp
-                    
-                    {{-- Header Kategori --}}
-                    <tr  class="bg-yellow">
-                        <td class="text-center">{{ $rowNumber++ }}</td>
-                        <td><strong>{{ $kategori }}</strong></td>
-                        @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                            <td colspan="3"></td>
-                        @endforeach
-                        <td colspan="3"></td>
-                        <td colspan="2"></td>
-                    </tr>
-                    
-                    @foreach($subKriterias as $subKriteria => $items)
-                        @php
-                            // Initialize sub kategori totals
-                            $subKategoriTotalPermintaan = [];
-                            $subKategoriTotalDropping = [];
-                            $subKategoriTotalPembayaran = [];
-                            foreach($bulanListFiltered as $b => $n) {
-                                $subKategoriTotalPermintaan[$b] = 0;
-                                $subKategoriTotalDropping[$b] = 0;
-                                $subKategoriTotalPembayaran[$b] = 0;
-                            }
-                            $subKategoriTotalPermintaanAll = 0;
-                            $subKategoriTotalDroppingAll = 0;
-                            $subKategoriTotalPembayaranAll = 0;
-                        @endphp
-                        
-                        {{-- Sub Kategori Header --}}
-                        <tr class="sub-kategori-row">
-                            <td></td>
-                            <td>{{ $subKriteria }}</td>
-                            @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                                <td colspan="3"></td>
-                            @endforeach
-                            <td colspan="3"></td>
-                            <td colspan="2"></td>
-                        </tr>
-                        
-                        @foreach($items as $itemKriteria => $data)
-                            {{-- Item Detail Row --}}
-                            <tr class="item-row">
-                                <td></td>
-                                <td>{{ $itemKriteria === '' ? '' : "- " . $itemKriteria }}</td>
-                                @php
-                                    $totalPermintaanItem = 0;
-                                    $totalDroppingItem = 0;
-                                    $totalPembayaranItem = 0;
-                                @endphp
-                                @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                                    @php
-                                        // Get data from organized structure
-                                        $permintaan = $data['permintaan'][$noBulan] ?? 0;
-                                        $dropping = $data['dropping'][$noBulan] ?? 0;
-                                        $pembayaran = $data['pembayaran'][$noBulan] ?? 0;
-                                        
-                                        // Add to totals
-                                        $kategoriTotalPermintaan[$noBulan] += $permintaan;
-                                        $kategoriTotalDropping[$noBulan] += $dropping;
-                                        $kategoriTotalPembayaran[$noBulan] += $pembayaran;
-                                        
-                                        $subKategoriTotalPermintaan[$noBulan] += $permintaan;
-                                        $subKategoriTotalDropping[$noBulan] += $dropping;
-                                        $subKategoriTotalPembayaran[$noBulan] += $pembayaran;
-                                        
-                                        $grandTotalPermintaan[$noBulan] += $permintaan;
-                                        $grandTotalDropping[$noBulan] += $dropping;
-                                        $grandTotalPembayaran[$noBulan] += $pembayaran;
-                                        
-                                        $totalPermintaanItem += $permintaan;
-                                        $totalDroppingItem += $dropping;
-                                        $totalPembayaranItem += $pembayaran;
-                                    @endphp
-                                    <td class="text-right col-permintaan">{{ $permintaan > 0 ? number_format($permintaan, 0, ',', '.') : '-' }}</td>
-                                    <td class="text-right col-dropping">{{ $dropping > 0 ? number_format($dropping, 0, ',', '.') : '-' }}</td>
-                                    <td class="text-right col-pembayaran">{{ $pembayaran > 0 ? number_format($pembayaran, 0, ',', '.') : '-' }}</td>
-                                @endforeach
-                                
-                                {{-- Total Tahun untuk Item --}}
-                                <td class="text-right col-permintaan">{{ number_format($totalPermintaanItem, 0, ',', '.') }}</td>
-                                <td class="text-right col-dropping">{{ number_format($totalDroppingItem, 0, ',', '.') }}</td>
-                                <td class="text-right col-pembayaran">{{ number_format($totalPembayaranItem, 0, ',', '.') }}</td>
-                                
-                                {{-- Persentase --}}
-                                @php
-                                    $persenPermintaan = $totalPermintaanItem > 0 ? ($totalPembayaranItem / $totalPermintaanItem * 100) : 0;
-                                    $persenDropping = $totalDroppingItem > 0 ? ($totalPembayaranItem / $totalDroppingItem * 100) : 0;
-                                @endphp
-                                <td class="text-right col-persentase">{{ number_format($persenPermintaan, 2, ',', '.') }}%</td>
-                                <td class="text-right col-persentase">{{ number_format($persenDropping, 2, ',', '.') }}%</td>
-                            </tr>
-                            
-                            @php
-                                $kategoriTotalPermintaanAll += $totalPermintaanItem;
-                                $kategoriTotalDroppingAll += $totalDroppingItem;
-                                $kategoriTotalPembayaranAll += $totalPembayaranItem;
-                                
-                                $subKategoriTotalPermintaanAll += $totalPermintaanItem;
-                                $subKategoriTotalDroppingAll += $totalDroppingItem;
-                                $subKategoriTotalPembayaranAll += $totalPembayaranItem;
-                            @endphp
-                        @endforeach
-                        
-                        {{-- Total Sub Kategori --}}
-                        <tr class="table-info bg-orange" style="vertical-align:middle;">
-                            <td></td>
-                            <td   ><strong>Sub Total {{ $subKriteria }}</strong></td>
-                            @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                                <td class="text-right" style="vertical-align: middle;"><strong>{{ number_format($subKategoriTotalPermintaan[$noBulan], 0, ',', '.') }}</strong></td>
-                                <td class="text-right"><strong>{{ number_format($subKategoriTotalDropping[$noBulan], 0, ',', '.') }}</strong></td>
-                                <td class="text-right"><strong>{{ number_format($subKategoriTotalPembayaran[$noBulan], 0, ',', '.') }}</strong></td>
-                            @endforeach
-                            
-                            {{-- Total Tahun Sub Kategori --}}
-                            <td class="text-right"><strong>{{ number_format($subKategoriTotalPermintaanAll, 0, ',', '.') }}</strong></td>
-                            <td class="text-right"><strong>{{ number_format($subKategoriTotalDroppingAll, 0, ',', '.') }}</strong></td>
-                            <td class="text-right"><strong>{{ number_format($subKategoriTotalPembayaranAll, 0, ',', '.') }}</strong></td>
-                            
-                            {{-- Persentase Sub Kategori --}}
-                            @php
-                                $persenSubKatPermintaan = $subKategoriTotalPermintaanAll > 0 ? ($subKategoriTotalPembayaranAll / $subKategoriTotalPermintaanAll * 100) : 0;
-                                $persenSubKatDropping = $subKategoriTotalDroppingAll > 0 ? ($subKategoriTotalPembayaranAll / $subKategoriTotalDroppingAll * 100) : 0;
-                            @endphp
-                            <td class="text-right"><strong>{{ number_format($persenSubKatPermintaan, 2, ',', '.') }}%</strong></td>
-                            <td class="text-right"><strong>{{ number_format($persenSubKatDropping, 2, ',', '.') }}%</strong></td>
-                        </tr>
-                    @endforeach
-                    
-                    {{-- Total Kategori --}}
-                    <tr class="bg-navy">
-                        <td></td>
-                        <td style="vertical-align: middle;"><strong>Total {{ $kategori }}</strong></td>
-                        @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                            <td class="text-right"><strong>{{ number_format($kategoriTotalPermintaan[$noBulan], 0, ',', '.') }}</strong></td>
-                            <td class="text-right"><strong>{{ number_format($kategoriTotalDropping[$noBulan], 0, ',', '.') }}</strong></td>
-                            <td class="text-right"><strong>{{ number_format($kategoriTotalPembayaran[$noBulan], 0, ',', '.') }}</strong></td>
-                        @endforeach
-                        
-                        {{-- Total Tahun Kategori --}}
-                        <td class="text-right"><strong>{{ number_format($kategoriTotalPermintaanAll, 0, ',', '.') }}</strong></td>
-                        <td class="text-right"><strong>{{ number_format($kategoriTotalDroppingAll, 0, ',', '.') }}</strong></td>
-                        <td class="text-right"><strong>{{ number_format($kategoriTotalPembayaranAll, 0, ',', '.') }}</strong></td>
-                        
-                        {{-- Persentase Kategori --}}
-                        @php
-                            $persenKatPermintaan = $kategoriTotalPermintaanAll > 0 ? ($kategoriTotalPembayaranAll / $kategoriTotalPermintaanAll * 100) : 0;
-                            $persenKatDropping = $kategoriTotalDroppingAll > 0 ? ($kategoriTotalPembayaranAll / $kategoriTotalDroppingAll * 100) : 0;
-                        @endphp
-                        <td class="text-right"><strong>{{ number_format($persenKatPermintaan, 2, ',', '.') }}%</strong></td>
-                        <td class="text-right"><strong>{{ number_format($persenKatDropping, 2, ',', '.') }}%</strong></td>
-                    </tr>
-                    
-                    @php
-                        $grandTotalPermintaanAll += $kategoriTotalPermintaanAll;
-                        $grandTotalDroppingAll += $kategoriTotalDroppingAll;
-                        $grandTotalPembayaranAll += $kategoriTotalPembayaranAll;
-                    @endphp
-                @endforeach
-                
-                {{-- GRAND TOTAL --}}
-                <tr class="total-section">
-                    <td></td>
-                    <td><strong>TOTAL KESELURUHAN</strong></td>
-                    @foreach($bulanListFiltered as $noBulan => $namaBulan)
-                        <td class="text-right"><strong>{{ number_format($grandTotalPermintaan[$noBulan], 0, ',', '.') }}</strong></td>
-                        <td class="text-right"><strong>{{ number_format($grandTotalDropping[$noBulan], 0, ',', '.') }}</strong></td>
-                        <td class="text-right"><strong>{{ number_format($grandTotalPembayaran[$noBulan], 0, ',', '.') }}</strong></td>
-                    @endforeach
-                    
-                    {{-- Total Tahun Grand Total --}}
-                    <td class="text-right"><strong>{{ number_format($grandTotalPermintaanAll, 0, ',', '.') }}</strong></td>
-                    <td class="text-right"><strong>{{ number_format($grandTotalDroppingAll, 0, ',', '.') }}</strong></td>
-                    <td class="text-right"><strong>{{ number_format($grandTotalPembayaranAll, 0, ',', '.') }}</strong></td>
-                    
-                    {{-- Persentase Grand Total --}}
-                    @php
-                        $persenGrandPermintaan = $grandTotalPermintaanAll > 0 ? ($grandTotalPembayaranAll / $grandTotalPermintaanAll * 100) : 0;
-                        $persenGrandDropping = $grandTotalDroppingAll > 0 ? ($grandTotalPembayaranAll / $grandTotalDroppingAll * 100) : 0;
-                    @endphp
-                    <td class="text-right"><strong>{{ number_format($persenGrandPermintaan, 2, ',', '.') }}%</strong></td>
-                    <td class="text-right"><strong>{{ number_format($persenGrandDropping, 2, ',', '.') }}%</strong></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+<div class="col-12">
+    <div id="cashflow-table-pvd"></div>
+</div>
 </div>
 
 <script>
-// Selaraskan offset sticky 3 baris header dengan tinggi baris sesungguhnya
-// (tinggi berubah-ubah karena padding/border/zoom, jadi diukur, bukan dipatok).
 (function () {
-    function pvdStickyOffsets() {
-        var table = document.getElementById('cashflow-table-pvd');
-        if (!table || !table.tHead || table.tHead.rows.length < 3) return;
+    var pvdRows = @json($pvdRows);
+    var pvdMonths = @json($pvdMonths);
+    var pvdTitleUraian = @json('Payments for ' . $tahun . ' transactions - Accounts');
 
-        var rows = table.tHead.rows;
-        var h1 = rows[0].getBoundingClientRect().height;
-        var h2 = rows[1].getBoundingClientRect().height;
+    // Format angka: item 0/negatif -> '-', persen 2 desimal + '%'
+    function pvdFmt(cell) {
+        var v = cell.getValue();
+        if (v === null || v === undefined || v === '') return '';
+        v = Number(v);
+        var field = cell.getField();
+        if (field.indexOf('pct_') === 0) {
+            return v.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+        }
+        if (cell.getRow().getData().type === 'item') {
+            return v > 0 ? Math.round(v).toLocaleString('id-ID') : '-';
+        }
+        return Math.round(v).toLocaleString('id-ID');
+    }
 
-        Array.prototype.forEach.call(rows[1].cells, function (c) {
-            c.style.top = h1 + 'px';
+    function numCol(title, field, minW) {
+        return {
+            title: title,
+            field: field,
+            hozAlign: 'right',
+            minWidth: minW || 95,
+            widthGrow: 1,
+            formatter: pvdFmt,
+            headerHozAlign: 'center'
+        };
+    }
+
+    function buildColumns() {
+        var cols = [
+            { title: 'No.', field: 'no', frozen: true, width: 52, hozAlign: 'center', headerHozAlign: 'center' },
+            { title: pvdTitleUraian, field: 'uraian', frozen: true, minWidth: 280, widthGrow: 2, headerHozAlign: 'center' }
+        ];
+
+        // Bulan -> (Permintaan RD / Dropping HO / Pembayaran) -> nomor minggu
+        pvdMonths.forEach(function (m) {
+            cols.push({
+                title: m.title,
+                columns: [
+                    { title: 'Permintaan RD', columns: [numCol('1', 'm' + m.no + '_p')] },
+                    { title: 'Dropping HO', columns: [numCol('2', 'm' + m.no + '_d')] },
+                    { title: 'Pembayaran', columns: [numCol('3', 'm' + m.no + '_b')] }
+                ]
+            });
         });
-        Array.prototype.forEach.call(rows[2].cells, function (c) {
-            c.style.top = (h1 + h2) + 'px';
+
+        cols.push({
+            title: 'Total',
+            columns: [
+                { title: 'Permintaan RD', columns: [numCol('1', 'tot_p', 105)] },
+                { title: 'Dropping HO', columns: [numCol('2', 'tot_d', 105)] },
+                { title: 'Pembayaran', columns: [numCol('3', 'tot_b', 105)] }
+            ]
+        });
+
+        cols.push({
+            title: '%Tase Pembayaran Thdp',
+            columns: [
+                { title: 'Permintaan', columns: [numCol('1', 'pct_p', 90)] },
+                { title: 'Dropping', columns: [numCol('2', 'pct_d', 90)] }
+            ]
+        });
+
+        return cols;
+    }
+
+    // Kelas per jenis baris untuk pewarnaan (pola rowFormatter project LM)
+    function pvdRowFormatter(row) {
+        var t = row.getData().type;
+        var el = row.getElement();
+        ['kat', 'sub', 'item', 'subtotal', 'kattotal', 'grand'].forEach(function (k) {
+            el.classList.toggle('pvd-r-' + k, t === k);
         });
     }
 
-    pvdStickyOffsets();
+    function initPvd() {
+        var el = document.getElementById('cashflow-table-pvd');
+        if (!el || !window.Tabulator) return;
 
-    // Daftarkan listener global sekali saja walau partial dimuat ulang via AJAX
-    if (!window._pvdStickyBound) {
-        window._pvdStickyBound = true;
-        window.addEventListener('resize', function () {
-            pvdStickyOffsets();
+        new Tabulator(el, {
+            data: pvdRows,
+            columns: buildColumns(),
+            // fitColumns: kolom mengisi penuh lebar wadah; tetap bisa ditarik
+            // manual dan otomatis scroll horizontal bila kolom banyak (minWidth).
+            layout: 'fitColumns',
+            height: '68vh',
+            columnHeaderVertAlign: 'middle',
+            movableColumns: false,
+            columnDefaults: { headerSort: false },
+            rowFormatter: pvdRowFormatter,
+            placeholder: 'Tidak ada data'
         });
-        window.pvdStickyOffsets = pvdStickyOffsets;
+    }
+
+    // Saat render penuh halaman, script ini jalan sebelum Tabulator dimuat;
+    // saat dimuat via AJAX, Tabulator sudah tersedia dan langsung jalan.
+    if (window.Tabulator) {
+        initPvd();
+    } else {
+        document.addEventListener('DOMContentLoaded', initPvd);
     }
 })();
 </script>
-@push('scripts')
-<script type="text/javascript">
-    window.print();
-</script>
-@endpush

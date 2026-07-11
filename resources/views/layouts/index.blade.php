@@ -478,6 +478,15 @@
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed">
+    <script>
+        // Terapkan status sidebar tersimpan SEBELUM render agar kondisi
+        // buka/tutup konsisten antar-halaman dan tidak berkedip.
+        try {
+            if (localStorage.getItem('cb-sidebar-collapsed') === '1') {
+                document.body.classList.add('sidebar-collapse');
+            }
+        } catch (e) {}
+    </script>
     @php
         $isProgrammer = auth()->check() && auth()->user()->role === 'programmer';
     @endphp
@@ -930,6 +939,17 @@
             }
         } catch (e) {}
     })();
+    </script>
+
+    <script>
+    // Simpan status buka/tutup sidebar agar bertahan antar-halaman.
+    // AdminLTE PushMenu memancarkan event ini saat tombol toggle diklik.
+    $(document).on('collapsed.lte.pushmenu', function () {
+        try { localStorage.setItem('cb-sidebar-collapsed', '1'); } catch (e) {}
+    });
+    $(document).on('shown.lte.pushmenu', function () {
+        try { localStorage.setItem('cb-sidebar-collapsed', '0'); } catch (e) {}
+    });
     </script>
 
     @stack('scripts')

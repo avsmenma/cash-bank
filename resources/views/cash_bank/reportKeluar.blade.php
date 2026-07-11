@@ -82,158 +82,59 @@
             </div>
         </div>
 
-        {{-- TABLE --}}
+        {{-- TABLE (Tabulator, muat bertahap saat scroll) --}}
         <div class="card shadow cb-fullscreen-table" style="border:none;">
-            {{-- Info muat bertahap (tanpa pagination — semua entri dimuat saat scroll) --}}
             <div class="d-flex align-items-center justify-content-end px-3 pt-3 pb-2 cb-fullscreen-hide">
                 <div id="rkEntriesInfo" class="small text-secondary">Memuat data...</div>
             </div>
-            <div class="card-body p-0 table-responsive">
-                <table class="table table-bordered mb-0" id="rkTable">
-                    <thead>
-                        <tr>
-                            <th class="rk-th text-center">No</th>
-                            <th class="rk-th text-center">No Agenda</th>
-                            <th class="rk-th text-center">Tanggal</th>
-                            <th class="rk-th text-center">No Bukti</th>
-                            <th class="rk-th text-center">Sumber Dana</th>
-                            <th class="rk-th text-center">Penerima / Dari</th>
-                            <th class="rk-th text-center">Uraian</th>
-                            <th class="rk-th text-center">Debet</th>
-                            <th class="rk-th text-center">Kredit</th>
-                            <th class="rk-th text-center">Saldo Akhir</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                    <tfoot>
-                        <tr class="rk-footer">
-                            <td colspan="7" class="text-right font-weight-bold">TOTAL</td>
-                            <td class="text-right font-weight-bold rk-debet">
-                                {{ number_format($totalDebet ?? 0, 0, ',', '.') }}
-                            </td>
-                            <td class="text-right font-weight-bold rk-kredit">
-                                {{ number_format($totalKredit ?? 0, 0, ',', '.') }}
-                            </td>
-                            <td class="text-right font-weight-bold rk-saldo">
-                                @if($finalSaldo !== null)
-                                    {{ $finalSaldo < 0
-                                        ? '(' . number_format(abs($finalSaldo), 0, ',', '.') . ')'
-                                        : number_format($finalSaldo, 0, ',', '.') }}
-                                @else
-                                    -
-                                @endif
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
+            <div class="card-body p-0">
+                <div id="rkTable"></div>
+                {{-- Footer TOTAL (nilai dari server, konsisten dgn versi lama) --}}
+                <div class="rk-total-bar">
+                    <span class="rk-total-label">TOTAL</span>
+                    <span>Debet: <b id="rkTotDebet">{{ number_format($totalDebet ?? 0, 0, ',', '.') }}</b></span>
+                    <span>Kredit: <b id="rkTotKredit">{{ number_format($totalKredit ?? 0, 0, ',', '.') }}</b></span>
+                    <span>Saldo Akhir: <b id="rkTotSaldo">@if($finalSaldo !== null){{ $finalSaldo < 0 ? '(' . number_format(abs($finalSaldo), 0, ',', '.') . ')' : number_format($finalSaldo, 0, ',', '.') }}@else - @endif</b></span>
+                </div>
             </div>
         </div>
     </section>
 </div>
 
 <style>
-#rkTable {
-    table-layout: fixed !important;
-    width: 100% !important;
-    min-width: 1820px;
+/* REKENING KORAN — Tabulator ala spreadsheet */
+#rkTable { border: 1px solid #d0dce8; font-size: 11.5px; font-family: 'Segoe UI', system-ui, sans-serif; }
+#rkTable .tabulator-header { background: #0d3b6e; border-bottom: 2px solid #082948; }
+#rkTable .tabulator-header .tabulator-col {
+    background: #0d3b6e !important; color: #fff !important; font-weight: 600; font-size: 11.5px;
+    border-color: #ffffff !important; border-right: 1px solid #ffffff !important;
 }
-#rkTable th:nth-child(1), #rkTable td:nth-child(1) { width: 55px; }
-#rkTable th:nth-child(2), #rkTable td:nth-child(2) { width: 120px; }
-#rkTable th:nth-child(3), #rkTable td:nth-child(3) { width: 110px; }
-#rkTable th:nth-child(4), #rkTable td:nth-child(4) { width: 120px; }
-#rkTable th:nth-child(5), #rkTable td:nth-child(5) { width: 250px; }
-#rkTable th:nth-child(6), #rkTable td:nth-child(6) { width: 170px; }
-#rkTable th:nth-child(7), #rkTable td:nth-child(7) { width: 600px; }
-#rkTable th:nth-child(8), #rkTable td:nth-child(8),
-#rkTable th:nth-child(9), #rkTable td:nth-child(9),
-#rkTable th:nth-child(10), #rkTable td:nth-child(10) { width: 130px; }
+#rkTable .tabulator-header .tabulator-col .tabulator-col-title { color: #fff; text-align: center; }
+#rkTable .tabulator-header .tabulator-col-resize-handle { width: 7px; cursor: col-resize; background: none; }
+#rkTable .tabulator-header .tabulator-col:not(.tabulator-col-group) > .tabulator-col-resize-handle {
+    background: linear-gradient(to bottom, transparent 32%, rgba(255,255,255,.45) 32%, rgba(255,255,255,.45) 68%, transparent 68%)
+        center / 2px 100% no-repeat;
+}
+#rkTable .tabulator-header .tabulator-col-resize-handle:hover { background: rgba(255,255,255,.3); }
+#rkTable .tabulator-cell { border-right: 1px solid #c3d2e0; border-color: #c3d2e0; }
+#rkTable .tabulator-row { border-bottom: 1px solid #c3d2e0; }
+#rkTable .tabulator-row:hover .tabulator-cell { background: #f5f8fc; }
 
-/* ====== HEADER ====== */
-.rk-th {
-    background: #0d3b6e !important;
-    color: #fff !important;
-    font-size: 11.5px;
-    font-weight: 600;
-    padding: 9px 8px;
-    white-space: nowrap;
-    vertical-align: middle;
-    border-color: #1a5276 !important;
-}
+#rkTable .rk-wrap { white-space: normal !important; overflow-wrap: anywhere; line-height: 1.35; }
+#rkTable .rk-debet { color: #1a7a3d; font-weight: 600; }
+#rkTable .rk-kredit { color: #c0392b; font-weight: 600; }
+#rkTable .rk-saldo { color: #0d3b6e; font-weight: 700; }
 
-/* ====== CELLS ====== */
-.rk-td {
-    font-size: 11.5px;
-    padding: 5px 8px;
-    vertical-align: middle;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: clip;
-    border-color: #d0dce8 !important;
+.rk-total-bar {
+    display: flex; gap: 26px; align-items: center; justify-content: flex-end;
+    background: #1b4f72; color: #fff; font-size: 12.5px; padding: 9px 14px;
 }
-.rk-sumber {
-    white-space: normal !important;
-    overflow-wrap: anywhere;
-    word-break: normal;
-    vertical-align: top;
-    line-height: 1.35;
-    overflow: hidden !important;
-    text-overflow: clip !important;
-}
-.rk-penerima {
-    white-space: normal !important;
-    overflow-wrap: anywhere;
-    word-break: normal;
-    vertical-align: top;
-    line-height: 1.35;
-    overflow: hidden !important;
-    text-overflow: clip !important;
-}
-.rk-uraian {
-    white-space: normal !important;
-    overflow-wrap: anywhere;
-    word-break: normal;
-    vertical-align: top;
-    line-height: 1.35;
-    overflow: hidden !important;
-    text-overflow: clip !important;
-}
-.rk-wrap-cell {
-    max-width: 100%;
-    white-space: normal !important;
-    overflow-wrap: anywhere;
-    word-break: normal;
-    line-height: 1.35;
-}
-.rk-nowrap-cell {
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: clip;
-}
+.rk-total-bar .rk-total-label { margin-right: auto; font-weight: 700; letter-spacing: .4px; }
+.rk-total-bar #rkTotDebet { color: #a9dfbf; }
+.rk-total-bar #rkTotKredit { color: #f1948a; }
+.rk-total-bar #rkTotSaldo { color: #fad7a0; }
 
-/* ====== ROWS ====== */
-tbody tr { background-color: #ffffff; }
-tbody tr:hover { background-color: #f5f8fc; }
-
-/* ====== NILAI ====== */
-.rk-debet  { color: #1a7a3d; font-weight: 600; }
-.rk-kredit { color: #c0392b; font-weight: 600; }
-.rk-saldo  { color: #0d3b6e; font-weight: 700; }
-.rk-neg    { color: #c0392b !important; }
-
-/* ====== FOOTER ====== */
-.rk-footer td {
-    background: #1b4f72 !important;
-    color: #fff !important;
-    font-size: 12px;
-    padding: 8px;
-    border-color: #1a5276 !important;
-}
-.rk-footer .rk-debet  { color: #a9dfbf !important; }
-.rk-footer .rk-kredit { color: #f1948a !important; }
-.rk-footer .rk-saldo  { color: #fad7a0 !important; }
-
-/* ====== LEGEND DOT ====== */
+@media print { #rkTable .tabulator-tableholder { overflow: visible !important; max-height: none !important; } }
 </style>
 
 <script>
@@ -242,88 +143,96 @@ function resetFilter() {
     const tahun = document.querySelector('[name="tahun"]')?.value;
     window.location.href = '{{ route("bank-keluar.report") }}?tahun=' + (tahun || '');
 }
-
-
 </script>
 
 @push('scripts')
 <script>
-$(function () {
-    if (!$.fn.DataTable) return;
-
+(function () {
     var reportParams = @json(request()->query());
+    var rkTotal = null;
 
-    // Tanpa pagination: entri dimuat bertahap per 100 baris oleh CbInfiniteTable
-    // (append saat scroll mendekati dasar). Nomor urut & saldo berjalan dihitung
-    // server dari offset chunk sehingga tetap kontinu.
-    var table = $('#rkTable').DataTable({
-        processing: true,
-        serverSide: false,
-        paging: false,
-        ordering: false,
-        searching: false,
-        autoWidth: false,
-        scrollX: true,
-        scrollY: '60vh',
-        scrollCollapse: true,
-        dom: 'rt',
-        columns: [
-            { data: 'no', className: 'text-center rk-td', width: '55px' },
-            { data: 'no_agenda', className: 'rk-td', width: '120px' },
-            { data: 'tanggal', className: 'text-center rk-td', width: '110px' },
-            { data: 'no_sap', className: 'rk-td', width: '120px' },
-            {
-                data: 'nama_sumber_dana',
-                className: 'rk-td rk-sumber',
-                width: '250px',
-                render: function (data) {
-                    return '<div class="rk-wrap-cell">' + (data || '-') + '</div>';
-                }
-            },
-            {
-                data: 'penerima',
-                className: 'rk-td rk-penerima',
-                width: '170px',
-                render: function (data) {
-                    return '<div class="rk-wrap-cell">' + (data || '-') + '</div>';
-                }
-            },
-            {
-                data: 'uraian',
-                className: 'rk-td rk-uraian',
-                width: '600px',
-                render: function (data) {
-                    return '<div class="rk-wrap-cell">' + (data || '-') + '</div>';
-                },
-                createdCell: function (td, cellData) {
-                    td.title = $('<div>').html(cellData || '').text();
-                }
-            },
-            { data: 'debet', className: 'text-right rk-td rk-debet', width: '130px' },
-            { data: 'kredit', className: 'text-right rk-td rk-kredit', width: '130px' },
-            { data: 'saldo_akhir', className: 'text-right rk-td rk-saldo', width: '130px' }
-        ],
-        language: {
-            emptyTable: 'Tidak ada data untuk filter yang dipilih.',
-            processing: 'Memuat data...'
-        }
-    });
+    function init() {
+        var el = document.getElementById('rkTable');
+        if (!el || !window.Tabulator) return;
 
-    CbInfiniteTable.init('#rkTable', {
-        url: "{{ route('bank-keluar.report.data') }}",
-        chunkSize: 100,
-        infoTarget: '#rkEntriesInfo',
-        extraParams: function () {
-            return reportParams;
-        },
-        onResponse: function (json) {
-            if (!json || !json.totals) return;
-            $('#rkTable tfoot .rk-debet').text(json.totals.debet);
-            $('#rkTable tfoot .rk-kredit').text(json.totals.kredit);
-            $('#rkTable tfoot .rk-saldo').text(json.totals.saldo);
+        function col(title, field, opts) {
+            return Object.assign({ title: title, field: field, headerHozAlign: 'center', minWidth: 90, widthGrow: 1, headerSort: false }, opts || {});
         }
-    });
-});
+
+        var table = new Tabulator(el, {
+            layout: 'fitColumns',
+            height: '62vh',
+            columnHeaderVertAlign: 'middle',
+            movableColumns: false,
+            placeholder: 'Tidak ada data untuk filter yang dipilih.',
+            columns: [
+                col('No', 'no', { width: 56, hozAlign: 'center' }),
+                col('No Agenda', 'no_agenda', { minWidth: 110 }),
+                col('Tanggal', 'tanggal', { hozAlign: 'center', minWidth: 100 }),
+                col('No Bukti', 'no_sap', { minWidth: 105 }),
+                col('Sumber Dana', 'nama_sumber_dana', { minWidth: 200, widthGrow: 2, cssClass: 'rk-wrap', variableHeight: true, formatter: 'html' }),
+                col('Penerima / Dari', 'penerima', { minWidth: 150, widthGrow: 2, cssClass: 'rk-wrap', variableHeight: true, formatter: 'html' }),
+                col('Uraian', 'uraian', { minWidth: 320, widthGrow: 4, cssClass: 'rk-wrap', variableHeight: true, formatter: 'html', tooltip: true }),
+                col('Debet', 'debet', { hozAlign: 'right', minWidth: 115, cssClass: 'rk-debet' }),
+                col('Kredit', 'kredit', { hozAlign: 'right', minWidth: 115, cssClass: 'rk-kredit' }),
+                col('Saldo Akhir', 'saldo_akhir', { hozAlign: 'right', minWidth: 120, cssClass: 'rk-saldo' })
+            ],
+
+            // Muat bertahap 100 baris saat scroll — endpoint lama (start/length) tetap dipakai
+            progressiveLoad: 'scroll',
+            paginationSize: 100,
+            ajaxURL: @json(route('bank-keluar.report.data')),
+            ajaxURLGenerator: function (url, config, params) {
+                var size = params.size || 100;
+                var usp = new URLSearchParams();
+                Object.keys(reportParams).forEach(function (k) {
+                    var v = reportParams[k];
+                    if (Array.isArray(v)) { v.forEach(function (x) { usp.append(k + '[]', x); }); }
+                    else if (v !== null && v !== undefined) { usp.append(k, v); }
+                });
+                usp.append('draw', params.page);
+                usp.append('start', (params.page - 1) * size);
+                usp.append('length', size);
+                return url + '?' + usp.toString();
+            },
+            ajaxResponse: function (url, params, response) {
+                if (response && response.totals) {
+                    document.getElementById('rkTotDebet').textContent = response.totals.debet;
+                    document.getElementById('rkTotKredit').textContent = response.totals.kredit;
+                    document.getElementById('rkTotSaldo').textContent = response.totals.saldo;
+                }
+                rkTotal = parseInt((response && response.recordsFiltered) || 0, 10);
+                var size = params.size || 100;
+                return {
+                    last_page: Math.max(1, Math.ceil(rkTotal / size)),
+                    data: (response && response.data) || []
+                };
+            },
+
+            rowFormatter: function (row) {
+                var cls = row.getData().DT_RowClass;
+                if (cls) row.getElement().classList.add(cls);
+            }
+        });
+
+        function updateInfo() {
+            var info = document.getElementById('rkEntriesInfo');
+            if (!info || rkTotal === null) return;
+            var loaded = table.getDataCount();
+            if (rkTotal === 0) info.textContent = 'Tidak ada data.';
+            else if (loaded >= rkTotal) info.textContent = 'Semua ' + rkTotal.toLocaleString('id-ID') + ' data telah dimuat.';
+            else info.textContent = loaded.toLocaleString('id-ID') + ' dari ' + rkTotal.toLocaleString('id-ID') + ' data dimuat — scroll ke bawah untuk memuat berikutnya.';
+        }
+        table.on('dataProcessed', updateInfo);
+        table.on('renderComplete', updateInfo);
+    }
+
+    if (window.Tabulator) {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        document.addEventListener('DOMContentLoaded', init);
+    }
+})();
 </script>
 @endpush
 

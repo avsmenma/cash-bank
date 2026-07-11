@@ -41,6 +41,104 @@
 
     @stack('styles')
     <style>
+        /* ============================================================
+           TATA LETAK HEADER ALA PROJECT LM:
+           - Header memanjang penuh sampai pojok kiri atas (di atas sidebar).
+           - Tombol buka/tutup sidebar di pojok kiri, di kanannya logo + judul.
+           - Sidebar mulai tepat di bawah header.
+           ============================================================ */
+        .main-header {
+            margin-left: 0 !important;
+            position: sticky;
+            top: 0;
+            z-index: 1040;
+        }
+        body.layout-fixed .main-sidebar {
+            top: calc(3.5rem + 1px) !important;
+        }
+
+        /* Tombol buka/tutup sidebar bergaya kotak (ala LM) */
+        .main-header .nav-link[data-widget="pushmenu"] {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, .16);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, .08);
+        }
+        .main-header .nav-link[data-widget="pushmenu"]:hover {
+            background: rgba(255, 255, 255, .16);
+        }
+
+        /* Brand (logo + judul + subjudul) di header */
+        .cb-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 10px;
+            min-width: 0;
+        }
+        .cb-brand-mark {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: #fff;
+            padding: 3px;
+            flex: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+        }
+        .cb-brand-mark img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        .cb-brand-text { line-height: 1.2; min-width: 0; }
+        .cb-brand-name {
+            font-weight: 700;
+            font-size: 14.5px;
+            color: #fff;
+            white-space: nowrap;
+        }
+        .cb-brand-name span { color: #28a745; }
+        .cb-brand-sub {
+            font-size: 11px;
+            color: rgba(255, 255, 255, .6);
+            white-space: nowrap;
+            letter-spacing: .02em;
+        }
+        @media (max-width: 576px) {
+            .cb-brand-sub { display: none; }
+        }
+
+        /* ============================================================
+           SIDEBAR TERTUTUP TIDAK TERBUKA SAAT DISENTUH KURSOR
+           (perilaku hover-expand bawaan AdminLTE dimatikan;
+           buka/tutup hanya lewat tombol di pojok kiri atas)
+           ============================================================ */
+        body.sidebar-mini.sidebar-collapse .main-sidebar:hover,
+        body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused {
+            width: 4.6rem !important;
+        }
+        body.sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar .nav-sidebar .nav-link p,
+        body.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-sidebar > .nav-item > .nav-link > span,
+        body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused .sidebar .nav-sidebar .nav-link p,
+        body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused .nav-sidebar > .nav-item > .nav-link > span {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        body.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-treeview,
+        body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused .nav-treeview {
+            display: none !important;
+        }
+
         .sidebar .nav-item {
             /* margin-left: 10px; */
             margin-bottom: 20px;
@@ -276,15 +374,21 @@
         <nav class="main-header navbar navbar-expand navbar-dark">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button" title="Buka/Tutup menu"
+                        aria-label="Buka/Tutup menu"><i class="fas fa-bars"></i></a>
                 </li>
-                <!-- <li class="nav-item d-none d-sm-inline-block">
-                <a href="index3.html" class="nav-link">Dashboard</a>
-            </li>
-            <li class="nav-item d-none d-sm-inline-block">
-                <a href="#" class="nav-link">Contact</a>
-            </li> -->
             </ul>
+
+            {{-- Logo + judul aplikasi (ala project LM) --}}
+            <div class="cb-brand">
+                <div class="cb-brand-mark">
+                    <img src="{{ asset('images/logoPTPNNew.png') }}" alt="Logo PTPN">
+                </div>
+                <div class="cb-brand-text">
+                    <div class="cb-brand-name">Cash <span>Bank</span></div>
+                    <div class="cb-brand-sub">Sistem Monitoring Kas &amp; Bank Regional</div>
+                </div>
+            </div>
 
             <ul class="navbar-nav ml-auto">
                 <!-- Navbar Search -->
@@ -306,18 +410,11 @@
 
         </nav>
         <aside class="main-sidebar sidebar-dark-green elevation-4">
-            <!-- Brand Logo -->
-            <a href="#" class="brand-link">
-                <img src="{{ asset('images/logoPTPNNew.png') }}" alt="PTPN Logo" class="align-center"
-                    style="opacity: .8" width="50" height="50">
-                <span class="brand-text font-weight-bold text-center">Cash <span>Bank</span></span>
-            </a>
-
-            <!-- Sidebar -->
+            <!-- Sidebar (brand/logo pindah ke header) -->
             <div class="sidebar">
 
                 <!-- Sidebar Menu -->
-                <nav class="mt-5">
+                <nav class="mt-3">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                         data-accordion="false">
                         @if($isProgrammer)

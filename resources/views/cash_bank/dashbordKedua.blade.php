@@ -3,17 +3,30 @@
     /* ============================================================
        PROFESSIONAL PVD TABLE — Corporate Palette (matches PD tab)
        ============================================================ */
+    /* PENTING: jangan beri overflow:hidden di tabel ini — itu mematikan
+       position:sticky header. Border-radius dipotong oleh .pvd-table-scroll. */
     #cashflow-table-pvd {
         table-layout: auto !important;
         font-size: 10.5px;
         border-collapse: separate;
         border-spacing: 0;
         border: 1px solid #d0d5dd;
-        border-radius: 8px;
-        overflow: hidden;
         box-shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 1px 2px rgba(16, 24, 40, .04);
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         width: 100%;
+    }
+
+    /* Scroll vertikal terjadi di dalam wadah ini agar header sticky bekerja */
+    .pvd-table-scroll {
+        max-height: calc(100vh - 170px);
+        overflow: auto;
+        border-radius: 8px;
+    }
+    @media print {
+        .pvd-table-scroll {
+            max-height: none;
+            overflow: visible;
+        }
     }
     #cashflow-table-pvd td.text-right {
         white-space: nowrap;
@@ -28,6 +41,21 @@
         border-color: #17324b !important;
         vertical-align: middle;
         text-align: center !important;
+        position: sticky;
+        z-index: 5;
+    }
+    /* Tiga baris header menempel bertingkat saat scroll */
+    #cashflow-table-pvd thead tr:nth-child(1) th {
+        top: 0;
+        height: 36px;
+    }
+    #cashflow-table-pvd thead tr:nth-child(2) th {
+        top: 36px;
+        height: 36px;
+    }
+    #cashflow-table-pvd thead tr:nth-child(3) th {
+        top: 72px;
+        height: 30px;
     }
     #cashflow-table-pvd th,
     #cashflow-table-pvd td {
@@ -119,7 +147,7 @@
 @endphp
 
 <div class="row">
-    <div class="col-12 table-responsive">
+    <div class="col-12 table-responsive pvd-table-scroll">
         <table class="table table-bordered table-sm" id="cashflow-table-pvd">
             <thead class="bg-navy">
                 <!-- Row 1: Header Bulan -->

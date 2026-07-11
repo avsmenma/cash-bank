@@ -19,27 +19,23 @@
     <section class="content">
       <div class="row">
         <div class="col-md-12">
-          <div class="card cb-fullscreen-hide">
-            <div class="card-header">
-              <h3 class="card-title">Filter Data</h3>
-            </div>
-            <div class="card-body">
+          <div class="card cb-fullscreen-hide" style="display: inline-block; min-width: 0;">
+            <div class="card-body py-2">
               <form method="GET" action="{{ route('dashboard.pembayaran.index') }}" id="form-filter">
-                <div class="row">
-                  <div class="col-md-12 d-flex">
-                    <div class="form-group col-md-2">
-                      <label>Tahun</label>
+                <div class="d-flex align-items-end flex-wrap" style="gap: 10px;">
+                    <div class="form-group mb-1" style="width: 110px;">
+                      <label class="mb-1">Tahun</label>
                       <select class="form-control select2" name="tahun" id="tahun">
                         @for($y = date('Y') - 2; $y <= date('Y') + 5; $y++)
                           <option value="{{ $y }}" {{ $y == $tahun ? 'selected' : '' }}>{{ $y }}</option>
                         @endfor
                       </select>
                     </div>
-                    <div class="form-group col-md-2">
-                        <label>Dari Bulan:</label>
+                    <div class="form-group mb-1" style="width: 140px;">
+                        <label class="mb-1">Dari Bulan:</label>
                         <select name="bulan_dari" id="bulanDari" class="form-control">
                             @foreach([
-                                1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 
+                                1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
                                 4 => 'April', 5 => 'Mei', 6 => 'Juni',
                                 7 => 'Juli', 8 => 'Agustus', 9 => 'September',
                                 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
@@ -50,12 +46,11 @@
                             @endforeach
                         </select>
                     </div>
-                                    
-                    <div class="form-group col-md-2">
-                        <label>Sampai Bulan:</label>
+                    <div class="form-group mb-1" style="width: 140px;">
+                        <label class="mb-1">Sampai Bulan:</label>
                         <select name="bulan_sampai" id="bulanSampai" class="form-control">
                             @foreach([
-                                1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 
+                                1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
                                 4 => 'April', 5 => 'Mei', 6 => 'Juni',
                                 7 => 'Juli', 8 => 'Agustus', 9 => 'September',
                                 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
@@ -66,18 +61,14 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-9">
-                      <div class="form-group">
-                        <label>&nbsp;</label><br>
+                    <div class="form-group mb-1">
                         <button type="submit" class="btn btn-primary" id="btn-filter">
                           <i class="fas fa-filter"></i> Filter Data
                         </button>
                         <button type="button" class="btn btn-secondary" id="btn-reset">
                           <i class="fas fa-sync"></i> Reset
                         </button>
-                      </div>
                     </div>
-                  </div>
                 </div>
               </form>
             </div>
@@ -85,7 +76,6 @@
           <div class="card">
             <div class="card-body">
               <div id="table-wrapper">
-                <h5>CashFlow PD VS MK {{ $tahun }} dari bulan {{ $bulanDari }} sampai dengan bulan {{ $bulanSampai }}</h5>
                 @include('cash_bank.pembayaran.dashboardPembayaran')
               </div>
             </div>

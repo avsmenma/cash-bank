@@ -38,7 +38,7 @@
         }
 
         th {
-            background-color: #343a40;
+            background-color: #1e3a5f;
             color: white;
             text-align: center;
         }
@@ -52,7 +52,7 @@
         }
 
         tfoot th {
-            background-color: #343a40;
+            background-color: #1e3a5f;
             color: white;
         }
     </style>

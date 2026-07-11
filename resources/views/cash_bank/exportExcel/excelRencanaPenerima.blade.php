@@ -6,11 +6,11 @@
 <table>
     <thead>
         <tr>
-            <th style="background-color: #343a40; color: white; font-weight: bold;">Kategori</th>
+            <th style="background-color: #1e3a5f; color: white; font-weight: bold;">Kategori</th>
             @foreach($bulanList as $b)
-                <th style="background-color: #343a40; color: white; font-weight: bold;">{{ ucfirst($b) }}</th>
+                <th style="background-color: #1e3a5f; color: white; font-weight: bold;">{{ ucfirst($b) }}</th>
             @endforeach
-            <th style="background-color: #343a40; color: white; font-weight: bold;">Total</th>
+            <th style="background-color: #1e3a5f; color: white; font-weight: bold;">Total</th>
         </tr>
     </thead>
     <tbody>
@@ -36,12 +36,12 @@
     </tbody>
     <tfoot>
         <tr>
-            <th style="background-color: #343a40; color: white; font-weight: bold;">Total</th>
+            <th style="background-color: #1e3a5f; color: white; font-weight: bold;">Total</th>
             @foreach($bulanList as $b)
-                <th style="background-color: #343a40; color: white; font-weight: bold; text-align: right;">
+                <th style="background-color: #1e3a5f; color: white; font-weight: bold; text-align: right;">
                     {{ number_format($totalPerBulan[$b], 0, ',', '.') }}</th>
             @endforeach
-            <th style="background-color: #343a40; color: white; font-weight: bold; text-align: right;">
+            <th style="background-color: #1e3a5f; color: white; font-weight: bold; text-align: right;">
                 {{ number_format($grandTotal, 0, ',', '.') }}</th>
         </tr>
     </tfoot>

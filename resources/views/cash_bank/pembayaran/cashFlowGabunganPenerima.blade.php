@@ -1,132 +1,132 @@
-@push('styles')
 <style>
-    #example {
-        table-layout: auto !important;
-        width: 100% !important;
+    /* EVALUASI (RENCANA vs REALISASI) — Tabulator ala spreadsheet */
+    #pn-eval-table { border: 1px solid #d0d5dd; border-radius: 8px; font-size: 12px; font-family: 'Segoe UI', system-ui, sans-serif; }
+    #pn-eval-table .tabulator-header { background: #1e3a5f; border-bottom: 2px solid #0f2137; }
+    #pn-eval-table .tabulator-header .tabulator-col,
+    #pn-eval-table .tabulator-header .tabulator-col-group {
+        background: #1e3a5f !important; color: #f0f4f8 !important; font-weight: 600; font-size: 11px;
+        border-color: #ffffff !important; border-right: 1px solid #ffffff !important;
     }
-
-    #example th,
-    #example td {
-        white-space: nowrap;
-        vertical-align: middle;
+    #pn-eval-table .tabulator-header .tabulator-col-group-cols > .tabulator-col:last-child { border-right: none !important; }
+    #pn-eval-table .tabulator-header .tabulator-col .tabulator-col-title { color: #f0f4f8; text-align: center; }
+    #pn-eval-table .tabulator-header .tabulator-col-resize-handle { width: 7px; cursor: col-resize; background: none; }
+    #pn-eval-table .tabulator-header .tabulator-col:not(.tabulator-col-group) > .tabulator-col-resize-handle {
+        background: linear-gradient(to bottom, transparent 32%, rgba(255,255,255,.45) 32%, rgba(255,255,255,.45) 68%, transparent 68%)
+            center / 2px 100% no-repeat;
     }
+    #pn-eval-table .tabulator-header .tabulator-col-resize-handle:hover { background: rgba(255,255,255,.3); }
+    #pn-eval-table .tabulator-cell { border-right: 1px solid #b3bfcc; border-color: #b3bfcc; }
+    #pn-eval-table .tabulator-row { border-bottom: 1px solid #b3bfcc; }
+    #pn-eval-table .tabulator-row.pn-r-total .tabulator-cell { background: #1e3a5f; color: #fff; font-weight: 700; }
+    @media print { #pn-eval-table .tabulator-tableholder { overflow: visible !important; max-height: none !important; } }
 </style>
-@endpush
 
 @php
-$footer = [];
-foreach ($bulanListFiltered as $b => $n) {
-    $footer[$b] = [
-        'rencana' => 0,
-        'realisasi' => 0
-    ];
-}
-// Total keseluruhan footer
-$footerGrandTotal = [
-    'rencana' => 0,
-    'realisasi' => 0,
-    'selisih' => 0,
-    'persen' => 0
-];
+    // Rakit baris data (logika lama utuh: total tahunan per kategori + footer Total)
+    $evMonths = array_keys($bulanListFiltered); // nama bulan
+    $evRows = [];
+    $footer = [];
+    foreach ($evMonths as $b) $footer[$b] = ['rencana' => 0, 'realisasi' => 0];
+
+    foreach ($data as $kategori => $bulan) {
+        $row = ['type' => 'item', 'uraian' => $kategori];
+        $tr = 0; $tre = 0;
+        foreach ($evMonths as $i => $b) {
+            $v = $bulan[$b] ?? ['rencana' => 0, 'realisasi' => 0, 'selisih' => 0, 'persen' => 0];
+            $row['m' . $i . '_r'] = $v['rencana'];
+            $row['m' . $i . '_re'] = $v['realisasi'];
+            $row['m' . $i . '_s'] = $v['selisih'];
+            $row['m' . $i . '_p'] = $v['persen'];
+            $footer[$b]['rencana'] += $v['rencana'];
+            $footer[$b]['realisasi'] += $v['realisasi'];
+            $tr += $v['rencana'];
+            $tre += $v['realisasi'];
+        }
+        $row['tot_r'] = $tr;
+        $row['tot_re'] = $tre;
+        $row['tot_s'] = $tre - $tr;
+        $row['tot_p'] = $tr > 0 ? ($tre / $tr) * 100 : 0;
+        $evRows[] = $row;
+    }
+
+    $rowT = ['type' => 'total', 'uraian' => 'Total'];
+    $gr = 0; $gre = 0;
+    foreach ($evMonths as $i => $b) {
+        $r = $footer[$b]['rencana'];
+        $re = $footer[$b]['realisasi'];
+        $rowT['m' . $i . '_r'] = $r;
+        $rowT['m' . $i . '_re'] = $re;
+        $rowT['m' . $i . '_s'] = $re - $r;
+        $rowT['m' . $i . '_p'] = $r > 0 ? ($re / $r) * 100 : 0;
+        $gr += $r;
+        $gre += $re;
+    }
+    $rowT['tot_r'] = $gr;
+    $rowT['tot_re'] = $gre;
+    $rowT['tot_s'] = $gre - $gr;
+    $rowT['tot_p'] = $gr > 0 ? ($gre / $gr) * 100 : 0;
+    $evRows[] = $rowT;
+
+    $evMonthTitles = [];
+    foreach ($evMonths as $i => $b) $evMonthTitles[] = ['i' => $i, 'title' => ucfirst($b)];
 @endphp
 
-<div class="row">
-    <div class="col-12 table-responsive">
-        <table class="table table-bordered" id="example">
-            <thead class="bg-navy text-center">
-                <tr>
-                    <th rowspan="2">Kategori</th>
-                    @foreach($bulanListFiltered as $b => $n)
-                        <th colspan="4">{{ ucfirst($b) }}</th>
-                    @endforeach
-                    <th colspan="4">Total {{$tahun}}</th>
-                </tr>
-                <tr>
-                    @foreach($bulanListFiltered as $b => $n)
-                        <th>Rencana</th>
-                        <th>Realisasi</th>
-                        <th>Selisih</th>
-                        <th>%Tase</th>
-                    @endforeach
-                    <th>Rencana</th>
-                    <th>Realisasi</th>
-                    <th>Selisih</th>
-                    <th>%Tase</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($data as $kategori => $bulan)
-                @php
-                    $totalRencana = 0;
-                    $totalRealisasi = 0;
-                @endphp
-                <tr>
-                    <td>{{ $kategori }}</td>
-                    @foreach($bulanListFiltered as $b => $n)
-                        @php
-                            $v = $bulan[$b] ?? ['rencana' => 0, 'realisasi' => 0, 'selisih' => 0, 'persen' => 0];
-                            $footer[$b]['rencana']   += $v['rencana'];
-                            $footer[$b]['realisasi'] += $v['realisasi'];
-                            // total tahunan per kategori
-                            $totalRencana   += $v['rencana'];
-                            $totalRealisasi += $v['realisasi'];
-                        @endphp
-                        <td class="text-right">{{ number_format($v['rencana'],0,',','.') }}</td>
-                        <td class="text-right">{{ number_format($v['realisasi'],0,',','.') }}</td>
-                        <td class="text-right">{{ number_format($v['selisih'],0,',','.') }}</td>
-                        <td class="text-right">{{ number_format($v['persen'],2) }}%</td>
-                    @endforeach
-                    @php
-                        $totalSelisih = $totalRealisasi - $totalRencana;
-                        $totalPersen  = $totalRencana > 0
-                            ? ($totalRealisasi / $totalRencana) * 100
-                            : 0;
-                    @endphp
+<div id="pn-eval-table"></div>
 
-                    <td class="text-right font-weight-bold">
-                        {{ number_format($totalRencana,0,',','.') }}
-                    </td>
-                    <td class="text-right font-weight-bold">
-                        {{ number_format($totalRealisasi,0,',','.') }}
-                    </td>
-                    <td class="text-right font-weight-bold">
-                        {{ number_format($totalSelisih,0,',','.') }}
-                    </td>
-                    <td class="text-right font-weight-bold">
-                        {{ number_format($totalPersen,2) }}%
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-            <tfoot class="bg-light font-weight-bold">
-                <tr class="table-warning">
-                    <th>Total</th>
-                    @foreach($footer as $b => $v)
-                        @php
-                            $selisih = $v['realisasi'] - $v['rencana'];
-                            $persen  = $v['rencana'] > 0 ? ($v['realisasi']/$v['rencana'])*100 : 0;
-                            
-                            // Akumulasi untuk grand total
-                            $footerGrandTotal['rencana'] += $v['rencana'];
-                            $footerGrandTotal['realisasi'] += $v['realisasi'];
-                        @endphp
-                        <th class="text-right">{{ number_format($v['rencana'],0,',','.') }}</th>
-                        <th class="text-right">{{ number_format($v['realisasi'],0,',','.') }}</th>
-                        <th class="text-right">{{ number_format($selisih,0,',','.') }}</th>
-                        <th class="text-right">{{ number_format($persen,2) }}%</th>
-                    @endforeach
-                    @php
-                        $footerGrandTotal['selisih'] = $footerGrandTotal['realisasi'] - $footerGrandTotal['rencana'];
-                        $footerGrandTotal['persen'] = $footerGrandTotal['rencana'] > 0 
-                            ? ($footerGrandTotal['realisasi'] / $footerGrandTotal['rencana']) * 100 
-                            : 0;
-                    @endphp
-                    <th class="text-right bg-warning">{{ number_format($footerGrandTotal['rencana'],0,',','.') }}</th>
-                    <th class="text-right bg-warning">{{ number_format($footerGrandTotal['realisasi'],0,',','.') }}</th>
-                    <th class="text-right bg-warning">{{ number_format($footerGrandTotal['selisih'],0,',','.') }}</th>
-                    <th class="text-right bg-warning">{{ number_format($footerGrandTotal['persen'],2) }}%</th>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-</div>
+<script>
+(function () {
+    var evRows = @json($evRows);
+    var evMonths = @json($evMonthTitles);
+    var evTotalTitle = @json('Total ' . $tahun);
+
+    function evFmt(cell) {
+        var v = cell.getValue();
+        if (v === null || v === undefined) return '';
+        v = Number(v);
+        var isPct = cell.getField().slice(-2) === '_p';
+        var s = Math.abs(v).toLocaleString('id-ID', {
+            minimumFractionDigits: isPct ? 2 : 0,
+            maximumFractionDigits: isPct ? 2 : 0
+        });
+        if (isPct) s += '%';
+        return v < 0 ? '(' + s + ')' : s;
+    }
+
+    function numCol(title, field, minW) {
+        return { title: title, field: field, hozAlign: 'right', minWidth: minW || 100, widthGrow: 1, formatter: evFmt, headerHozAlign: 'center' };
+    }
+
+    function group(title, prefix) {
+        return { title: title, columns: [
+            numCol('Rencana', prefix + '_r'),
+            numCol('Realisasi', prefix + '_re'),
+            numCol('Selisih', prefix + '_s'),
+            numCol('%Tase', prefix + '_p', 85)
+        ]};
+    }
+
+    function init() {
+        var el = document.getElementById('pn-eval-table');
+        if (!el || !window.Tabulator) return;
+        var cols = [{ title: 'Kategori', field: 'uraian', frozen: true, minWidth: 220, widthGrow: 2, headerHozAlign: 'center' }];
+        evMonths.forEach(function (m) { cols.push(group(m.title, 'm' + m.i)); });
+        cols.push(group(evTotalTitle, 'tot'));
+
+        new Tabulator(el, {
+            data: evRows,
+            columns: cols,
+            layout: 'fitColumns',
+            height: '65vh',
+            columnHeaderVertAlign: 'middle',
+            movableColumns: false,
+            columnDefaults: { headerSort: false },
+            rowFormatter: function (row) {
+                row.getElement().classList.toggle('pn-r-total', row.getData().type === 'total');
+            },
+            placeholder: 'Tidak ada data'
+        });
+    }
+
+    if (window.Tabulator) { init(); } else { document.addEventListener('DOMContentLoaded', init); }
+})();
+</script>

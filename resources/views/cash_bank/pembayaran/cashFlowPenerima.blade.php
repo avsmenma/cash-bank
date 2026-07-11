@@ -1,76 +1,89 @@
-<!-- Tabel DataTable -->
 <style>
-    /* Header & baris total navy, konsisten dengan tabel lain */
-    #example1 thead th,
-    #example1 tfoot th {
-        background-color: #1e3a5f !important;
-        color: #ffffff !important;
-        border-color: #17324b !important;
+    /* REKAP PENERIMAAN — Tabulator ala spreadsheet */
+    #pn-rekap-table { border: 1px solid #d0d5dd; border-radius: 8px; font-size: 12px; font-family: 'Segoe UI', system-ui, sans-serif; }
+    #pn-rekap-table .tabulator-header { background: #1e3a5f; border-bottom: 2px solid #0f2137; }
+    #pn-rekap-table .tabulator-header .tabulator-col,
+    #pn-rekap-table .tabulator-header .tabulator-col-group {
+        background: #1e3a5f !important; color: #f0f4f8 !important; font-weight: 600; font-size: 11px;
+        border-color: #ffffff !important; border-right: 1px solid #ffffff !important;
     }
+    #pn-rekap-table .tabulator-header .tabulator-col-group-cols > .tabulator-col:last-child { border-right: none !important; }
+    #pn-rekap-table .tabulator-header .tabulator-col .tabulator-col-title { color: #f0f4f8; text-align: center; }
+    #pn-rekap-table .tabulator-header .tabulator-col-resize-handle { width: 7px; cursor: col-resize; background: none; }
+    #pn-rekap-table .tabulator-header .tabulator-col:not(.tabulator-col-group) > .tabulator-col-resize-handle {
+        background: linear-gradient(to bottom, transparent 32%, rgba(255,255,255,.45) 32%, rgba(255,255,255,.45) 68%, transparent 68%)
+            center / 2px 100% no-repeat;
+    }
+    #pn-rekap-table .tabulator-header .tabulator-col-resize-handle:hover { background: rgba(255,255,255,.3); }
+    #pn-rekap-table .tabulator-cell { border-right: 1px solid #b3bfcc; border-color: #b3bfcc; }
+    #pn-rekap-table .tabulator-row { border-bottom: 1px solid #b3bfcc; }
+    #pn-rekap-table .tabulator-row.pn-r-total .tabulator-cell { background: #1e3a5f; color: #fff; font-weight: 700; }
+    @media print { #pn-rekap-table .tabulator-tableholder { overflow: visible !important; max-height: none !important; } }
 </style>
-<div class=" table-responsive">
 
+@php
+    $bulanNamaRekap = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',
+        7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
 
-<div class="card-body">
-    <table id="example1" class="table table-bordered table-striped">
-        <thead>
-            <tr>
-                <th>PENERIMAAN</th>
-                <th>Januari</th>
-                <th>Februari</th>
-                <th>Maret</th>
-                <th>April</th>
-                <th>Mei</th>
-                <th>Juni</th>
-                <th>Juli</th>
-                <th>Agustus</th>
-                <th>September</th>
-                <th>Oktober</th>
-                <th>November</th>
-                <th>Desember</th>
-                <th>Total</th>
-            </tr>
-        </thead>
-        @php
-            $totalBulan = array_fill(1, 12, 0);
-        @endphp
+    $rkRows = [];
+    $totalBulan = array_fill(1, 12, 0);
+    foreach ($result as $kategori => $bulan) {
+        $row = ['type' => 'item', 'uraian' => $kategori];
+        $sum = 0;
+        for ($i = 1; $i <= 12; $i++) {
+            $v = $bulan[$i] ?? 0;
+            $row['m' . $i] = $v;
+            $totalBulan[$i] += $v;
+            $sum += $v;
+        }
+        $row['total'] = $sum;
+        $rkRows[] = $row;
+    }
+    $rowTotal = ['type' => 'total', 'uraian' => 'Total'];
+    for ($i = 1; $i <= 12; $i++) $rowTotal['m' . $i] = $totalBulan[$i];
+    $rowTotal['total'] = array_sum($totalBulan);
+    $rkRows[] = $rowTotal;
+@endphp
 
-        <tbody>
-        @foreach($result as $kategori => $bulan)
-        <tr>
-            <td><strong>{{ $kategori }}</strong></td>
+<div id="pn-rekap-table"></div>
 
-            @for($i = 1; $i <= 12; $i++)
-                @php
-                    $nilai = $bulan[$i] ?? 0;
-                    $totalBulan[$i] += $nilai;
-                @endphp
-                <td class="text-right">
-                    {{ number_format($nilai, 0, ',', '.') }}
-                </td>
-            @endfor
+<script>
+(function () {
+    var rkRows = @json($rkRows);
+    var rkMonths = @json($bulanNamaRekap);
 
-            <td class="text-right font-weight-bold">
-                {{ number_format(array_sum($bulan), 0, ',', '.') }}
-            </td>
-        </tr>
-        @endforeach
-        </tbody>
+    function rkFmt(cell) {
+        var v = cell.getValue();
+        if (v === null || v === undefined) return '';
+        v = Number(v);
+        var s = Math.round(Math.abs(v)).toLocaleString('id-ID');
+        return v < 0 ? '(' + s + ')' : s;
+    }
 
-        <tfoot class="font-weight-bold">
-        <tr>
-            <th>Total</th>
-            @for($i = 1; $i <= 12; $i++)
-                <th class="text-right">
-                    {{ number_format($totalBulan[$i], 0, ',', '.') }}
-                </th>
-            @endfor
-            <th class="text-right">
-                {{ number_format(array_sum($totalBulan), 0, ',', '.') }}
-            </th>
-        </tr>
-        </tfoot>
+    function init() {
+        var el = document.getElementById('pn-rekap-table');
+        if (!el || !window.Tabulator) return;
+        var cols = [{ title: 'PENERIMAAN', field: 'uraian', frozen: true, minWidth: 220, widthGrow: 2, headerHozAlign: 'center' }];
+        Object.keys(rkMonths).forEach(function (i) {
+            cols.push({ title: rkMonths[i], field: 'm' + i, hozAlign: 'right', minWidth: 100, widthGrow: 1, formatter: rkFmt, headerHozAlign: 'center' });
+        });
+        cols.push({ title: 'Total', field: 'total', hozAlign: 'right', minWidth: 120, widthGrow: 1, formatter: rkFmt, headerHozAlign: 'center' });
 
-    </table>
-</div>
-</div>
+        new Tabulator(el, {
+            data: rkRows,
+            columns: cols,
+            layout: 'fitColumns',
+            height: '65vh',
+            columnHeaderVertAlign: 'middle',
+            movableColumns: false,
+            columnDefaults: { headerSort: false },
+            rowFormatter: function (row) {
+                row.getElement().classList.toggle('pn-r-total', row.getData().type === 'total');
+            },
+            placeholder: 'Tidak ada data'
+        });
+    }
+
+    if (window.Tabulator) { init(); } else { document.addEventListener('DOMContentLoaded', init); }
+})();
+</script>

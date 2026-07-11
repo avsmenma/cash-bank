@@ -1,235 +1,184 @@
+@if(isset($grouped) && count($grouped) > 0)
 <style>
-    .penerima-grouped-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
+    /* REALISASI PENERIMA — Tabulator ala spreadsheet (skema hijau lama) */
+    #pn-real-table { border: 1px solid #d0d5dd; border-radius: 8px; font-size: 12px; font-family: 'Segoe UI', system-ui, sans-serif; }
+    #pn-real-table .tabulator-header { background: #2d7a4a; border-bottom: 2px solid #1a5632; }
+    #pn-real-table .tabulator-header .tabulator-col {
+        background: #2d7a4a !important; color: #fff !important; font-weight: 700; font-size: 11px;
+        border-color: #ffffff !important; border-right: 1px solid #ffffff !important;
     }
-    .penerima-grouped-table th,
-    .penerima-grouped-table td {
-        border: 1px solid #bbb;
-        padding: 4px 8px;
-        white-space: nowrap;
-        vertical-align: middle;
+    #pn-real-table .tabulator-header .tabulator-col .tabulator-col-title { color: #fff; text-align: center; }
+    #pn-real-table .tabulator-header .tabulator-col-resize-handle { width: 7px; cursor: col-resize; background: none; }
+    #pn-real-table .tabulator-header .tabulator-col:not(.tabulator-col-group) > .tabulator-col-resize-handle {
+        background: linear-gradient(to bottom, transparent 32%, rgba(255,255,255,.45) 32%, rgba(255,255,255,.45) 68%, transparent 68%)
+            center / 2px 100% no-repeat;
     }
-    /* Kolom Kontrak dikunci lebarnya; teks panjang dibungkus ke baris berikutnya.
-       min-width wajib ada agar kolom tidak diperas browser saat ruang sempit. */
-    .penerima-grouped-table th.col-kontrak,
-    .penerima-grouped-table td.col-kontrak {
-        width: 180px;
-        min-width: 180px;
-        max-width: 180px;
-        white-space: normal;
-        overflow-wrap: break-word;
-    }
-    .row-month-title td {
-        background-color: #1a5632 !important;
-        color: #fff !important;
-        font-weight: bold;
-        font-size: 14px;
-        padding: 8px 10px !important;
-    }
-    .row-header th {
-        background-color: #2d7a4a !important;
-        color: #fff !important;
-        font-weight: bold;
-        text-align: center;
-        padding: 6px 8px !important;
-    }
-    .row-kategori-header td {
-        background-color: #e8f5e9 !important;
-        color: #1a5632 !important;
-        font-weight: bold;
-        font-size: 13px;
-        padding: 6px 10px !important;
-    }
-    .row-subtotal td {
-        background-color: #fff3cd !important;
-        color: #333 !important;
-        font-weight: bold;
-        border-top: 2px solid #c9a825;
-    }
-    .row-grand-total td {
-        background-color: #1a5632 !important;
-        color: #fff !important;
-        font-weight: bold;
-        font-size: 13px;
-        border-top: 2px solid #0d3b1f;
-    }
-    .penerima-grouped-table tbody tr.row-data:hover {
-        background-color: #e3f0e8 !important;
-    }
-    .penerima-empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        color: #888;
-    }
-    .penerima-empty-state i {
-        font-size: 40px;
-        margin-bottom: 10px;
-        display: block;
-    }
+    #pn-real-table .tabulator-header .tabulator-col-resize-handle:hover { background: rgba(255,255,255,.3); }
+    #pn-real-table .tabulator-cell { border-right: 1px solid #b3bfcc; border-color: #b3bfcc; }
+    #pn-real-table .tabulator-row { border-bottom: 1px solid #b3bfcc; }
+
+    #pn-real-table .tabulator-row.pn-r-monthtitle .tabulator-cell { background: #1a5632 !important; color: #fff !important; font-weight: 700; }
+    #pn-real-table .tabulator-row.pn-r-kategori .tabulator-cell { background: #e8f5e9 !important; color: #1a5632 !important; font-weight: 700; }
+    #pn-real-table .tabulator-row.pn-r-item .tabulator-cell { background: #fff; }
+    #pn-real-table .tabulator-row.pn-r-item:hover .tabulator-cell { background: #e3f0e8; }
+    #pn-real-table .tabulator-row.pn-r-subtotal .tabulator-cell { background: #fff3cd !important; color: #333 !important; font-weight: 700; border-top: 2px solid #c9a825; }
+    #pn-real-table .tabulator-row.pn-r-monthtotal .tabulator-cell { background: #1a5632 !important; color: #fff !important; font-weight: 700; }
+    #pn-real-table .pn-wrap { white-space: normal !important; word-break: break-word; }
+    @media print { #pn-real-table .tabulator-tableholder { overflow: visible !important; max-height: none !important; } }
 </style>
 
-@if(isset($grouped) && count($grouped) > 0)
-    <div class="table-responsive">
-        <table class="penerima-grouped-table">
+@php
+    $judul = $judulPenerimaan ?? 'PENERIMAAN ATAS PENJUALAN CPO, KERNEL, SIR 20, TBS, KSO & LAINNYA';
+    $nf = fn($v) => number_format($v ?? 0, 0, ',', '.');
 
+    $csrf = csrf_field();
+    $method = method_field('DELETE');
 
-            @foreach($grouped as $bulanNum => $kategoriGroup)
-                <tbody>
-                    {{-- Month title row --}}
-                    <tr class="row-month-title">
-                        <td colspan="14">
-                            <i class="fas fa-calendar-alt mr-2"></i>
-                            {{ $judulPenerimaan ?? 'PENERIMAAN ATAS PENJUALAN CPO, KERNEL, SIR 20, TBS, KSO & LAINNYA' }} — {{ $bulanNames[$bulanNum] ?? '' }} {{ $tahun }}
-                        </td>
-                    </tr>
-                    {{-- Column header row --}}
-                    <tr class="row-header">
-                        <th style="width:30px;"><input type="checkbox" class="select-all-month" data-month="{{ $bulanNum }}"></th>
-                        <th style="width:30px;">No</th>
-                        <th>Penerimaan</th>
-                        <th class="col-kontrak">Kontrak</th>
-                        <th>Pembeli</th>
-                        <th>Tgl. Diterima</th>
-                        <th>No. Rekg. Penerima</th>
-                        <th>Volume (Kg)</th>
-                        <th>Harga (Rp)</th>
-                        <th>Nilai</th>
-                        <th>PPN</th>
-                        <th>Pot PPh</th>
-                        <th>Nilai Inc. PPN</th>
-                        <th style="width:90px;">Aksi</th>
-                    </tr>
+    $pnRows = [];
+    foreach ($grouped as $bulanNum => $kategoriGroup) {
+        $pnRows[] = [
+            'type' => 'monthtitle',
+            'sel' => '<input type="checkbox" class="select-all-month" data-month="' . $bulanNum . '">',
+            'penerimaan' => $judul . ' — ' . ($bulanNames[$bulanNum] ?? '') . ' ' . $tahun,
+        ];
 
-                    @php
-                        $monthTotalVolume = 0;
-                        $monthTotalNilai = 0;
-                        $monthTotalPpn = 0;
-                        $monthTotalPotppn = 0;
-                        $monthTotalInc = 0;
-                    @endphp
+        $monthTot = ['volume' => 0, 'nilai' => 0, 'ppn' => 0, 'potppn' => 0, 'inc' => 0];
 
-                    @foreach($kategoriGroup as $kategoriName => $rows)
-                        {{-- Kategori header row --}}
-                        <tr class="row-kategori-header">
-                            <td colspan="14">
-                                <i class="fas fa-layer-group mr-1"></i>{{ strtoupper($kategoriName) }}
-                            </td>
-                        </tr>
+        foreach ($kategoriGroup as $kategoriName => $rows) {
+            $pnRows[] = ['type' => 'kategori', 'penerimaan' => strtoupper($kategoriName)];
 
-                        @php
-                            $catNo = 1;
-                            $subVolume = 0;
-                            $subNilai = 0;
-                            $subPpn = 0;
-                            $subPotppn = 0;
-                            $subInc = 0;
-                        @endphp
+            $catNo = 1;
+            $sub = ['volume' => 0, 'nilai' => 0, 'ppn' => 0, 'potppn' => 0, 'inc' => 0];
 
-                        @foreach($rows as $row)
-                            @php
-                                $nilaiIncPpn = $row->nilai_inc_ppn ?? 0;
-                                $subVolume += $row->volume;
-                                $subNilai += $row->nilai;
-                                $subPpn += $row->ppn;
-                                $subPotppn += $row->potppn;
-                                $subInc += $nilaiIncPpn;
-                            @endphp
-                            <tr class="row-data">
-                                <td class="text-center">
-                                    <input type="checkbox" class="checkbox_ids" name="ids[]" value="{{ $row->id_penerima }}">
-                                </td>
-                                <td class="text-center">{{ $catNo++ }}</td>
-                                <td>{{ $kategoriName }}</td>
-                                <td class="col-kontrak">{{ $row->kontrak }}</td>
-                                <td>{{ $row->pembeli }}</td>
-                                <td class="text-center">{{ ($row->tanggal && $row->tanggal !== '0000-00-00') ? \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d M Y') : '-' }}</td>
-                                <td>{{ $row->no_reg }}</td>
-                                <td class="text-right">{{ number_format($row->volume, 0, ',', '.') }}</td>
-                                <td class="text-right">{{ number_format($row->harga, 0, ',', '.') }}</td>
-                                <td class="text-right">{{ number_format($row->nilai, 0, ',', '.') }}</td>
-                                <td class="text-right">{{ number_format($row->ppn, 0, ',', '.') }}</td>
-                                <td class="text-right">{{ number_format($row->potppn, 0, ',', '.') }}</td>
-                                <td class="text-right">{{ number_format($nilaiIncPpn, 0, ',', '.') }}</td>
-                                <td class="text-center">
-                                    <button class="btn btn-warning btn-xs"
-                                        data-toggle="modal"
-                                        data-target="#editPenerima"
-                                        data-id="{{ $row->id_penerima }}"
-                                        data-pembeli="{{ $row->pembeli }}"
-                                        data-kontrak="{{ $row->kontrak }}"
-                                        data-no_reg="{{ $row->no_reg }}"
-                                        data-harga="{{ $row->harga }}"
-                                        data-tanggal="{{ $row->tanggal }}"
-                                        data-volume="{{ $row->volume }}"
-                                        data-nilai="{{ $row->nilai }}"
-                                        data-kategori="{{ $row->id_kategori_kriteria }}"
-                                        data-ppn="{{ $row->ppn }}"
-                                        data-potppn="{{ $row->potppn }}"
-                                        data-nilai_inc_ppn="{{ $row->nilai_inc_ppn ?? 0 }}"
-                                        ><i class="fas fa-edit"></i></button>
-                                    <form action="{{ route('penerima.destroy', $row->id_penerima) }}" method="POST" style="display:inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-xs btn-danger"
-                                            onclick="return confirm('Yakin ingin menghapus?')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @endforeach
+            foreach ($rows as $row) {
+                $inc = $row->nilai_inc_ppn ?? 0;
+                $sub['volume'] += $row->volume; $sub['nilai'] += $row->nilai; $sub['ppn'] += $row->ppn;
+                $sub['potppn'] += $row->potppn; $sub['inc'] += $inc;
 
-                        {{-- Subtotal row per kategori --}}
-                        @php
-                            $monthTotalVolume += $subVolume;
-                            $monthTotalNilai += $subNilai;
-                            $monthTotalPpn += $subPpn;
-                            $monthTotalPotppn += $subPotppn;
-                            $monthTotalInc += $subInc;
-                        @endphp
-                        <tr class="row-subtotal">
-                            <td colspan="7" class="text-left">JUMLAH {{ strtoupper($kategoriName) }}</td>
-                            <td class="text-right">{{ number_format($subVolume, 0, ',', '.') }}</td>
-                            <td class="text-right"></td>
-                            <td class="text-right">{{ number_format($subNilai, 0, ',', '.') }}</td>
-                            <td class="text-right">{{ number_format($subPpn, 0, ',', '.') }}</td>
-                            <td class="text-right">{{ number_format($subPotppn, 0, ',', '.') }}</td>
-                            <td class="text-right">{{ number_format($subInc, 0, ',', '.') }}</td>
-                            <td></td>
-                        </tr>
-                    @endforeach
+                $aksi = '<button class="btn btn-warning btn-xs" data-toggle="modal" data-target="#editPenerima"'
+                    . ' data-id="' . $row->id_penerima . '"'
+                    . ' data-pembeli="' . e($row->pembeli) . '"'
+                    . ' data-kontrak="' . e($row->kontrak) . '"'
+                    . ' data-no_reg="' . e($row->no_reg) . '"'
+                    . ' data-harga="' . $row->harga . '"'
+                    . ' data-tanggal="' . $row->tanggal . '"'
+                    . ' data-volume="' . $row->volume . '"'
+                    . ' data-nilai="' . $row->nilai . '"'
+                    . ' data-kategori="' . $row->id_kategori_kriteria . '"'
+                    . ' data-ppn="' . $row->ppn . '"'
+                    . ' data-potppn="' . $row->potppn . '"'
+                    . ' data-nilai_inc_ppn="' . ($row->nilai_inc_ppn ?? 0) . '"'
+                    . '><i class="fas fa-edit"></i></button> '
+                    . '<form action="' . route('penerima.destroy', $row->id_penerima) . '" method="POST" style="display:inline;">'
+                    . $csrf . $method
+                    . '<button type="submit" class="btn btn-xs btn-danger" onclick="return confirm(\'Yakin ingin menghapus?\')">'
+                    . '<i class="fas fa-trash"></i></button></form>';
 
-                    {{-- Grand total row for this month --}}
-                    <tr class="row-grand-total">
-                        <td colspan="7" class="text-left">TOTAL {{ $bulanNames[$bulanNum] ?? '' }}</td>
-                        <td class="text-right">{{ number_format($monthTotalVolume, 0, ',', '.') }}</td>
-                        <td class="text-right"></td>
-                        <td class="text-right">{{ number_format($monthTotalNilai, 0, ',', '.') }}</td>
-                        <td class="text-right">{{ number_format($monthTotalPpn, 0, ',', '.') }}</td>
-                        <td class="text-right">{{ number_format($monthTotalPotppn, 0, ',', '.') }}</td>
-                        <td class="text-right">{{ number_format($monthTotalInc, 0, ',', '.') }}</td>
-                        <td></td>
-                    </tr>
+                $pnRows[] = [
+                    'type' => 'item',
+                    'sel' => '<input type="checkbox" class="checkbox_ids" name="ids[]" data-bulan="' . $bulanNum . '" value="' . $row->id_penerima . '">',
+                    'no' => $catNo++,
+                    'penerimaan' => $kategoriName,
+                    'kontrak' => $row->kontrak,
+                    'pembeli' => $row->pembeli,
+                    'tanggal' => ($row->tanggal && $row->tanggal !== '0000-00-00') ? \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d M Y') : '-',
+                    'no_reg' => $row->no_reg,
+                    'volume' => $nf($row->volume),
+                    'harga' => $nf($row->harga),
+                    'nilai' => $nf($row->nilai),
+                    'ppn' => $nf($row->ppn),
+                    'potppn' => $nf($row->potppn),
+                    'inc' => $nf($inc),
+                    'aksi' => $aksi,
+                ];
+            }
 
-                    {{-- Spacer row between months --}}
-                    <tr><td colspan="14" style="border:none; height:16px; background:#f0f0f0;"></td></tr>
-                </tbody>
-            @endforeach
-        </table>
-    </div>
+            foreach ($sub as $k2 => $v2) $monthTot[$k2] += $v2;
 
-    <script>
-        // Select all checkboxes within a month
-        $(document).off('click', '.select-all-month').on('click', '.select-all-month', function () {
-            var isChecked = $(this).prop('checked');
-            $(this).closest('tbody').find('.checkbox_ids').prop('checked', isChecked);
+            $pnRows[] = [
+                'type' => 'subtotal',
+                'penerimaan' => 'JUMLAH ' . strtoupper($kategoriName),
+                'volume' => $nf($sub['volume']), 'nilai' => $nf($sub['nilai']), 'ppn' => $nf($sub['ppn']),
+                'potppn' => $nf($sub['potppn']), 'inc' => $nf($sub['inc']),
+            ];
+        }
+
+        $pnRows[] = [
+            'type' => 'monthtotal',
+            'penerimaan' => 'TOTAL ' . ($bulanNames[$bulanNum] ?? ''),
+            'volume' => $nf($monthTot['volume']), 'nilai' => $nf($monthTot['nilai']), 'ppn' => $nf($monthTot['ppn']),
+            'potppn' => $nf($monthTot['potppn']), 'inc' => $nf($monthTot['inc']),
+        ];
+    }
+@endphp
+
+<div id="pn-real-table"></div>
+
+<script>
+(function () {
+    var pnRows = @json($pnRows);
+
+    function init() {
+        var el = document.getElementById('pn-real-table');
+        if (!el || !window.Tabulator) return;
+
+        function col(title, field, opts) {
+            return Object.assign({ title: title, field: field, headerHozAlign: 'center', minWidth: 90, widthGrow: 1 }, opts || {});
+        }
+
+        new Tabulator(el, {
+            data: pnRows,
+            columns: [
+                col('', 'sel', { formatter: 'html', width: 40, hozAlign: 'center', frozen: true, resizable: false }),
+                col('No', 'no', { width: 46, hozAlign: 'center', frozen: true }),
+                col('Penerimaan', 'penerimaan', { minWidth: 170, widthGrow: 2, frozen: true }),
+                col('Kontrak', 'kontrak', { minWidth: 180, widthGrow: 2, cssClass: 'pn-wrap', variableHeight: true }),
+                col('Pembeli', 'pembeli', { minWidth: 90 }),
+                col('Tgl. Diterima', 'tanggal', { hozAlign: 'center', minWidth: 105 }),
+                col('No. Rekg. Penerima', 'no_reg', { minWidth: 130 }),
+                col('Volume (Kg)', 'volume', { hozAlign: 'right' }),
+                col('Harga (Rp)', 'harga', { hozAlign: 'right' }),
+                col('Nilai', 'nilai', { hozAlign: 'right', minWidth: 110 }),
+                col('PPN', 'ppn', { hozAlign: 'right' }),
+                col('Pot PPh', 'potppn', { hozAlign: 'right' }),
+                col('Nilai Inc. PPN', 'inc', { hozAlign: 'right', minWidth: 115 }),
+                col('Aksi', 'aksi', { formatter: 'html', width: 92, hozAlign: 'center', resizable: false })
+            ],
+            layout: 'fitColumns',
+            height: '65vh',
+            renderVertical: 'basic',    // semua baris di DOM: checkbox hapus-terpilih tetap terbaca
+            columnHeaderVertAlign: 'middle',
+            movableColumns: false,
+            columnDefaults: { headerSort: false },
+            rowFormatter: function (row) {
+                var t = row.getData().type;
+                var e2 = row.getElement();
+                ['monthtitle', 'kategori', 'item', 'subtotal', 'monthtotal'].forEach(function (k) {
+                    e2.classList.toggle('pn-r-' + k, t === k);
+                });
+            },
+            placeholder: 'Tidak ada data'
         });
-    </script>
+
+        // Centang semua baris dalam satu bulan
+        if (!el._pnBound) {
+            el._pnBound = true;
+            el.addEventListener('change', function (e) {
+                if (!e.target.classList || !e.target.classList.contains('select-all-month')) return;
+                var m = e.target.getAttribute('data-month');
+                el.querySelectorAll('.checkbox_ids[data-bulan="' + m + '"]').forEach(function (c) {
+                    c.checked = e.target.checked;
+                });
+            });
+        }
+    }
+
+    if (window.Tabulator) { init(); } else { document.addEventListener('DOMContentLoaded', init); }
+})();
+</script>
 @else
-    <div class="penerima-empty-state">
-        <i class="fas fa-inbox"></i>
+    <div class="penerima-empty-state" style="text-align:center; padding:40px 20px; color:#888;">
+        <i class="fas fa-inbox" style="font-size:40px; margin-bottom:10px; display:block;"></i>
         <p>Tidak ada data penerima untuk periode ini.</p>
     </div>
 @endif

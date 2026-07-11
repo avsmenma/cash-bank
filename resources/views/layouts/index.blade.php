@@ -41,6 +41,14 @@
     <!-- Tabulator (tabel ala spreadsheet, kolom bisa ditarik-lebarkan) -->
     <link rel="stylesheet" href="{{ asset('plugins/tabulator/tabulator_semanticui.min.css') }}">
     <script src="{{ asset('plugins/tabulator/tabulator.min.js') }}"></script>
+    <style>
+        /* Pesan tempat scrollbar sejak awal untuk SEMUA tabel Tabulator:
+           tanpa ini scrollbar vertikal muncul setelah lebar kolom dihitung,
+           membuat isi tabel bergeser tidak sejajar dengan header. */
+        .tabulator .tabulator-tableholder {
+            scrollbar-gutter: stable;
+        }
+    </style>
 
     @stack('styles')
     <style>

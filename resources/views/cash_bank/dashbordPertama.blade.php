@@ -25,9 +25,35 @@
     }
     #cashflow-table .tabulator-header .tabulator-col .tabulator-col-title {
         color: #f0f4f8;
+        text-align: center;
     }
+
+    /* Penanda bahwa kolom bisa ditarik-lebarkan (ala tabel project LM):
+       takik putih pendek di tiap pemisah kolom header + kursor col-resize */
+    #cashflow-table .tabulator-header .tabulator-col-resize-handle {
+        width: 7px;
+        background: linear-gradient(
+            to bottom,
+            transparent 32%,
+            rgba(255, 255, 255, 0.45) 32%,
+            rgba(255, 255, 255, 0.45) 68%,
+            transparent 68%
+        );
+        background-size: 2px 100%;
+        background-position: center;
+        background-repeat: no-repeat;
+        cursor: col-resize;
+    }
+    #cashflow-table .tabulator-header .tabulator-col-resize-handle:hover {
+        background: rgba(255, 255, 255, 0.30);
+    }
+
+    /* Garis antar baris dipertebal agar lebih terbaca */
     #cashflow-table .tabulator-cell {
-        border-color: #e4e7ec;
+        border-color: #c9d2dc;
+    }
+    #cashflow-table .tabulator-row {
+        border-bottom: 1px solid #c9d2dc;
     }
 
     /* ---------- Jenis baris (diberi kelas oleh rowFormatter) ---------- */
@@ -489,7 +515,7 @@
             // otomatis scroll horizontal bila jumlah bulan banyak (minWidth).
             layout: 'fitColumns',
             height: '68vh',                 // header otomatis menempel saat scroll
-            columnHeaderVertAlign: 'bottom',
+            columnHeaderVertAlign: 'middle',
             movableColumns: false,
             columnDefaults: { headerSort: false },
             rowFormatter: cfRowFormatter,

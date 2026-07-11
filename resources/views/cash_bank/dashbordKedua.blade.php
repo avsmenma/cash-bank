@@ -44,18 +44,17 @@
         position: sticky;
         z-index: 5;
     }
-    /* Tiga baris header menempel bertingkat saat scroll */
+    /* Tiga baris header menempel bertingkat saat scroll.
+       Nilai top baris 2 & 3 hanya fallback — dikoreksi oleh
+       pvdStickyOffsets() sesuai tinggi baris sesungguhnya. */
     #cashflow-table-pvd thead tr:nth-child(1) th {
         top: 0;
-        height: 36px;
     }
     #cashflow-table-pvd thead tr:nth-child(2) th {
-        top: 36px;
-        height: 36px;
+        top: 37px;
     }
     #cashflow-table-pvd thead tr:nth-child(3) th {
-        top: 72px;
-        height: 30px;
+        top: 74px;
     }
     #cashflow-table-pvd th,
     #cashflow-table-pvd td {
@@ -498,6 +497,39 @@
         </table>
     </div>
 </div>
+
+<script>
+// Selaraskan offset sticky 3 baris header dengan tinggi baris sesungguhnya
+// (tinggi berubah-ubah karena padding/border/zoom, jadi diukur, bukan dipatok).
+(function () {
+    function pvdStickyOffsets() {
+        var table = document.getElementById('cashflow-table-pvd');
+        if (!table || !table.tHead || table.tHead.rows.length < 3) return;
+
+        var rows = table.tHead.rows;
+        var h1 = rows[0].getBoundingClientRect().height;
+        var h2 = rows[1].getBoundingClientRect().height;
+
+        Array.prototype.forEach.call(rows[1].cells, function (c) {
+            c.style.top = h1 + 'px';
+        });
+        Array.prototype.forEach.call(rows[2].cells, function (c) {
+            c.style.top = (h1 + h2) + 'px';
+        });
+    }
+
+    pvdStickyOffsets();
+
+    // Daftarkan listener global sekali saja walau partial dimuat ulang via AJAX
+    if (!window._pvdStickyBound) {
+        window._pvdStickyBound = true;
+        window.addEventListener('resize', function () {
+            pvdStickyOffsets();
+        });
+        window.pvdStickyOffsets = pvdStickyOffsets;
+    }
+})();
+</script>
 @push('scripts')
 <script type="text/javascript">
     window.print();

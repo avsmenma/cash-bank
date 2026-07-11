@@ -24,13 +24,32 @@
         background: #1e3a5f !important;
         color: #ffffff !important;
     }
+
+    /* Header frozen: scroll terjadi di dalam wadah, th menempel di atas */
+    .cf-table-scroll {
+        max-height: calc(100vh - 170px);
+        overflow: auto;
+    }
+    @media print {
+        .cf-table-scroll {
+            max-height: none;
+            overflow: visible;
+        }
+    }
+    #cashflow-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: #1e3a5f !important;
+        color: #ffffff !important;
+    }
 </style>
 <div class="card-body">
     <div class="mb-3">
         <h5>Cash Flow Permintaan - Tahun {{ $tahun }}</h5>
     </div>
 
-    <div class="table-responsive">
+    <div class="table-responsive cf-table-scroll">
         <table id="cashflow-table" class="table table-bordered table-sm">
             <thead class="bg-navy">
                 <tr>

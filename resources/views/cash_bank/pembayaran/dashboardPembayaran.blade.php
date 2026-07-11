@@ -69,14 +69,15 @@
         top: 36px;
     }
 
+    /* Label seksi (PENERIMA/DROPPING): navy header dengan opacity tipis */
     #example.dashboard-payment-table .dp-section td {
-        background: #1597a7 !important;
-        color: #0f172a;
+        background: rgba(30, 58, 95, 0.07) !important;
+        color: #1e3a5f;
         font-size: 14px;
         font-weight: 800;
         letter-spacing: .2px;
-        border-top: 2px solid #0f7280;
-        border-bottom: 2px solid #0f7280;
+        border-top: 2px solid rgba(30, 58, 95, 0.25);
+        border-bottom: 2px solid rgba(30, 58, 95, 0.25);
     }
 
     #example.dashboard-payment-table .dp-category-row td {
@@ -126,6 +127,13 @@
     #example.dashboard-payment-table .dp-total-row td,
     #example.dashboard-payment-table .dp-footer-row th {
         font-weight: 800;
+    }
+
+    /* Baris total (Total Penerima/Total Dropping): navy solid seperti header */
+    #example.dashboard-payment-table .dp-total-row td {
+        background: #1e3a5f !important;
+        color: #ffffff !important;
+        border-top: 2px solid #0f2137;
     }
 </style>
 

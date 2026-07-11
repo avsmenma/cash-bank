@@ -41,7 +41,7 @@
 
     /* Takik penanda kolom bisa ditarik (hanya kolom terbawah) */
     #mk-table .tabulator-header .tabulator-col-resize-handle {
-        width: 7px;
+        width: 6px;
         cursor: col-resize;
         background: none;
     }

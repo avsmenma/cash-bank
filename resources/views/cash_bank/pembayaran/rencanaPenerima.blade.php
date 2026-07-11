@@ -8,7 +8,7 @@
         border-color: #ffffff !important; border-right: 1px solid #ffffff !important;
     }
     #tabel-rencana-penerima .tabulator-header .tabulator-col .tabulator-col-title { color: #f0f4f8; text-align: center; }
-    #tabel-rencana-penerima .tabulator-header .tabulator-col-resize-handle { width: 7px; cursor: col-resize; background: none; }
+    #tabel-rencana-penerima .tabulator-header .tabulator-col-resize-handle { width: 6px; cursor: col-resize; background: none; }
     #tabel-rencana-penerima .tabulator-header .tabulator-col:not(.tabulator-col-group) > .tabulator-col-resize-handle {
         background: linear-gradient(to bottom, transparent 32%, rgba(255,255,255,.45) 32%, rgba(255,255,255,.45) 68%, transparent 68%)
             center / 2px 100% no-repeat;

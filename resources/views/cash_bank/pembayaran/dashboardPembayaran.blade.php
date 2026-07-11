@@ -33,7 +33,7 @@
 
     /* Penanda kolom bisa ditarik-lebarkan (takik hanya di kolom terbawah) */
     #dp-table .tabulator-header .tabulator-col-resize-handle {
-        width: 7px;
+        width: 6px;
         cursor: col-resize;
         background: none;
     }

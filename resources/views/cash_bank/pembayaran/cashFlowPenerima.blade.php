@@ -9,7 +9,7 @@
     }
     #pn-rekap-table .tabulator-header .tabulator-col-group-cols > .tabulator-col:last-child { border-right: none !important; }
     #pn-rekap-table .tabulator-header .tabulator-col .tabulator-col-title { color: #f0f4f8; text-align: center; }
-    #pn-rekap-table .tabulator-header .tabulator-col-resize-handle { width: 7px; cursor: col-resize; background: none; }
+    #pn-rekap-table .tabulator-header .tabulator-col-resize-handle { width: 6px; cursor: col-resize; background: none; }
     #pn-rekap-table .tabulator-header .tabulator-col:not(.tabulator-col-group) > .tabulator-col-resize-handle {
         background: linear-gradient(to bottom, transparent 32%, rgba(255,255,255,.45) 32%, rgba(255,255,255,.45) 68%, transparent 68%)
             center / 2px 100% no-repeat;

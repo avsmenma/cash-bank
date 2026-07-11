@@ -39,7 +39,7 @@
     /* Penanda kolom bisa ditarik-lebarkan: takik putih HANYA di kolom
        terbawah (bukan di tiap tingkat grup, agar header tidak ramai) */
     #cashflow-table .tabulator-header .tabulator-col-resize-handle {
-        width: 7px;
+        width: 6px;
         cursor: col-resize;
         background: none;
     }

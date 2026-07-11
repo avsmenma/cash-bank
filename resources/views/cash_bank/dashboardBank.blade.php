@@ -42,11 +42,32 @@
             </button>
         </div>
 
+        <style>
+            /* Header & footer tabel VA menempel saat isi tabel di-scroll */
+            #cbVAScroll {
+                overflow: auto;
+                flex: 1;
+                min-height: 0;
+            }
+            #tblSaldoVA thead th {
+                position: sticky;
+                top: 0;
+                background: #1a5276;
+                z-index: 5;
+            }
+            #tblSaldoVA tfoot td {
+                position: sticky;
+                bottom: 0;
+                background: #1a5276;
+                z-index: 5;
+            }
+        </style>
+
         {{-- LAYOUT BERSEBELAHAN --}}
         <div class="d-flex flex-wrap cb-fullscreen-table" style="gap:20px;">
 
             {{-- ====== KOLOM KIRI (TABEL + INFO) ====== --}}
-            <div style="flex:1; min-width:380px; align-self:flex-start;">
+            <div id="cbLeftCol" style="flex:1; min-width:380px; align-self:flex-start;">
             <div class="card shadow" style="border-top:4px solid #0d3b6e;">
                 <div class="card-body p-0">
                     <table class="table table-bordered mb-0" id="tblSaldoBank" style="font-size:12.5px;">
@@ -191,8 +212,9 @@
             </div>{{-- end kolom kiri --}}
 
             {{-- ====== TABEL BANK VIRTUAL ACCOUNT (KANAN) ====== --}}
-            <div class="card shadow" style="border-top:4px solid #1a5276; flex:1; min-width:380px;">
-                <div class="card-body p-0">
+            {{-- Tinggi card disamakan dengan kolom kiri oleh syncVAHeight(); sisanya scroll --}}
+            <div id="cbVACard" class="card shadow mb-0" style="border-top:4px solid #1a5276; flex:1; min-width:380px; display:flex; flex-direction:column; align-self:flex-start;">
+                <div id="cbVAScroll" class="card-body p-0">
                     <table class="table table-bordered mb-0" id="tblSaldoVA" style="font-size:12.5px;">
                         <thead>
                             <tr style="background:#1a5276;">
@@ -369,6 +391,24 @@
             window.open('{{ route("dashboard.bank.pdf") }}?' + params.toString(), '_blank');
         }
     });
+
+    // Samakan tinggi card Bank VA dengan kolom kiri (tabel Saldo + Informasi Saldo).
+    // Saat layout menyempit dan card turun ke bawah kolom kiri, tinggi dibiarkan auto.
+    function syncVAHeight() {
+        var left = document.getElementById('cbLeftCol');
+        var card = document.getElementById('cbVACard');
+        if (!left || !card) return;
+
+        card.style.height = 'auto';
+
+        var stacked = card.getBoundingClientRect().top >= left.getBoundingClientRect().bottom - 5;
+        if (!stacked && card.offsetHeight > left.offsetHeight) {
+            card.style.height = left.offsetHeight + 'px';
+        }
+    }
+
+    window.addEventListener('load', syncVAHeight);
+    window.addEventListener('resize', syncVAHeight);
 </script>
 
 @endsection

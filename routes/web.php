@@ -374,6 +374,8 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/permintaan/delete', [PermintaanController::class, 'deleteData'])->name('permintaan.delete');
     Route::get('/permintaan/sub-kriteria/{id}', [PermintaanController::class, 'getSub']);
     Route::post('/permintaan/import', [PermintaanController::class, 'importExcel'])->name('permintaan.import');
+    Route::get('/permintaan/export_excel', [PermintaanController::class, 'export_excel'])->name('permintaan.export_excel');
+    Route::get('/permintaan/export_pdf', [PermintaanController::class, 'export_pdf'])->name('permintaan.export_pdf');
     Route::resource('permintaan', PermintaanController::class);
     Route::get('/dropping/gabungan', [DroppingController::class, 'gabungan'])
         ->name('dropping.gabungan');

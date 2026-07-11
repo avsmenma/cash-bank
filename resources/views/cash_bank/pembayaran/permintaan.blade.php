@@ -73,12 +73,12 @@
                       </div>
                     </div>
                     <div class="d-flex gap-2 cb-fullscreen-support">
-                      <a href="{{ url('/bank-masuk/view/pdf')}}" target="_blank" class="btn btn-outline-primary">
+                      <button type="button" id="btn-export-pdf-permintaan" class="btn btn-outline-primary">
                         <i class="fas fa-print"></i> Download PDF
-                      </a>
-                      <a href="{{ url('/bank-masuk/export_excel')}}" class="btn btn-outline-danger">
+                      </button>
+                      <button type="button" id="btn-export-excel-permintaan" class="btn btn-outline-danger">
                         <i class="fas fa-file-excel"></i> Download Excel
-                      </a>
+                      </button>
                       <button type="button" class="btn btn-outline-success" id="btn-import-permintaan" data-toggle="modal"
                         data-target="#modalImportPermintaan">
                         <i class="fas fa-file-upload"></i> Import Excel
@@ -360,6 +360,33 @@
 
         // Trigger load table on dropdown change
         $('#sub_kriteria, #bulan, #tahun').change(loadTable);
+
+        // Export PDF/Excel permintaan sesuai filter terpilih
+        function exportPermintaan(routeUrl, newTab) {
+          let sub = $('#sub_kriteria').val();
+          let tahun = $('#tahun').val();
+          let bulan = $('#bulan').val();
+
+          if (!sub || !tahun || !bulan) {
+            alert('Silakan pilih Kategori, Sub Kriteria, Tahun, dan Bulan terlebih dahulu');
+            return;
+          }
+
+          let url = routeUrl + '?sub=' + sub + '&tahun=' + tahun + '&bulan=' + bulan;
+          if (newTab) {
+            window.open(url, '_blank');
+          } else {
+            window.location.href = url;
+          }
+        }
+
+        $('#btn-export-pdf-permintaan').on('click', function () {
+          exportPermintaan('{{ route("permintaan.export_pdf") }}', true);
+        });
+
+        $('#btn-export-excel-permintaan').on('click', function () {
+          exportPermintaan('{{ route("permintaan.export_excel") }}', false);
+        });
         $(document).on('click', '#loadCashflow', function () {
           console.log('Button clicked'); // Debug
 

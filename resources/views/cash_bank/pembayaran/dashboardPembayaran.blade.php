@@ -37,12 +37,30 @@
         font-variant-numeric: tabular-nums;
     }
 
+    /* Scroll vertikal terjadi di dalam wadah ini agar header bisa sticky */
+    .dp-table-scroll {
+        max-height: calc(100vh - 170px);
+        overflow: auto;
+    }
+
     #example.dashboard-payment-table thead th {
         background: #1f3d5a !important;
         color: #fff !important;
         border-color: #17324b;
         font-weight: 700;
         text-align: center !important;
+        position: sticky;
+        z-index: 5;
+    }
+
+    /* Baris 1 (URAIAN + nama bulan) menempel di atas; baris 2 tepat di bawahnya */
+    #example.dashboard-payment-table thead tr:first-child th {
+        top: 0;
+        height: 36px;
+    }
+
+    #example.dashboard-payment-table thead tr:nth-child(2) th {
+        top: 36px;
     }
 
     #example.dashboard-payment-table .dp-section td {
@@ -115,7 +133,7 @@
 @endphp
 
 <p class="text-muted mb-1" style="font-size: 12px; font-style: italic;">*Seluruh nilai dalam ribuan rupiah</p>
-<div class="table-responsive">
+<div class="table-responsive dp-table-scroll">
     <table class="table table-bordered table-sm dashboard-payment-table" id="example">
 
         {{-- ================= HEADER ================= --}}

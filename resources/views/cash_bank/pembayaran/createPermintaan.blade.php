@@ -11,7 +11,7 @@
     <table class="table table-bordered table-striped table-hover" id="tabelPermintaan">
         <thead>
             <tr>
-                <th style="width: 200px;">#</th>
+                <th style="width: 200px;">Uraian</th>
                 <th style="width: 150px;">M1</th>
                 <th style="width: 150px;">M2</th>
                 <th style="width: 150px;">M3</th>

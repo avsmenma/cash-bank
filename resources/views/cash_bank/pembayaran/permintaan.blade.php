@@ -190,9 +190,12 @@
     <script>
       $(document).ready(function () {
         // Initialize Select2
+        // width 'style' = pakai lebar dari atribut style elemen (150/200px).
+        // Jangan '100%': select di tab yang belum aktif (display:none) akan
+        // terukur 0 sehingga kotak & dropdown-nya menciut.
         $('.select2').select2({
           theme: 'bootstrap4',
-          width: '100%'
+          width: 'style'
         });
 
         // Load Sub Kriteria based on Kategori

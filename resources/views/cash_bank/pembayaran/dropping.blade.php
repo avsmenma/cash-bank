@@ -257,9 +257,11 @@
     <script>
       $(document).ready(function () {
         // Initialize Select2
+        // width 'style' = pakai lebar dari atribut style elemen; aman untuk
+        // select di tab yang belum aktif (tidak terukur 0 seperti resolve/100%)
         $('.select2').select2({
           theme: 'bootstrap4',
-          width: 'resolve'
+          width: 'style'
         });
 
         // Load Sub Kriteria based on Kategori

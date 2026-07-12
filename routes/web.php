@@ -3,7 +3,6 @@
 
 use App\Models\ItemSubKriteria;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PdfController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserSAPController;
 use App\Http\Controllers\DroppingController;

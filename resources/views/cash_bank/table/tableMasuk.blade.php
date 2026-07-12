@@ -162,7 +162,11 @@
                 kategori: @json($kategoriKriteria->map(fn($row) => ['value' => (string) $row->id_kategori_kriteria, 'label' => $row->nama_kriteria])->values()),
                 jenisPembayaran: @json($jenisPembayaran->map(fn($row) => ['value' => (string) $row->id_jenis_pembayaran, 'label' => $row->nama_jenis_pembayaran])->values())
             };
+            // Opsi "-" di semua dropdown = kosongkan nilai (dokumen tanpa data itu)
             inlineOptions.kategori.unshift({ value: '-', label: '-' });
+            inlineOptions.sumberDana.unshift({ value: '-', label: '-' });
+            inlineOptions.bankTujuan.unshift({ value: '-', label: '-' });
+            inlineOptions.jenisPembayaran.unshift({ value: '-', label: '-' });
 
             // Peta kolom yang bisa diedit inline (indeks kolom DataTable)
             var editableColumns = {
@@ -411,7 +415,8 @@
                 if (meta.field === 'tanggal') value = rowData.tanggal_raw || '';
                 if (meta.field === 'debet') value = rowData.debet_raw || rowData.debet || 0;
                 if (value === null || value === undefined || value === '') {
-                    return meta.field === 'id_kategori_kriteria' ? '-' : '';
+                    // Kolom referensi kosong tampil sebagai opsi "-" di dropdown
+                    return String(meta.field).indexOf('id_') === 0 ? '-' : '';
                 }
                 return value;
             }

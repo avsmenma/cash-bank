@@ -332,7 +332,11 @@
                 keterangan: { label: 'Keterangan', col: 14, type: 'text', icon: 'fas fa-search' }
             };
             var currentGenericFilterKey = null;
+            // Opsi "-" di semua dropdown = kosongkan nilai (dokumen tanpa data itu)
             inlineOptions.kategori.unshift({ value: '-', label: '-' });
+            inlineOptions.sumberDana.unshift({ value: '-', label: '-' });
+            inlineOptions.bankTujuan.unshift({ value: '-', label: '-' });
+            inlineOptions.jenisPembayaran.unshift({ value: '-', label: '-' });
             var editableColumns = {
                 2:  { field: 'agenda_tahun', type: 'text' },
                 4:  { field: 'tanggal', type: 'date' },
@@ -655,9 +659,8 @@
                 if (meta.field === 'tanggal') value = rowData.tanggal_raw || '';
                 if (meta.field === 'kredit') value = rowData.kredit_raw || rowData.kredit || 0;
                 if (value === null || value === undefined || value === '') {
-                    return (meta.field === 'id_kategori_kriteria' || meta.field === 'id_sub_kriteria' || meta.field === 'id_item_sub_kriteria')
-                        ? '-'
-                        : '';
+                    // Kolom referensi kosong tampil sebagai opsi "-" di dropdown
+                    return String(meta.field).indexOf('id_') === 0 ? '-' : '';
                 }
                 return value;
             }

@@ -3754,6 +3754,16 @@ class BankKeluarController extends Controller
 
         // Jika user pilih "-", set kategori, sub, dan item ke null di database
         $data = $request->except(['_method', '_token']);
+
+        // '-' / '' dari dropdown inline pada referensi lain = kosongkan (null)
+        foreach (['id_sumber_dana', 'id_bank_tujuan', 'id_jenis_pembayaran'] as $f) {
+            if (array_key_exists($f, $data) && ($data[$f] === '' || $data[$f] === '-')) {
+                $data[$f] = null;
+            }
+        }
+        if (array_key_exists('tanggal', $data) && $data['tanggal'] === '') {
+            $data['tanggal'] = null;
+        }
         if ($kategoriReset) {
             $data['id_kategori_kriteria'] = null;
             $data['id_sub_kriteria'] = null;

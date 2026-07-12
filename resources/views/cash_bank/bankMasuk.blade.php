@@ -96,9 +96,14 @@
       <a href="#" rel="noopener" class="btn btn-danger btn-sm" id="deleteAllSelectedRecord">
         <i class="fas fa-trash mr-1"></i>Hapus
       </a>
-      <a href="#" class="btn btn-warning btn-sm text-white" data-toggle="modal" data-target="#ModalImportFileExcelMasuk">
+      <a href="#" class="btn btn-warning btn-sm text-white" data-toggle="modal" data-target="#ModalImportTemplateMasuk">
         <i class="fas fa-file-import mr-1"></i>Import Excel
       </a>
+      @if (auth()->user()->role === 'programmer')
+      <a href="#" class="btn btn-outline-warning btn-sm" data-toggle="modal" data-target="#ModalImportFileExcelMasuk">
+        <i class="fas fa-file-csv mr-1"></i>Import CSV (Programmer)
+      </a>
+      @endif
       <a href="javascript:void(0)" class="btn btn-success btn-sm" data-toggle="modal" data-target="#ModalCreateMasuk">
         <i class="fas fa-plus mr-1"></i>Tambah Data
       </a>
@@ -125,7 +130,10 @@
 
 {{-- Modals --}}
 @include('cash_bank.modal.tambahMasuk')
-@include('cash_bank.modal.importExcelMasuk')
+@include('cash_bank.modal.importTemplateMasuk')
+@if (auth()->user()->role === 'programmer')
+    @include('cash_bank.modal.importExcelMasuk')
+@endif
 
 {{-- Modal Konfirmasi Hapus --}}
 <div class="modal fade" id="modalConfirmHapus" tabindex="-1" role="dialog" aria-hidden="true">

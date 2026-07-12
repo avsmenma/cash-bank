@@ -992,12 +992,21 @@ class BankMasukController extends Controller
             ->orderBy('id_bank_masuk');
         $data = $this->applyExportFilter($query, $request)->get();
 
+        // Info filter untuk kop laporan
+        $bulanNama = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
+        $filterInfo = 'Periode: ' . ($request->filled('bulan') ? ($bulanNama[(int) $request->bulan] ?? '') . ' ' : '')
+            . ($request->filled('tahun') ? $request->tahun : 'Semua Tahun');
+        if ($request->filled('kategori')) {
+            $filterInfo .= ' • Kategori: ' . (optional(KategoriKriteria::find($request->kategori))->nama_kriteria ?? '-');
+        }
+        if ($request->filled('sumber_dana')) {
+            $filterInfo .= ' • Sumber Dana: ' . (optional(SumberDana::find($request->sumber_dana))->nama_sumber_dana ?? '-');
+        }
+
         return view('cash_bank.exportPDF.masukPdf', [
             'data' => $data,
-            'sumberDana' => SumberDana::all(),
-            'bankTujuan' => BankTujuan::all(),
-            'kategoriKriteria' => KategoriKriteria::where('tipe', 'Masuk')->get(),
-            'jenisPembayaran' => JenisPembayaran::all(),
+            'filterInfo' => $filterInfo,
         ]);
     }
 

@@ -1,111 +1,104 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <title>Laporan Bank Keluar</title>
+    <style>
+        @page { size: A4 landscape; margin: 12mm 10mm; }
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; color: #1f2937; margin: 16px; }
 
-    <!-- style css -->
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}" class="css">
-    <link rel="stylesheet" href="https://unpkg.com/virtual-select-plugin@1.0.37/dist/virtual-select.min.css">
-    <script src="https://unpkg.com/virtual-select-plugin@1.0.37/dist/virtual-select.min.js"></script>
+        .kop { text-align: center; margin-bottom: 12px; }
+        .kop h1 { font-size: 15px; margin: 0; color: #1e3a5f; letter-spacing: .5px; }
+        .kop .sub { font-size: 10.5px; color: #6b7280; margin-top: 2px; }
+        .kop .filter { font-size: 10.5px; margin-top: 6px; font-weight: 600; }
+        .kop .cetak { font-size: 9px; color: #9ca3af; margin-top: 2px; }
 
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { border: 1px solid #b3bfcc; padding: 3px 5px; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
+        thead th { background: #1e3a5f; color: #fff; font-size: 9.5px; text-align: center; padding: 5px 4px; }
+        thead { display: table-header-group; }   /* header terulang tiap halaman cetak */
+        tbody tr:nth-child(even) td { background: #f8fafc; }
+        td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        td.ctr { text-align: center; }
+        tfoot td { background: #1e3a5f; color: #fff; font-weight: 700; }
 
-    <link rel="stylesheet" href="https://unpkg.com/virtual-select-plugin@1.0.37/dist/virtual-select.min.css">
-    <title>Bank Masuk</title>
+        .no-print { margin-bottom: 10px; }
+        .no-print button { background: #1e3a5f; color: #fff; border: 0; border-radius: 4px; padding: 6px 14px; cursor: pointer; }
+        @media print { .no-print { display: none; } body { margin: 0; } }
+    </style>
 </head>
 
 <body>
-    <table class="table table-hover table-bordered align-middle">
-        <thead class="table-primary text-center">
+    <div class="no-print">
+        <button onclick="window.print()">🖨 Cetak / Simpan PDF</button>
+    </div>
+
+    <div class="kop">
+        <h1>LAPORAN BANK KELUAR</h1>
+        <div class="sub">Cash Bank — Sistem Monitoring Kas &amp; Bank Regional</div>
+        <div class="filter">{{ $filterInfo }} • {{ number_format($data->count(), 0, ',', '.') }} transaksi</div>
+        <div class="cetak">Dicetak {{ now()->translatedFormat('d F Y H:i') }}</div>
+    </div>
+
+    <table>
+        <thead>
             <tr>
-                <!-- <th style="width: 40px;"><input type="checkbox" id="select_all_ids"></th> -->
-                <th style="width: 50px;">No</th>
-                <th>Agenda</th>
-                <th>No Bukti</th>
-                <th>Tanggal</th>
-                <th>Sumber Dana</th>
-                <th>Bank Tujuan</th>
-                <th>Kriteria</th>
-                <th>Sub Kriteria</th>
-                <th>Item Sub</th>
-                <th>Penerima</th>
-                <th>Uraian</th>
-                <th>Jenis</th>
-                <th>Nilai (Rp)</th>
-                <th>Kredit (Rp)</th>
-                <th>Keterangan</th>
-                <!-- <th style="width: 100px;">Aksi</th> -->
+                <th style="width:3%;">No</th>
+                <th style="width:6%;">Agenda</th>
+                <th style="width:6%;">Tanggal</th>
+                <th style="width:10%;">Sumber Dana</th>
+                <th style="width:9%;">Bank Tujuan</th>
+                <th style="width:8%;">Kriteria</th>
+                <th style="width:7%;">Sub Kriteria</th>
+                <th style="width:7%;">Item Sub</th>
+                <th style="width:6%;">Jenis</th>
+                <th style="width:9%;">Penerima</th>
+                <th style="width:16%;">Uraian</th>
+                <th style="width:7%;">Kredit (Rp)</th>
+                <th style="width:6%;">Keterangan</th>
             </tr>
         </thead>
         <tbody>
             @forelse ($data as $index => $row)
-                <tr id="employee_ids{{ $row->id_bank_keluar}}">
-                    <!-- <td class="sticky-col sticky-check text-center">
-                                            <input type="checkbox" name="ids" class="checkbox_ids" value="{{ $row->id_bank_keluar }}">
-                                        </td> -->
-                    <td class="sticky-col sticky-no text-center">{{ $index + 1 }}</td>
-                    <td class="sticky-col sticky-agenda">{{ $row->agenda_tahun }}</td>
-                    <td class="text-center">{{ $index + 1 }}</td>
-                    <td class="text-center">{{ \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d F Y') }}</td>
-                    <td class="text-center">{{ $row->sumberDana->nama_sumber_dana ?? '-' }}</td>
-                    <td class="text-center">{{ $row->bankTujuan->nama_tujuan ?? '-' }}</td>
-                    <td class="text-center">{{ $row->kategori->nama_kriteria ?? '-' }}</td>
-                    <td class="text-center">{{ $row->subKriteria->nama_sub_kriteria ?? '-' }}</td>
-                    <td class="text-center">{{ $row->itemSubKriteria->nama_item_sub_kriteria ?? '-' }}</td>
-                    <td class="text-center">{{ $row->penerima }}</td>
-                    <td>{{ $row->uraian }}</td>
-                    <td>{{ $row->jenisPembayaran->nama_jenis_pembayaran ?? '-' }}</td>
-                    <td class="text-end font-monospace">@currency($row->nilai_rupiah)</td>
-                    <td class="text-end font-monospace">@currency($row->kredit)</td>
-                    <td>{{ $row->keterangan}}</td>
-                    <!-- <td class="text-center">
-                                            <div class="d-flex gap-1 justify-content-center">
-                                                <button type="button"
-                                                    class="btn bg-primary btn-sm text-white"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#editKeluar"
-                                                    data-id="{{ $row->id_bank_keluar }}"
-                                                    data-agenda="{{ $row->agenda_tahun }}"
-                                                    data-penerima="{{ $row->penerima }}"
-                                                    data-uraian="{{ $row->uraian }}"
-                                                    data-tanggal="{{ $row->tanggal }}"
-                                                    data-bank="{{ $row->id_bank_tujuan }}"
-                                                    data-sumber="{{ $row->id_sumber_dana }}"
-                                                    data-kategori="{{ $row->id_kategori_kriteria }}"
-                                                    data-jenis="{{ $row->id_jenis_pembayaran }}"
-                                                    data-kredit="{{ $row->kredit }}">
-                                                    <i class="bi bi-pencil-square"></i>
-                                                </button>
-                                                <form action="{{ route('bank-keluar.destroy', $row->id_bank_keluar) }}"
-                                                    method="POST" class="d-inline">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit"
-                                                        class="btn bg-danger btn-sm text-white"
-                                                        onclick="return confirm('Yakin ingin menghapus?')">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </td> -->
+                <tr>
+                    <td class="ctr">{{ $index + 1 }}</td>
+                    <td class="ctr">{{ $row->agenda_tahun ?: '-' }}</td>
+                    <td class="ctr">{{ $row->tanggal ? \Carbon\Carbon::parse($row->tanggal)->format('d/m/Y') : '-' }}</td>
+                    <td>{{ $row->sumberDana->nama_sumber_dana ?? '-' }}</td>
+                    <td>{{ $row->bankTujuan->nama_tujuan ?? '-' }}</td>
+                    <td>{{ $row->kategori->nama_kriteria ?? '-' }}</td>
+                    <td>{{ $row->subKriteria->nama_sub_kriteria ?? '-' }}</td>
+                    <td>{{ $row->itemSubKriteria->nama_item_sub_kriteria ?? '-' }}</td>
+                    <td class="ctr">{{ $row->jenisPembayaran->nama_jenis_pembayaran ?? '-' }}</td>
+                    <td>{{ $row->penerima ?: '-' }}</td>
+                    <td>{{ $row->uraian ?: '-' }}</td>
+                    <td class="num">{{ number_format($row->kredit ?? 0, 0, ',', '.') }}</td>
+                    <td>{{ $row->keterangan ?: '-' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="17" class="text-center py-4 text-muted">
-                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                        Data yang anda cari tidak ada
+                    <td colspan="13" class="ctr" style="padding:20px; color:#6b7280;">
+                        Tidak ada data pada filter yang dipilih.
                     </td>
                 </tr>
             @endforelse
         </tbody>
+        @if ($data->count())
+            <tfoot>
+                <tr>
+                    <td colspan="11" style="text-align:right;">TOTAL</td>
+                    <td class="num">{{ number_format($data->sum('kredit'), 0, ',', '.') }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        @endif
     </table>
+
+    <script>
+        window.addEventListener('load', function () { window.print(); });
+    </script>
 </body>
-<script type="text/javascript">
-    window.print();
-</script>
 
 </html>

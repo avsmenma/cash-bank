@@ -3956,55 +3956,22 @@ class BankKeluarController extends Controller
         $data = $this->applyExportFilter($query, $request)->get();
 
 
-        /* ================= DATA AGENDA (TETAP) ================= */
-        $agenda = DB::connection('mysql_agenda_online')
-            ->table('dokumens')
-            ->select(
-                'id as dokumen_id',
-                'nomor_agenda as agenda_tahun',
-                // DB::raw("CONCAT(nomor_agenda,'_',tahun) as agenda_tahun"),
-                'uraian_spp as uraian',
-                'nilai_rupiah',
-                'dibayar_kepada as penerima',
-                'jenis_pembayaran'
-            )
-            ->where('status_pembayaran', 'SIAP DIBAYAR')
-            ->get();
+        // Info filter untuk kop laporan
+        $bulanNama = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
+        $filterInfo = 'Periode: ' . ($request->filled('bulan') ? ($bulanNama[(int) $request->bulan] ?? '') . ' ' : '')
+            . ($request->filled('tahun') ? $request->tahun : 'Semua Tahun');
+        if ($request->filled('kategori')) {
+            $filterInfo .= ' • Kriteria: ' . (optional(KategoriKriteria::find($request->kategori))->nama_kriteria ?? '-');
+        }
+        if ($request->filled('sumber_dana')) {
+            $filterInfo .= ' • Sumber Dana: ' . (optional(SumberDana::find($request->sumber_dana))->nama_sumber_dana ?? '-');
+        }
 
-        /* ================= CACHE DATA MASTER ================= */
-        $sumberDana = Cache::remember('sumber_dana', 3600, fn() => SumberDana::all());
-        $bankTujuan = Cache::remember('bank_tujuan', 3600, fn() => BankTujuan::all());
-        $kategoriKriteria = Cache::remember(
-            'kategori_keluar',
-            3600,
-            fn() => KategoriKriteria::where('tipe', 'Keluar')->get()
-        );
-        $subKriteria = Cache::remember('sub_kriteria', 3600, fn() => SubKriteria::orderByRaw("CASE nama_sub_kriteria
-                WHEN 'Karyawan Pimpinan' THEN 1
-                WHEN 'Karyawan Pelaksana' THEN 2
-                WHEN 'Gaji Honor' THEN 3
-                WHEN 'Purchase Volume' THEN 4
-                WHEN 'Biaya Usaha dan Lainnya' THEN 5
-                WHEN 'Pajak' THEN 6
-                WHEN 'Operasional Produksi' THEN 7
-                ELSE 999
-            END")
-            ->orderBy('id_sub_kriteria')
-            ->get());
-        $itemSubKriteria = Cache::remember('item_sub_kriteria', 3600, fn() => ItemSubKriteria::all());
-        $jenisPembayaran = Cache::remember('jenis_pembayaran', 3600, fn() => JenisPembayaran::all());
-
-        return view('cash_bank.exportPDF.keluarPdf', compact(
-            'data',
-            'agenda',
-            'sumberDana',
-            'bankTujuan',
-            'kategoriKriteria',
-            'subKriteria',
-            'itemSubKriteria',
-            'jenisPembayaran'
-        ));
-
+        return view('cash_bank.exportPDF.keluarPdf', [
+            'data' => $data,
+            'filterInfo' => $filterInfo,
+        ]);
     }
     public function reportKeluarPdf(Request $request)
     {

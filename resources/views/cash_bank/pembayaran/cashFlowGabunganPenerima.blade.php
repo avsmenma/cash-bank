@@ -93,7 +93,7 @@
     }
 
     function numCol(title, field, minW) {
-        return { title: title, field: field, hozAlign: 'right', minWidth: minW || 100, widthGrow: 1, formatter: evFmt, headerHozAlign: 'center' };
+        return { title: title, field: field, hozAlign: 'right', width: minW || 100, widthGrow: 1, formatter: evFmt, headerHozAlign: 'center' };
     }
 
     function group(title, prefix) {
@@ -108,20 +108,24 @@
     function init() {
         var el = document.getElementById('pn-eval-table');
         if (!el || !window.Tabulator) return;
-        var cols = [{ title: 'Kategori', field: 'uraian', frozen: true, minWidth: 220, widthGrow: 2, headerHozAlign: 'center' }];
+        var cols = [{ title: 'Kategori', field: 'uraian', frozen: true, width: 220, widthGrow: 2, headerHozAlign: 'center' }];
         evMonths.forEach(function (m) { cols.push(group(m.title, 'm' + m.i)); });
         cols.push(group(evTotalTitle, 'tot'));
+
+        // Bila user sudah pernah menarik kolom, pakai lebar simpanannya apa
+        // adanya (fitData); bila belum, kolom otomatis mengisi lebar wadah.
+        var userSized = !!localStorage.getItem('tabulator-cb-penerima-evaluasi-columns');
 
         new Tabulator(el, {
             persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
             persistenceID: 'cb-penerima-evaluasi',
             data: evRows,
             columns: cols,
-            layout: 'fitColumns',
+            layout: userSized ? 'fitData' : 'fitColumns',
             height: '65vh',
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
-            columnDefaults: { headerSort: false },
+            columnDefaults: { headerSort: false, minWidth: 30 },   // kolom bebas dikecilkan sampai 30px
             rowFormatter: function (row) {
                 row.getElement().classList.toggle('pn-r-total', row.getData().type === 'total');
             },

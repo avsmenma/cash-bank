@@ -235,7 +235,7 @@
             title: title,
             field: field,
             hozAlign: 'right',
-            minWidth: minW || 100,
+            width: minW || 100,
             widthGrow: 1,
             formatter: dpFmt,
             headerHozAlign: 'center'
@@ -256,7 +256,7 @@
 
     function buildColumns() {
         var cols = [
-            { title: 'URAIAN', field: 'uraian', frozen: true, minWidth: 250, widthGrow: 2, headerHozAlign: 'center' }
+            { title: 'URAIAN', field: 'uraian', frozen: true, width: 250, widthGrow: 2, headerHozAlign: 'center' }
         ];
         dpMonths.forEach(function (m) {
             cols.push(monthGroup(m.title, 'm' + m.i));
@@ -277,16 +277,20 @@
         var el = document.getElementById('dp-table');
         if (!el || !window.Tabulator) return;
 
+        // Bila user sudah pernah menarik kolom, pakai lebar simpanannya apa
+        // adanya (fitData); bila belum, kolom otomatis mengisi lebar wadah.
+        var userSized = !!localStorage.getItem('tabulator-cb-dashboard-pembayaran-columns');
+
         new Tabulator(el, {
             persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
             persistenceID: 'cb-dashboard-pembayaran',
             data: dpRows,
             columns: buildColumns(),
-            layout: 'fitColumns',
+            layout: userSized ? 'fitData' : 'fitColumns',
             height: '68vh',
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
-            columnDefaults: { headerSort: false },
+            columnDefaults: { headerSort: false, minWidth: 30 },   // kolom bebas dikecilkan sampai 30px
             rowFormatter: dpRowFormatter,
             placeholder: 'Tidak ada data'
         });

@@ -248,7 +248,7 @@
     // ================================================================
     $mkCols = [
         ['title' => 'No.', 'field' => 'no', 'frozen' => true, 'width' => 46, 'hozAlign' => 'center', 'headerHozAlign' => 'center'],
-        ['title' => 'Payments for ' . $tahun . ' transactions - Accounts', 'field' => 'uraian', 'frozen' => true, 'minWidth' => 280, 'widthGrow' => 2, 'headerHozAlign' => 'center'],
+        ['title' => 'Payments for ' . $tahun . ' transactions - Accounts', 'field' => 'uraian', 'frozen' => true, 'width' => 280, 'widthGrow' => 2, 'headerHozAlign' => 'center'],
     ];
 
     $colIdx = 1;
@@ -267,11 +267,11 @@
                 . '<br><small class="mk-week-label" data-bulan="' . $bNo . '" data-week="w' . $i . '" title="Klik untuk ubah tanggal">'
                 . '(' . $wc['w' . $i . '_start'] . '-' . $wc['w' . $i . '_end'] . ')</small>'
                 . '<span class="mk-colnum">' . $colIdx++ . '</span>';
-            return ['title' => $title, 'titleFormatter' => 'html', 'field' => $prefix . $i, 'minWidth' => 84];
+            return ['title' => $title, 'titleFormatter' => 'html', 'field' => $prefix . $i, 'width' => 84];
         };
         $totalLeaf = function ($field) use ($bNama, &$colIdx) {
             $title = 'Weekly-' . $bNama . '<br><small>(1-31)</small><span class="mk-colnum">' . $colIdx++ . '</span>';
-            return ['title' => $title, 'titleFormatter' => 'html', 'field' => $field, 'minWidth' => 92, 'cssClass' => 'mk-c-bold'];
+            return ['title' => $title, 'titleFormatter' => 'html', 'field' => $field, 'width' => 92, 'cssClass' => 'mk-c-bold'];
         };
 
         $mkCols[] = ['title' => 'Permintaan Weekly-' . $bNama, 'cssClass' => 'mk-h-p', 'columns' => [
@@ -297,15 +297,15 @@
         ]];
 
         $mkCols[] = ['title' => 'SALDO MODAL KERJA<br>Per ' . $bNama . ' ' . $tahun, 'titleFormatter' => 'html',
-            'field' => "m{$bNo}_s", 'cssClass' => 'mk-h-s mk-c-bold', 'minWidth' => 100];
+            'field' => "m{$bNo}_s", 'cssClass' => 'mk-h-s mk-c-bold', 'width' => 100];
         $mkCols[] = ['title' => 'SALDO<br>MOKER SD<br>' . $prevShort . ' ' . $prevYearShort
             . '<br><small><i>Per ' . $previousMonthDate->endOfMonth()->format('d') . ' ' . $prevShort . ' ' . $prevYearShort . '</i></small>',
-            'titleFormatter' => 'html', 'field' => "m{$bNo}_sprev", 'cssClass' => 'mk-h-sprev mk-c-bold', 'minWidth' => 100];
+            'titleFormatter' => 'html', 'field' => "m{$bNo}_sprev", 'cssClass' => 'mk-h-sprev mk-c-bold', 'width' => 100];
         $mkCols[] = ['title' => 'PENGGUNAAN<br>MODAL<br>SENDIRI<br><small><i>' . $bNama . ' ' . $tahun . '</i></small>',
-            'titleFormatter' => 'html', 'field' => "m{$bNo}_ms", 'cssClass' => 'mk-h-ms mk-c-bold', 'minWidth' => 110];
+            'titleFormatter' => 'html', 'field' => "m{$bNo}_ms", 'cssClass' => 'mk-h-ms mk-c-bold', 'width' => 110];
         $mkCols[] = ['title' => 'SALDO MOKER<br>SD ' . $currentShort . ' ' . $currentYearShort
             . '<br><small><i>Per ' . $currentMonthDate->endOfMonth()->format('d') . ' ' . $currentShort . ' ' . $currentYearShort . '</i></small>',
-            'titleFormatter' => 'html', 'field' => "m{$bNo}_snow", 'cssClass' => 'mk-h-snow mk-c-bold', 'minWidth' => 100];
+            'titleFormatter' => 'html', 'field' => "m{$bNo}_snow", 'cssClass' => 'mk-h-snow mk-c-bold', 'width' => 100];
     }
 @endphp
 
@@ -362,16 +362,20 @@
         var el = document.getElementById('mk-table');
         if (!el || !window.Tabulator) return;
 
+        // Bila user sudah pernah menarik kolom, pakai lebar simpanannya apa
+        // adanya (fitData); bila belum, kolom otomatis mengisi lebar wadah.
+        var userSized = !!localStorage.getItem('tabulator-cb-modal-kerja-columns');
+
         var table = new Tabulator(el, {
             persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
             persistenceID: 'cb-modal-kerja',
             data: mkRows,
             columns: mkCols,
-            layout: 'fitColumns',
+            layout: userSized ? 'fitData' : 'fitColumns',
             height: 'calc(100vh - 185px)',
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
-            columnDefaults: { headerSort: false },
+            columnDefaults: { headerSort: false, minWidth: 30 },   // kolom bebas dikecilkan sampai 30px
             rowFormatter: mkRowFormatter,
             placeholder: 'Tidak ada data'
         });

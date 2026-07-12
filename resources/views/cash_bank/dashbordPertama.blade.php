@@ -482,20 +482,20 @@
                 title: m.title,
                 field: m.field,
                 hozAlign: 'right',
-                minWidth: 105,
+                width: 105,
                 widthGrow: 1,
                 formatter: cfFormatter,
                 headerHozAlign: 'center'
             };
         });
         return [
-            { title: 'URAIAN', field: 'uraian', frozen: true, minWidth: 260, widthGrow: 2, headerHozAlign: 'center' },
+            { title: 'URAIAN', field: 'uraian', frozen: true, width: 260, widthGrow: 2, headerHozAlign: 'center' },
             { title: cfTitleTahun, columns: monthCols },
             {
                 title: cfTitleTotal,
                 field: 'total',
                 hozAlign: 'right',
-                minWidth: 130,
+                width: 130,
                 widthGrow: 1,
                 formatter: cfFormatter,
                 headerHozAlign: 'center',
@@ -519,19 +519,20 @@
         var el = document.getElementById('cashflow-table');
         if (!el || !window.Tabulator) return;
 
+        // Bila user sudah pernah menarik kolom, pakai lebar simpanannya apa
+        // adanya (fitData); bila belum, kolom otomatis mengisi lebar wadah.
+        var userSized = !!localStorage.getItem('tabulator-cb-cashflow-pd-columns');
+
         var table = new Tabulator(el, {
             persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
             persistenceID: 'cb-cashflow-pd',
             data: cfRows,
             columns: buildColumns(),
-            // fitColumns: kolom melar mengisi penuh lebar wadah (tidak ada area
-            // kosong saat bulan sedikit); tetap bisa ditarik-lebarkan manual dan
-            // otomatis scroll horizontal bila jumlah bulan banyak (minWidth).
-            layout: 'fitColumns',
+            layout: userSized ? 'fitData' : 'fitColumns',
             height: '68vh',                 // header otomatis menempel saat scroll
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
-            columnDefaults: { headerSort: false },
+            columnDefaults: { headerSort: false, minWidth: 30 },   // kolom bebas dikecilkan sampai 30px
             rowFormatter: cfRowFormatter,
             placeholder: 'Tidak ada data'
         });

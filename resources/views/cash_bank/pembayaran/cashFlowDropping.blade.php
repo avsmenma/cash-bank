@@ -89,23 +89,27 @@
 
         var cols = [
             { title: 'No', field: 'no', frozen: true, width: 48, hozAlign: 'center', headerHozAlign: 'center' },
-            { title: cfUraianTitle, field: 'uraian', frozen: true, minWidth: 260, widthGrow: 3, headerHozAlign: 'center' }
+            { title: cfUraianTitle, field: 'uraian', frozen: true, width: 260, widthGrow: 3, headerHozAlign: 'center' }
         ];
         cfBulan.forEach(function (nm, i) {
-            cols.push({ title: nm, field: 'm' + (i + 1), hozAlign: 'right', minWidth: 92, widthGrow: 1, formatter: cfFmt, headerHozAlign: 'center' });
+            cols.push({ title: nm, field: 'm' + (i + 1), hozAlign: 'right', width: 92, widthGrow: 1, formatter: cfFmt, headerHozAlign: 'center' });
         });
-        cols.push({ title: 'Total', field: 'total', hozAlign: 'right', minWidth: 115, widthGrow: 1, formatter: cfFmt, headerHozAlign: 'center' });
+        cols.push({ title: 'Total', field: 'total', hozAlign: 'right', width: 115, widthGrow: 1, formatter: cfFmt, headerHozAlign: 'center' });
+
+        // Bila user sudah pernah menarik kolom, pakai lebar simpanannya apa
+        // adanya (fitData); bila belum, kolom otomatis mengisi lebar wadah.
+        var userSized = !!localStorage.getItem('tabulator-cb-cashflow-dropping-columns');
 
         new Tabulator(el, {
             persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
             persistenceID: 'cb-cashflow-dropping',
             data: cfRows,
             columns: cols,
-            layout: 'fitColumns',
+            layout: userSized ? 'fitData' : 'fitColumns',
             height: '65vh',
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
-            columnDefaults: { headerSort: false },
+            columnDefaults: { headerSort: false, minWidth: 30 },   // kolom bebas dikecilkan sampai 30px
             rowFormatter: function (row) {
                 var t = row.getData().type;
                 var e2 = row.getElement();

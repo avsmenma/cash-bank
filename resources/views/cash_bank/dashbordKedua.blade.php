@@ -249,7 +249,7 @@
             title: title,
             field: field,
             hozAlign: 'right',
-            minWidth: minW || 95,
+            width: minW || 95,
             widthGrow: 1,
             formatter: pvdFmt,
             headerHozAlign: 'center'
@@ -259,7 +259,7 @@
     function buildColumns() {
         var cols = [
             { title: 'No.', field: 'no', frozen: true, width: 52, hozAlign: 'center', headerHozAlign: 'center' },
-            { title: pvdTitleUraian, field: 'uraian', frozen: true, minWidth: 280, widthGrow: 2, headerHozAlign: 'center' }
+            { title: pvdTitleUraian, field: 'uraian', frozen: true, width: 280, widthGrow: 2, headerHozAlign: 'center' }
         ];
 
         // Bulan -> (Permintaan RD / Dropping HO / Pembayaran) -> nomor minggu
@@ -307,18 +307,20 @@
         var el = document.getElementById('cashflow-table-pvd');
         if (!el || !window.Tabulator) return;
 
+        // Bila user sudah pernah menarik kolom, pakai lebar simpanannya apa
+        // adanya (fitData); bila belum, kolom otomatis mengisi lebar wadah.
+        var userSized = !!localStorage.getItem('tabulator-cb-cashflow-pvd-columns');
+
         new Tabulator(el, {
             persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
             persistenceID: 'cb-cashflow-pvd',
             data: pvdRows,
             columns: buildColumns(),
-            // fitColumns: kolom mengisi penuh lebar wadah; tetap bisa ditarik
-            // manual dan otomatis scroll horizontal bila kolom banyak (minWidth).
-            layout: 'fitColumns',
+            layout: userSized ? 'fitData' : 'fitColumns',
             height: '68vh',
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
-            columnDefaults: { headerSort: false },
+            columnDefaults: { headerSort: false, minWidth: 30 },   // kolom bebas dikecilkan sampai 30px
             rowFormatter: pvdRowFormatter,
             placeholder: 'Tidak ada data'
         });

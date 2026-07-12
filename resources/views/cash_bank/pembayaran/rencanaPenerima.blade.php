@@ -108,27 +108,31 @@
         var el = document.getElementById('tabel-rencana-penerima');
         if (!el || !window.Tabulator) return;
 
-        var cols = [{ title: 'Kategori', field: 'uraian', frozen: true, minWidth: 220, widthGrow: 2, headerHozAlign: 'center' }];
+        var cols = [{ title: 'Kategori', field: 'uraian', frozen: true, width: 220, widthGrow: 2, headerHozAlign: 'center' }];
         rpBulan.forEach(function (b) {
             cols.push({
                 title: b.charAt(0).toUpperCase() + b.slice(1),
-                field: b, hozAlign: 'right', minWidth: 95, widthGrow: 1,
+                field: b, hozAlign: 'right', width: 95, widthGrow: 1,
                 formatter: editFmt, headerHozAlign: 'center', variableHeight: true
             });
         });
-        cols.push({ title: 'Total', field: 'total', hozAlign: 'right', minWidth: 110, widthGrow: 1, formatter: totalFmt, headerHozAlign: 'center' });
+        cols.push({ title: 'Total', field: 'total', hozAlign: 'right', width: 110, widthGrow: 1, formatter: totalFmt, headerHozAlign: 'center' });
+
+        // Bila user sudah pernah menarik kolom, pakai lebar simpanannya apa
+        // adanya (fitData); bila belum, kolom otomatis mengisi lebar wadah.
+        var userSized = !!localStorage.getItem('tabulator-cb-penerima-rencana-columns');
 
         new Tabulator(el, {
             persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
             persistenceID: 'cb-penerima-rencana',
             data: rpRows,
             columns: cols,
-            layout: 'fitColumns',
+            layout: userSized ? 'fitData' : 'fitColumns',
             height: '65vh',
             renderVertical: 'basic',        // semua baris di DOM (sel editable)
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
-            columnDefaults: { headerSort: false },
+            columnDefaults: { headerSort: false, minWidth: 30 },   // kolom bebas dikecilkan sampai 30px
             rowFormatter: function (row) {
                 row.getElement().classList.toggle('pn-r-total', row.getData().type === 'total');
             },

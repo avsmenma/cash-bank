@@ -159,28 +159,33 @@ function resetFilter() {
         if (!el || !window.Tabulator) return;
 
         function col(title, field, opts) {
-            return Object.assign({ title: title, field: field, headerHozAlign: 'center', minWidth: 90, widthGrow: 1, headerSort: false }, opts || {});
+            return Object.assign({ title: title, field: field, headerHozAlign: 'center', width: 90, widthGrow: 1, headerSort: false }, opts || {});
         }
+
+        // Bila user sudah pernah menarik kolom, pakai lebar simpanannya apa
+        // adanya (fitData); bila belum, kolom otomatis mengisi lebar wadah.
+        var userSized = !!localStorage.getItem('tabulator-cb-rekening-koran-columns');
 
         var table = new Tabulator(el, {
             persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
             persistenceID: 'cb-rekening-koran',
-            layout: 'fitColumns',
+            layout: userSized ? 'fitData' : 'fitColumns',
             height: '62vh',
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
+            columnDefaults: { minWidth: 30 },      // kolom bebas dikecilkan sampai 30px
             placeholder: 'Tidak ada data untuk filter yang dipilih.',
             columns: [
                 col('No', 'no', { width: 56, hozAlign: 'center' }),
-                col('No Agenda', 'no_agenda', { minWidth: 110 }),
-                col('Tanggal', 'tanggal', { hozAlign: 'center', minWidth: 100 }),
-                col('No Bukti', 'no_sap', { minWidth: 105 }),
-                col('Sumber Dana', 'nama_sumber_dana', { minWidth: 200, widthGrow: 2, cssClass: 'rk-wrap', variableHeight: true, formatter: 'html' }),
-                col('Penerima / Dari', 'penerima', { minWidth: 150, widthGrow: 2, cssClass: 'rk-wrap', variableHeight: true, formatter: 'html' }),
-                col('Uraian', 'uraian', { minWidth: 320, widthGrow: 4, cssClass: 'rk-wrap', variableHeight: true, formatter: 'html', tooltip: true }),
-                col('Debet', 'debet', { hozAlign: 'right', minWidth: 115, cssClass: 'rk-debet' }),
-                col('Kredit', 'kredit', { hozAlign: 'right', minWidth: 115, cssClass: 'rk-kredit' }),
-                col('Saldo Akhir', 'saldo_akhir', { hozAlign: 'right', minWidth: 120, cssClass: 'rk-saldo' })
+                col('No Agenda', 'no_agenda', { width: 110 }),
+                col('Tanggal', 'tanggal', { hozAlign: 'center', width: 100 }),
+                col('No Bukti', 'no_sap', { width: 105 }),
+                col('Sumber Dana', 'nama_sumber_dana', { width: 200, widthGrow: 2, cssClass: 'rk-wrap', variableHeight: true, formatter: 'html' }),
+                col('Penerima / Dari', 'penerima', { width: 150, widthGrow: 2, cssClass: 'rk-wrap', variableHeight: true, formatter: 'html' }),
+                col('Uraian', 'uraian', { width: 320, widthGrow: 4, cssClass: 'rk-wrap', variableHeight: true, formatter: 'html', tooltip: true }),
+                col('Debet', 'debet', { hozAlign: 'right', width: 115, cssClass: 'rk-debet' }),
+                col('Kredit', 'kredit', { hozAlign: 'right', width: 115, cssClass: 'rk-kredit' }),
+                col('Saldo Akhir', 'saldo_akhir', { hozAlign: 'right', width: 120, cssClass: 'rk-saldo' })
             ],
 
             // Muat bertahap 100 baris saat scroll — endpoint lama (start/length) tetap dipakai

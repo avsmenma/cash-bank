@@ -63,22 +63,26 @@
     function init() {
         var el = document.getElementById('pn-rekap-table');
         if (!el || !window.Tabulator) return;
-        var cols = [{ title: 'PENERIMAAN', field: 'uraian', frozen: true, minWidth: 220, widthGrow: 2, headerHozAlign: 'center' }];
+        var cols = [{ title: 'PENERIMAAN', field: 'uraian', frozen: true, width: 220, widthGrow: 2, headerHozAlign: 'center' }];
         Object.keys(rkMonths).forEach(function (i) {
-            cols.push({ title: rkMonths[i], field: 'm' + i, hozAlign: 'right', minWidth: 100, widthGrow: 1, formatter: rkFmt, headerHozAlign: 'center' });
+            cols.push({ title: rkMonths[i], field: 'm' + i, hozAlign: 'right', width: 100, widthGrow: 1, formatter: rkFmt, headerHozAlign: 'center' });
         });
-        cols.push({ title: 'Total', field: 'total', hozAlign: 'right', minWidth: 120, widthGrow: 1, formatter: rkFmt, headerHozAlign: 'center' });
+        cols.push({ title: 'Total', field: 'total', hozAlign: 'right', width: 120, widthGrow: 1, formatter: rkFmt, headerHozAlign: 'center' });
+
+        // Bila user sudah pernah menarik kolom, pakai lebar simpanannya apa
+        // adanya (fitData); bila belum, kolom otomatis mengisi lebar wadah.
+        var userSized = !!localStorage.getItem('tabulator-cb-penerima-rekap-columns');
 
         new Tabulator(el, {
             persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
             persistenceID: 'cb-penerima-rekap',
             data: rkRows,
             columns: cols,
-            layout: 'fitColumns',
+            layout: userSized ? 'fitData' : 'fitColumns',
             height: '65vh',
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
-            columnDefaults: { headerSort: false },
+            columnDefaults: { headerSort: false, minWidth: 30 },   // kolom bebas dikecilkan sampai 30px
             rowFormatter: function (row) {
                 row.getElement().classList.toggle('pn-r-total', row.getData().type === 'total');
             },

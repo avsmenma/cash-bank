@@ -3165,8 +3165,19 @@ class BankKeluarController extends Controller
             ->setFormatCode(\PhpOffice\PhpSpreadsheet\Style\NumberFormat::FORMAT_TEXT);
         $sheet->freezePane('A2');
 
-        // Dropdown kolom referensi di sheet Data (nama pasti cocok dengan master)
-        $dropdowns = ['C' => 0, 'D' => 1, 'E' => 2, 'F' => 3, 'G' => 4, 'H' => 5];
+        $buatDropdown = function ($dataCol, $formula) use ($sheet) {
+            $dv = new \PhpOffice\PhpSpreadsheet\Cell\DataValidation();
+            $dv->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST)
+                ->setAllowBlank(true)
+                ->setShowDropDown(true)
+                ->setShowErrorMessage(false)
+                ->setFormula1($formula)
+                ->setSqref($dataCol . '2:' . $dataCol . '1000');
+            $sheet->setDataValidation($dataCol . '2', $dv);
+        };
+
+        // Dropdown statis: Sumber Dana, Bank Tujuan, Kriteria, Jenis Pembayaran
+        $dropdowns = ['C' => 0, 'D' => 1, 'E' => 2, 'H' => 5];
         foreach ($dropdowns as $dataCol => $i) {
             $count = count($refLists[$i][1]);
             if ($count === 0) {
@@ -3177,14 +3188,94 @@ class BankKeluarController extends Controller
             $spreadsheet->addNamedRange(new \PhpOffice\PhpSpreadsheet\NamedRange(
                 $rangeName, $ref, '$' . $refCol . '$2:$' . $refCol . '$' . ($count + 1)
             ));
-            $dv = new \PhpOffice\PhpSpreadsheet\Cell\DataValidation();
-            $dv->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST)
-                ->setAllowBlank(true)
-                ->setShowDropDown(true)
-                ->setShowErrorMessage(false)
-                ->setFormula1($rangeName)
-                ->setSqref($dataCol . '2:' . $dataCol . '1000');
-            $sheet->setDataValidation($dataCol . '2', $dv);
+            $buatDropdown($dataCol, $rangeName);
+        }
+
+        // ── Sheet RefMap (disembunyikan): sumber dropdown BERTINGKAT ──
+        // Meniru aturan kaskade web: Sub Kriteria mengikuti Kriteria terpilih,
+        // Item mengikuti Sub — via INDIRECT(VLOOKUP(...)) ke named range per induk.
+        $katRows = KategoriKriteria::where('tipe', 'Keluar')
+            ->orderBy('nama_kriteria')->get(['id_kategori_kriteria', 'nama_kriteria']);
+        $subRows = SubKriteria::whereIn('id_kategori_kriteria', $kategoriKeluarIds)
+            ->orderBy('nama_sub_kriteria')->get(['id_sub_kriteria', 'id_kategori_kriteria', 'nama_sub_kriteria']);
+        $itemRows = ItemSubKriteria::whereIn('id_sub_kriteria', $subKeluarIds)
+            ->orderBy('nama_item_sub_kriteria')->get(['id_item_sub_kriteria', 'id_sub_kriteria', 'nama_item_sub_kriteria']);
+
+        $nSubAll = count($refLists[3][1]);
+        $nItemAll = count($refLists[4][1]);
+        if ($nSubAll > 0) {
+            $spreadsheet->addNamedRange(new \PhpOffice\PhpSpreadsheet\NamedRange('RefSubAll', $ref, '$D$2:$D$' . ($nSubAll + 1)));
+        }
+        if ($nItemAll > 0) {
+            $spreadsheet->addNamedRange(new \PhpOffice\PhpSpreadsheet\NamedRange('RefItemAll', $ref, '$E$2:$E$' . ($nItemAll + 1)));
+        }
+
+        $rmap = $spreadsheet->createSheet();
+        $rmap->setTitle('RefMap');
+        $blokCol = 7; // blok daftar per-induk mulai kolom G
+
+        // Peta Kriteria → named range daftar sub-nya (kolom A:B)
+        foreach ($katRows as $i => $k) {
+            $subs = $subRows->where('id_kategori_kriteria', $k->id_kategori_kriteria)
+                ->pluck('nama_sub_kriteria')->values();
+            $rmap->setCellValue('A' . ($i + 1), $k->nama_kriteria);
+            if (count($subs) === 0) {
+                $rmap->setCellValue('B' . ($i + 1), 'RefSubAll');
+                continue;
+            }
+            $nmRange = 'KatSub_' . ($i + 1);
+            $rmap->setCellValue('B' . ($i + 1), $nmRange);
+            $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($blokCol++);
+            foreach ($subs as $j => $nm) {
+                $rmap->setCellValue($col . ($j + 1), $nm);
+            }
+            $spreadsheet->addNamedRange(new \PhpOffice\PhpSpreadsheet\NamedRange(
+                $nmRange, $rmap, '$' . $col . '$1:$' . $col . '$' . count($subs)
+            ));
+        }
+
+        // Peta Sub → named range daftar item-nya (kolom D:E);
+        // nama sub duplikat lintas kriteria: entri pertama yang dipakai VLOOKUP
+        $rSub = 0;
+        $subSeen = [];
+        foreach ($subRows as $s) {
+            if (isset($subSeen[$s->nama_sub_kriteria])) {
+                continue;
+            }
+            $subSeen[$s->nama_sub_kriteria] = true;
+            $items = $itemRows->where('id_sub_kriteria', $s->id_sub_kriteria)
+                ->pluck('nama_item_sub_kriteria')->values();
+            $rSub++;
+            $rmap->setCellValue('D' . $rSub, $s->nama_sub_kriteria);
+            if (count($items) === 0) {
+                $rmap->setCellValue('E' . $rSub, 'RefItemAll');
+                continue;
+            }
+            $nmRange = 'SubItem_' . $rSub;
+            $rmap->setCellValue('E' . $rSub, $nmRange);
+            $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($blokCol++);
+            foreach ($items as $j => $nm) {
+                $rmap->setCellValue($col . ($j + 1), $nm);
+            }
+            $spreadsheet->addNamedRange(new \PhpOffice\PhpSpreadsheet\NamedRange(
+                $nmRange, $rmap, '$' . $col . '$1:$' . $col . '$' . count($items)
+            ));
+        }
+        $rmap->setSheetState(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::SHEETSTATE_HIDDEN);
+
+        // Dropdown bertingkat: Sub (F) mengikuti Kriteria (E), Item (G) mengikuti Sub (F).
+        // Bila induk belum dipilih/tak dikenal → tampilkan daftar lengkap.
+        if ($katRows->count() > 0 && $nSubAll > 0) {
+            $spreadsheet->addNamedRange(new \PhpOffice\PhpSpreadsheet\NamedRange(
+                'RefMapKriteria', $rmap, '$A$1:$B$' . $katRows->count()
+            ));
+            $buatDropdown('F', 'INDIRECT(IFERROR(VLOOKUP(E2,RefMapKriteria,2,0),"RefSubAll"))');
+        }
+        if ($rSub > 0 && $nItemAll > 0) {
+            $spreadsheet->addNamedRange(new \PhpOffice\PhpSpreadsheet\NamedRange(
+                'RefMapSub', $rmap, '$D$1:$E$' . $rSub
+            ));
+            $buatDropdown('G', 'INDIRECT(IFERROR(VLOOKUP(F2,RefMapSub,2,0),"RefItemAll"))');
         }
 
         // ── Sheet Petunjuk ──
@@ -3201,7 +3292,9 @@ class BankKeluarController extends Controller
             '5. Sumber Dana, Bank Tujuan, Kriteria, Sub Kriteria, Item Sub Kriteria, dan Jenis Pembayaran',
             '   harus sama persis dengan daftar di sheet "Referensi" — gunakan dropdown yang tersedia.',
             '   Nama yang tidak dikenali akan dikosongkan otomatis saat import (data lain tetap masuk).',
-            '6. Simpan file, lalu upload lewat tombol Import Excel di halaman Bank Keluar.',
+            '6. Isi berurutan dari kiri: dropdown Sub Kriteria menyesuaikan Kriteria yang dipilih',
+            '   di baris yang sama, dan Item Sub Kriteria menyesuaikan Sub Kriteria (seperti di aplikasi).',
+            '7. Simpan file, lalu upload lewat tombol Import Excel di halaman Bank Keluar.',
         ];
         foreach ($petunjuk as $i => $line) {
             $ptr->setCellValue('A' . ($i + 1), $line);
@@ -3302,10 +3395,23 @@ class BankKeluarController extends Controller
             'sumber' => ['id_sumber_dana', 'Sumber Dana', $buildMap(SumberDana::pluck('id_sumber_dana', 'nama_sumber_dana'))],
             'bank' => ['id_bank_tujuan', 'Bank Tujuan', $buildMap(BankTujuan::pluck('id_bank_tujuan', 'nama_tujuan'))],
             'kategori' => ['id_kategori_kriteria', 'Kriteria', $buildMap(KategoriKriteria::where('tipe', 'Keluar')->pluck('id_kategori_kriteria', 'nama_kriteria'))],
-            'sub' => ['id_sub_kriteria', 'Sub Kriteria', $buildMap(SubKriteria::whereIn('id_kategori_kriteria', $kategoriKeluarIds)->pluck('id_sub_kriteria', 'nama_sub_kriteria'))],
-            'item' => ['id_item_sub_kriteria', 'Item Sub Kriteria', $buildMap(ItemSubKriteria::whereIn('id_sub_kriteria', $subKeluarIds)->pluck('id_item_sub_kriteria', 'nama_item_sub_kriteria'))],
             'jenis' => ['id_jenis_pembayaran', 'Jenis Pembayaran', $buildMap(JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran'))],
         ];
+
+        // Sub & Item dicocokkan dengan aturan kaskade web: sub harus milik
+        // kriteria terpilih, item harus milik sub. Peta menyertakan induknya.
+        $subLookup = [];
+        $subParent = [];
+        foreach (SubKriteria::whereIn('id_kategori_kriteria', $kategoriKeluarIds)
+            ->get(['id_sub_kriteria', 'id_kategori_kriteria', 'nama_sub_kriteria']) as $s) {
+            $subLookup[$normNama($s->nama_sub_kriteria)][] = $s;
+            $subParent[$s->id_sub_kriteria] = $s->id_kategori_kriteria;
+        }
+        $itemLookup = [];
+        foreach (ItemSubKriteria::whereIn('id_sub_kriteria', $subKeluarIds)
+            ->get(['id_item_sub_kriteria', 'id_sub_kriteria', 'nama_item_sub_kriteria']) as $it) {
+            $itemLookup[$normNama($it->nama_item_sub_kriteria)][] = $it;
+        }
 
         $parseTanggal = function ($v) {
             if ($v === null || $v === '') {
@@ -3406,6 +3512,68 @@ class BankKeluarController extends Controller
                         $warnings[] = "Baris {$rowNum}: {$label} \"{$nama}\" tidak ada di master — dikosongkan";
                     }
                     $data[$dbCol] = $id;
+                }
+            }
+
+            // Sub Kriteria: harus konsisten dengan Kriteria (aturan kaskade web);
+            // bila Kriteria kosong tapi Sub dikenal, Kriteria diisi dari induknya.
+            $data['id_sub_kriteria'] = null;
+            $namaSub = $get($row, 'sub');
+            if ($namaSub !== null) {
+                $cands = $subLookup[$normNama($namaSub)] ?? [];
+                if (empty($cands)) {
+                    $warnings[] = "Baris {$rowNum}: Sub Kriteria \"{$namaSub}\" tidak ada di master — dikosongkan";
+                } elseif ($data['id_kategori_kriteria'] !== null) {
+                    $cocok = array_values(array_filter(
+                        $cands,
+                        fn($s) => $s->id_kategori_kriteria == $data['id_kategori_kriteria']
+                    ));
+                    if (empty($cocok)) {
+                        $warnings[] = "Baris {$rowNum}: Sub Kriteria \"{$namaSub}\" bukan bagian dari Kriteria yang dipilih — dikosongkan";
+                    } else {
+                        $data['id_sub_kriteria'] = $cocok[0]->id_sub_kriteria;
+                    }
+                } else {
+                    $data['id_sub_kriteria'] = $cands[0]->id_sub_kriteria;
+                    $data['id_kategori_kriteria'] = $cands[0]->id_kategori_kriteria;
+                }
+            }
+
+            // Item Sub Kriteria: pola yang sama terhadap Sub Kriteria;
+            // bila Sub kosong tapi Item dikenal, Sub (dan Kriteria) diisi dari induknya.
+            $data['id_item_sub_kriteria'] = null;
+            $namaItem = $get($row, 'item');
+            if ($namaItem !== null) {
+                $cands = $itemLookup[$normNama($namaItem)] ?? [];
+                if (empty($cands)) {
+                    $warnings[] = "Baris {$rowNum}: Item Sub Kriteria \"{$namaItem}\" tidak ada di master — dikosongkan";
+                } elseif ($data['id_sub_kriteria'] !== null) {
+                    $cocok = array_values(array_filter(
+                        $cands,
+                        fn($i2) => $i2->id_sub_kriteria == $data['id_sub_kriteria']
+                    ));
+                    if (empty($cocok)) {
+                        $warnings[] = "Baris {$rowNum}: Item Sub Kriteria \"{$namaItem}\" bukan bagian dari Sub Kriteria yang dipilih — dikosongkan";
+                    } else {
+                        $data['id_item_sub_kriteria'] = $cocok[0]->id_item_sub_kriteria;
+                    }
+                } else {
+                    $cands2 = $cands;
+                    if ($data['id_kategori_kriteria'] !== null) {
+                        $cands2 = array_values(array_filter(
+                            $cands,
+                            fn($i2) => ($subParent[$i2->id_sub_kriteria] ?? null) == $data['id_kategori_kriteria']
+                        ));
+                        if (empty($cands2)) {
+                            $warnings[] = "Baris {$rowNum}: Item Sub Kriteria \"{$namaItem}\" bukan bagian dari Kriteria yang dipilih — dikosongkan";
+                        }
+                    }
+                    if (!empty($cands2)) {
+                        $data['id_item_sub_kriteria'] = $cands2[0]->id_item_sub_kriteria;
+                        $data['id_sub_kriteria'] = $cands2[0]->id_sub_kriteria;
+                        $data['id_kategori_kriteria'] = $data['id_kategori_kriteria']
+                            ?? ($subParent[$cands2[0]->id_sub_kriteria] ?? null);
+                    }
                 }
             }
 

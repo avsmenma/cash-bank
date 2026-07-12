@@ -3113,12 +3113,16 @@ class BankKeluarController extends Controller
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
 
         // ── Sheet Referensi: daftar nama master yang sah ──
+        // Kriteria dibatasi tipe Keluar (sama dengan dropdown aplikasi);
+        // sub & item mengikuti rantai kriteria Keluar tersebut.
+        $kategoriKeluarIds = KategoriKriteria::where('tipe', 'Keluar')->pluck('id_kategori_kriteria');
+        $subKeluarIds = SubKriteria::whereIn('id_kategori_kriteria', $kategoriKeluarIds)->pluck('id_sub_kriteria');
         $refLists = [
             ['Sumber Dana', SumberDana::orderBy('nama_sumber_dana')->pluck('nama_sumber_dana')->all()],
             ['Bank Tujuan', BankTujuan::orderBy('nama_tujuan')->pluck('nama_tujuan')->all()],
-            ['Kriteria', KategoriKriteria::orderBy('nama_kriteria')->pluck('nama_kriteria')->all()],
-            ['Sub Kriteria', SubKriteria::orderBy('nama_sub_kriteria')->pluck('nama_sub_kriteria')->all()],
-            ['Item Sub Kriteria', ItemSubKriteria::orderBy('nama_item_sub_kriteria')->pluck('nama_item_sub_kriteria')->all()],
+            ['Kriteria', KategoriKriteria::where('tipe', 'Keluar')->orderBy('nama_kriteria')->pluck('nama_kriteria')->all()],
+            ['Sub Kriteria', SubKriteria::whereIn('id_kategori_kriteria', $kategoriKeluarIds)->orderBy('nama_sub_kriteria')->pluck('nama_sub_kriteria')->all()],
+            ['Item Sub Kriteria', ItemSubKriteria::whereIn('id_sub_kriteria', $subKeluarIds)->orderBy('nama_item_sub_kriteria')->pluck('nama_item_sub_kriteria')->all()],
             ['Jenis Pembayaran', JenisPembayaran::orderBy('nama_jenis_pembayaran')->pluck('nama_jenis_pembayaran')->all()],
         ];
 
@@ -3290,12 +3294,16 @@ class BankKeluarController extends Controller
             }
             return $map;
         };
+        // Kriteria dibatasi tipe Keluar (rantai sub & item mengikuti) agar
+        // nama kriteria Bank Masuk tidak ikut cocok di Bank Keluar
+        $kategoriKeluarIds = KategoriKriteria::where('tipe', 'Keluar')->pluck('id_kategori_kriteria');
+        $subKeluarIds = SubKriteria::whereIn('id_kategori_kriteria', $kategoriKeluarIds)->pluck('id_sub_kriteria');
         $refMaps = [
             'sumber' => ['id_sumber_dana', 'Sumber Dana', $buildMap(SumberDana::pluck('id_sumber_dana', 'nama_sumber_dana'))],
             'bank' => ['id_bank_tujuan', 'Bank Tujuan', $buildMap(BankTujuan::pluck('id_bank_tujuan', 'nama_tujuan'))],
-            'kategori' => ['id_kategori_kriteria', 'Kriteria', $buildMap(KategoriKriteria::pluck('id_kategori_kriteria', 'nama_kriteria'))],
-            'sub' => ['id_sub_kriteria', 'Sub Kriteria', $buildMap(SubKriteria::pluck('id_sub_kriteria', 'nama_sub_kriteria'))],
-            'item' => ['id_item_sub_kriteria', 'Item Sub Kriteria', $buildMap(ItemSubKriteria::pluck('id_item_sub_kriteria', 'nama_item_sub_kriteria'))],
+            'kategori' => ['id_kategori_kriteria', 'Kriteria', $buildMap(KategoriKriteria::where('tipe', 'Keluar')->pluck('id_kategori_kriteria', 'nama_kriteria'))],
+            'sub' => ['id_sub_kriteria', 'Sub Kriteria', $buildMap(SubKriteria::whereIn('id_kategori_kriteria', $kategoriKeluarIds)->pluck('id_sub_kriteria', 'nama_sub_kriteria'))],
+            'item' => ['id_item_sub_kriteria', 'Item Sub Kriteria', $buildMap(ItemSubKriteria::whereIn('id_sub_kriteria', $subKeluarIds)->pluck('id_item_sub_kriteria', 'nama_item_sub_kriteria'))],
             'jenis' => ['id_jenis_pembayaran', 'Jenis Pembayaran', $buildMap(JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran'))],
         ];
 

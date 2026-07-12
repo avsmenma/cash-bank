@@ -136,21 +136,21 @@
 }
 
 .sidebar::-webkit-scrollbar-thumb {
-    background: rgba(40, 167, 69, 0.4);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 4px;
 }
 
 .sidebar::-webkit-scrollbar-thumb:hover {
-    background: rgba(40, 167, 69, 0.6);
+    background: rgba(255, 255, 255, 0.4);
 }
 
 /* OverlayScrollbars dark theme (AdminLTE uses this plugin) */
 .os-theme-light > .os-scrollbar > .os-scrollbar-track > .os-scrollbar-handle {
-    background: rgba(40, 167, 69, 0.4) !important;
+    background: rgba(255, 255, 255, 0.25) !important;
 }
 
 .os-theme-light > .os-scrollbar:hover > .os-scrollbar-track > .os-scrollbar-handle {
-    background: rgba(40, 167, 69, 0.6) !important;
+    background: rgba(255, 255, 255, 0.4) !important;
 }
 
 

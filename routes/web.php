@@ -23,34 +23,12 @@ use App\Http\Controllers\VADashboardController;
 use App\Http\Controllers\RingkasanPembayaranController;
 use App\Http\Controllers\ProgrammerController;
 
-// Route::post('/logout',[AuthController::class, 'logout']);
-// Route::get('/login',fn()=> view('auth.login'))->name('login');
-// Route::get('/', function () {
-//     return redirect()->route('dashboard');
-// });
-// Route::get('/userVendor',fn()=> view('cash_bank.user.usersVendor'))->name('userVendor');
 Route::get('/', fn() => view('auth.login'));
 Route::get('/login', fn() => view('auth.login'))->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])
     ->name('logout')
     ->middleware('auth');
-
-// ===== ROUTE DIAGNOSTIK SEMENTARA - HAPUS SETELAH SELESAI =====
-Route::get('/debug-server-config', function () {
-    return response()->json([
-        'php_version'         => phpversion(),
-        'upload_max_filesize' => ini_get('upload_max_filesize'),
-        'post_max_size'       => ini_get('post_max_size'),
-        'max_execution_time'  => ini_get('max_execution_time'),
-        'memory_limit'        => ini_get('memory_limit'),
-        'max_file_uploads'    => ini_get('max_file_uploads'),
-        'loaded_php_ini'      => php_ini_loaded_file(),
-        'web_server'          => $_SERVER['SERVER_SOFTWARE'] ?? 'unknown',
-        'sapi_name'           => php_sapi_name(),
-    ]);
-});
-// ==============================================================
 
 Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
     Route::get('/dashboard-cash-bank', [dashboardController::class, 'index'])
@@ -80,10 +58,7 @@ Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
         ->name('dashboard.bank.pdf');
 
 });
-// Route::group(['middleware' => ['auth','check_role:admin']], function(){
-//     Route::get('/dashboard-pembayaran', [DashboardPembayaranController::class, 'index'])
-//         ->name('dashboard-pembayaran');
-// });
+
 Route::group(['middleware' => ['auth', 'check_role:vendor']], function () {
     Route::get('/userVendor', [UserSAPController::class, 'index'])
         ->name('userVendor.index');
@@ -100,43 +75,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/user-sap/view/pdf', [UserSAPController::class, 'view_pdf']);
     Route::put('/user-sap/{id}', [UserSAPController::class, 'update']);
 });
-// Route::get('/reportMasuk', function () {
-//     return view('cash_bank.reportMasuk');
-// })->name('report-masuk');
-// Route::get('/reportKeluar', function () {
-//     return view('cash_bank.reportKeluar');
-// })->name('report-keluar');
-// Route::get('/login', function () {
-//     return view('layouts.login');
-// })->name('login');
-// Route::get('/logout', function () {
-//     Session::flush();
-//     return redirect()->route('login');
-// })->name('logout');
-
-
-// // BANK KELUAR
-// Route::get('/bank-keluar/report', [BankKeluarController::class, 'report'])
-// ->name('bank-keluar.report');
-// Route::post('/bank-keluar/importExcel', [BankKeluarController::class, 'importExcel'])
-// ->name('bank-keluar.importExcel');
-// Route::get('/bank-keluar/export_excel', [BankKeluarController::class, 'export_excel']);
-// Route::get('/bank-keluar/report_export_excel', [BankKeluarController::class, 'report_export_excel'])->name('bank-keluar.report_export_excel');
-// Route::get('/bank-keluar/reportKeluarPdf', [BankKeluarController::class, 'reportKeluarPdf'])->name('bank-keluar.reportKeluarPdf');
-// Route::get('/bank-keluar/view/pdf', [BankKeluarController::class,'view_pdf']);
-// Route::get('/detail-transaksi', [BankKeluarController::class, 'getDetailTransaksi'])
-// ->name('bank-keluar.detail-transaksi');
-// Route::get('/export-detail', [BankKeluarController::class, 'exportDetailTransaksi'])
-// ->name('bank-keluar.export-detail');
-// Route::get('/bank-keluar/ajax', [BankKeluarController::class, 'ajax'])->name('bank-keluar.ajax');
-// Route::get('/get-kategori-kriteria/{id}', [BankKeluarController::class, 'getKriteria']);
-// Route::get('/bank-masuk/ajax', [BankMasukController::class, 'ajax'])->name('bank-masuk.ajax');
-// Route::get('/get-sub-kriteria/{id}', [BankKeluarController::class, 'getSub']);
-// Route::get('/get-item-sub-kriteria/{id}', [BankKeluarController::class, 'getItem']);
-// Route::get('/get-dokumen-detail/{id}', [BankKeluarController::class, 'getDokumenDetail']);
-// Route::delete('/selected-employee', [BankKeluarController::class, 'deleteAll'])
-//     ->name('bank-keluar.delete');
-
 
 Route::middleware(['auth'])->group(function () {
 
@@ -214,22 +152,6 @@ Route::middleware(['auth'])->group(function () {
 
 });
 
-
-// BANK MASUK
-// Route::get('/bank-masuk/report', [BankMasukController::class, 'report'])
-// ->name('bank-masuk.report');
-// Route::post('/bank-masuk/importExcel', [BankMasukController::class, 'importExcel'])
-// ->name('bank-masuk.importExcel');
-// Route::get('/bank-masuk/export_excel', [BankMasukController::class, 'export_excel']);
-// Route::get('/bank-masuk/report_export_excel', [BankMasukController::class, 'report_export_excel'])->name('bank-masuk.report_export_excel');
-// Route::get('/bank-masuk/reportMasukPdf', [BankMasukController::class, 'reportMasukPdf'])->name('bank-masuk.reportMasukPdf');
-// Route::get('/bank-masuk/view/pdf', [BankMasukController::class,'view_pdf']);
-// Route::resource('bank-masuk', BankMasukController::class);
-// Route::get('/sub-kriteria/{id}', [BankMasukController::class, 'getSubKriteria']);
-// Route::get('/item-sub-kriteria/{id}', [BankMasukController::class, 'getItemSubKriteria']);
-// Route::delete('/selected-employee',[BankMasukController::class,'deleteAll'])->name('bank-masuk.delete');
-
-
 Route::middleware(['auth'])->group(function () {
     Route::prefix('bank-masuk')->name('bank-masuk.')->group(function () {
 
@@ -303,7 +225,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/view_pdf', [DetailItemController::class, 'view_pdf'])
             ->name('view_pdf');
 
-        // Route::get('/export', [DetailItemController::class, 'export'])->name('export');
     });
     Route::prefix('detail-sub')->name('detail-sub.')->group(function () {
 
@@ -316,7 +237,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/view_pdf', [DetailSubKategoriController::class, 'view_pdf'])
             ->name('view_pdf');
 
-        // Route::get('/export', [DetailSubKategoriController::class, 'export'])->name('export');
     });
 
 });
@@ -454,47 +374,12 @@ Route::middleware(['auth'])->prefix('dashboard-pembayaran')->name('dashboard.pem
     Route::get('/export-excel', [DashboardPembayaranController::class, 'exportExcel'])->name('excel');
 
 });
-// Route::get('/dashboard-detail-pd',fn()=> view('cash_bank.detailPd_detailPvD.detailPvd'))->name('dashboard-detail-pd');
-// Route::get('/penerima',fn()=> view('cash_bank.pembayaran.penerima'))->name('penerima');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/cashflow', [DetaiControllerCashFlowController::class, 'index'])->name('cashflow.index');
     Route::get('/cashflow/detail', [DetaiControllerCashFlowController::class, 'detail'])->name('cashflow.detail');
 });
-// DAFTAR BANK
-// Route::resource('daftarRekening', daftarRekeningController::class);
-// Route::resource('daftarBank', daftarBankController::class);
-// Route::resource('saldoAwal', saldoAwalController::class);
-// Route::get('/get-nomor_rekening/{id}', [daftarRekeningController::class, 'getRekeningByBank']);
 
-// // DETAILL
-// Route::prefix('detail-item')->name('detailItem.')->group(function () {
-//     Route::get('/', [DetailItemController::class, 'index'])->name('index');
-//     // Route::get('/export', [DetailItemController::class, 'export'])->name('export');
-// });
-// Route::prefix('detail-sub')->name('detailSub.')->group(function () {
-//     Route::get('/', [DetailSubKategoriController::class, 'index'])->name('index');
-//     // Route::get('/export', [DetailSubKategoriController::class, 'export'])->name('export');
-// });
-// Route::get('/detail-item/export_excel', [DetailItemController::class, 'export_excel'])->name('detail-item.export_excel');
-// Route::get('/detail-item/view_pdf', [DetailItemController::class, 'view_pdf'])->name('detail-item.view_pdf');
-// Route::get('/detail-sub/export_excel', [DetailSubKategoriController::class, 'export_excel'])->name('detail-sub.export_excel');
-// Route::get('/detail-sub/view_pdf', [DetailSubKategoriController::class, 'view_pdf'])->name('detail-sub.view_pdf');
-
-// EXPORT PDF
-// Route::get('/Export-pdf',[pdfController::class, 'exportPdf']);
-
-
-// Route::prefix('detail-kategori')->name('detailKategori.')->group(function () {
-//     Route::get('/', [DetailSubKategoriController::class, 'index'])->name('index');
-//     Route::get('/export', [DetailSubKategoriController::class, 'export'])->name('export');
-// });
-
-
-
-// Route::get('/userSAP',fn()=> view('userSAP.userSAP'))->name('userSAP');
-
-// VA USER ROUTES
 Route::group(['middleware' => ['auth', 'check_role:va'], 'prefix' => 'va'], function () {
     Route::get('/dashboard', [VADashboardController::class, 'index'])->name('va.dashboard');
     Route::get('/rekening-koran', [VADashboardController::class, 'rekeningKoran'])->name('va.rekening-koran');

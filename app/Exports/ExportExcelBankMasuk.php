@@ -3,18 +3,25 @@
 namespace App\Exports;
 
 use App\Models\BankMasuk;
-use illuminate\Contracts\View\View;
+use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 
 class ExportExcelBankMasuk implements FromView
-
 {
+    // Filter export: tahun, bulan, kategori, sumber_dana (kosong = semua)
+    private array $filters;
+
+    public function __construct(array $filters = [])
+    {
+        $this->filters = $filters;
+    }
+
     /**
     * @return \Illuminate\Support\Collection
     */
     public function view(): View
     {
-        $data = BankMasuk::select(
+        $query = BankMasuk::select(
             'id_bank_masuk',
             'agenda_tahun',
             'tanggal',
@@ -35,9 +42,23 @@ class ExportExcelBankMasuk implements FromView
             'jenisPembayaran:id_jenis_pembayaran,nama_jenis_pembayaran',
         ])
        ->orderBy('tanggal', 'asc')
-       ->orderBy('id_bank_masuk')
-       ->get();
+       ->orderBy('id_bank_masuk');
 
-       return view('cash_bank.exportExcel.excelMasuk', compact('data'));
+        if (!empty($this->filters['tahun'])) {
+            $query->whereYear('tanggal', $this->filters['tahun']);
+        }
+        if (!empty($this->filters['bulan'])) {
+            $query->whereMonth('tanggal', $this->filters['bulan']);
+        }
+        if (!empty($this->filters['kategori'])) {
+            $query->where('id_kategori_kriteria', $this->filters['kategori']);
+        }
+        if (!empty($this->filters['sumber_dana'])) {
+            $query->where('id_sumber_dana', $this->filters['sumber_dana']);
+        }
+
+        $data = $query->get();
+
+        return view('cash_bank.exportExcel.excelMasuk', compact('data'));
     }
 }

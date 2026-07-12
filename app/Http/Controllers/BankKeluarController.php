@@ -95,6 +95,10 @@ class BankKeluarController extends Controller
         $jenisPembayaran = Cache::remember('jenis_pembayaran', 3600, fn() => JenisPembayaran::all());
 
 
+        // Daftar tahun untuk filter export (dari data yang ada)
+        $exportYears = BankKeluar::selectRaw('DISTINCT YEAR(tanggal) as y')
+            ->whereNotNull('tanggal')->orderByDesc('y')->pluck('y');
+
         return view('cash_bank.bankKeluar', compact(
             'agenda',
             'sumberDana',
@@ -102,8 +106,39 @@ class BankKeluarController extends Controller
             'kategoriKriteria',
             'subKriteria',
             'itemSubKriteria',
-            'jenisPembayaran'
+            'jenisPembayaran',
+            'exportYears'
         ));
+    }
+
+    /**
+     * Terapkan filter export (tahun, bulan, kategori, sumber dana) ke query.
+     */
+    private function applyExportFilter($query, Request $request)
+    {
+        if ($request->filled('tahun')) {
+            $query->whereYear('tanggal', $request->tahun);
+        }
+        if ($request->filled('bulan')) {
+            $query->whereMonth('tanggal', $request->bulan);
+        }
+        if ($request->filled('kategori')) {
+            $query->where('id_kategori_kriteria', $request->kategori);
+        }
+        if ($request->filled('sumber_dana')) {
+            $query->where('id_sumber_dana', $request->sumber_dana);
+        }
+        return $query;
+    }
+
+    /**
+     * Hitung jumlah baris sesuai filter export — dipakai modal konfirmasi.
+     */
+    public function exportCount(Request $request)
+    {
+        return response()->json([
+            'total' => $this->applyExportFilter(BankKeluar::query(), $request)->count(),
+        ]);
     }
 
     public function datatable(Request $request)
@@ -3854,9 +3889,15 @@ class BankKeluarController extends Controller
         ]);
     }
 
-    public function export_excel()
+    public function export_excel(Request $request)
     {
-        return Excel::download(new excelBankKeluar, 'bankKeluar.xlsx');
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
+        return Excel::download(
+            new excelBankKeluar($request->only(['tahun', 'bulan', 'kategori', 'sumber_dana'])),
+            'bankKeluar-' . date('Y-m-d') . '.xlsx'
+        );
     }
 
     public function report_export_excel(Request $request)
@@ -3868,9 +3909,25 @@ class BankKeluarController extends Controller
     }
 
 
-    public function view_pdf()
+    public function view_pdf(Request $request)
     {
-        $data = BankKeluar::select(
+        // Batas aman halaman cetak: ribuan baris membuat browser/print macet
+        $maxRows = 3000;
+        $jumlah = $this->applyExportFilter(BankKeluar::query(), $request)->count();
+        if ($jumlah > $maxRows) {
+            return response(
+                '<div style="font-family:sans-serif;max-width:560px;margin:80px auto;text-align:center;">'
+                . '<h3 style="color:#c0392b;">Data terlalu banyak untuk PDF</h3>'
+                . '<p>Filter saat ini mencakup <strong>' . number_format($jumlah, 0, ',', '.')
+                . '</strong> baris (maks. ' . number_format($maxRows, 0, ',', '.') . ').<br>'
+                . 'Persempit filter (tahun/bulan/kategori) lalu coba lagi, '
+                . 'atau gunakan Download Excel untuk data besar.</p>'
+                . '<p><a href="javascript:window.close()">Tutup tab ini</a></p></div>',
+                422
+            )->header('Content-Type', 'text/html');
+        }
+
+        $query = BankKeluar::select(
             'id_bank_keluar',
             'agenda_tahun',
             'tanggal',
@@ -3895,8 +3952,8 @@ class BankKeluarController extends Controller
                 'jenisPembayaran:id_jenis_pembayaran,nama_jenis_pembayaran',
             ])
             ->orderBy('tanggal', 'asc')
-            ->orderBy('id_bank_keluar')
-            ->get();
+            ->orderBy('id_bank_keluar');
+        $data = $this->applyExportFilter($query, $request)->get();
 
 
         /* ================= DATA AGENDA (TETAP) ================= */

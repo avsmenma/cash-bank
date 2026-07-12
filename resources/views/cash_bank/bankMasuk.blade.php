@@ -111,10 +111,10 @@
         <i class="fas fa-sync-alt mr-1"></i>Refresh
       </button>
       <div class="ml-auto d-flex gap-2" style="gap:8px;">
-        <a href="{{ url('/bank-masuk/view/pdf') }}" target="_blank" class="btn btn-outline-primary btn-sm">
+        <a href="#" data-toggle="modal" data-target="#ModalExportMasuk" data-mode="pdf" class="btn btn-outline-primary btn-sm">
           <i class="fas fa-print mr-1"></i>Download PDF
         </a>
-        <a href="{{ url('/bank-masuk/export_excel') }}" class="btn btn-outline-success btn-sm">
+        <a href="#" data-toggle="modal" data-target="#ModalExportMasuk" data-mode="excel" class="btn btn-outline-success btn-sm">
           <i class="fas fa-file-excel mr-1"></i>Download Excel
         </a>
       </div>
@@ -131,6 +131,7 @@
 {{-- Modals --}}
 @include('cash_bank.modal.tambahMasuk')
 @include('cash_bank.modal.importTemplateMasuk')
+@include('cash_bank.modal.exportFilterMasuk')
 @if (auth()->user()->role === 'programmer')
     @include('cash_bank.modal.importExcelMasuk')
 @endif

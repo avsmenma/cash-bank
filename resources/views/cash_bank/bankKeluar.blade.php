@@ -111,10 +111,10 @@
         <i class="fas fa-sync-alt mr-1"></i>Refresh
       </button>
       <div class="ml-auto d-flex" style="gap:8px;">
-        <a href="{{ url('/bank-keluar/view/pdf') }}" target="_blank" class="btn btn-outline-primary btn-sm">
+        <a href="#" data-toggle="modal" data-target="#ModalExportKeluar" data-mode="pdf" class="btn btn-outline-primary btn-sm">
           <i class="fas fa-print mr-1"></i>Download PDF
         </a>
-        <a href="{{ url('/bank-keluar/export_excel') }}" class="btn btn-outline-success btn-sm">
+        <a href="#" data-toggle="modal" data-target="#ModalExportKeluar" data-mode="excel" class="btn btn-outline-success btn-sm">
           <i class="fas fa-file-excel mr-1"></i>Download Excel
         </a>
       </div>
@@ -131,6 +131,7 @@
 {{-- MODAL CREATE & IMPORT --}}
 @include('cash_bank.modal.create')
 @include('cash_bank.modal.importTemplateKeluar')
+@include('cash_bank.modal.exportFilterKeluar')
 @if (auth()->user()->role === 'programmer')
     @include('cash_bank.modal.importExcel')
 @endif

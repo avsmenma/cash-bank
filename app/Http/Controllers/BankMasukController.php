@@ -74,6 +74,39 @@ class BankMasukController extends Controller
             'bankTujuan' => BankTujuan::all(),
             'kategoriKriteria' => KategoriKriteria::where('tipe', 'Masuk')->get(),
             'jenisPembayaran' => JenisPembayaran::all(),
+            // Daftar tahun untuk filter export (dari data yang ada)
+            'exportYears' => BankMasuk::selectRaw('DISTINCT YEAR(tanggal) as y')
+                ->whereNotNull('tanggal')->orderByDesc('y')->pluck('y'),
+        ]);
+    }
+
+    /**
+     * Terapkan filter export (tahun, bulan, kategori, sumber dana) ke query.
+     */
+    private function applyExportFilter($query, Request $request)
+    {
+        if ($request->filled('tahun')) {
+            $query->whereYear('tanggal', $request->tahun);
+        }
+        if ($request->filled('bulan')) {
+            $query->whereMonth('tanggal', $request->bulan);
+        }
+        if ($request->filled('kategori')) {
+            $query->where('id_kategori_kriteria', $request->kategori);
+        }
+        if ($request->filled('sumber_dana')) {
+            $query->where('id_sumber_dana', $request->sumber_dana);
+        }
+        return $query;
+    }
+
+    /**
+     * Hitung jumlah baris sesuai filter export — dipakai modal konfirmasi.
+     */
+    public function exportCount(Request $request)
+    {
+        return response()->json([
+            'total' => $this->applyExportFilter(BankMasuk::query(), $request)->count(),
         ]);
     }
     public function datatable(Request $request)
@@ -898,9 +931,15 @@ class BankMasukController extends Controller
     }
 
 
-    public function export_excel()
+    public function export_excel(Request $request)
     {
-        return Excel::download(new ExportExcelBankMasuk, 'bankMasuk.xlsx');
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
+        return Excel::download(
+            new ExportExcelBankMasuk($request->only(['tahun', 'bulan', 'kategori', 'sumber_dana'])),
+            'bankMasuk-' . date('Y-m-d') . '.xlsx'
+        );
     }
 
     public function report_export_excel(Request $request)
@@ -911,9 +950,25 @@ class BankMasukController extends Controller
         );
     }
 
-    public function view_pdf()
+    public function view_pdf(Request $request)
     {
-        $data = BankMasuk::select(
+        // Batas aman halaman cetak: ribuan baris membuat browser/print macet
+        $maxRows = 3000;
+        $jumlah = $this->applyExportFilter(BankMasuk::query(), $request)->count();
+        if ($jumlah > $maxRows) {
+            return response(
+                '<div style="font-family:sans-serif;max-width:560px;margin:80px auto;text-align:center;">'
+                . '<h3 style="color:#c0392b;">Data terlalu banyak untuk PDF</h3>'
+                . '<p>Filter saat ini mencakup <strong>' . number_format($jumlah, 0, ',', '.')
+                . '</strong> baris (maks. ' . number_format($maxRows, 0, ',', '.') . ').<br>'
+                . 'Persempit filter (tahun/bulan/kategori) lalu coba lagi, '
+                . 'atau gunakan Download Excel untuk data besar.</p>'
+                . '<p><a href="javascript:window.close()">Tutup tab ini</a></p></div>',
+                422
+            )->header('Content-Type', 'text/html');
+        }
+
+        $query = BankMasuk::select(
             'id_bank_masuk',
             'agenda_tahun',
             'tanggal',
@@ -934,8 +989,8 @@ class BankMasukController extends Controller
                 'jenisPembayaran:id_jenis_pembayaran,nama_jenis_pembayaran',
             ])
             ->orderBy('tanggal', 'asc')
-            ->orderBy('id_bank_masuk')
-            ->get();
+            ->orderBy('id_bank_masuk');
+        $data = $this->applyExportFilter($query, $request)->get();
 
         return view('cash_bank.exportPDF.masukPdf', [
             'data' => $data,

@@ -178,6 +178,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/export_excel', [BankKeluarController::class, 'export_excel'])
             ->name('export_excel');
 
+        // Jumlah baris sesuai filter export — untuk modal konfirmasi export
+        Route::get('/export-count', [BankKeluarController::class, 'exportCount'])
+            ->name('exportCount');
+
         Route::get('/report_export_excel', [BankKeluarController::class, 'report_export_excel'])
             ->name('report_export_excel');
 
@@ -255,6 +259,10 @@ Route::middleware(['auth'])->group(function () {
             ->name('confirmTemplate');
 
         Route::get('/export_excel', [BankMasukController::class, 'export_excel']);
+
+        // Jumlah baris sesuai filter export — untuk modal konfirmasi export
+        Route::get('/export-count', [BankMasukController::class, 'exportCount'])
+            ->name('exportCount');
 
         Route::get('/report_export_excel', [BankMasukController::class, 'report_export_excel'])
             ->name('report_export_excel');

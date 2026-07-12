@@ -3,10 +3,15 @@
 namespace App\Exports;
 
 use App\Models\BankMasuk;
+use App\Models\KategoriKriteria;
+use App\Models\SumberDana;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
 
-class ExportExcelBankMasuk implements FromView
+class ExportExcelBankMasuk implements FromView, ShouldAutoSize, WithEvents
 {
     // Filter export: tahun, bulan, kategori, sumber_dana (kosong = semua)
     private array $filters;
@@ -59,6 +64,47 @@ class ExportExcelBankMasuk implements FromView
 
         $data = $query->get();
 
-        return view('cash_bank.exportExcel.excelMasuk', compact('data'));
+        return view('cash_bank.exportExcel.excelMasuk', [
+            'data' => $data,
+            'filterInfo' => $this->buildFilterInfo('Kategori'),
+        ]);
+    }
+
+    /**
+     * Rangkai keterangan filter untuk kop laporan.
+     */
+    private function buildFilterInfo(string $labelKategori): string
+    {
+        $bulanNama = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
+        $info = 'Periode: ' . (!empty($this->filters['bulan']) ? ($bulanNama[(int) $this->filters['bulan']] ?? '') . ' ' : '')
+            . (!empty($this->filters['tahun']) ? $this->filters['tahun'] : 'Semua Tahun');
+        if (!empty($this->filters['kategori'])) {
+            $info .= " • {$labelKategori}: " . (optional(KategoriKriteria::find($this->filters['kategori']))->nama_kriteria ?? '-');
+        }
+        if (!empty($this->filters['sumber_dana'])) {
+            $info .= ' • Sumber Dana: ' . (optional(SumberDana::find($this->filters['sumber_dana']))->nama_sumber_dana ?? '-');
+        }
+        return $info;
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+                $last = $sheet->getHighestRow();
+
+                // Header (baris 4) beku saat scroll; kolom Debet berformat ribuan
+                $sheet->freezePane('A5');
+                $sheet->getStyle("J5:J{$last}")->getNumberFormat()->setFormatCode('#,##0');
+
+                // Uraian jangan autosize (bisa sangat panjang) — lebar tetap + wrap
+                $sheet->getColumnDimension('H')->setAutoSize(false);
+                $sheet->getColumnDimension('H')->setWidth(60);
+                $sheet->getStyle("H5:H{$last}")->getAlignment()->setWrapText(true);
+                $sheet->getRowDimension(1)->setRowHeight(22);
+            },
+        ];
     }
 }

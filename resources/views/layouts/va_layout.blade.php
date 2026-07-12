@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="{{ asset('adminLTE/plugins/fontawesome-free/css/all.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminLTE/dist/css/adminlte.min.css') }}">
     <!-- Dark Theme Override -->
-    <link rel="stylesheet" href="{{ asset('css/dark-theme.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/dark-theme.css') }}?v={{ filemtime(public_path('css/dark-theme.css')) }}">
     <!-- overlayScrollbars -->
     <link rel="stylesheet" href="{{ asset('adminLTE/plugins/overlayScrollbars/css/OverlayScrollbars.min.css') }}">
 

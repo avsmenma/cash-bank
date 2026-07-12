@@ -117,7 +117,7 @@ class BankKeluarController extends Controller
             'jenisPembayaran:id_jenis_pembayaran,nama_jenis_pembayaran',
             // Tie-breaker id: banyak baris bertanggal sama — tanpa urutan
             // deterministik, chunk LIMIT/OFFSET bisa duplikat/melewatkan baris.
-        ])->orderBy('tanggal', 'asc')->orderBy('id_bank_keluar', 'asc');
+        ])->orderBy('tanggal', 'desc')->orderBy('id_bank_keluar', 'desc'); // terbaru dulu
 
         // Date range filter from header popup
         if ($request->filled('filter_tgl_dari')) {

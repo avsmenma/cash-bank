@@ -132,7 +132,7 @@
             renderVertical: 'basic',        // semua baris di DOM (sel editable)
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
-            columnDefaults: { headerSort: false, minWidth: 30 },   // kolom bebas dikecilkan sampai 30px
+            columnDefaults: { headerSort: false, minWidth: 30, variableHeight: true },   // bebas dikecilkan; teks wrap, tinggi baris menyesuaikan
             rowFormatter: function (row) {
                 row.getElement().classList.toggle('pn-r-total', row.getData().type === 'total');
             },

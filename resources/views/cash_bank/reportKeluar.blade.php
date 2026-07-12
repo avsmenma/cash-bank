@@ -173,7 +173,7 @@ function resetFilter() {
             height: '62vh',
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
-            columnDefaults: { minWidth: 30 },      // kolom bebas dikecilkan sampai 30px
+            columnDefaults: { minWidth: 30, variableHeight: true },   // bebas dikecilkan; teks wrap, tinggi baris menyesuaikan
             placeholder: 'Tidak ada data untuk filter yang dipilih.',
             columns: [
                 col('No', 'no', { width: 56, hozAlign: 'center' }),

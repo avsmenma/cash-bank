@@ -48,6 +48,12 @@
         .tabulator .tabulator-tableholder {
             scrollbar-gutter: stable;
         }
+        /* Saat kolom disempitkan, teks sel turun ke baris berikutnya
+           (wrap) alih-alih terpotong menjadi "..." */
+        .tabulator .tabulator-cell {
+            white-space: normal;
+            overflow-wrap: break-word;
+        }
     </style>
 
     @stack('styles')

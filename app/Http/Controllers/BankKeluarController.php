@@ -3101,6 +3101,340 @@ class BankKeluarController extends Controller
         }
     }
 
+    /**
+     * IMPORT MANDIRI — unduh template Excel untuk pencatatan transaksi di Excel.
+     * Sheet "Data" tempat user mengisi (kolom referensi ber-dropdown), sheet
+     * "Referensi" daftar master yang sah, sheet "Petunjuk" aturan pengisian.
+     */
+    public function downloadTemplateImport()
+    {
+        ini_set('memory_limit', '512M');
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+
+        // ── Sheet Referensi: daftar nama master yang sah ──
+        $refLists = [
+            ['Sumber Dana', SumberDana::orderBy('nama_sumber_dana')->pluck('nama_sumber_dana')->all()],
+            ['Bank Tujuan', BankTujuan::orderBy('nama_tujuan')->pluck('nama_tujuan')->all()],
+            ['Kriteria', KategoriKriteria::orderBy('nama_kriteria')->pluck('nama_kriteria')->all()],
+            ['Sub Kriteria', SubKriteria::orderBy('nama_sub_kriteria')->pluck('nama_sub_kriteria')->all()],
+            ['Item Sub Kriteria', ItemSubKriteria::orderBy('nama_item_sub_kriteria')->pluck('nama_item_sub_kriteria')->all()],
+            ['Jenis Pembayaran', JenisPembayaran::orderBy('nama_jenis_pembayaran')->pluck('nama_jenis_pembayaran')->all()],
+        ];
+
+        $ref = $spreadsheet->createSheet();
+        $ref->setTitle('Referensi');
+        foreach ($refLists as $i => [$judul, $list]) {
+            $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1);
+            $ref->setCellValue($col . '1', $judul);
+            $r = 2;
+            foreach ($list as $nama) {
+                $ref->setCellValue($col . $r++, $nama);
+            }
+            $ref->getColumnDimension($col)->setWidth(36);
+        }
+        $ref->getStyle('A1:F1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E3A5F']],
+        ]);
+        $ref->freezePane('A2');
+
+        // ── Sheet Data: tempat user mengisi transaksi ──
+        $sheet = $spreadsheet->getSheet(0);
+        $sheet->setTitle('Data');
+        $headers = ['No Agenda', 'Tanggal', 'Sumber Dana', 'Bank Tujuan', 'Kriteria',
+            'Sub Kriteria', 'Item Sub Kriteria', 'Jenis Pembayaran', 'Penerima',
+            'Uraian', 'Kredit', 'Keterangan'];
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->getStyle('A1:L1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E3A5F']],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+        ]);
+        foreach (['A' => 14, 'B' => 13, 'C' => 28, 'D' => 28, 'E' => 24, 'F' => 24,
+            'G' => 24, 'H' => 20, 'I' => 28, 'J' => 45, 'K' => 16, 'L' => 25] as $col => $w) {
+            $sheet->getColumnDimension($col)->setWidth($w);
+        }
+        $sheet->getStyle('B2:B1000')->getNumberFormat()->setFormatCode('dd/mm/yyyy');
+        $sheet->getStyle('K2:K1000')->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('A2:A1000')->getNumberFormat()
+            ->setFormatCode(\PhpOffice\PhpSpreadsheet\Style\NumberFormat::FORMAT_TEXT);
+        $sheet->freezePane('A2');
+
+        // Dropdown kolom referensi di sheet Data (nama pasti cocok dengan master)
+        $dropdowns = ['C' => 0, 'D' => 1, 'E' => 2, 'F' => 3, 'G' => 4, 'H' => 5];
+        foreach ($dropdowns as $dataCol => $i) {
+            $count = count($refLists[$i][1]);
+            if ($count === 0) {
+                continue;
+            }
+            $refCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1);
+            $rangeName = 'RefBK' . $dataCol;
+            $spreadsheet->addNamedRange(new \PhpOffice\PhpSpreadsheet\NamedRange(
+                $rangeName, $ref, '$' . $refCol . '$2:$' . $refCol . '$' . ($count + 1)
+            ));
+            $dv = new \PhpOffice\PhpSpreadsheet\Cell\DataValidation();
+            $dv->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST)
+                ->setAllowBlank(true)
+                ->setShowDropDown(true)
+                ->setShowErrorMessage(false)
+                ->setFormula1($rangeName)
+                ->setSqref($dataCol . '2:' . $dataCol . '1000');
+            $sheet->setDataValidation($dataCol . '2', $dv);
+        }
+
+        // ── Sheet Petunjuk ──
+        $ptr = $spreadsheet->createSheet();
+        $ptr->setTitle('Petunjuk');
+        $petunjuk = [
+            'PETUNJUK PENGISIAN TEMPLATE IMPORT BANK KELUAR',
+            '',
+            '1. Isi transaksi pada sheet "Data". Baris 1 (judul kolom) jangan diubah atau dihapus.',
+            '2. Tidak semua kolom wajib diisi. Kolom yang kosong tetap ikut terimport,',
+            '   tampil "-" di tabel Bank Keluar, dan bisa dilengkapi kemudian lewat tombol edit.',
+            '3. Tanggal: gunakan format tanggal Excel biasa atau ketik dd/mm/yyyy (contoh 05/07/2026).',
+            '4. Kredit: angka nilai transaksi, contoh 1500000 (boleh memakai pemisah ribuan 1.500.000).',
+            '5. Sumber Dana, Bank Tujuan, Kriteria, Sub Kriteria, Item Sub Kriteria, dan Jenis Pembayaran',
+            '   harus sama persis dengan daftar di sheet "Referensi" — gunakan dropdown yang tersedia.',
+            '   Nama yang tidak dikenali akan dikosongkan otomatis saat import (data lain tetap masuk).',
+            '6. Simpan file, lalu upload lewat tombol Import Excel di halaman Bank Keluar.',
+        ];
+        foreach ($petunjuk as $i => $line) {
+            $ptr->setCellValue('A' . ($i + 1), $line);
+        }
+        $ptr->getStyle('A1')->getFont()->setBold(true);
+        $ptr->getColumnDimension('A')->setWidth(100);
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, 'template_import_bank_keluar.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
+     * IMPORT MANDIRI — proses file template yang sudah diisi user.
+     * Kolom boleh kosong (semua kolom bank_keluars nullable); nama referensi
+     * dicocokkan exact (case-insensitive), yang tidak dikenal di-null-kan
+     * dan dilaporkan sebagai peringatan tanpa menggagalkan baris.
+     */
+    public function importFromTemplate(Request $request)
+    {
+        $request->validate(['fileTemplate' => 'required|file|max:20480']);
+        $ext = strtolower($request->file('fileTemplate')->getClientOriginalExtension());
+        if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
+            return response()->json(['message' => 'File harus berformat xlsx, xls, atau csv.'], 422);
+        }
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
+        try {
+            $path = $request->file('fileTemplate')->getRealPath();
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($path);
+            $spreadsheet = $reader->load($path);
+            $sheet = $spreadsheet->getSheetByName('Data') ?? $spreadsheet->getSheet(0);
+            $rows = $sheet->toArray(null, true, false, false);
+        } catch (\Throwable $e) {
+            \Log::error('importFromTemplate gagal membaca file: ' . $e->getMessage());
+            return response()->json(['message' => 'Gagal membaca file: ' . $e->getMessage()], 422);
+        }
+
+        if (count($rows) < 2) {
+            return response()->json(['message' => 'File tidak berisi baris data.'], 422);
+        }
+
+        // ── Peta header → field (urutan kolom bebas, dicocokkan by nama) ──
+        $normHeader = fn($v) => preg_replace('/[^a-z]/', '', strtolower((string) $v));
+        $aliases = [
+            'noagenda' => 'no_agenda',
+            'agenda' => 'no_agenda',
+            'tanggal' => 'tanggal',
+            'sumberdana' => 'sumber',
+            'banktujuan' => 'bank',
+            'kriteria' => 'kategori',
+            'kategori' => 'kategori',
+            'kategorikriteria' => 'kategori',
+            'subkriteria' => 'sub',
+            'itemsubkriteria' => 'item',
+            'jenispembayaran' => 'jenis',
+            'penerima' => 'penerima',
+            'uraian' => 'uraian',
+            'kredit' => 'kredit',
+            'nilai' => 'kredit',
+            'nilairupiah' => 'kredit',
+            'keterangan' => 'keterangan',
+        ];
+        $colMap = [];
+        foreach ($rows[0] as $idx => $judul) {
+            $key = $normHeader($judul);
+            if (isset($aliases[$key]) && !isset($colMap[$aliases[$key]])) {
+                $colMap[$aliases[$key]] = $idx;
+            }
+        }
+        if (!isset($colMap['uraian']) && !isset($colMap['kredit'])) {
+            return response()->json([
+                'message' => 'Judul kolom tidak dikenali. Gunakan template dari tombol "Download Template".',
+            ], 422);
+        }
+
+        // ── Peta referensi: nama (dinormalkan) → id ──
+        $normNama = fn($v) => trim(preg_replace('/\s+/', ' ', strtolower((string) $v)));
+        $buildMap = function ($pairs) use ($normNama) {
+            $map = [];
+            foreach ($pairs as $nama => $id) {
+                $map[$normNama($nama)] = $id;
+            }
+            return $map;
+        };
+        $refMaps = [
+            'sumber' => ['id_sumber_dana', 'Sumber Dana', $buildMap(SumberDana::pluck('id_sumber_dana', 'nama_sumber_dana'))],
+            'bank' => ['id_bank_tujuan', 'Bank Tujuan', $buildMap(BankTujuan::pluck('id_bank_tujuan', 'nama_tujuan'))],
+            'kategori' => ['id_kategori_kriteria', 'Kriteria', $buildMap(KategoriKriteria::pluck('id_kategori_kriteria', 'nama_kriteria'))],
+            'sub' => ['id_sub_kriteria', 'Sub Kriteria', $buildMap(SubKriteria::pluck('id_sub_kriteria', 'nama_sub_kriteria'))],
+            'item' => ['id_item_sub_kriteria', 'Item Sub Kriteria', $buildMap(ItemSubKriteria::pluck('id_item_sub_kriteria', 'nama_item_sub_kriteria'))],
+            'jenis' => ['id_jenis_pembayaran', 'Jenis Pembayaran', $buildMap(JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran'))],
+        ];
+
+        $parseTanggal = function ($v) {
+            if ($v === null || $v === '') {
+                return null;
+            }
+            if (is_numeric($v)) {
+                try {
+                    return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $v)->format('Y-m-d');
+                } catch (\Throwable $e) {
+                    return null;
+                }
+            }
+            $v = trim((string) $v);
+            foreach (['d/m/Y', 'd-m-Y', 'Y-m-d', 'd.m.Y', 'd/m/y'] as $f) {
+                $dt = \DateTime::createFromFormat('!' . $f, $v);
+                if ($dt !== false) {
+                    return $dt->format('Y-m-d');
+                }
+            }
+            try {
+                return Carbon::parse($v)->format('Y-m-d');
+            } catch (\Throwable $e) {
+                return null;
+            }
+        };
+
+        $parseAngka = function ($v) {
+            if ($v === null || $v === '') {
+                return null;
+            }
+            if (is_numeric($v)) {
+                return (float) $v;
+            }
+            $s = trim(str_ireplace(['rp', ' '], '', (string) $v));
+            $s = str_replace(['(', ')'], ['-', ''], $s); // (123) = minus
+            if (str_contains($s, ',') && str_contains($s, '.')) {
+                $s = str_replace('.', '', $s);
+                $s = str_replace(',', '.', $s);
+            } elseif (str_contains($s, ',')) {
+                // 1,500,000 = ribuan; 1500,50 = desimal koma
+                $s = preg_match('/,\d{3}(?:,|$)/', $s) ? str_replace(',', '', $s) : str_replace(',', '.', $s);
+            } elseif (substr_count($s, '.') > 1 || preg_match('/\.\d{3}$/', $s)) {
+                $s = str_replace('.', '', $s); // 1.500.000 = ribuan
+            }
+            return is_numeric($s) ? (float) $s : null;
+        };
+
+        $get = function ($row, $field) use ($colMap) {
+            if (!isset($colMap[$field])) {
+                return null;
+            }
+            $v = $row[$colMap[$field]] ?? null;
+            if (is_string($v)) {
+                $v = trim($v);
+            }
+            return ($v === '' ? null : $v);
+        };
+
+        $now = now();
+        $inserts = [];
+        $warnings = [];
+        $skipped = 0;
+
+        foreach (array_slice($rows, 1, null, true) as $rIdx => $row) {
+            $rowNum = $rIdx + 1; // nomor baris di Excel
+
+            $adaIsi = false;
+            foreach ($colMap as $idx) {
+                $v = $row[$idx] ?? null;
+                if ($v !== null && trim((string) $v) !== '') {
+                    $adaIsi = true;
+                    break;
+                }
+            }
+            if (!$adaIsi) {
+                $skipped++;
+                continue;
+            }
+
+            $data = [
+                'no_agenda' => $get($row, 'no_agenda'),
+                'tanggal' => $parseTanggal($get($row, 'tanggal')),
+                'penerima' => $get($row, 'penerima'),
+                'uraian' => $get($row, 'uraian'),
+                'keterangan' => $get($row, 'keterangan'),
+                'debet' => 0,
+                'kredit' => $parseAngka($get($row, 'kredit')) ?? 0,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+
+            foreach ($refMaps as $field => [$dbCol, $label, $map]) {
+                $nama = $get($row, $field);
+                $data[$dbCol] = null;
+                if ($nama !== null) {
+                    $id = $map[$normNama($nama)] ?? null;
+                    if ($id === null) {
+                        $warnings[] = "Baris {$rowNum}: {$label} \"{$nama}\" tidak ada di master — dikosongkan";
+                    }
+                    $data[$dbCol] = $id;
+                }
+            }
+
+            $inserts[] = $data;
+        }
+
+        if (empty($inserts)) {
+            return response()->json(['message' => 'Tidak ada baris berisi data untuk diimport.'], 422);
+        }
+
+        try {
+            DB::transaction(function () use ($inserts) {
+                foreach (array_chunk($inserts, 500) as $chunk) {
+                    BankKeluar::insert($chunk);
+                }
+            });
+        } catch (\Throwable $e) {
+            \Log::error('importFromTemplate gagal menyimpan: ' . $e->getMessage());
+            return response()->json(['message' => 'Import gagal saat menyimpan: ' . $e->getMessage()], 500);
+        }
+
+        $pesan = count($inserts) . ' baris berhasil diimport.';
+        if ($skipped > 0) {
+            $pesan .= " {$skipped} baris kosong dilewati.";
+        }
+        if (!empty($warnings)) {
+            $pesan .= ' ' . count($warnings) . ' nama referensi tidak dikenali (dikosongkan).';
+        }
+
+        return response()->json([
+            'success' => $pesan,
+            'imported' => count($inserts),
+            'skipped' => $skipped,
+            'warnings' => count($warnings),
+            'warning_details' => array_slice($warnings, 0, 15),
+        ]);
+    }
 
     public function edit(string $id)
     {

@@ -148,14 +148,22 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/report/data', [BankKeluarController::class, 'reportData'])
             ->name('report.data');
 
+        // Import CSV lama (fuzzy-match) — khusus role programmer
         Route::post('/importExcel', [BankKeluarController::class, 'importExcel'])
-            ->name('importExcel');
+            ->name('importExcel')->middleware('check_role:programmer');
 
         Route::post('/preview-import', [BankKeluarController::class, 'previewImport'])
-            ->name('previewImport');
+            ->name('previewImport')->middleware('check_role:programmer');
 
         Route::post('/confirm-import', [BankKeluarController::class, 'confirmImport'])
-            ->name('confirmImport');
+            ->name('confirmImport')->middleware('check_role:programmer');
+
+        // Import mandiri berbasis template (semua user halaman ini)
+        Route::get('/template-import', [BankKeluarController::class, 'downloadTemplateImport'])
+            ->name('templateImport');
+
+        Route::post('/import-template', [BankKeluarController::class, 'importFromTemplate'])
+            ->name('importTemplate');
 
         Route::post('/preview-agenda', [BankKeluarController::class, 'previewAgenda'])
             ->name('previewAgenda');

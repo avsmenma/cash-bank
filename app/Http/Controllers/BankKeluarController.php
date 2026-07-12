@@ -3419,10 +3419,8 @@ class BankKeluarController extends Controller
             return response()->json(['message' => 'Import gagal saat menyimpan: ' . $e->getMessage()], 500);
         }
 
+        // Baris kosong (termasuk sisa baris template) dilewati diam-diam
         $pesan = count($inserts) . ' baris berhasil diimport.';
-        if ($skipped > 0) {
-            $pesan .= " {$skipped} baris kosong dilewati.";
-        }
         if (!empty($warnings)) {
             $pesan .= ' ' . count($warnings) . ' nama referensi tidak dikenali (dikosongkan).';
         }

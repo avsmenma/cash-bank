@@ -437,7 +437,14 @@
                 if (!$cell || !$cell.length || $cell.hasClass('cb-editing-cell')) return;
                 $('#example3 tbody td.cb-active-cell').removeClass('cb-active-cell');
                 activeCell = $cell;
-                activeCell.addClass('cb-active-cell').focus();
+                activeCell.addClass('cb-active-cell');
+                // preventScroll saat skipScroll: aktivasi otomatis tidak boleh
+                // membuat halaman melompat ke posisi sel
+                try {
+                    activeCell[0].focus({ preventScroll: !!options.skipScroll });
+                } catch (err) {
+                    activeCell.focus();
+                }
                 if (!options.skipScroll && activeCell[0] && activeCell[0].scrollIntoView) {
                     activeCell[0].scrollIntoView({ block: 'nearest', inline: 'nearest' });
                 }
@@ -493,6 +500,15 @@
                 }
                 if (activeCell && activeCell.length && !$.contains(document, activeCell[0])) {
                     activeCell = null;
+                }
+                // Saat halaman baru dibuka: sel pertama langsung aktif tanpa
+                // harus diklik dulu (keyboard navigasi langsung jalan)
+                if (!activeCell || !activeCell.length) {
+                    var $pertama = $('#example3 tbody td.cb-spreadsheet-cell').first();
+                    if ($pertama.length) {
+                        shiftSelectAnchorCell = $pertama;
+                        setActiveCell($pertama, { skipScroll: true });
+                    }
                 }
             }
 

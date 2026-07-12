@@ -158,12 +158,16 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/confirm-import', [BankKeluarController::class, 'confirmImport'])
             ->name('confirmImport')->middleware('check_role:programmer');
 
-        // Import mandiri berbasis template (semua user halaman ini)
+        // Import mandiri berbasis template (semua user halaman ini):
+        // preview dulu (tanpa simpan), lalu konfirmasi untuk menyimpan
         Route::get('/template-import', [BankKeluarController::class, 'downloadTemplateImport'])
             ->name('templateImport');
 
-        Route::post('/import-template', [BankKeluarController::class, 'importFromTemplate'])
-            ->name('importTemplate');
+        Route::post('/preview-template', [BankKeluarController::class, 'previewTemplate'])
+            ->name('previewTemplate');
+
+        Route::post('/confirm-template', [BankKeluarController::class, 'confirmTemplate'])
+            ->name('confirmTemplate');
 
         Route::post('/preview-agenda', [BankKeluarController::class, 'previewAgenda'])
             ->name('previewAgenda');

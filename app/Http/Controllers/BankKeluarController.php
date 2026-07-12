@@ -3294,7 +3294,8 @@ class BankKeluarController extends Controller
             '   Nama yang tidak dikenali akan dikosongkan otomatis saat import (data lain tetap masuk).',
             '6. Isi berurutan dari kiri: dropdown Sub Kriteria menyesuaikan Kriteria yang dipilih',
             '   di baris yang sama, dan Item Sub Kriteria menyesuaikan Sub Kriteria (seperti di aplikasi).',
-            '7. Simpan file, lalu upload lewat tombol Import Excel di halaman Bank Keluar.',
+            '7. Simpan file, upload lewat tombol Import Excel, periksa hasil baca di pratinjau,',
+            '   lalu tekan Konfirmasi Import. Data baru tersimpan setelah konfirmasi.',
         ];
         foreach ($petunjuk as $i => $line) {
             $ptr->setCellValue('A' . ($i + 1), $line);
@@ -3313,35 +3314,28 @@ class BankKeluarController extends Controller
     }
 
     /**
-     * IMPORT MANDIRI — proses file template yang sudah diisi user.
-     * Kolom boleh kosong (semua kolom bank_keluars nullable); nama referensi
-     * dicocokkan exact (case-insensitive), yang tidak dikenal di-null-kan
-     * dan dilaporkan sebagai peringatan tanpa menggagalkan baris.
+     * IMPORT MANDIRI — parser inti file template. Dipakai previewTemplate
+     * (tanpa simpan) dan confirmTemplate (simpan). Kolom boleh kosong; nama
+     * referensi dicocokkan exact (case-insensitive) dengan aturan kaskade.
+     * Mengembalikan ['error' => pesan] atau ['inserts', 'warnings', 'preview'].
      */
-    public function importFromTemplate(Request $request)
+    private function parseTemplateKeluar(string $path): array
     {
-        $request->validate(['fileTemplate' => 'required|file|max:20480']);
-        $ext = strtolower($request->file('fileTemplate')->getClientOriginalExtension());
-        if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
-            return response()->json(['message' => 'File harus berformat xlsx, xls, atau csv.'], 422);
-        }
-
         ini_set('memory_limit', '512M');
         set_time_limit(300);
 
         try {
-            $path = $request->file('fileTemplate')->getRealPath();
             $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($path);
             $spreadsheet = $reader->load($path);
             $sheet = $spreadsheet->getSheetByName('Data') ?? $spreadsheet->getSheet(0);
             $rows = $sheet->toArray(null, true, false, false);
         } catch (\Throwable $e) {
-            \Log::error('importFromTemplate gagal membaca file: ' . $e->getMessage());
-            return response()->json(['message' => 'Gagal membaca file: ' . $e->getMessage()], 422);
+            \Log::error('parseTemplateKeluar gagal membaca file: ' . $e->getMessage());
+            return ['error' => 'Gagal membaca file: ' . $e->getMessage()];
         }
 
         if (count($rows) < 2) {
-            return response()->json(['message' => 'File tidak berisi baris data.'], 422);
+            return ['error' => 'File tidak berisi baris data.'];
         }
 
         // ── Peta header → field (urutan kolom bebas, dicocokkan by nama) ──
@@ -3373,9 +3367,7 @@ class BankKeluarController extends Controller
             }
         }
         if (!isset($colMap['uraian']) && !isset($colMap['kredit'])) {
-            return response()->json([
-                'message' => 'Judul kolom tidak dikenali. Gunakan template dari tombol "Download Template".',
-            ], 422);
+            return ['error' => 'Judul kolom tidak dikenali. Gunakan template dari tombol "Download Template".'];
         }
 
         // ── Peta referensi: nama (dinormalkan) → id ──
@@ -3412,6 +3404,10 @@ class BankKeluarController extends Controller
             ->get(['id_item_sub_kriteria', 'id_sub_kriteria', 'nama_item_sub_kriteria']) as $it) {
             $itemLookup[$normNama($it->nama_item_sub_kriteria)][] = $it;
         }
+
+        // Nama per id — untuk menampilkan induk yang terisi otomatis di preview
+        $namaKategoriById = KategoriKriteria::pluck('nama_kriteria', 'id_kategori_kriteria');
+        $namaSubById = SubKriteria::pluck('nama_sub_kriteria', 'id_sub_kriteria');
 
         $parseTanggal = function ($v) {
             if ($v === null || $v === '') {
@@ -3473,6 +3469,7 @@ class BankKeluarController extends Controller
         $now = now();
         $inserts = [];
         $warnings = [];
+        $preview = [];
         $skipped = 0;
 
         foreach (array_slice($rows, 1, null, true) as $rIdx => $row) {
@@ -3491,6 +3488,8 @@ class BankKeluarController extends Controller
                 continue;
             }
 
+            $warnFields = [];
+
             $data = [
                 'no_agenda' => $get($row, 'no_agenda'),
                 'tanggal' => $parseTanggal($get($row, 'tanggal')),
@@ -3503,6 +3502,17 @@ class BankKeluarController extends Controller
                 'updated_at' => $now,
             ];
 
+            $rawTanggal = $get($row, 'tanggal');
+            if ($rawTanggal !== null && $data['tanggal'] === null) {
+                $warnings[] = "Baris {$rowNum}: Tanggal \"{$rawTanggal}\" tidak dikenali — dikosongkan";
+                $warnFields['tanggal'] = true;
+            }
+            $rawKredit = $get($row, 'kredit');
+            if ($rawKredit !== null && $parseAngka($rawKredit) === null) {
+                $warnings[] = "Baris {$rowNum}: Kredit \"{$rawKredit}\" bukan angka — diisi 0";
+                $warnFields['kredit'] = true;
+            }
+
             foreach ($refMaps as $field => [$dbCol, $label, $map]) {
                 $nama = $get($row, $field);
                 $data[$dbCol] = null;
@@ -3510,6 +3520,7 @@ class BankKeluarController extends Controller
                     $id = $map[$normNama($nama)] ?? null;
                     if ($id === null) {
                         $warnings[] = "Baris {$rowNum}: {$label} \"{$nama}\" tidak ada di master — dikosongkan";
+                        $warnFields[$field] = true;
                     }
                     $data[$dbCol] = $id;
                 }
@@ -3523,6 +3534,7 @@ class BankKeluarController extends Controller
                 $cands = $subLookup[$normNama($namaSub)] ?? [];
                 if (empty($cands)) {
                     $warnings[] = "Baris {$rowNum}: Sub Kriteria \"{$namaSub}\" tidak ada di master — dikosongkan";
+                    $warnFields['sub'] = true;
                 } elseif ($data['id_kategori_kriteria'] !== null) {
                     $cocok = array_values(array_filter(
                         $cands,
@@ -3530,6 +3542,7 @@ class BankKeluarController extends Controller
                     ));
                     if (empty($cocok)) {
                         $warnings[] = "Baris {$rowNum}: Sub Kriteria \"{$namaSub}\" bukan bagian dari Kriteria yang dipilih — dikosongkan";
+                        $warnFields['sub'] = true;
                     } else {
                         $data['id_sub_kriteria'] = $cocok[0]->id_sub_kriteria;
                     }
@@ -3547,6 +3560,7 @@ class BankKeluarController extends Controller
                 $cands = $itemLookup[$normNama($namaItem)] ?? [];
                 if (empty($cands)) {
                     $warnings[] = "Baris {$rowNum}: Item Sub Kriteria \"{$namaItem}\" tidak ada di master — dikosongkan";
+                    $warnFields['item'] = true;
                 } elseif ($data['id_sub_kriteria'] !== null) {
                     $cocok = array_values(array_filter(
                         $cands,
@@ -3554,6 +3568,7 @@ class BankKeluarController extends Controller
                     ));
                     if (empty($cocok)) {
                         $warnings[] = "Baris {$rowNum}: Item Sub Kriteria \"{$namaItem}\" bukan bagian dari Sub Kriteria yang dipilih — dikosongkan";
+                        $warnFields['item'] = true;
                     } else {
                         $data['id_item_sub_kriteria'] = $cocok[0]->id_item_sub_kriteria;
                     }
@@ -3566,6 +3581,7 @@ class BankKeluarController extends Controller
                         ));
                         if (empty($cands2)) {
                             $warnings[] = "Baris {$rowNum}: Item Sub Kriteria \"{$namaItem}\" bukan bagian dari Kriteria yang dipilih — dikosongkan";
+                            $warnFields['item'] = true;
                         }
                     }
                     if (!empty($cands2)) {
@@ -3578,35 +3594,114 @@ class BankKeluarController extends Controller
             }
 
             $inserts[] = $data;
+
+            // Baris pratinjau: tampilkan tulisan asli user; induk yang terisi
+            // otomatis (dari sub/item) ditampilkan dengan penanda "(otomatis)"
+            $preview[] = [
+                'baris' => $rowNum,
+                'agenda' => $data['no_agenda'],
+                'tanggal' => $data['tanggal']
+                    ? Carbon::parse($data['tanggal'])->format('d/m/Y')
+                    : ($rawTanggal !== null ? (string) $rawTanggal : null),
+                'sumber' => $get($row, 'sumber'),
+                'bank' => $get($row, 'bank'),
+                'kategori' => $get($row, 'kategori')
+                    ?? ($data['id_kategori_kriteria'] !== null
+                        ? ($namaKategoriById[$data['id_kategori_kriteria']] ?? '') . ' (otomatis)'
+                        : null),
+                'sub' => $namaSub
+                    ?? ($data['id_sub_kriteria'] !== null
+                        ? ($namaSubById[$data['id_sub_kriteria']] ?? '') . ' (otomatis)'
+                        : null),
+                'item' => $namaItem,
+                'jenis' => $get($row, 'jenis'),
+                'penerima' => $data['penerima'],
+                'uraian' => $data['uraian'],
+                'kredit' => number_format($data['kredit'], 0, ',', '.'),
+                'warn' => $warnFields,
+            ];
         }
 
-        if (empty($inserts)) {
+        return [
+            'inserts' => $inserts,
+            'warnings' => $warnings,
+            'preview' => $preview,
+            'skipped' => $skipped,
+        ];
+    }
+
+    /**
+     * IMPORT MANDIRI — PREVIEW: parse file tanpa menyimpan apa pun.
+     * File ditahan sementara; baru disimpan saat confirmTemplate.
+     */
+    public function previewTemplate(Request $request)
+    {
+        $request->validate(['fileTemplate' => 'required|file|max:20480']);
+        $ext = strtolower($request->file('fileTemplate')->getClientOriginalExtension());
+        if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
+            return response()->json(['message' => 'File harus berformat xlsx, xls, atau csv.'], 422);
+        }
+
+        $tempPath = $request->file('fileTemplate')->store('import_temp_keluar', 'local');
+        session(['keluar_template_temp' => $tempPath]);
+
+        $hasil = $this->parseTemplateKeluar(
+            \Illuminate\Support\Facades\Storage::disk('local')->path($tempPath)
+        );
+        if (isset($hasil['error'])) {
+            return response()->json(['message' => $hasil['error']], 422);
+        }
+
+        return response()->json([
+            'total' => count($hasil['inserts']),
+            'warnings' => count($hasil['warnings']),
+            'warning_details' => array_slice($hasil['warnings'], 0, 50),
+            'rows' => $hasil['preview'],
+        ]);
+    }
+
+    /**
+     * IMPORT MANDIRI — KONFIRMASI: simpan data dari file yang sudah di-preview.
+     */
+    public function confirmTemplate(Request $request)
+    {
+        $tempPath = session('keluar_template_temp');
+        if (!$tempPath || !\Illuminate\Support\Facades\Storage::disk('local')->exists($tempPath)) {
+            return response()->json(['message' => 'File sementara tidak ditemukan. Silakan upload ulang.'], 422);
+        }
+
+        $hasil = $this->parseTemplateKeluar(
+            \Illuminate\Support\Facades\Storage::disk('local')->path($tempPath)
+        );
+        if (isset($hasil['error'])) {
+            return response()->json(['message' => $hasil['error']], 422);
+        }
+        if (empty($hasil['inserts'])) {
             return response()->json(['message' => 'Tidak ada baris berisi data untuk diimport.'], 422);
         }
 
         try {
-            DB::transaction(function () use ($inserts) {
-                foreach (array_chunk($inserts, 500) as $chunk) {
+            DB::transaction(function () use ($hasil) {
+                foreach (array_chunk($hasil['inserts'], 500) as $chunk) {
                     BankKeluar::insert($chunk);
                 }
             });
         } catch (\Throwable $e) {
-            \Log::error('importFromTemplate gagal menyimpan: ' . $e->getMessage());
+            \Log::error('confirmTemplate gagal menyimpan: ' . $e->getMessage());
             return response()->json(['message' => 'Import gagal saat menyimpan: ' . $e->getMessage()], 500);
         }
 
-        // Baris kosong (termasuk sisa baris template) dilewati diam-diam
-        $pesan = count($inserts) . ' baris berhasil diimport.';
-        if (!empty($warnings)) {
-            $pesan .= ' ' . count($warnings) . ' nama referensi tidak dikenali (dikosongkan).';
+        \Illuminate\Support\Facades\Storage::disk('local')->delete($tempPath);
+        session()->forget('keluar_template_temp');
+
+        $pesan = count($hasil['inserts']) . ' baris berhasil diimport.';
+        if (!empty($hasil['warnings'])) {
+            $pesan .= ' (' . count($hasil['warnings']) . ' peringatan — kolom terkait dikosongkan)';
         }
 
         return response()->json([
             'success' => $pesan,
-            'imported' => count($inserts),
-            'skipped' => $skipped,
-            'warnings' => count($warnings),
-            'warning_details' => array_slice($warnings, 0, 15),
+            'imported' => count($hasil['inserts']),
         ]);
     }
 

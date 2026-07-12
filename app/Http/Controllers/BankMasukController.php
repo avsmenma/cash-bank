@@ -151,6 +151,13 @@ class BankMasukController extends Controller
             ->editColumn('tanggal', function ($row) {
                 return \Carbon\Carbon::parse($row->tanggal)->translatedFormat('d F Y');
             })
+            // Nilai mentah untuk editor inline (spreadsheet cell)
+            ->addColumn('tanggal_raw', function ($row) {
+                return $row->tanggal ? \Carbon\Carbon::parse($row->tanggal)->format('Y-m-d') : '';
+            })
+            ->addColumn('debet_raw', function ($row) {
+                return (float) $row->debet;
+            })
             ->addColumn('aksi', function ($row) {
                 return '
                 <button class="btn btn-warning btn-sm" 
@@ -898,7 +905,19 @@ class BankMasukController extends Controller
     public function update(Request $request, string $id)
     {
         $masuk = BankMasuk::findOrFail($id);
-        $masuk->update($request->except(['_method', '_token']));
+
+        // Normalisasi dari editor inline: '' / '-' pada kolom referensi = null
+        $data = $request->except(['_method', '_token']);
+        foreach (['id_sumber_dana', 'id_bank_tujuan', 'id_kategori_kriteria', 'id_jenis_pembayaran'] as $f) {
+            if (array_key_exists($f, $data) && ($data[$f] === '' || $data[$f] === '-')) {
+                $data[$f] = null;
+            }
+        }
+        if (array_key_exists('tanggal', $data) && $data['tanggal'] === '') {
+            $data['tanggal'] = null;
+        }
+
+        $masuk->update($data);
 
         if ($request->ajax()) {
             return response()->json(['success' => 'Data berhasil diperbarui']);

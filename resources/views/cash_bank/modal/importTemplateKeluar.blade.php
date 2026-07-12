@@ -60,7 +60,7 @@
 
         {{-- Tabel preview --}}
         <div style="max-height:400px; overflow-y:auto; overflow-x:auto;">
-          <table class="table table-bordered table-sm mb-0" style="font-size:11px; min-width:1500px;">
+          <table class="table table-bordered table-sm mb-0 tpl-preview-table" style="font-size:11px; min-width:1500px;">
             <thead>
               <tr style="background:#0d3b6e; color:#fff; position:sticky; top:0; z-index:1;">
                 <th style="width:52px;">Baris</th>
@@ -96,6 +96,12 @@
 </div>
 
 @push('scripts')
+<style>
+    /* Judul kolom preview harus putih — CSS global halaman menimpanya jadi gelap */
+    .tpl-preview-table thead th {
+        color: #fff !important;
+    }
+</style>
 <script>
 $(document).ready(function () {
     function escTpl(v) {

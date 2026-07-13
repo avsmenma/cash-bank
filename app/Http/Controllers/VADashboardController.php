@@ -65,7 +65,15 @@ class VADashboardController extends Controller
             return $item;
         });
 
-        return view('cash_bank.va.dashboard', compact('va', 'transactions'));
+        // Daftar tahun untuk dropdown filter
+        $years = $transactions->pluck('tanggal')
+            ->filter()
+            ->map(fn ($t) => substr((string) $t, 0, 4))
+            ->unique()
+            ->sortDesc()
+            ->values();
+
+        return view('cash_bank.va.dashboard', compact('va', 'transactions', 'years'));
     }
 
     /**

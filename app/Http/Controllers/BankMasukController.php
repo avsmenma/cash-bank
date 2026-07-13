@@ -571,6 +571,19 @@ class BankMasukController extends Controller
             $sheet->setDataValidation($dataCol . '2', $dv);
         }
 
+        // ── Rumus otomatis Bank Tujuan (D) dari Uraian (H) ──
+        // Uraian umumnya diawali 11 digit nomor VA (mis. "81029155507|...");
+        // 11 karakter pertama dicocokkan ke awalan nama di daftar Bank Tujuan.
+        // Memilih manual dari dropdown tetap bisa (menimpa rumus di baris itu).
+        if (count($refLists[1][1]) > 0) {
+            for ($r = 2; $r <= 1000; $r++) {
+                $sheet->setCellValue(
+                    "D{$r}",
+                    "=IF(H{$r}=\"\",\"\",IFERROR(INDEX(RefBMD,MATCH(LEFT(TRIM(H{$r}),11)&\"*\",RefBMD,0)),\"\"))"
+                );
+            }
+        }
+
         // ── Sheet Petunjuk ──
         $ptr = $spreadsheet->createSheet();
         $ptr->setTitle('Petunjuk');
@@ -585,7 +598,10 @@ class BankMasukController extends Controller
             '5. Sumber Dana, Bank Tujuan, Kategori, dan Jenis Pembayaran harus sama persis dengan',
             '   daftar di sheet "Referensi" — gunakan dropdown yang tersedia. Nama yang tidak',
             '   dikenali akan dikosongkan otomatis saat import (data lain tetap masuk).',
-            '6. Simpan file, upload lewat tombol Import Excel, periksa hasil baca di pratinjau,',
+            '6. Bank Tujuan terisi OTOMATIS bila Uraian diawali 11 digit nomor VA',
+            '   (contoh "81029155507| MCM InhouseTrf ..."). Tidak perlu memilih satu per satu;',
+            '   pilihan manual lewat dropdown tetap bisa dan akan menimpa isian otomatisnya.',
+            '7. Simpan file, upload lewat tombol Import Excel, periksa hasil baca di pratinjau,',
             '   lalu tekan Konfirmasi Import. Data baru tersimpan setelah konfirmasi.',
         ];
         foreach ($petunjuk as $i => $line) {
@@ -678,6 +694,16 @@ class BankMasukController extends Controller
             'kategori' => ['id_kategori_kriteria', 'Kategori', $buildMap(KategoriKriteria::where('tipe', 'Masuk')->pluck('id_kategori_kriteria', 'nama_kriteria'))],
             'jenis' => ['id_jenis_pembayaran', 'Jenis Pembayaran', $buildMap(JenisPembayaran::pluck('id_jenis_pembayaran', 'nama_jenis_pembayaran'))],
         ];
+
+        // Peta nomor VA (11 digit awalan nama Bank Tujuan) → id,
+        // untuk mengisi Bank Tujuan otomatis dari 11 digit pertama Uraian
+        $namaBankById = BankTujuan::pluck('nama_tujuan', 'id_bank_tujuan');
+        $bankByVa = [];
+        foreach ($namaBankById as $idBank => $namaBank) {
+            if (preg_match('/^\s*(\d{11})/', (string) $namaBank, $m)) {
+                $bankByVa[$m[1]] = $idBank;
+            }
+        }
 
         $parseTanggal = function ($v) {
             if ($v === null || $v === '') {
@@ -784,6 +810,10 @@ class BankMasukController extends Controller
 
             foreach ($refMaps as $field => [$dbCol, $label, $map]) {
                 $nama = $get($row, $field);
+                // Hasil rumus error di Excel (mis. #N/A) diperlakukan sebagai kosong
+                if (is_string($nama) && preg_match('~^#(N/A|REF!|VALUE!|NAME\?|DIV/0!|NULL!|NUM!)$~', $nama)) {
+                    $nama = null;
+                }
                 $data[$dbCol] = null;
                 if ($nama !== null) {
                     $id = $map[$normNama($nama)] ?? null;
@@ -795,6 +825,17 @@ class BankMasukController extends Controller
                 }
             }
 
+            // Bank Tujuan otomatis dari Uraian: bila kolom Bank kosong/tidak dikenal,
+            // 11 digit pertama Uraian (nomor VA) menentukan bank tujuannya —
+            // fallback dari rumus template, tetap jalan meski rumusnya dihapus user.
+            $bankOtomatis = false;
+            if ($data['id_bank_tujuan'] === null && $data['uraian'] !== null
+                && preg_match('/^\s*(\d{11})/', (string) $data['uraian'], $m)
+                && isset($bankByVa[$m[1]])) {
+                $data['id_bank_tujuan'] = $bankByVa[$m[1]];
+                $bankOtomatis = true;
+            }
+
             $inserts[] = $data;
 
             $preview[] = [
@@ -804,7 +845,9 @@ class BankMasukController extends Controller
                     ? \Carbon\Carbon::parse($data['tanggal'])->format('d/m/Y')
                     : ($rawTanggal !== null ? (string) $rawTanggal : null),
                 'sumber' => $get($row, 'sumber'),
-                'bank' => $get($row, 'bank'),
+                'bank' => $bankOtomatis
+                    ? ($namaBankById[$data['id_bank_tujuan']] ?? '') . ' (otomatis)'
+                    : $get($row, 'bank'),
                 'kategori' => $get($row, 'kategori'),
                 'jenis' => $get($row, 'jenis'),
                 'penerima' => $data['penerima'],

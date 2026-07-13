@@ -192,7 +192,6 @@
     </section>
 
     @push('scripts')
-        <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
         <script>
             $(function () {
                 var table = $('#tableDetailVA').DataTable({
@@ -253,71 +252,15 @@
                     '<i class="fas fa-file-excel"></i> Download Excel</button>';
                 $('#tableDetailVA_length').css('display', 'inline-flex').css('align-items', 'center').append(btnHtml);
 
-                // Download Excel click handler
+                // Download Excel — export server-side (seluruh baris sesuai filter bulan/tahun)
                 $(document).on('click', '#btnDownloadExcel', function () {
-                    var wb = XLSX.utils.book_new();
-                    var wsData = [];
-                    var vaName = @json($va->nama_tujuan);
-
-                    // Title row
-                    wsData.push(['Detail Transaksi VA - ' + vaName]);
-                    wsData.push([]);
-
-                    // Header row
-                    wsData.push(['No', 'Tanggal', 'Bank Tujuan', 'Penerima/Dari', 'Uraian', 'Debet', 'Kredit', 'Saldo Akhir']);
-
-                    // Get currently displayed rows
-                    var rows = table.rows({ search: 'applied', page: 'current' }).nodes();
-
-                    $(rows).each(function (idx) {
-                        var cells = $(this).find('td');
-                        wsData.push([
-                            cells.eq(0).text().trim(),
-                            cells.eq(1).text().trim(),
-                            cells.eq(2).text().trim(),
-                            cells.eq(3).text().trim(),
-                            cells.eq(4).text().trim(),
-                            cells.eq(5).text().trim(),
-                            cells.eq(6).text().trim(),
-                            cells.eq(7).text().trim()
-                        ]);
-                    });
-
-                    // Total row from tfoot
-                    var tfoot = $('#tableDetailVA tfoot tr');
-                    if (tfoot.length) {
-                        var footCells = tfoot.find('td');
-                        wsData.push([
-                            '', '', '', '', 'Total',
-                            footCells.eq(1).text().trim(),
-                            footCells.eq(2).text().trim(),
-                            footCells.eq(3).text().trim()
-                        ]);
-                    }
-
-                    var ws = XLSX.utils.aoa_to_sheet(wsData);
-
-                    // Set column widths
-                    ws['!cols'] = [
-                        { wch: 5 },
-                        { wch: 22 },
-                        { wch: 28 },
-                        { wch: 22 },
-                        { wch: 55 },
-                        { wch: 16 },
-                        { wch: 16 },
-                        { wch: 16 }
-                    ];
-
-                    // Merge title row
-                    ws['!merges'] = [
-                        { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }
-                    ];
-
-                    XLSX.utils.book_append_sheet(wb, ws, 'Detail VA');
-
-                    var slug = vaName.replace(/[^a-zA-Z0-9]/g, '_');
-                    XLSX.writeFile(wb, 'Detail_VA_' + slug + '.xlsx');
+                    var params = new URLSearchParams();
+                    var bulan = $('#filterBulan').val();
+                    var tahun = $('#filterTahun').val();
+                    if (bulan) params.set('bulan', bulan);
+                    if (tahun) params.set('tahun', tahun);
+                    var qs = params.toString();
+                    window.location.href = '{{ route('va.export-excel') }}' + (qs ? '?' + qs : '');
                 });
             });
         </script>

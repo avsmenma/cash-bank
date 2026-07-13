@@ -1,6 +1,7 @@
 @extends("layouts/va_layout")
 @section('content')
     @push('styles')
+        <link rel="stylesheet" href="{{ asset('plugins/tabulator/tabulator_semanticui.min.css') }}">
         <style>
             /* Tampilan kompak: setara zoom browser 80%, agar seluruh tabel
                terlihat dalam satu layar pada web size 100% */
@@ -9,15 +10,36 @@
                 zoom: 0.8;
             }
 
-            #tableDetailVA {
-                table-layout: auto !important;
-                width: 100% !important;
+            /* Tabulator — header & baris total navy, zebra, teks wrap */
+            #tableDetailVA .tabulator-header,
+            #tableDetailVA .tabulator-header .tabulator-col {
+                background-color: #1E3A5F !important;
+                color: #fff !important;
+                border-color: rgba(255, 255, 255, 0.25) !important;
             }
 
-            #tableDetailVA th,
-            #tableDetailVA td {
-                white-space: nowrap;
-                vertical-align: middle;
+            #tableDetailVA .tabulator-header .tabulator-col .tabulator-col-title {
+                color: #fff;
+                font-weight: 600;
+                white-space: normal;
+            }
+
+            #tableDetailVA .tabulator-row.tabulator-row-even {
+                background-color: #F5F8FB;
+            }
+
+            #tableDetailVA .tabulator-cell {
+                white-space: normal;
+                overflow-wrap: break-word;
+            }
+
+            #tableDetailVA .tabulator-calcs-holder,
+            #tableDetailVA .tabulator-row.tabulator-calcs-bottom,
+            #tableDetailVA .tabulator-row.tabulator-calcs-bottom .tabulator-cell {
+                background-color: #1E3A5F !important;
+                color: #fff !important;
+                font-weight: 700;
+                border-color: rgba(255, 255, 255, 0.25) !important;
             }
 
             .text-debet {
@@ -96,7 +118,7 @@
                         <hr>
 
                         <div class="row mb-2">
-                            <div class="col-12 form-inline">
+                            <div class="col-12 d-flex align-items-center flex-wrap">
                                 <label for="filterBulan" class="mr-2 mb-0">Bulan</label>
                                 <select id="filterBulan" class="form-control form-control-sm mr-3">
                                     <option value="">Semua</option>
@@ -112,77 +134,21 @@
                                         <option value="{{ $y }}">{{ $y }}</option>
                                     @endforeach
                                 </select>
+
+                                <button type="button" class="btn-download-excel ml-3" id="btnDownloadExcel">
+                                    <i class="fas fa-file-excel"></i> Download Excel
+                                </button>
+
+                                <div class="ml-auto">
+                                    <input type="text" id="searchVA" class="form-control form-control-sm"
+                                        placeholder="Cari transaksi..." style="min-width: 220px;">
+                                </div>
                             </div>
                         </div>
 
                         <div class="row">
-                            <div class="col-12 table-responsive">
-                                <table id="tableDetailVA" class="table table-bordered table-hover table-striped">
-                                    <thead class="bg-primary text-white">
-                                        <tr>
-                                            <th style="width: 40px;">No</th>
-                                            <th>Tanggal</th>
-                                            <th>Bank Tujuan</th>
-                                            <th>Penerima/Dari</th>
-                                            <th>Uraian</th>
-                                            <th class="text-right">Debet</th>
-                                            <th class="text-right">Kredit</th>
-                                            <th class="text-right">Saldo Akhir</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @forelse ($transactions as $i => $trx)
-                                            @php
-                                                $tglObj = $trx['tanggal'] ? \Carbon\Carbon::parse($trx['tanggal']) : null;
-                                            @endphp
-                                            <tr data-bulan="{{ $tglObj ? $tglObj->format('m') : '' }}"
-                                                data-tahun="{{ $tglObj ? $tglObj->format('Y') : '' }}"
-                                                data-debet="{{ $trx['debet'] }}"
-                                                data-kredit="{{ $trx['kredit'] }}"
-                                                data-saldo="{{ $trx['saldo'] }}">
-                                                <td>{{ $i + 1 }}</td>
-                                                <td data-order="{{ ($tglObj ? $tglObj->format('Y-m-d') : '0000-00-00') . '-' . str_pad($i, 7, '0', STR_PAD_LEFT) }}">
-                                                    {{ $tglObj ? $tglObj->translatedFormat('d F Y') : '-' }}
-                                                </td>
-                                                <td>{{ $va->nama_tujuan }}</td>
-                                                <td>{{ $trx['penerima'] ?? '-' }}</td>
-                                                <td>{{ $trx['uraian'] ?? '-' }}</td>
-                                                <td class="text-right {{ $trx['debet'] > 0 ? 'text-debet' : '' }}">
-                                                    {{ $trx['debet'] > 0 ? number_format($trx['debet'], 0, ',', '.') : '-' }}
-                                                </td>
-                                                <td class="text-right {{ $trx['kredit'] > 0 ? 'text-kredit' : '' }}">
-                                                    {{ $trx['kredit'] > 0 ? number_format($trx['kredit'], 0, ',', '.') : '-' }}
-                                                </td>
-                                                <td class="text-right text-saldo">
-                                                    {{ number_format($trx['saldo'], 0, ',', '.') }}
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr>
-                                                <td colspan="8" class="text-center text-muted py-4">
-                                                    <i class="fas fa-inbox fa-2x d-block mb-2"></i>
-                                                    Belum ada transaksi untuk VA ini.
-                                                </td>
-                                            </tr>
-                                        @endforelse
-                                    </tbody>
-                                    @if($transactions->count() > 0)
-                                        <tfoot>
-                                            <tr class="bg-light font-weight-bold">
-                                                <td colspan="5" class="text-right">Total</td>
-                                                <td class="text-right text-debet" id="totDebet">
-                                                    {{ number_format($transactions->sum('debet'), 0, ',', '.') }}
-                                                </td>
-                                                <td class="text-right text-kredit" id="totKredit">
-                                                    {{ number_format($transactions->sum('kredit'), 0, ',', '.') }}
-                                                </td>
-                                                <td class="text-right text-saldo" id="totSaldo">
-                                                    {{ number_format($transactions->last()['saldo'], 0, ',', '.') }}
-                                                </td>
-                                            </tr>
-                                        </tfoot>
-                                    @endif
-                                </table>
+                            <div class="col-12">
+                                <div id="tableDetailVA"></div>
                             </div>
                         </div>
                     </div>
@@ -241,74 +207,133 @@
     </div>
 
     @push('scripts')
+        <script src="{{ asset('plugins/tabulator/tabulator.min.js') }}"></script>
         <script>
             $(function () {
-                var table = $('#tableDetailVA').DataTable({
-                    ordering: true,
-                    paging: true,
-                    searching: true,
-                    order: [[1, 'asc']],
-                    deferRender: true,
-                    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-                    columnDefs: [
-                        { orderable: false, targets: [0] }
+                var vaName = @json($va->nama_tujuan);
+                var vaRows = @json($transactions->values());
+                vaRows.forEach(function (r, i) {
+                    r.no = i + 1;
+                    r.bank = vaName;
+                });
+
+                var BULAN_NAMA = {
+                    '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
+                    '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
+                    '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
+                };
+
+                function fmtTanggal(t) {
+                    var s = String(t || '');
+                    if (s.length < 10) return '-';
+                    return s.substr(8, 2) + ' ' + (BULAN_NAMA[s.substr(5, 2)] || '') + ' ' + s.substr(0, 4);
+                }
+
+                function fmtRupiah(v) {
+                    return Math.round(v || 0).toLocaleString('id-ID');
+                }
+
+                function moneyCalcFormatter(cell) {
+                    return fmtRupiah(cell.getValue());
+                }
+
+                // Lebar kolom tarikan user tersimpan; setelah pernah ditarik,
+                // layout pindah ke fitData agar ukuran user dihormati apa adanya
+                var userSized = !!localStorage.getItem('tabulator-cb-va-detail-columns');
+
+                var table = new Tabulator('#tableDetailVA', {
+                    persistence: { columns: ['width'] },
+                    persistenceID: 'cb-va-detail',
+                    data: vaRows,
+                    layout: userSized ? 'fitData' : 'fitColumns',
+                    columnHeaderVertAlign: 'middle',
+                    movableColumns: false,
+                    columnDefaults: { headerSort: false, minWidth: 30, variableHeight: true },
+                    pagination: true,
+                    paginationSize: 10,
+                    paginationSizeSelector: [10, 25, 50, 100],
+                    paginationCounter: 'rows',
+                    placeholder: 'Belum ada transaksi untuk VA ini.',
+                    columns: [
+                        { title: 'No', field: 'no', width: 55, hozAlign: 'center' },
+                        {
+                            title: 'Tanggal', field: 'tanggal', width: 135, hozAlign: 'center',
+                            formatter: function (cell) { return fmtTanggal(cell.getValue()); }
+                        },
+                        { title: 'Bank Tujuan', field: 'bank', width: 190 },
+                        {
+                            title: 'Penerima/Dari', field: 'penerima', width: 150,
+                            formatter: function (cell) { return cell.getValue() || '-'; }
+                        },
+                        {
+                            title: 'Uraian', field: 'uraian', widthGrow: 3,
+                            formatter: function (cell) { return cell.getValue() || '-'; },
+                            bottomCalc: function () { return 'TOTAL'; }
+                        },
+                        {
+                            title: 'Debet', field: 'debet', width: 120, hozAlign: 'right',
+                            formatter: function (cell) {
+                                var v = cell.getValue() || 0;
+                                return v > 0 ? '<span class="text-debet">' + fmtRupiah(v) + '</span>' : '-';
+                            },
+                            bottomCalc: 'sum', bottomCalcFormatter: moneyCalcFormatter,
+                            bottomCalcParams: { precision: 0 }
+                        },
+                        {
+                            title: 'Kredit', field: 'kredit', width: 120, hozAlign: 'right',
+                            formatter: function (cell) {
+                                var v = cell.getValue() || 0;
+                                return v > 0 ? '<span class="text-kredit">' + fmtRupiah(v) + '</span>' : '-';
+                            },
+                            bottomCalc: 'sum', bottomCalcFormatter: moneyCalcFormatter,
+                            bottomCalcParams: { precision: 0 }
+                        },
+                        {
+                            title: 'Saldo Akhir', field: 'saldo', width: 135, hozAlign: 'right',
+                            formatter: function (cell) {
+                                return '<span class="text-saldo">' + fmtRupiah(cell.getValue()) + '</span>';
+                            },
+                            // Saldo baris terakhir yang tampil — saldo berjalan tetap kumulatif
+                            bottomCalc: function (values) {
+                                return values.length ? values[values.length - 1] : 0;
+                            },
+                            bottomCalcFormatter: moneyCalcFormatter
+                        }
                     ]
                 });
 
-                // Filter Bulan & Tahun — baca atribut data-bulan/data-tahun pada <tr>
-                $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-                    if (settings.nTable.id !== 'tableDetailVA') return true;
-                    var bulan = $('#filterBulan').val();
-                    var tahun = $('#filterTahun').val();
-                    if (!bulan && !tahun) return true;
-                    var $row = $(table.row(dataIndex).node());
-                    if (bulan && $row.attr('data-bulan') !== bulan) return false;
-                    if (tahun && $row.attr('data-tahun') !== tahun) return false;
-                    return true;
-                });
-
-                function formatRupiah(v) {
-                    return Math.round(v).toLocaleString('id-ID');
-                }
-
-                // Hitung ulang baris Total sesuai baris yang lolos filter.
-                // Saldo Akhir = saldo baris terakhir yang tampil (saldo berjalan tetap kumulatif).
-                function updateTotals() {
-                    var nodes = table.rows({ search: 'applied', order: 'applied' }).nodes();
-                    var totalDebet = 0, totalKredit = 0, lastSaldo = 0;
-                    $(nodes).each(function () {
-                        totalDebet += parseFloat($(this).attr('data-debet')) || 0;
-                        totalKredit += parseFloat($(this).attr('data-kredit')) || 0;
-                        lastSaldo = parseFloat($(this).attr('data-saldo')) || 0;
+                // Filter Bulan/Tahun + pencarian bebas; baris TOTAL ikut terhitung ulang otomatis
+                function applyFilters() {
+                    table.setFilter(function (data) {
+                        var bulan = $('#filterBulan').val();
+                        var tahun = $('#filterTahun').val();
+                        var q = ($('#searchVA').val() || '').toLowerCase();
+                        var t = String(data.tanggal || '');
+                        if (bulan && t.substr(5, 2) !== bulan) return false;
+                        if (tahun && t.substr(0, 4) !== tahun) return false;
+                        if (q) {
+                            var hay = [
+                                fmtTanggal(data.tanggal), data.penerima || '', data.uraian || '', vaName,
+                                fmtRupiah(data.debet), fmtRupiah(data.kredit), fmtRupiah(data.saldo)
+                            ].join(' ').toLowerCase();
+                            if (hay.indexOf(q) === -1) return false;
+                        }
+                        return true;
                     });
-                    $('#totDebet').text(formatRupiah(totalDebet));
-                    $('#totKredit').text(formatRupiah(totalKredit));
-                    $('#totSaldo').text(formatRupiah(lastSaldo));
                 }
 
-                $('#filterBulan, #filterTahun').on('change', function () {
-                    table.draw();
-                    updateTotals();
-                });
-
-                // Total juga mengikuti pencarian kotak search bawaan
-                table.on('search.dt', function () {
-                    updateTotals();
-                });
-
-                // Insert Download Excel button next to Show entries
-                var btnHtml = '<button type="button" class="btn btn-download-excel ml-2" id="btnDownloadExcel">' +
-                    '<i class="fas fa-file-excel"></i> Download Excel</button>';
-                $('#tableDetailVA_length').css('display', 'inline-flex').css('align-items', 'center').append(btnHtml);
+                $('#filterBulan, #filterTahun').on('change', applyFilters);
+                $('#searchVA').on('keyup', applyFilters);
 
                 // Hitung jumlah transaksi yang cocok dengan periode pilihan di modal
                 function updateExportCount() {
                     var bulan = $('#exportBulan').val();
                     var tahun = $('#exportTahun').val();
                     var count = 0;
-                    $(table.rows().nodes()).each(function () {
-                        if (bulan && $(this).attr('data-bulan') !== bulan) return;
-                        if (tahun && $(this).attr('data-tahun') !== tahun) return;
+                    vaRows.forEach(function (r) {
+                        var t = String(r.tanggal || '');
+                        if (bulan && t.substr(5, 2) !== bulan) return;
+                        if (tahun && t.substr(0, 4) !== tahun) return;
                         count++;
                     });
                     var label = [];

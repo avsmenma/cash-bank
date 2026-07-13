@@ -265,6 +265,9 @@
                     columnHeaderVertAlign: 'middle',
                     movableColumns: false,
                     columnDefaults: { headerSort: false, minWidth: 30, variableHeight: true },
+                    // renderer 'basic' (non-virtual): hilangkan celah kosong di bawah
+                    // baris terakhir akibat estimasi tinggi baris wrap yang meleset
+                    renderVertical: 'basic',
                     pagination: true,
                     paginationSize: 10,
                     paginationSizeSelector: [10, 25, 50, 100],
@@ -283,8 +286,7 @@
                         },
                         {
                             title: 'Uraian', field: 'uraian', widthGrow: 3,
-                            formatter: function (cell) { return cell.getValue() || '-'; },
-                            bottomCalc: function () { return 'TOTAL'; }
+                            formatter: function (cell) { return cell.getValue() || '-'; }
                         },
                         {
                             title: 'Debet', field: 'debet', width: 120, hozAlign: 'right',
@@ -317,6 +319,36 @@
                         }
                     ]
                 });
+
+                // Baris TOTAL: gabungkan sel No..Uraian jadi satu sel berlabel TOTAL di tengah
+                var MERGE_FIELDS = ['no', 'tanggal', 'bank', 'penerima', 'uraian'];
+                function mergeTotalRow() {
+                    var rowEl = document.querySelector('#tableDetailVA .tabulator-row.tabulator-calcs-bottom');
+                    if (!rowEl) return;
+                    var width = 0;
+                    MERGE_FIELDS.forEach(function (f) {
+                        var col = table.getColumn(f);
+                        if (col) width += col.getWidth();
+                    });
+                    var firstCell = null;
+                    rowEl.querySelectorAll('.tabulator-cell').forEach(function (c) {
+                        var f = c.getAttribute('tabulator-field');
+                        if (MERGE_FIELDS.indexOf(f) === -1) return;
+                        if (f === 'no') {
+                            firstCell = c;
+                        } else {
+                            c.style.display = 'none';
+                        }
+                    });
+                    if (firstCell) {
+                        firstCell.style.width = width + 'px';
+                        firstCell.style.maxWidth = width + 'px';
+                        firstCell.style.textAlign = 'center';
+                        firstCell.textContent = 'TOTAL';
+                    }
+                }
+                table.on('renderComplete', mergeTotalRow);
+                table.on('columnResized', function () { setTimeout(mergeTotalRow, 0); });
 
                 // Filter Bulan/Tahun + pencarian bebas; baris TOTAL ikut terhitung ulang otomatis
                 function applyFilters() {

@@ -22,6 +22,12 @@
                 color: #fff;
                 font-weight: 600;
                 white-space: normal;
+                text-align: center; /* judul kolom di tengah */
+            }
+
+            /* Garis pemisah kolom header: putih & tebal */
+            #tableDetailVA .tabulator-header .tabulator-col {
+                border-right: 2px solid rgba(255, 255, 255, 0.9) !important;
             }
 
             #tableDetailVA .tabulator-row.tabulator-row-even {
@@ -31,6 +37,11 @@
             #tableDetailVA .tabulator-cell {
                 white-space: normal;
                 overflow-wrap: break-word;
+                border-right: 1px solid #C9D4DF !important; /* garis kolom isi tabel */
+            }
+
+            #tableDetailVA .tabulator-row {
+                border-bottom: 1px solid #C9D4DF !important; /* garis antar baris */
             }
 
             #tableDetailVA .tabulator-calcs-holder,
@@ -40,6 +51,11 @@
                 color: #fff !important;
                 font-weight: 700;
                 border-color: rgba(255, 255, 255, 0.25) !important;
+            }
+
+            /* Baris TOTAL: pemisah kolom putih seperti header */
+            #tableDetailVA .tabulator-row.tabulator-calcs-bottom .tabulator-cell {
+                border-right: 2px solid rgba(255, 255, 255, 0.9) !important;
             }
 
             .text-debet {
@@ -119,16 +135,16 @@
 
                         <div class="row mb-2">
                             <div class="col-12 d-flex align-items-center flex-wrap">
-                                <label for="filterBulan" class="mr-2 mb-0">Bulan</label>
-                                <select id="filterBulan" class="form-control form-control-sm mr-3">
+                                <label for="filterBulan" class="mr-2 mb-0 font-weight-bold">Bulan</label>
+                                <select id="filterBulan" class="form-control form-control-sm mr-3" style="width: 140px;">
                                     <option value="">Semua</option>
                                     @foreach (['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'] as $val => $nama)
                                         <option value="{{ $val }}">{{ $nama }}</option>
                                     @endforeach
                                 </select>
 
-                                <label for="filterTahun" class="mr-2 mb-0">Tahun</label>
-                                <select id="filterTahun" class="form-control form-control-sm">
+                                <label for="filterTahun" class="mr-2 mb-0 font-weight-bold">Tahun</label>
+                                <select id="filterTahun" class="form-control form-control-sm" style="width: 110px;">
                                     <option value="">Semua</option>
                                     @foreach ($years as $y)
                                         <option value="{{ $y }}">{{ $y }}</option>

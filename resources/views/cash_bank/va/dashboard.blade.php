@@ -2,6 +2,13 @@
 @section('content')
     @push('styles')
         <style>
+            /* Tampilan kompak: setara zoom browser 80%, agar seluruh tabel
+               terlihat dalam satu layar pada web size 100% */
+            .content-header,
+            section.content {
+                zoom: 0.8;
+            }
+
             #tableDetailVA {
                 table-layout: auto !important;
                 width: 100% !important;

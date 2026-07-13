@@ -191,6 +191,55 @@
         </div>
     </section>
 
+    {{-- Modal konfirmasi export Excel --}}
+    <div class="modal fade" id="modalExportVA" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #1E3A5F; color: #fff;">
+                    <h5 class="modal-title">
+                        <i class="fas fa-file-excel mr-1"></i> Export Excel — Detail Transaksi VA
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Pilih periode transaksi yang ingin diexport:</p>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="exportBulan">Bulan</label>
+                            <select id="exportBulan" class="form-control">
+                                <option value="">Semua</option>
+                                @foreach (['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'] as $val => $nama)
+                                    <option value="{{ $val }}">{{ $nama }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="exportTahun">Tahun</label>
+                            <select id="exportTahun" class="form-control">
+                                <option value="">Semua</option>
+                                @foreach ($years as $y)
+                                    <option value="{{ $y }}">{{ $y }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="alert alert-info py-2 mb-0" id="exportCountInfo">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <span id="exportCountText">-</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn text-white" style="background-color: #1E3A5F;" id="btnConfirmExportVA">
+                        <i class="fas fa-download mr-1"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
         <script>
             $(function () {
@@ -252,15 +301,49 @@
                     '<i class="fas fa-file-excel"></i> Download Excel</button>';
                 $('#tableDetailVA_length').css('display', 'inline-flex').css('align-items', 'center').append(btnHtml);
 
-                // Download Excel — export server-side (seluruh baris sesuai filter bulan/tahun)
+                // Hitung jumlah transaksi yang cocok dengan periode pilihan di modal
+                function updateExportCount() {
+                    var bulan = $('#exportBulan').val();
+                    var tahun = $('#exportTahun').val();
+                    var count = 0;
+                    $(table.rows().nodes()).each(function () {
+                        if (bulan && $(this).attr('data-bulan') !== bulan) return;
+                        if (tahun && $(this).attr('data-tahun') !== tahun) return;
+                        count++;
+                    });
+                    var label = [];
+                    if (bulan) label.push($('#exportBulan option:selected').text());
+                    if (tahun) label.push(tahun);
+                    var periode = label.length ? label.join(' ') : 'semua periode';
+                    $('#exportCountText').text(count.toLocaleString('id-ID') + ' transaksi (' + periode + ') akan diexport.');
+                    $('#btnConfirmExportVA').prop('disabled', count === 0);
+                    $('#exportCountInfo').toggleClass('alert-info', count > 0).toggleClass('alert-warning', count === 0);
+                    if (count === 0) {
+                        $('#exportCountText').text('Tidak ada transaksi pada periode ini.');
+                    }
+                }
+
+                // Download Excel — buka modal konfirmasi periode dulu
                 $(document).on('click', '#btnDownloadExcel', function () {
+                    // Prefill dari filter tabel yang sedang aktif
+                    $('#exportBulan').val($('#filterBulan').val());
+                    $('#exportTahun').val($('#filterTahun').val());
+                    updateExportCount();
+                    $('#modalExportVA').modal('show');
+                });
+
+                $('#exportBulan, #exportTahun').on('change', updateExportCount);
+
+                // Konfirmasi → download dari server sesuai periode pilihan
+                $('#btnConfirmExportVA').on('click', function () {
                     var params = new URLSearchParams();
-                    var bulan = $('#filterBulan').val();
-                    var tahun = $('#filterTahun').val();
+                    var bulan = $('#exportBulan').val();
+                    var tahun = $('#exportTahun').val();
                     if (bulan) params.set('bulan', bulan);
                     if (tahun) params.set('tahun', tahun);
                     var qs = params.toString();
                     window.location.href = '{{ route('va.export-excel') }}' + (qs ? '?' + qs : '');
+                    $('#modalExportVA').modal('hide');
                 });
             });
         </script>

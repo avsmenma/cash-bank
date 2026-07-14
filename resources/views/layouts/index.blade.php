@@ -564,6 +564,22 @@
                                 <p>Programmer Panel</p>
                             </a>
                         </li>
+                        {{-- Akses halaman bank untuk import CSV lama (tombol import
+                             asli hanya dirender bagi role programmer di halaman ini) --}}
+                        <li class="nav-item">
+                            <a href="{{ route('bank-masuk.index') }}"
+                                class="nav-link {{ request()->routeIs('bank-masuk.index') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-arrow-circle-down"></i>
+                                <p>Bank Masuk</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('bank-keluar.index') }}"
+                                class="nav-link {{ request()->routeIs('bank-keluar.index') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-arrow-circle-up"></i>
+                                <p>Bank Keluar</p>
+                            </a>
+                        </li>
                         @else
                         <li
                             class="nav-item {{ request()->routeIs('dashboard.*', 'dashboard-pembayaran.*', 'dashboard.bank.*') ? 'menu-open menu-is-opening' : '' }}">

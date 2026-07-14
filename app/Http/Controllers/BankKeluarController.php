@@ -3130,6 +3130,9 @@ class BankKeluarController extends Controller
         if (array_key_exists('tanggal', $data) && $data['tanggal'] === '') {
             $data['tanggal'] = null;
         }
+        if (array_key_exists('no_bukti', $data) && ($data['no_bukti'] === '' || $data['no_bukti'] === '-')) {
+            $data['no_bukti'] = null;
+        }
         if ($kategoriReset) {
             $data['id_kategori_kriteria'] = null;
             $data['id_sub_kriteria'] = null;

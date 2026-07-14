@@ -970,6 +970,9 @@ class BankMasukController extends Controller
         if (array_key_exists('tanggal', $data) && $data['tanggal'] === '') {
             $data['tanggal'] = null;
         }
+        if (array_key_exists('no_bukti', $data) && ($data['no_bukti'] === '' || $data['no_bukti'] === '-')) {
+            $data['no_bukti'] = null;
+        }
 
         $masuk->update($data);
 

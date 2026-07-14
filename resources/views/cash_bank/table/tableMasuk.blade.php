@@ -171,6 +171,7 @@
             // Peta kolom yang bisa diedit inline (indeks kolom DataTable)
             var editableColumns = {
                 2:  { field: 'agenda_tahun', type: 'text' },
+                3:  { field: 'no_bukti', type: 'text' },
                 4:  { field: 'tanggal', type: 'date' },
                 5:  { field: 'id_sumber_dana', type: 'select', source: 'sumberDana' },
                 6:  { field: 'id_bank_tujuan', type: 'select', source: 'bankTujuan' },

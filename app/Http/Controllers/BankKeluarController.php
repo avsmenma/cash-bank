@@ -2870,7 +2870,10 @@ class BankKeluarController extends Controller
             $warnFields = [];
 
             $data = [
+                // agenda_tahun = field yang ditampilkan tabel & dipakai fitur lain;
+                // no_agenda diisi sama agar konsisten dengan data lama
                 'no_agenda' => $get($row, 'no_agenda'),
+                'agenda_tahun' => $get($row, 'no_agenda'),
                 'no_bukti' => $get($row, 'bukti'),
                 'tanggal' => $parseTanggal($get($row, 'tanggal')),
                 'penerima' => $get($row, 'penerima'),

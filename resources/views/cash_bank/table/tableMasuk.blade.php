@@ -202,7 +202,7 @@
                     { data: 'checkbox',          width: '35px' },
                     { data: 'DT_RowIndex',       width: '45px',  orderable: false, searchable: false, title: 'No' },
                     { data: 'agenda_tahun',      width: '100px' },
-                    { data: 'DT_RowIndex',       width: '72px',  orderable: false, searchable: false, title: 'No Bukti' },
+                    { data: 'no_bukti',          width: '72px',  defaultContent: '-', title: 'No Bukti' },
                     { data: 'tanggal',           width: '110px' },
                     { data: 'sumber_dana',       width: '250px' },
                     { data: 'bank_tujuan',       width: '180px' },

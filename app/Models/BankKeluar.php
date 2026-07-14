@@ -19,6 +19,7 @@ class BankKeluar extends Model
         'id_item_sub_kriteria',
         'dokumen_id',
         'agenda_tahun',
+        'no_bukti',
         'uraian',
         'nilai_rupiah',
         'penerima',

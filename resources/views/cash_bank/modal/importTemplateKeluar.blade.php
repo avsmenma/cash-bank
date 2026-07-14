@@ -66,6 +66,7 @@
                 <th style="width:52px;">Baris</th>
                 <th>No Agenda</th>
                 <th>Tanggal</th>
+                <th>No Bukti</th>
                 <th>Sumber Dana</th>
                 <th>Bank Tujuan</th>
                 <th>Kriteria</th>
@@ -78,7 +79,7 @@
               </tr>
             </thead>
             <tbody id="previewBodyTemplateKeluar">
-              <tr><td colspan="12" class="text-center text-muted py-4">Memuat data...</td></tr>
+              <tr><td colspan="13" class="text-center text-muted py-4">Memuat data...</td></tr>
             </tbody>
           </table>
         </div>
@@ -137,7 +138,7 @@ $(document).ready(function () {
         fd.append('fileTemplate', input.files[0]);
         fd.append('_token', '{{ csrf_token() }}');
 
-        $('#previewBodyTemplateKeluar').html('<tr><td colspan="12" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Memproses data...</td></tr>');
+        $('#previewBodyTemplateKeluar').html('<tr><td colspan="13" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Memproses data...</td></tr>');
         $('#badgeWarnTemplateKeluar').hide();
         $('#warnListTemplateKeluar').hide().empty();
         $('#btnConfirmTemplateKeluar').prop('disabled', true);
@@ -170,7 +171,7 @@ $(document).ready(function () {
 
                 var html = '';
                 if (!res.rows.length) {
-                    html = '<tr><td colspan="12" class="text-center text-muted py-4">Tidak ada baris berisi data.</td></tr>';
+                    html = '<tr><td colspan="13" class="text-center text-muted py-4">Tidak ada baris berisi data.</td></tr>';
                 } else {
                     res.rows.forEach(function (r) {
                         var w = r.warn || {};
@@ -180,6 +181,7 @@ $(document).ready(function () {
                             + '<td class="text-center">' + r.baris + '</td>'
                             + '<td>' + (escTpl(r.agenda) || '-') + '</td>'
                             + '<td>' + (escTpl(r.tanggal) || '-') + ic(w.tanggal) + '</td>'
+                            + '<td>' + (escTpl(r.bukti) || '-') + '</td>'
                             + '<td>' + (escTpl(r.sumber) || '-') + ic(w.sumber) + '</td>'
                             + '<td>' + (escTpl(r.bank) || '-') + ic(w.bank) + '</td>'
                             + '<td>' + (escTpl(r.kategori) || '-') + ic(w.kategori) + '</td>'
@@ -204,7 +206,7 @@ $(document).ready(function () {
                         if (first && first.length) msg = first[0];
                     }
                 }
-                $('#previewBodyTemplateKeluar').html('<tr><td colspan="12" class="text-center text-danger py-4">❌ ' + escTpl(msg) + '</td></tr>');
+                $('#previewBodyTemplateKeluar').html('<tr><td colspan="13" class="text-center text-danger py-4">❌ ' + escTpl(msg) + '</td></tr>');
             }
         });
     });

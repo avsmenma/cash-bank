@@ -377,7 +377,7 @@
                     { data: 'checkbox',            width: '35px' },
                     { data: 'DT_RowIndex',         width: '45px',  orderable: false, searchable: false, title: 'No', render: renderInlineText },
                     { data: 'agenda_tahun',        width: '105px', render: renderInlineText },
-                    { data: 'DT_RowIndex',         width: '72px',  orderable: false, searchable: false, title: 'No Bukti', render: renderInlineText },
+                    { data: 'no_bukti',            width: '72px',  defaultContent: '-', title: 'No Bukti', render: renderInlineText },
                     { data: 'tanggal',             width: '110px', render: renderInlineText },
                     { data: 'sumber_dana',         width: '250px' },
                     { data: 'bank_tujuan',         width: '180px' },

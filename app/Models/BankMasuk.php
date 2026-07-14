@@ -17,6 +17,7 @@ class BankMasuk extends Model
 
     protected $fillable = [
         'agenda_tahun',
+        'no_bukti',
         'id_sumber_dana',
         'id_bank_tujuan',
         'id_kategori_kriteria',

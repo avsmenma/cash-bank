@@ -2490,22 +2490,24 @@ class BankKeluarController extends Controller
         // ── Sheet Data: tempat user mengisi transaksi ──
         $sheet = $spreadsheet->getSheet(0);
         $sheet->setTitle('Data');
-        $headers = ['No Agenda', 'Tanggal', 'Sumber Dana', 'Bank Tujuan', 'Kriteria',
+        $headers = ['No Agenda', 'Tanggal', 'No Bukti', 'Sumber Dana', 'Bank Tujuan', 'Kriteria',
             'Sub Kriteria', 'Item Sub Kriteria', 'Jenis Pembayaran', 'Penerima',
             'Uraian', 'Kredit', 'Keterangan'];
         $sheet->fromArray($headers, null, 'A1');
-        $sheet->getStyle('A1:L1')->applyFromArray([
+        $sheet->getStyle('A1:M1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E3A5F']],
             'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
         ]);
-        foreach (['A' => 14, 'B' => 13, 'C' => 28, 'D' => 28, 'E' => 24, 'F' => 24,
-            'G' => 24, 'H' => 20, 'I' => 28, 'J' => 45, 'K' => 16, 'L' => 25] as $col => $w) {
+        foreach (['A' => 14, 'B' => 13, 'C' => 12, 'D' => 28, 'E' => 28, 'F' => 24, 'G' => 24,
+            'H' => 24, 'I' => 20, 'J' => 28, 'K' => 45, 'L' => 16, 'M' => 25] as $col => $w) {
             $sheet->getColumnDimension($col)->setWidth($w);
         }
         $sheet->getStyle('B2:B1000')->getNumberFormat()->setFormatCode('dd/mm/yyyy');
-        $sheet->getStyle('K2:K1000')->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('L2:L1000')->getNumberFormat()->setFormatCode('#,##0');
         $sheet->getStyle('A2:A1000')->getNumberFormat()
+            ->setFormatCode(\PhpOffice\PhpSpreadsheet\Style\NumberFormat::FORMAT_TEXT);
+        $sheet->getStyle('C2:C1000')->getNumberFormat()
             ->setFormatCode(\PhpOffice\PhpSpreadsheet\Style\NumberFormat::FORMAT_TEXT);
         $sheet->freezePane('A2');
 
@@ -2521,7 +2523,7 @@ class BankKeluarController extends Controller
         };
 
         // Dropdown statis: Sumber Dana, Bank Tujuan, Kriteria, Jenis Pembayaran
-        $dropdowns = ['C' => 0, 'D' => 1, 'E' => 2, 'H' => 5];
+        $dropdowns = ['D' => 0, 'E' => 1, 'F' => 2, 'I' => 5];
         foreach ($dropdowns as $dataCol => $i) {
             $count = count($refLists[$i][1]);
             if ($count === 0) {
@@ -2535,15 +2537,15 @@ class BankKeluarController extends Controller
             $buatDropdown($dataCol, $rangeName);
         }
 
-        // ── Rumus otomatis Bank Tujuan (D) dari Uraian (J) ──
+        // ── Rumus otomatis Bank Tujuan (E) dari Uraian (K) ──
         // Uraian umumnya diawali 11 digit nomor VA (mis. "81029155507|...");
         // 11 karakter pertama dicocokkan ke awalan nama di daftar Bank Tujuan.
         // Memilih manual dari dropdown tetap bisa (menimpa rumus di baris itu).
         if (count($refLists[1][1]) > 0) {
             for ($r = 2; $r <= 1000; $r++) {
                 $sheet->setCellValue(
-                    "D{$r}",
-                    "=IF(J{$r}=\"\",\"\",IFERROR(INDEX(RefBKD,MATCH(LEFT(TRIM(J{$r}),11)&\"*\",RefBKD,0)),\"\"))"
+                    "E{$r}",
+                    "=IF(K{$r}=\"\",\"\",IFERROR(INDEX(RefBKE,MATCH(LEFT(TRIM(K{$r}),11)&\"*\",RefBKE,0)),\"\"))"
                 );
             }
         }
@@ -2620,19 +2622,19 @@ class BankKeluarController extends Controller
         }
         $rmap->setSheetState(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::SHEETSTATE_HIDDEN);
 
-        // Dropdown bertingkat: Sub (F) mengikuti Kriteria (E), Item (G) mengikuti Sub (F).
+        // Dropdown bertingkat: Sub (G) mengikuti Kriteria (F), Item (H) mengikuti Sub (G).
         // Bila induk belum dipilih/tak dikenal → tampilkan daftar lengkap.
         if ($katRows->count() > 0 && $nSubAll > 0) {
             $spreadsheet->addNamedRange(new \PhpOffice\PhpSpreadsheet\NamedRange(
                 'RefMapKriteria', $rmap, '$A$1:$B$' . $katRows->count()
             ));
-            $buatDropdown('F', 'INDIRECT(IFERROR(VLOOKUP(E2,RefMapKriteria,2,0),"RefSubAll"))');
+            $buatDropdown('G', 'INDIRECT(IFERROR(VLOOKUP(F2,RefMapKriteria,2,0),"RefSubAll"))');
         }
         if ($rSub > 0 && $nItemAll > 0) {
             $spreadsheet->addNamedRange(new \PhpOffice\PhpSpreadsheet\NamedRange(
                 'RefMapSub', $rmap, '$D$1:$E$' . $rSub
             ));
-            $buatDropdown('G', 'INDIRECT(IFERROR(VLOOKUP(F2,RefMapSub,2,0),"RefItemAll"))');
+            $buatDropdown('H', 'INDIRECT(IFERROR(VLOOKUP(G2,RefMapSub,2,0),"RefItemAll"))');
         }
 
         // ── Sheet Petunjuk ──
@@ -2646,15 +2648,17 @@ class BankKeluarController extends Controller
             '   tampil "-" di tabel Bank Keluar, dan bisa dilengkapi kemudian lewat tombol edit.',
             '3. Tanggal: gunakan format tanggal Excel biasa atau ketik dd/mm/yyyy (contoh 05/07/2026).',
             '4. Kredit: angka nilai transaksi, contoh 1500000 (boleh memakai pemisah ribuan 1.500.000).',
-            '5. Sumber Dana, Bank Tujuan, Kriteria, Sub Kriteria, Item Sub Kriteria, dan Jenis Pembayaran',
+            '5. No Bukti: nomor bukti pembukuan Anda sendiri (manual, TIDAK dibuat otomatis oleh sistem) —',
+            '   diambil apa adanya dari file ini saat import.',
+            '6. Sumber Dana, Bank Tujuan, Kriteria, Sub Kriteria, Item Sub Kriteria, dan Jenis Pembayaran',
             '   harus sama persis dengan daftar di sheet "Referensi" — gunakan dropdown yang tersedia.',
             '   Nama yang tidak dikenali akan dikosongkan otomatis saat import (data lain tetap masuk).',
-            '6. Isi berurutan dari kiri: dropdown Sub Kriteria menyesuaikan Kriteria yang dipilih',
+            '7. Isi berurutan dari kiri: dropdown Sub Kriteria menyesuaikan Kriteria yang dipilih',
             '   di baris yang sama, dan Item Sub Kriteria menyesuaikan Sub Kriteria (seperti di aplikasi).',
-            '7. Bank Tujuan terisi OTOMATIS bila Uraian diawali 11 digit nomor VA',
+            '8. Bank Tujuan terisi OTOMATIS bila Uraian diawali 11 digit nomor VA',
             '   (contoh "81029155507| MCM InhouseTrf ..."). Tidak perlu memilih satu per satu;',
             '   pilihan manual lewat dropdown tetap bisa dan akan menimpa isian otomatisnya.',
-            '8. Simpan file, upload lewat tombol Import Excel, periksa hasil baca di pratinjau,',
+            '9. Simpan file, upload lewat tombol Import Excel, periksa hasil baca di pratinjau,',
             '   lalu tekan Konfirmasi Import. Data baru tersimpan setelah konfirmasi.',
         ];
         foreach ($petunjuk as $i => $line) {
@@ -2704,6 +2708,8 @@ class BankKeluarController extends Controller
             'noagenda' => 'no_agenda',
             'agenda' => 'no_agenda',
             'tanggal' => 'tanggal',
+            'nobukti' => 'bukti',
+            'bukti' => 'bukti',
             'sumberdana' => 'sumber',
             'banktujuan' => 'bank',
             'kriteria' => 'kategori',
@@ -2862,6 +2868,7 @@ class BankKeluarController extends Controller
 
             $data = [
                 'no_agenda' => $get($row, 'no_agenda'),
+                'no_bukti' => $get($row, 'bukti'),
                 'tanggal' => $parseTanggal($get($row, 'tanggal')),
                 'penerima' => $get($row, 'penerima'),
                 'uraian' => $get($row, 'uraian'),
@@ -2985,6 +2992,7 @@ class BankKeluarController extends Controller
             $preview[] = [
                 'baris' => $rowNum,
                 'agenda' => $data['no_agenda'],
+                'bukti' => $data['no_bukti'],
                 'tanggal' => $data['tanggal']
                     ? Carbon::parse($data['tanggal'])->format('d/m/Y')
                     : ($rawTanggal !== null ? (string) $rawTanggal : null),

@@ -167,6 +167,23 @@
     color: #ff8a98 !important;
   }
 
+  .login-box .alert-login {
+    font-size: 0.9rem;
+    padding: 0.55rem 0.9rem;
+    animation: shake 0.35s ease;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  .login-box .form-control.is-invalid {
+    border-color: rgba(220, 53, 69, 0.7) !important;
+    background-image: none !important;
+  }
+
   /* ===== SHOW/HIDE PASSWORD CURSOR ===== */
   .login-box .show-password {
     cursor: pointer;
@@ -195,40 +212,38 @@
     </div>
     <div class="card-body">
         @if(session('failed'))
-        <div class="alert alert-danger">{{  session('failed') }}</div>
+        <div class="alert alert-danger alert-login mb-3">
+          <i class="fas fa-exclamation-circle mr-1"></i> {{ session('failed') }}
+        </div>
         @endif
           <p class="login-box-msg">Sign in to start your session</p>
 
           <form action="/login" method="post">
             @csrf
-            @error('username')
-            <small class="text-danger">(( $message ))</small>
-            @enderror
-            <div class="input-group mb-3">
-              <input type="text" name="username" class="form-control" placeholder="Username">
+            <div class="input-group mb-1">
+              <input type="text" name="username" class="form-control @error('username') is-invalid @enderror"
+                     placeholder="Username" value="{{ old('username') }}">
               <div class="input-group-append">
                 <div class="input-group-text">
-                  <span class="fas fa-envelope"></span>
+                  <span class="fas fa-user"></span>
                 </div>
               </div>
-                @error('password')
-                <small class="text-danger">(( $message ))</small>
-                @enderror
-              <!-- <div class="invalid-feedback">
-                Please choose a username
-              </div> -->
             </div>
-            <div class="input-group mb-3 has-validation">
-              <input type="password" name="password" class="form-control" placeholder="Password" id="password">
-              <div class="input-group-append show-password">
+            @error('username')
+            <small class="text-danger d-block mb-2"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</small>
+            @enderror
+            <div class="input-group mb-1 mt-3">
+              <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
+                     placeholder="Password" id="password">
+              <div class="input-group-append show-password" title="Lihat / sembunyikan password">
                 <div class="input-group-text">
-                  <span class="fas fa-lock" id="password-lock"></span>
+                  <span class="fas fa-eye" id="password-eye"></span>
                 </div>
               </div>
-                <!-- <div class="invalid-feedback">
-                Please choose a password
-              </div> -->
             </div>
+            @error('password')
+            <small class="text-danger d-block mb-2"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</small>
+            @enderror
             <div class="row mt-2 mb-2">
               <div class="col-8">
                 <div class="icheck-primary">
@@ -280,10 +295,10 @@
     $('.show-password').on('click',function(){
         if($('#password').attr('type') == 'password'){
             $('#password').attr('type', 'text');
-            $('#password-lock').attr('class', 'fas fa-unlock');
+            $('#password-eye').attr('class', 'fas fa-eye-slash');
         }else{
-             $('#password').attr('type', 'password');
-            $('#password-lock').attr('class', 'fas fa-lock');
+            $('#password').attr('type', 'password');
+            $('#password-eye').attr('class', 'fas fa-eye');
         }
     })
 </script>

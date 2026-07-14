@@ -58,6 +58,7 @@
                 <th style="width:40px;">No</th>
                 <th>Agenda</th>
                 <th>Tanggal</th>
+                <th>No Bukti</th>
                 <th>Sumber Dana</th>
                 <th>Bank Tujuan</th>
                 <th>Kategori/Kriteria</th>
@@ -70,7 +71,7 @@
               </tr>
             </thead>
             <tbody id="previewTableBodyKeluar">
-              <tr><td colspan="12" class="text-center text-muted py-4">Memuat data...</td></tr>
+              <tr><td colspan="13" class="text-center text-muted py-4">Memuat data...</td></tr>
             </tbody>
           </table>
         </div>
@@ -118,7 +119,7 @@ $(document).ready(function () {
         formData.append('_token', '{{ csrf_token() }}');
 
         // Reset preview
-        $('#previewTableBodyKeluar').html('<tr><td colspan="9" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Memproses data...</td></tr>');
+        $('#previewTableBodyKeluar').html('<tr><td colspan="13" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Memproses data...</td></tr>');
         $('#badgeWarnKeluar').hide();
         $('#btnKonfirmasiImportKeluar').prop('disabled', true);
 
@@ -145,7 +146,7 @@ $(document).ready(function () {
 
                 var html = '';
                 if (res.rows.length === 0) {
-                    html = '<tr><td colspan="12" class="text-center text-muted py-4">Tidak ada data valid.</td></tr>';
+                    html = '<tr><td colspan="13" class="text-center text-muted py-4">Tidak ada data valid.</td></tr>';
                 } else {
                     res.rows.forEach(function (row) {
                         var bg = row.warning ? 'background:#fff8dc;' : '';
@@ -154,6 +155,7 @@ $(document).ready(function () {
                             + '<td class="text-center">' + row.no + '</td>'
                             + '<td>' + (row.agenda || '-') + '</td>'
                             + '<td>' + (row.tanggal || '-') + '</td>'
+                            + '<td>' + (row.bukti || '-') + '</td>'
                             + '<td>' + row.sumber + warnIcon(row.warn_sumber) + '</td>'
                             + '<td>' + row.bank + warnIcon(row.warn_bank) + '</td>'
                             + '<td>' + row.kategori + warnIcon(row.warn_kategori) + '</td>'
@@ -171,7 +173,7 @@ $(document).ready(function () {
             error: function (xhr) {
                 btn.prop('disabled', false).html('<i class="fas fa-eye mr-1"></i>Preview Sebelum Import');
                 var msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Terjadi kesalahan.';
-                $('#previewTableBodyKeluar').html('<tr><td colspan="9" class="text-center text-danger py-4">❌ ' + msg + '</td></tr>');
+                $('#previewTableBodyKeluar').html('<tr><td colspan="13" class="text-center text-danger py-4">❌ ' + msg + '</td></tr>');
             }
         });
     });

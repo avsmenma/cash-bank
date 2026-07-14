@@ -2337,6 +2337,8 @@ class BankKeluarController extends Controller
             // (mis. 0004_2026) ada di kolom PERTAMA yang TANPA judul → key-nya ''.
             $agendaRaw = trim($data['agenda_tahun'] ?? $data['no_agenda'] ?? $data['nomor_agenda'] ?? $data['agenda'] ?? $data[''] ?? '');
             $tanggalRaw = trim($data['tanggal'] ?? '');
+            // No Bukti manual dari pembukuan (header CSV "No. Bukti" → key no._bukti)
+            $buktiRaw = trim($data['no._bukti'] ?? $data['no_bukti'] ?? $data['bukti'] ?? '');
             $sumberRaw = trim($data['sumber_dana'] ?? '');
             $bankRaw = trim($data['bank_tujuan'] ?? '');
             $kategoriRaw = trim($data['kategori'] ?? $data['kriteria_cf'] ?? $data['kriteria'] ?? '');
@@ -2383,6 +2385,7 @@ class BankKeluarController extends Controller
             $preview[] = [
                 'no' => $i,
                 'agenda' => $agendaRaw ?: '-',
+                'bukti' => $buktiRaw ?: '-',
                 'tanggal' => $tanggalRaw,
                 'sumber' => $sumberFound ?? ($sumberRaw ?: '-'),
                 'bank' => $bankFound ?? ($bankRaw ?: '-'),

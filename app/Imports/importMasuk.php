@@ -134,6 +134,8 @@ class importMasuk implements ToModel, WithHeadingRow
 
         return new BankMasuk([
              'agenda_tahun'  => $row['agenda_tahun'] ?? null,
+             // No Bukti manual dari pembukuan (heading "No. Bukti" → key no_bukti)
+             'no_bukti'      => $this->cleanText($row['no_bukti'] ?? $row['bukti'] ?? '') ?: null,
              'tanggal'       => $tanggal,
 
              'id_sumber_dana' => $this->findReferenceId(SumberDana::class, 'nama_sumber_dana', 'id_sumber_dana', $sumberDana),

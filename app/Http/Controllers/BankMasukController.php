@@ -388,6 +388,8 @@ class BankMasukController extends Controller
         foreach ($sheetRows as $i => $row) {
             // Ambil nilai kolom utama dulu
             $agendaRaw     = trim((string)($row['agenda_tahun'] ?? $row[0] ?? ''));
+            // No Bukti manual dari pembukuan (heading "No. Bukti" → key no_bukti)
+            $buktiRaw      = trim((string)($row['no_bukti'] ?? $row['bukti'] ?? ''));
             $tanggalRaw    = $row['tanggal'] ?? $row[1] ?? null;
             $sumberRaw     = trim((string)($row['sumber_dana'] ?? $row[2] ?? ''));
             $bankRaw       = trim((string)($row['bank_tujuan'] ?? $row[3] ?? ''));
@@ -443,6 +445,7 @@ class BankMasukController extends Controller
             $preview[] = [
                 'no'        => $i + 1,
                 'agenda'    => $agendaRaw ?: '-',
+                'bukti'     => $buktiRaw ?: '-',
                 'tanggal'   => $tanggalFormatted,
                 'sumber'    => $sumberFound ?? ($sumberRaw ?: '-'),
                 'bank'      => $bankFound   ?? ($bankRaw   ?: '-'),

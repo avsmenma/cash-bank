@@ -323,6 +323,8 @@ class ImportKeluarCsv
             ?? ''
         );
         $tanggal = $this->parseTanggal($data['tanggal'] ?? '');
+        // No Bukti manual dari pembukuan (header CSV "No. Bukti" → key no._bukti)
+        $noBukti = $this->cleanText($data['no._bukti'] ?? $data['no_bukti'] ?? $data['bukti'] ?? '');
         $sumberDana = $this->cleanText($data['sumber_dana'] ?? '');
         $bankTujuan = $this->cleanText($data['bank_tujuan'] ?? '');
         // Kategori: support 'kategori', 'kriteria_cf', atau 'kriteria'; strip prefix angka "50. "
@@ -377,6 +379,7 @@ class ImportKeluarCsv
 
         return [
             'agenda_tahun' => $agendaTahun ?: null,
+            'no_bukti' => $noBukti ?: null,
             'dokumen_id' => $dokumenId,
             'tanggal' => $tanggal,
             'id_sumber_dana' => $this->findInCache($this->sumberDanaCache, $sumberDana),

@@ -292,6 +292,33 @@
 
 
 <script>
+    // ===== Ingat username & password (Remember Me) =====
+    // Disimpan di localStorage browser saat login dengan Remember Me dicentang,
+    // supaya form terisi otomatis lagi setelah logout.
+    (function(){
+        var $user = $('input[name=username]');
+        var savedU = localStorage.getItem('cb_login_u');
+        var savedP = localStorage.getItem('cb_login_p');
+        if (savedU !== null && $user.val() === '') {
+            $user.val(savedU);
+        }
+        if (savedP !== null) {
+            try { $('#password').val(atob(savedP)); } catch (e) {}
+        }
+        if (savedU !== null || savedP !== null) {
+            $('#remember').prop('checked', true);
+        }
+        $('form').on('submit', function(){
+            if ($('#remember').is(':checked')) {
+                localStorage.setItem('cb_login_u', $user.val());
+                try { localStorage.setItem('cb_login_p', btoa($('#password').val())); } catch (e) {}
+            } else {
+                localStorage.removeItem('cb_login_u');
+                localStorage.removeItem('cb_login_p');
+            }
+        });
+    })();
+
     $('.show-password').on('click',function(){
         if($('#password').attr('type') == 'password'){
             $('#password').attr('type', 'text');

@@ -50,7 +50,7 @@
 
         {{-- Tabel scroll --}}
         <div style="max-height:420px; overflow-y:auto; overflow-x:auto;">
-          <table class="table table-bordered table-sm mb-0" style="font-size:11.5px; min-width:1000px;">
+          <table class="table table-bordered table-sm mb-0 csv-preview-table" style="font-size:11.5px; min-width:1000px;">
             <thead>
               <tr style="background:#0d3b6e; color:#fff; position:sticky; top:0; z-index:1;">
                 <th style="width:40px;">No</th>
@@ -84,6 +84,12 @@
 </div>
 
 @push('scripts')
+<style>
+    /* Judul kolom preview harus putih — CSS global halaman menimpanya jadi gelap */
+    .csv-preview-table thead th {
+        color: #fff !important;
+    }
+</style>
 <script>
 $(document).ready(function () {
     // Update label file input

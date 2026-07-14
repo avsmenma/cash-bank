@@ -47,6 +47,7 @@ class BankTujuanSeeder extends Seeder
             ['id_bank_tujuan' => 31, 'nama_tujuan' => '81029155503 - LONGKALI'],
             ['id_bank_tujuan' => 32, 'nama_tujuan' => '81029155502 - DEKAN'],
             ['id_bank_tujuan' => 33, 'nama_tujuan' => '81029155501 - RAREN'],
+            ['id_bank_tujuan' => 34, 'nama_tujuan' => '8102910000000000001 - KPB'],
         ];
 
         foreach ($data as $item) {

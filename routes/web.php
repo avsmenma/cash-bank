@@ -247,6 +247,8 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('daftarBank', DaftarBankController::class);
     Route::get('/daftarBank/{id}/detail', [DaftarBankController::class, 'showDetail'])
         ->name('daftarBank.detail');
+    Route::get('/daftarBank/{id}/export-detail-excel', [VADashboardController::class, 'exportExcelById'])
+        ->name('daftarBank.exportDetail');
 
     Route::resource('saldoAwal', SaldoAwalController::class);
 

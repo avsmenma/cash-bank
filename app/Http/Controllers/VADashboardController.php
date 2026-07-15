@@ -89,12 +89,24 @@ class VADashboardController extends Controller
      */
     public function exportExcel(Request $request)
     {
-        $user = Auth::user();
-        $id = $user->id_bank_tujuan;
+        $id = Auth::user()->id_bank_tujuan;
+        return $this->streamLedgerExcel(BankTujuan::findOrFail($id), $this->buildLedger($id), $request);
+    }
 
-        $va = BankTujuan::findOrFail($id);
-        $transactions = $this->buildLedger($id);
+    /**
+     * Export detail satu VA berdasarkan id (dipakai admin dari Daftar VA → Detail).
+     */
+    public function exportExcelById(Request $request, $id)
+    {
+        return $this->streamLedgerExcel(BankTujuan::findOrFail($id), $this->buildLedger($id), $request);
+    }
 
+    /**
+     * Bangun & kirim file Excel buku pembantu VA. Dipakai VA sendiri (exportExcel)
+     * maupun admin (exportExcelById).
+     */
+    private function streamLedgerExcel($va, $transactions, Request $request)
+    {
         // Filter bulan/tahun — saldo tetap kumulatif sejak awal (dihitung sebelum filter)
         $bulan = $request->input('bulan'); // '01'..'12'
         $tahun = $request->input('tahun'); // '2026'

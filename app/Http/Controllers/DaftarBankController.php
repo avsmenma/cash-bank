@@ -229,7 +229,15 @@ class daftarBankController extends Controller
             return $item;
         });
 
-        return view('cash_bank.saldo.detailVA', compact('va', 'transactions'));
+        // Daftar tahun untuk dropdown filter (samakan dengan halaman VA Dashboard)
+        $years = $transactions->pluck('tanggal')
+            ->filter()
+            ->map(fn ($t) => substr((string) $t, 0, 4))
+            ->unique()
+            ->sortDesc()
+            ->values();
+
+        return view('cash_bank.saldo.detailVA', compact('va', 'transactions', 'years'));
     }
 }
 

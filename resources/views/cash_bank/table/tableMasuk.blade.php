@@ -73,6 +73,7 @@
             color: #1f2d3d;
         }
         .tabulator-edit-list .tabulator-edit-list-item.active,
+        .tabulator-edit-list .tabulator-edit-list-item.focused,
         .tabulator-edit-list .tabulator-edit-list-item.hover,
         .tabulator-edit-list .tabulator-edit-list-item:hover {
             background: #0d6efd !important;

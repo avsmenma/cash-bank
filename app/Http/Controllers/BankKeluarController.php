@@ -1984,7 +1984,9 @@ class BankKeluarController extends Controller
 
         $start = max(0, (int) $request->input('start', 0));
         $length = (int) $request->input('length', 50);
-        $length = $length > 0 ? min($length, 1000) : 50;
+        // Halaman Rekening Koran memuat seluruh baris sekali jalan (Tabulator
+        // virtual DOM) — izinkan chunk besar; batas atas hanya pengaman memori.
+        $length = $length > 0 ? min($length, 1000000) : 50;
 
         $rows = (clone $reportQuery)
             ->orderBy('tanggal')

@@ -410,13 +410,13 @@ function resetFilter() {
             }
         });
 
-        // ===== PEMUATAN DATA ALA SPREADSHEET =====
-        // Chunk pertama (100 baris) tampil cepat, sisanya terus dimuat otomatis
-        // di latar belakang (1000/request) sampai habis — scrollbar segera
-        // mewakili SELURUH data. Pengaman: scrollbar ditarik mentok sebelum
-        // selesai → sisa data ditarik sekali jalan, scroll dilempar ke akhir.
+        // ===== PEMUATAN DATA (SEKALI MUAT PENUH) =====
+        // Seluruh data diambil dalam SATU permintaan lalu di-render oleh
+        // Tabulator (virtual DOM — hanya baris yang terlihat yang digambar,
+        // jadi ribuan baris tetap ringan). Tanpa pemuatan bertahap/latar
+        // belakang: tidak ada addData berulang yang bikin scrollbar "tertarik
+        // balik", dan saldo dihitung satu arah dari baris pertama.
         var RK_URL = @json(route('bank-keluar.report.data'));
-        var rkDraw = 0, rkLoaded = 0, rkFetching = false;
 
         function rkBuildUrl(start, length) {
             var usp = new URLSearchParams();
@@ -425,63 +425,29 @@ function resetFilter() {
                 if (Array.isArray(v)) { v.forEach(function (x) { usp.append(k + '[]', x); }); }
                 else if (v !== null && v !== undefined) { usp.append(k, v); }
             });
-            usp.append('draw', ++rkDraw);
+            usp.append('draw', 1);
             usp.append('start', start);
             usp.append('length', length);
             return RK_URL + '?' + usp.toString();
         }
-        function rkFetchChunk(start, length) {
-            return fetch(rkBuildUrl(start, length), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
-        }
-        function rkIngest(json, replace) {
-            if (json && json.totals) {
-                document.getElementById('rkTotDebet').textContent = json.totals.debet;
-                document.getElementById('rkTotKredit').textContent = json.totals.kredit;
-                document.getElementById('rkTotSaldo').textContent = json.totals.saldo;
-            }
-            rkTotal = parseInt((json && json.recordsFiltered) || 0, 10);
-            var rows = (json && json.data) || [];
-            rkLoaded += rows.length;
-            if (!rows.length) rkTotal = rkLoaded;      // server kehabisan data
-            return replace ? table.setData(rows) : table.addData(rows);
-        }
-        function rkDoneAll() { return rkTotal !== null && rkLoaded >= rkTotal; }
-        function rkBackground() {
-            if (rkDoneAll() || rkFetching) return;
-            rkFetching = true;
-            rkFetchChunk(rkLoaded, 1000)
-                .then(function (json) { return rkIngest(json, false); })
-                .then(function () {
-                    rkFetching = false;
-                    if (!rkDoneAll()) setTimeout(rkBackground, 250);
-                })
-                .catch(function () { rkFetching = false; });
-        }
 
         table.on('tableBuilt', function () {
-            rkFetchChunk(0, 100)
-                .then(function (json) { return rkIngest(json, true); })
-                .then(function () { setTimeout(rkBackground, 250); })
+            fetch(rkBuildUrl(0, 1000000), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                .then(function (json) {
+                    if (json && json.totals) {
+                        document.getElementById('rkTotDebet').textContent = json.totals.debet;
+                        document.getElementById('rkTotKredit').textContent = json.totals.kredit;
+                        document.getElementById('rkTotSaldo').textContent = json.totals.saldo;
+                    }
+                    var rows = (json && json.data) || [];
+                    rkTotal = parseInt((json && json.recordsFiltered) || rows.length, 10);
+                    return table.setData(rows);
+                })
                 .catch(function () {
                     var info = document.getElementById('rkEntriesInfo');
                     if (info) info.textContent = 'Gagal memuat data — muat ulang halaman untuk mencoba lagi.';
                 });
-
-            var holder = el.querySelector('.tabulator-tableholder');
-            if (!holder) return;
-            holder.addEventListener('scroll', function () {
-                if (rkDoneAll() || rkFetching || rkTotal === null) return;
-                if (holder.scrollTop + holder.clientHeight < holder.scrollHeight - 2) return;
-                rkFetching = true;                     // mentok: tarik semua sisa sekali jalan
-                rkFetchChunk(rkLoaded, Math.max(rkTotal - rkLoaded, 100))
-                    .then(function (json) { return rkIngest(json, false); })
-                    .then(function () {
-                        rkFetching = false;
-                        holder.scrollTop = holder.scrollHeight;
-                    })
-                    .catch(function () { rkFetching = false; });
-            }, { passive: true });
         });
 
         function updateInfo() {

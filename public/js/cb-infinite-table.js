@@ -132,6 +132,12 @@
         this.failed = false;
         this._processing(true);
 
+        // Simpan posisi scroll: DataTables mereset scroll body ke atas saat
+        // draw(), sehingga tanpa ini scrollbar "tertarik balik" ke atas tiap
+        // kali chunk baru di-append saat user menggeser.
+        var sb = this._scrollBody();
+        var keepScroll = sb ? sb.scrollTop : 0;
+
         this._fetch(this.loadedCount, this.chunkSize)
             .done(function (json) {
                 var rows = (json && json.data) || [];
@@ -141,6 +147,7 @@
                 if (rows.length) {
                     self.table.rows.add(rows).draw(false);
                     self.loadedCount += rows.length;
+                    if (sb) sb.scrollTop = keepScroll;   // kembalikan posisi setelah draw
                 } else if (self.totalFiltered === null) {
                     self.totalFiltered = self.loadedCount;
                 }

@@ -531,7 +531,7 @@
 
             <ul class="navbar-nav ml-auto">
                 <!-- Navbar Search -->
-                @if(request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'daftarBank.*', 'rekening-koran.*', 'ringkasan.*', 'penerima.*', 'dropping.*', 'permintaan.*', 'daftar-spp.*', 'dashboard.*'))
+                @if(request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'daftarBank.*', 'ringkasan.*', 'penerima.*', 'dropping.*', 'permintaan.*', 'daftar-spp.*', 'dashboard.*'))
                     <li class="nav-item d-flex align-items-center">
                         <button type="button" class="cb-fullscreen-toggle" id="cbBankFullscreenToggle" title="Mode layar penuh tabel" aria-label="Mode layar penuh tabel" aria-pressed="false">
                             <i class="fas fa-expand"></i>
@@ -664,9 +664,9 @@
 
                         <!-- DAFTAR BANK -->
                         <li
-                            class="nav-item {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'rekening-koran.*', 'daftarBank.*') ? 'menu-open menu-is-opening' : '' }}">
+                            class="nav-item {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'daftarBank.*') ? 'menu-open menu-is-opening' : '' }}">
                             <a href="#"
-                                class="nav-link {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'rekening-koran.*', 'daftarBank.*') ? 'active' : '' }}">
+                                class="nav-link {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'daftarBank.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-university"></i>
                                 <p>
                                     Transaksi Bank

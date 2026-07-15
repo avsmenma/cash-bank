@@ -229,12 +229,4 @@ class VADashboardController extends Controller
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
-
-    /**
-     * Show the Rekening Koran page for the VA user.
-     */
-    public function rekeningKoran()
-    {
-        return view('cash_bank.va.rekeningKoran');
-    }
 }

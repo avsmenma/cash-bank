@@ -85,14 +85,6 @@
                             </a>
                         </li>
 
-                        <!-- REKENING KORAN -->
-                        <li class="nav-item">
-                            <a href="{{ route('va.rekening-koran') }}"
-                                class="nav-link {{ request()->routeIs('va.rekening-koran') ? 'active' : ''}}">
-                                <i class="nav-icon fas fa-file-invoice"></i>
-                                <p>Rekening Koran</p>
-                            </a>
-                        </li>
 
                     </ul>
                 </nav>

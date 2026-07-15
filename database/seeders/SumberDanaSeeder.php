@@ -12,8 +12,8 @@ class SumberDanaSeeder extends Seeder
         // UPDATE nama sumber dana sesuai data yang benar
         // Format: "Nama Bank * NoRek" agar dashboard bisa parsing no rekening
         $data = [
-            ['id_sumber_dana' => 1, 'nama_sumber_dana' => 'PT. Bank Mandiri Cab. Pontianak (Opex) * 146-00-9702740-8'],
-            ['id_sumber_dana' => 2, 'nama_sumber_dana' => 'PT. Bank Mandiri Cab. Pontianak (Rekg Overdraft) * 146-00-1201420-0'],
+            ['id_sumber_dana' => 1, 'nama_sumber_dana' => 'PT. Bank Mandiri (OPEX) * 146-00-9702740-8'],
+            ['id_sumber_dana' => 2, 'nama_sumber_dana' => 'PT. Bank Mandiri (Cadangan MTN) * 146-00-1201420-0'],
             ['id_sumber_dana' => 3, 'nama_sumber_dana' => 'PT. Bank Raya * 1001001363401'],
             ['id_sumber_dana' => 4, 'nama_sumber_dana' => 'PT. Bank Negara Indonesia - Cab. Pontianak * 2020388992'],
         ];

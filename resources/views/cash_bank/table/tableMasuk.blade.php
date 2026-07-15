@@ -444,8 +444,15 @@
 
             // Navigasi panah + Esc + Ctrl/Cmd+C copy
             document.addEventListener('keydown', function (e) {
-                var tag = (document.activeElement && document.activeElement.tagName) || '';
-                if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+                // Abaikan tombol yang datang DARI dalam editor (mis. Enter untuk
+                // simpan). Cek e.target — bukan activeElement — karena saat Enter
+                // menyimpan, editor sudah menutup & fokus balik ke sel sehingga
+                // activeElement keliru dan Enter itu akan membuka-edit lagi.
+                function isEditorEl(n) {
+                    var t = (n && n.tagName) || '';
+                    return t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA';
+                }
+                if (isEditorEl(e.target) || isEditorEl(document.activeElement)) return;
 
                 if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
                     if (!bmRange && !bmActive) return;

@@ -186,10 +186,7 @@ $(document).ready(function () {
             success: function (res) {
                 $('#ModalPreviewImportMasuk').modal('hide');
                 alert('✅ ' + res.success);
-                // Reload DataTable
-                if ($.fn.DataTable.isDataTable('#example2')) {
-                    window.cbTableReload('#example2');
-                }
+                if (window.bmReload) window.bmReload();
             },
             error: function (xhr) {
                 btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Konfirmasi Import');

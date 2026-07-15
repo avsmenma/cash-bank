@@ -107,7 +107,7 @@
       <a href="javascript:void(0)" class="btn btn-success btn-sm" data-toggle="modal" data-target="#ModalCreateMasuk">
         <i class="fas fa-plus mr-1"></i>Tambah Data
       </a>
-      <button type="button" class="btn btn-info btn-sm" id="btnRefreshTable" onclick="window.cbTableReload('#example2');">
+      <button type="button" class="btn btn-info btn-sm" id="btnRefreshTable" onclick="window.bmReload && window.bmReload();">
         <i class="fas fa-sync-alt mr-1"></i>Refresh
       </button>
       <div class="ml-auto d-flex gap-2" style="gap:8px;">
@@ -198,17 +198,13 @@
         this.setSelectionRange(cursorPos, cursorPos);
     });
 
-    $(document).on('click', '#select_all_ids', function () {
-        $('.checkbox_ids').prop('checked', $(this).prop('checked'));
-    });
-
-    // Tampung IDs yang akan dihapus
+    // Tampung IDs yang akan dihapus (sumber: pilihan yang di-track tabel Tabulator,
+    // bukan DOM — agar baris terpilih di luar viewport virtual DOM tetap terhitung).
     var _pendingDeleteIds = [];
 
     $(document).on('click', '#deleteAllSelectedRecord', function (e) {
         e.preventDefault();
-        _pendingDeleteIds = [];
-        $('.checkbox_ids:checked').each(function () { _pendingDeleteIds.push($(this).val()); });
+        _pendingDeleteIds = (window.bmSelectedIds ? window.bmSelectedIds() : []).slice();
 
         if (_pendingDeleteIds.length === 0) {
             $('#modalInfoTitle').text('Perhatian');
@@ -231,7 +227,8 @@
             data: JSON.stringify({ ids: _pendingDeleteIds, _token: '{{ csrf_token() }}' }),
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
             success: function (res) {
-                window.cbTableReload('#example2');
+                if (window.bmClearSelection) window.bmClearSelection();
+                if (window.bmReload) window.bmReload();
                 $('#select_all_ids').prop('checked', false);
                 $('#modalInfoTitle').text('Berhasil');
                 $('#modalInfoIcon').attr('class', 'fas fa-check-circle text-success mr-2');

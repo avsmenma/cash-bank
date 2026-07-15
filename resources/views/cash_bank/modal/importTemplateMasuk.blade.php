@@ -221,9 +221,7 @@ $(document).ready(function () {
             success: function (res) {
                 $('#ModalPreviewTemplateMasuk').modal('hide');
                 alert('✅ ' + res.success);
-                if ($.fn.DataTable.isDataTable('#example2')) {
-                    window.cbTableReload('#example2');
-                }
+                if (window.bmReload) window.bmReload();
                 btn.html('<i class="fas fa-check mr-1"></i>Konfirmasi Import (<span id="confirmCountTemplateMasuk">0</span> baris)');
             },
             error: function (xhr) {

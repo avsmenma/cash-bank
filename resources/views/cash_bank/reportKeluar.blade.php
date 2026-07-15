@@ -123,6 +123,13 @@
 #rkTable .tabulator-row { border-bottom: 1px solid #c3d2e0; }
 #rkTable .tabulator-row:hover .tabulator-cell { background: #f5f8fc; }
 
+/* Active cell ala spreadsheet: sel yang diklik diberi bingkai + latar biru muda */
+#rkTable .tabulator-cell.rk-active-cell {
+    outline: 2px solid #1b6fd8; outline-offset: -2px;
+    background: #e8f1fd !important;
+}
+#rkTable .tabulator-row:hover .tabulator-cell.rk-active-cell { background: #e8f1fd !important; }
+
 #rkTable .rk-wrap { white-space: normal !important; overflow-wrap: anywhere; line-height: 1.35; }
 #rkTable .rk-debet { color: #1a7a3d; font-weight: 600; }
 #rkTable .rk-kredit { color: #c0392b; font-weight: 600; }
@@ -222,6 +229,60 @@ function resetFilter() {
             rowFormatter: function (row) {
                 var cls = row.getData().DT_RowClass;
                 if (cls) row.getElement().classList.add(cls);
+                // Virtual render Tabulator membuat ulang elemen baris saat scroll —
+                // pasang kembali highlight active cell bila baris ini pemiliknya.
+                if (rkActive && row.getData().no === rkActive.no) {
+                    var c = row.getCell(rkActive.field);
+                    if (c) c.getElement().classList.add('rk-active-cell');
+                }
+            }
+        });
+
+        // ===== ACTIVE CELL (ala spreadsheet) =====
+        // Klik sel untuk memilih; panah ⬅⬆⬇➡ memindah pilihan; Esc menghapus pilihan.
+        var rkActive = null; // { no, field } — identitas sel aktif (tahan terhadap re-render)
+
+        function rkClearActiveEl() {
+            el.querySelectorAll('.tabulator-cell.rk-active-cell').forEach(function (n) {
+                n.classList.remove('rk-active-cell');
+            });
+        }
+        function rkSetActive(cell) {
+            rkClearActiveEl();
+            rkActive = { no: cell.getRow().getData().no, field: cell.getField() };
+            cell.getElement().classList.add('rk-active-cell');
+        }
+        function rkGetActiveCell() {
+            if (!rkActive) return null;
+            var row = table.getRows().find(function (r) { return r.getData().no === rkActive.no; });
+            return row ? row.getCell(rkActive.field) : null;
+        }
+
+        table.on('cellClick', function (e, cell) { rkSetActive(cell); });
+
+        document.addEventListener('keydown', function (e) {
+            if (!rkActive) return;
+            var tag = (document.activeElement && document.activeElement.tagName) || '';
+            if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+
+            if (e.key === 'Escape') { rkClearActiveEl(); rkActive = null; return; }
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) === -1) return;
+
+            var cell = rkGetActiveCell();
+            if (!cell) return;
+            e.preventDefault();
+
+            var row = cell.getRow();
+            var cols = table.getColumns().filter(function (c) { return c.isVisible(); });
+            var ci = cols.findIndex(function (c) { return c.getField() === rkActive.field; });
+            var target = null;
+            if (e.key === 'ArrowLeft'  && ci > 0)               target = row.getCell(cols[ci - 1]);
+            if (e.key === 'ArrowRight' && ci < cols.length - 1) target = row.getCell(cols[ci + 1]);
+            if (e.key === 'ArrowUp')   { var pr = row.getPrevRow(); if (pr) target = pr.getCell(rkActive.field); }
+            if (e.key === 'ArrowDown') { var nr = row.getNextRow(); if (nr) target = nr.getCell(rkActive.field); }
+            if (target) {
+                rkSetActive(target);
+                target.getElement().scrollIntoView({ block: 'nearest', inline: 'nearest' });
             }
         });
 

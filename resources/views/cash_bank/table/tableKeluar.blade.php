@@ -133,7 +133,13 @@
                 kategori:   @json($kategoriKriteria->pluck('nama_kriteria', 'id_kategori_kriteria')),
                 jenis:      @json($jenisPembayaran->pluck('nama_jenis_pembayaran', 'id_jenis_pembayaran'))
             };
-            function withDash(map) { var o = { '-': '-' }; Object.keys(map).forEach(function (k) { o[k] = map[k]; }); return o; }
+            // ARRAY terurut, opsi "-" di paling ATAS (object dgn key id numerik
+            // akan diurutkan numerik oleh JS → "-" terlempar ke bawah).
+            function withDash(map) {
+                var arr = [{ label: '-', value: '-' }];
+                Object.keys(map).forEach(function (k) { arr.push({ label: map[k], value: k }); });
+                return arr;
+            }
             var editorValues = {
                 sumberDana: withDash(refValues.sumberDana),
                 bankTujuan: withDash(refValues.bankTujuan),
@@ -145,17 +151,20 @@
             var subKriteriaAll = @json($subKriteria->map(fn($r) => ['id' => (string) $r->id_sub_kriteria, 'kat' => (string) $r->id_kategori_kriteria, 'nama' => trim($r->nama_sub_kriteria)])->values());
             var itemSubAll = @json($itemSubKriteria->map(fn($r) => ['id' => (string) $r->id_item_sub_kriteria, 'sub' => (string) $r->id_sub_kriteria, 'nama' => trim($r->nama_item_sub_kriteria)])->values());
 
+            // Peta bertingkat sebagai ARRAY terurut ("-" paling atas) untuk editor list,
+            // plus lookup id→nama (object) untuk formatter.
             var subsByKategori = {}, subNameById = { '-': '-' };
             subKriteriaAll.forEach(function (s) {
                 subNameById[s.id] = s.nama;
-                (subsByKategori[s.kat] = subsByKategori[s.kat] || { '-': '-' })[s.id] = s.nama;
+                if (!subsByKategori[s.kat]) subsByKategori[s.kat] = [{ label: '-', value: '-' }];
+                subsByKategori[s.kat].push({ label: s.nama, value: s.id });
             });
             var itemsBySub = {}, itemNameById = { '-': '-' }, _seenItem = {};
             itemSubAll.forEach(function (it) {
                 itemNameById[it.id] = it.nama;
-                var grp = itemsBySub[it.sub] = itemsBySub[it.sub] || { '-': '-' };
+                if (!itemsBySub[it.sub]) itemsBySub[it.sub] = [{ label: '-', value: '-' }];
                 var key = it.sub + '|' + it.nama.toLowerCase();
-                if (!_seenItem[key]) { _seenItem[key] = true; grp[it.id] = it.nama; }   // dedupe nama per sub
+                if (!_seenItem[key]) { _seenItem[key] = true; itemsBySub[it.sub].push({ label: it.nama, value: it.id }); }   // dedupe nama per sub
             });
 
             // Opsi untuk filter select (pakai nama)
@@ -270,12 +279,12 @@
                     { titleFormatter: titleFilter('Sub Kriteria', 'sub'), field: 'id_sub_kriteria', width: 200, widthGrow: 1, formatter: fmtSub, cssClass: 'bk-wrap bk-editable', editor: 'list',
                       editorParams: function (cell) {
                           var kat = cell.getRow().getData().id_kategori_kriteria;
-                          return { values: subsByKategori[String(kat)] || { '-': '-' }, autocomplete: true, listOnEmpty: true };
+                          return { values: subsByKategori[String(kat)] || [{ label: '-', value: '-' }], autocomplete: true, listOnEmpty: true };
                       } },
                     { titleFormatter: titleFilter('Item Sub Kriteria', 'item'), field: 'id_item_sub_kriteria', width: 240, widthGrow: 1, formatter: fmtItem, cssClass: 'bk-wrap bk-editable', editor: 'list',
                       editorParams: function (cell) {
                           var sub = cell.getRow().getData().id_sub_kriteria;
-                          return { values: itemsBySub[String(sub)] || { '-': '-' }, autocomplete: true, listOnEmpty: true };
+                          return { values: itemsBySub[String(sub)] || [{ label: '-', value: '-' }], autocomplete: true, listOnEmpty: true };
                       } },
                     { titleFormatter: titleFilter('Jenis Pembayaran', 'jenis'), field: 'id_jenis_pembayaran', width: 135, formatter: fmtRef('jenis', 'jenis_pembayaran'), cssClass: 'bk-editable', editor: 'list', editorParams: { values: editorValues.jenis, autocomplete: true, listOnEmpty: true } },
                     { titleFormatter: titleFilter('Penerima', 'penerima', 'fas fa-search'), field: 'penerima', width: 200, widthGrow: 1, formatter: fmtText, cssClass: 'bk-wrap bk-editable', editor: 'input' },

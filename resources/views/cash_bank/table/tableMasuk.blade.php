@@ -114,11 +114,13 @@
                 kategori:   @json($kategoriKriteria->pluck('nama_kriteria', 'id_kategori_kriteria')),
                 jenis:      @json($jenisPembayaran->pluck('nama_jenis_pembayaran', 'id_jenis_pembayaran'))
             };
-            // Nilai untuk editor list: tambah opsi "-" (kosongkan) di paling atas
+            // Nilai untuk editor list: ARRAY terurut dengan opsi "-" (kosongkan) di
+            // paling ATAS. Wajib array — object dengan key id numerik selalu
+            // diurutkan numerik oleh JS sehingga "-" terlempar ke bawah.
             function withDash(map) {
-                var out = { '-': '-' };
-                Object.keys(map).forEach(function (k) { out[k] = map[k]; });
-                return out;
+                var arr = [{ label: '-', value: '-' }];
+                Object.keys(map).forEach(function (k) { arr.push({ label: map[k], value: k }); });
+                return arr;
             }
             var editorValues = {
                 sumberDana: withDash(refValues.sumberDana),

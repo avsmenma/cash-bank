@@ -4,8 +4,14 @@
         #example2 {
             border: 1px solid #d0dce8;
             font-size: 12px;
-            /* Ikuti font default aplikasi (sama dengan tabel Bank Keluar), jangan
-               paksa Segoe UI agar tampilan konsisten antar halaman. */
+            /* Font persis seperti tabel Bank Keluar (font default aplikasi AdminLTE:
+               Source Sans Pro), disetel eksplisit agar tema Tabulator tidak menggeser. */
+            font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI",
+                Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        #example2 .tabulator-cell,
+        #example2 .tabulator-header .tabulator-col,
+        #example2 .tabulator-header .tabulator-col-title {
             font-family: inherit;
         }
         #example2 .tabulator-header { background: #0d3b6e; border-bottom: 2px solid #082948; }

@@ -358,9 +358,8 @@ function resetFilter() {
             });
             if (!n) { rkPop.style.display = 'none'; return; }
             var fmt = function (x) { return x.toLocaleString('id-ID', { maximumFractionDigits: 2 }); };
-            rkPop.innerHTML = 'Jumlah: <b>' + fmt(sum) + '</b>' + (n > 1
-                ? ' &nbsp;·&nbsp; Rata-rata: <b>' + fmt(sum / n) + '</b> &nbsp;·&nbsp; Data angka: <b>' + n + '</b>'
-                : '');
+            rkPop.innerHTML = 'Jumlah: <b>' + fmt(sum) + '</b>' +
+                (n > 1 ? ' &nbsp;·&nbsp; Data angka: <b>' + n + '</b>' : '');
             rkPop.style.display = 'block';
 
             // Tempel dekat sel kanan-bawah blok; bila selnya di luar layar pakai posisi mouse.

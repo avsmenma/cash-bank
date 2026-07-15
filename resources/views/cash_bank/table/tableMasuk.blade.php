@@ -856,5 +856,10 @@
             ensureActiveCell();
         });
     </script>
+    {{-- Blok sel ala spreadsheet + popup Jumlah (drag / Shift+klik) --}}
+    <script src="{{ asset('js/cb-cell-range-sum.js') }}"></script>
+    <script>
+        $(function () { CbCellRangeSum.init('#example2'); });
+    </script>
 @endpush
 @include('cash_bank.modal.edit')

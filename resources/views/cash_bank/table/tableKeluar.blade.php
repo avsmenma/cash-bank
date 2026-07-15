@@ -1552,5 +1552,10 @@
             $('#btn-close-uraian').on('click', closeAllPopups);
         });
     </script>
+    {{-- Blok sel ala spreadsheet + popup Jumlah (drag / Shift+klik) --}}
+    <script src="{{ asset('js/cb-cell-range-sum.js') }}"></script>
+    <script>
+        $(function () { CbCellRangeSum.init('#example3'); });
+    </script>
 @endpush
 @include('cash_bank.modal.editKeluar')

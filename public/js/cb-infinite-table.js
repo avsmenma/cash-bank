@@ -39,6 +39,7 @@
         this.chunkSize = options.chunkSize || 100;
         this.prefetchPx = options.prefetchPx || 600;
         this.backgroundChunk = options.backgroundChunk || 1000;
+        this.backgroundChunkMax = options.backgroundChunkMax || 5000;
         this.backgroundDelay = options.backgroundDelay || 250;
         this.extraParams = options.extraParams || function () { return {}; };
         this.onResponse = options.onResponse || null;
@@ -195,7 +196,12 @@
         var gen = this.generation;
         this.loading = true;
 
-        this._fetch(this.loadedCount, this.backgroundChunk)
+        // Chunk adaptif: membesar mengikuti jumlah termuat (digandakan tiap
+        // putaran) agar draw ulang DataTables — yang makin mahal saat tabel
+        // makin besar — terjadi sesedikit mungkin pada data puluhan ribu baris.
+        var chunk = Math.min(Math.max(this.backgroundChunk, this.loadedCount), this.backgroundChunkMax);
+
+        this._fetch(this.loadedCount, chunk)
             .done(function (json) {
                 if (gen !== self.generation) return;   // filter sudah berganti
                 var rows = (json && json.data) || [];

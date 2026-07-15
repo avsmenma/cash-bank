@@ -209,37 +209,6 @@ function resetFilter() {
                 col('Saldo Akhir', 'saldo_akhir', { hozAlign: 'right', width: 120, cssClass: 'rk-saldo' })
             ],
 
-            // Muat bertahap 100 baris saat scroll — endpoint lama (start/length) tetap dipakai
-            progressiveLoad: 'scroll',
-            paginationSize: 100,
-            ajaxURL: @json(route('bank-keluar.report.data')),
-            ajaxURLGenerator: function (url, config, params) {
-                var size = params.size || 100;
-                var usp = new URLSearchParams();
-                Object.keys(reportParams).forEach(function (k) {
-                    var v = reportParams[k];
-                    if (Array.isArray(v)) { v.forEach(function (x) { usp.append(k + '[]', x); }); }
-                    else if (v !== null && v !== undefined) { usp.append(k, v); }
-                });
-                usp.append('draw', params.page);
-                usp.append('start', (params.page - 1) * size);
-                usp.append('length', size);
-                return url + '?' + usp.toString();
-            },
-            ajaxResponse: function (url, params, response) {
-                if (response && response.totals) {
-                    document.getElementById('rkTotDebet').textContent = response.totals.debet;
-                    document.getElementById('rkTotKredit').textContent = response.totals.kredit;
-                    document.getElementById('rkTotSaldo').textContent = response.totals.saldo;
-                }
-                rkTotal = parseInt((response && response.recordsFiltered) || 0, 10);
-                var size = params.size || 100;
-                return {
-                    last_page: Math.max(1, Math.ceil(rkTotal / size)),
-                    data: (response && response.data) || []
-                };
-            },
-
             rowFormatter: function (row) {
                 var cls = row.getData().DT_RowClass;
                 if (cls) row.getElement().classList.add(cls);
@@ -441,13 +410,87 @@ function resetFilter() {
             }
         });
 
+        // ===== PEMUATAN DATA ALA SPREADSHEET =====
+        // Chunk pertama (100 baris) tampil cepat, sisanya terus dimuat otomatis
+        // di latar belakang (1000/request) sampai habis — scrollbar segera
+        // mewakili SELURUH data. Pengaman: scrollbar ditarik mentok sebelum
+        // selesai → sisa data ditarik sekali jalan, scroll dilempar ke akhir.
+        var RK_URL = @json(route('bank-keluar.report.data'));
+        var rkDraw = 0, rkLoaded = 0, rkFetching = false;
+
+        function rkBuildUrl(start, length) {
+            var usp = new URLSearchParams();
+            Object.keys(reportParams).forEach(function (k) {
+                var v = reportParams[k];
+                if (Array.isArray(v)) { v.forEach(function (x) { usp.append(k + '[]', x); }); }
+                else if (v !== null && v !== undefined) { usp.append(k, v); }
+            });
+            usp.append('draw', ++rkDraw);
+            usp.append('start', start);
+            usp.append('length', length);
+            return RK_URL + '?' + usp.toString();
+        }
+        function rkFetchChunk(start, length) {
+            return fetch(rkBuildUrl(start, length), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+        }
+        function rkIngest(json, replace) {
+            if (json && json.totals) {
+                document.getElementById('rkTotDebet').textContent = json.totals.debet;
+                document.getElementById('rkTotKredit').textContent = json.totals.kredit;
+                document.getElementById('rkTotSaldo').textContent = json.totals.saldo;
+            }
+            rkTotal = parseInt((json && json.recordsFiltered) || 0, 10);
+            var rows = (json && json.data) || [];
+            rkLoaded += rows.length;
+            if (!rows.length) rkTotal = rkLoaded;      // server kehabisan data
+            return replace ? table.setData(rows) : table.addData(rows);
+        }
+        function rkDoneAll() { return rkTotal !== null && rkLoaded >= rkTotal; }
+        function rkBackground() {
+            if (rkDoneAll() || rkFetching) return;
+            rkFetching = true;
+            rkFetchChunk(rkLoaded, 1000)
+                .then(function (json) { return rkIngest(json, false); })
+                .then(function () {
+                    rkFetching = false;
+                    if (!rkDoneAll()) setTimeout(rkBackground, 250);
+                })
+                .catch(function () { rkFetching = false; });
+        }
+
+        table.on('tableBuilt', function () {
+            rkFetchChunk(0, 100)
+                .then(function (json) { return rkIngest(json, true); })
+                .then(function () { setTimeout(rkBackground, 250); })
+                .catch(function () {
+                    var info = document.getElementById('rkEntriesInfo');
+                    if (info) info.textContent = 'Gagal memuat data — muat ulang halaman untuk mencoba lagi.';
+                });
+
+            var holder = el.querySelector('.tabulator-tableholder');
+            if (!holder) return;
+            holder.addEventListener('scroll', function () {
+                if (rkDoneAll() || rkFetching || rkTotal === null) return;
+                if (holder.scrollTop + holder.clientHeight < holder.scrollHeight - 2) return;
+                rkFetching = true;                     // mentok: tarik semua sisa sekali jalan
+                rkFetchChunk(rkLoaded, Math.max(rkTotal - rkLoaded, 100))
+                    .then(function (json) { return rkIngest(json, false); })
+                    .then(function () {
+                        rkFetching = false;
+                        holder.scrollTop = holder.scrollHeight;
+                    })
+                    .catch(function () { rkFetching = false; });
+            }, { passive: true });
+        });
+
         function updateInfo() {
             var info = document.getElementById('rkEntriesInfo');
             if (!info || rkTotal === null) return;
             var loaded = table.getDataCount();
             if (rkTotal === 0) info.textContent = 'Tidak ada data.';
             else if (loaded >= rkTotal) info.textContent = 'Semua ' + rkTotal.toLocaleString('id-ID') + ' data telah dimuat.';
-            else info.textContent = loaded.toLocaleString('id-ID') + ' dari ' + rkTotal.toLocaleString('id-ID') + ' data dimuat — scroll ke bawah untuk memuat berikutnya.';
+            else info.textContent = loaded.toLocaleString('id-ID') + ' dari ' + rkTotal.toLocaleString('id-ID') + ' data dimuat — sisanya sedang dimuat otomatis.';
         }
         table.on('dataProcessed', updateInfo);
         table.on('renderComplete', updateInfo);

@@ -162,6 +162,33 @@
                 return '<input type="checkbox" id="select_all_ids">';
             }
 
+            // Editor textarea custom: Enter = SIMPAN, Shift+Enter = baris baru.
+            // (Editor "textarea" bawaan Tabulator menjadikan Enter sebagai baris
+            // baru sehingga tidak pernah menyimpan lewat Enter.)
+            function textareaEnterSave(cell, onRendered, success, cancel) {
+                var val = cell.getValue();
+                var ta = document.createElement('textarea');
+                ta.value = (val === null || val === undefined) ? '' : val;
+                ta.style.cssText =
+                    'width:100%;box-sizing:border-box;min-height:60px;padding:4px 6px;' +
+                    'border:1px solid #1b6fd8;font:inherit;line-height:1.35;resize:vertical;outline:none;';
+                var finished = false;
+                function done()  { if (finished) return; finished = true; success(ta.value); }
+                function abort() { if (finished) return; finished = true; cancel(); }
+                onRendered(function () {
+                    ta.focus();
+                    ta.style.height = Math.max(60, ta.scrollHeight) + 'px';
+                    try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e) {}
+                });
+                ta.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); done(); }
+                    else if (e.key === 'Escape')          { e.preventDefault(); e.stopPropagation(); abort(); }
+                    // Shift+Enter: biarkan default → baris baru
+                });
+                ta.addEventListener('blur', function () { done(); });
+                return ta;
+            }
+
             // Nilai mentah untuk editor (bukan tampilan)
             var table = new Tabulator(el, {
                 index: 'id_bank_masuk',
@@ -196,14 +223,14 @@
                     { title: 'Penerima', field: 'penerima', width: 180, widthGrow: 1, formatter: fmtText,
                       cssClass: 'bm-wrap bm-editable', editor: 'input' },
                     { title: 'Uraian', field: 'uraian', width: 320, widthGrow: 3, formatter: fmtText,
-                      cssClass: 'bm-wrap bm-editable', editor: 'textarea', tooltip: true },
+                      cssClass: 'bm-wrap bm-editable', editor: textareaEnterSave, tooltip: true },
                     { title: 'Jenis', field: 'id_jenis_pembayaran', width: 110, formatter: fmtRef('jenis', 'jenis_pembayaran'),
                       cssClass: 'bm-editable', editor: 'list',
                       editorParams: { values: editorValues.jenis, autocomplete: true, listOnEmpty: true } },
                     { title: 'Debet', field: 'debet_raw', width: 130, hozAlign: 'right', formatter: fmtRupiah,
                       cssClass: 'bm-debet bm-editable', editor: 'number' },
                     { title: 'Keterangan', field: 'keterangan', width: 220, widthGrow: 1, formatter: fmtText,
-                      cssClass: 'bm-wrap bm-editable', editor: 'textarea' }
+                      cssClass: 'bm-wrap bm-editable', editor: textareaEnterSave }
                 ],
 
                 rowFormatter: function (row) {

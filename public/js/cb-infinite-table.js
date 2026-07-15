@@ -3,12 +3,6 @@
  * tanpa pagination: chunk berikutnya di-fetch saat scroll mendekati dasar
  * .dataTables_scrollBody, lalu di-APPEND (baris lama tidak dibuang).
  *
- * Ala spreadsheet: setelah chunk pertama tampil, SISA data terus dimuat
- * otomatis di latar belakang (chunk besar) sampai habis, sehingga scrollbar
- * cepat mewakili seluruh data. Pengaman: bila scrollbar ditarik mentok ke
- * dasar sebelum semuanya termuat, sisa data ditarik sekali jalan dan posisi
- * scroll dilempar ke baris terakhir sungguhan.
- *
  * Tabel harus diinisialisasi dalam mode klien (serverSide: false, paging: false).
  * Data tetap diambil dari endpoint server-side (protokol DataTables/Yajra:
  * draw, start, length, search[value], columns[i][search][value]) sehingga
@@ -38,9 +32,6 @@
         this.url = options.url;
         this.chunkSize = options.chunkSize || 100;
         this.prefetchPx = options.prefetchPx || 600;
-        this.backgroundChunk = options.backgroundChunk || 1000;
-        this.backgroundChunkMax = options.backgroundChunkMax || 5000;
-        this.backgroundDelay = options.backgroundDelay || 250;
         this.extraParams = options.extraParams || function () { return {}; };
         this.onResponse = options.onResponse || null;
         this.infoTarget = options.infoTarget || null;
@@ -52,10 +43,6 @@
         this.failed = false;
         this.globalSearch = '';
         this.columnSearches = {};
-        // generation naik tiap applyFilters — respons dari filter lama diabaikan
-        // agar fetch latar belakang yang masih terbang tidak mengotori tabel baru.
-        this.generation = 0;
-        this._bgTimer = null;
 
         this._bind();
     }
@@ -86,7 +73,7 @@
         } else {
             text = this.loadedCount.toLocaleString('id-ID') + ' dari ' +
                 this.totalFiltered.toLocaleString('id-ID') +
-                ' data dimuat — sisanya sedang dimuat otomatis.';
+                ' data dimuat — scroll ke bawah untuk memuat berikutnya.';
         }
         $info.text(text);
     };
@@ -141,14 +128,12 @@
         if (this.totalFiltered !== null && this.loadedCount >= this.totalFiltered) return;
         if (!force && !this._nearBottom()) return;
 
-        var gen = this.generation;
         this.loading = true;
         this.failed = false;
         this._processing(true);
 
         this._fetch(this.loadedCount, this.chunkSize)
             .done(function (json) {
-                if (gen !== self.generation) return;   // filter sudah berganti
                 var rows = (json && json.data) || [];
                 self.totalFiltered = json && typeof json.recordsFiltered !== 'undefined'
                     ? parseInt(json.recordsFiltered, 10)
@@ -162,8 +147,6 @@
                 self._infoText();
                 // Chunk pertama bisa lebih pendek dari viewport — isi sampai penuh.
                 window.requestAnimationFrame(function () { self.loadNext(false); });
-                // Lanjutkan sisa data di latar belakang (ala spreadsheet).
-                self._scheduleBackground();
             })
             .fail(function () {
                 self.failed = true;
@@ -171,99 +154,12 @@
                 if ($info.length) $info.text('Gagal memuat data. Scroll lagi untuk mencoba ulang.');
             })
             .always(function () {
-                if (gen === self.generation) self.loading = false;
-                self._processing(false);
-            });
-    };
-
-    /**
-     * Pemuatan latar belakang: ambil chunk BESAR beruntun (tanpa indikator
-     * processing) sampai seluruh data termuat, agar scrollbar segera mewakili
-     * seluruh data. Append di bawah tidak menggeser posisi scroll user.
-     */
-    Loader.prototype._scheduleBackground = function () {
-        var self = this;
-        if (this._bgTimer) clearTimeout(this._bgTimer);
-        if (this.totalFiltered !== null && this.loadedCount >= this.totalFiltered) return;
-        this._bgTimer = setTimeout(function () { self._backgroundNext(); }, this.backgroundDelay);
-    };
-
-    Loader.prototype._backgroundNext = function () {
-        var self = this;
-        if (this.loading) { this._scheduleBackground(); return; }
-        if (this.totalFiltered !== null && this.loadedCount >= this.totalFiltered) return;
-
-        var gen = this.generation;
-        this.loading = true;
-
-        // Chunk adaptif: membesar mengikuti jumlah termuat (digandakan tiap
-        // putaran) agar draw ulang DataTables — yang makin mahal saat tabel
-        // makin besar — terjadi sesedikit mungkin pada data puluhan ribu baris.
-        var chunk = Math.min(Math.max(this.backgroundChunk, this.loadedCount), this.backgroundChunkMax);
-
-        this._fetch(this.loadedCount, chunk)
-            .done(function (json) {
-                if (gen !== self.generation) return;   // filter sudah berganti
-                var rows = (json && json.data) || [];
-                if (json && typeof json.recordsFiltered !== 'undefined') {
-                    self.totalFiltered = parseInt(json.recordsFiltered, 10);
-                }
-                if (rows.length) {
-                    self.table.rows.add(rows).draw(false);
-                    self.loadedCount += rows.length;
-                } else {
-                    // Server kehabisan data — anggap selesai agar tidak loop.
-                    self.totalFiltered = self.loadedCount;
-                }
-                self._infoText();
-                self._scheduleBackground();
-            })
-            .always(function () {
-                if (gen === self.generation) self.loading = false;
-            });
-        // .fail dibiarkan diam: scroll user berikutnya memicu percobaan ulang.
-    };
-
-    /**
-     * Pengaman lompat-ke-dasar: scrollbar ditarik mentok sebelum semua data
-     * termuat → tarik SEMUA sisa baris dalam satu request, lalu lempar scroll
-     * ke baris terakhir sungguhan.
-     */
-    Loader.prototype.loadRest = function () {
-        var self = this;
-        if (this.loading) return;
-        if (this.totalFiltered === null || this.loadedCount >= this.totalFiltered) return;
-
-        if (this._bgTimer) clearTimeout(this._bgTimer);
-        var gen = this.generation;
-        this.loading = true;
-        this._processing(true);
-
-        this._fetch(this.loadedCount, this.totalFiltered - this.loadedCount)
-            .done(function (json) {
-                if (gen !== self.generation) return;
-                var rows = (json && json.data) || [];
-                if (rows.length) {
-                    self.table.rows.add(rows).draw(false);
-                    self.loadedCount += rows.length;
-                }
-                if (json && typeof json.recordsFiltered !== 'undefined') {
-                    self.totalFiltered = parseInt(json.recordsFiltered, 10);
-                }
-                self._infoText();
-                var sb = self._scrollBody();
-                if (sb) sb.scrollTop = sb.scrollHeight;
-            })
-            .always(function () {
-                if (gen === self.generation) self.loading = false;
+                self.loading = false;
                 self._processing(false);
             });
     };
 
     Loader.prototype.applyFilters = function () {
-        this.generation++;                    // respons filter lama diabaikan
-        if (this._bgTimer) clearTimeout(this._bgTimer);
-        this.loading = false;
         this.loadedCount = 0;
         this.totalFiltered = null;
         this.table.clear().draw(false);
@@ -292,12 +188,10 @@
         var sb = this._scrollBody();
         var keepScroll = sb ? sb.scrollTop : 0;
 
-        var gen = this.generation;
         this.loading = true;
         this._processing(true);
         this._fetch(0, count)
             .done(function (json) {
-                if (gen !== self.generation) return;
                 var rows = (json && json.data) || [];
                 self.table.clear();
                 self.table.rows.add(rows).draw(false);
@@ -307,10 +201,9 @@
                     : rows.length;
                 self._infoText();
                 if (sb) sb.scrollTop = keepScroll;
-                self._scheduleBackground();
             })
             .always(function () {
-                if (gen === self.generation) self.loading = false;
+                self.loading = false;
                 self._processing(false);
             });
     };
@@ -320,13 +213,6 @@
         var sb = this._scrollBody();
         if (sb) {
             sb.addEventListener('scroll', function () {
-                // Scrollbar mentok ke dasar padahal data belum lengkap →
-                // tarik semua sisanya sekali jalan (ala spreadsheet).
-                var mentok = sb.scrollTop + sb.clientHeight >= sb.scrollHeight - 2;
-                if (mentok && self.totalFiltered !== null && self.loadedCount < self.totalFiltered) {
-                    self.loadRest();
-                    return;
-                }
                 self.loadNext(false);
             }, { passive: true });
         }

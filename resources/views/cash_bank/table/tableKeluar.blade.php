@@ -1,80 +1,84 @@
 @push('styles')
     <style>
+        /* ===== BANK KELUAR — Tabulator ala spreadsheet ===== */
         #example3 {
-            table-layout: fixed !important;
-            width: 100% !important;
-            min-width: 2800px;
+            border: 1px solid #d0dce8;
+            font-size: 12px;
+            /* Font persis seperti aplikasi (Source Sans Pro), disetel eksplisit
+               agar tema Tabulator tidak menggeser. */
+            font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI",
+                Roboto, "Helvetica Neue", Arial, sans-serif;
         }
-        #example3 th,
-        #example3 td {
-            white-space: nowrap;
-            vertical-align: middle;
-            overflow: hidden;
-            text-overflow: clip;
+        #example3 .tabulator-cell,
+        #example3 .tabulator-header .tabulator-col,
+        #example3 .tabulator-header .tabulator-col-title { font-family: inherit; }
+        #example3 .tabulator-header { background: #0d3b6e; border-bottom: 2px solid #082948; }
+        #example3 .tabulator-header .tabulator-col {
+            background: #0d3b6e !important; color: #fff !important; font-weight: 600; font-size: 11.5px;
+            border-right: 1px solid #ffffff !important;
         }
-        /* Ukuran berbasis data master dan uraian transaksi; outlier dibungkus ke bawah, bukan memperlebar kolom. */
-        #example3 td:nth-child(6),  /* Sumber Dana */
-        #example3 th:nth-child(6),
-        #example3 td:nth-child(7),  /* Bank Tujuan */
-        #example3 th:nth-child(7),
-        #example3 td:nth-child(8),  /* Kriteria */
-        #example3 th:nth-child(8),
-        #example3 td:nth-child(9),  /* Sub Kriteria */
-        #example3 th:nth-child(9),
-        #example3 td:nth-child(10), /* Item Sub Kriteria */
-        #example3 th:nth-child(10),
-        #example3 td:nth-child(11), /* Jenis Pembayaran */
-        #example3 th:nth-child(11),
-        #example3 td:nth-child(12), /* Penerima */
-        #example3 th:nth-child(12),
-        #example3 td:nth-child(13), /* Uraian */
-        #example3 th:nth-child(13),
-        #example3 td:nth-child(15), /* Keterangan */
-        #example3 th:nth-child(15) {
-            white-space: normal !important;
-            overflow-wrap: anywhere;
-            word-break: normal;
-            vertical-align: top;
-            line-height: 1.35;
-            overflow: visible !important;
-            text-overflow: clip !important;
+        #example3 .tabulator-header .tabulator-col .tabulator-col-title {
+            color: #fff; text-align: center; white-space: normal;
         }
-        /* Header navy */
-        #example3 thead th,
-        .dataTables_scrollHead thead th {
-            background: #0d3b6e !important;
-            color: #fff !important;
-            font-size: 11.5px;
-            font-weight: 600;
-            padding: 9px 8px;
-            border-color: #1a5276 !important;
-            text-align: center;
+        #example3 .tabulator-header .tabulator-col .tabulator-col-resize-handle { width: 6px; cursor: col-resize; }
+        #example3 .tabulator-header .tabulator-col:not(.tabulator-col-group) > .tabulator-col-resize-handle {
+            background: linear-gradient(to bottom, transparent 32%, rgba(255,255,255,.45) 32%, rgba(255,255,255,.45) 68%, transparent 68%)
+                center / 2px 100% no-repeat;
         }
-        /* Clickable header links */
-        .th-filter-link {
-            cursor: pointer;
-            text-decoration: underline;
-            text-decoration-style: dashed;
-            text-underline-offset: 3px;
-        }
-        .th-filter-link:hover { color: #f9e79f !important; }
-        .th-filter-link i { font-size: 9px; margin-left: 4px; opacity: 0.7; }
+        #example3 .tabulator-header .tabulator-col-resize-handle:hover { background: rgba(255,255,255,.35); }
+        #example3 .tabulator-tableholder { scrollbar-gutter: stable; }
+        #example3 .tabulator-cell { border-right: 1px solid #c3d2e0; border-color: #c3d2e0; padding: 6px 8px; }
+        #example3 .tabulator-row { border-bottom: 1px solid #c3d2e0; }
+        #example3 .tabulator-row.tabulator-row-even { background: #fbfdff; }
+        #example3 .tabulator-row:hover .tabulator-cell { background: #f0f5fb; }
 
-        /* Search popup — shared style */
+        #example3 .tabulator-cell.bk-active-cell {
+            outline: 2px solid #1b6fd8; outline-offset: -2px; background: #e8f1fd !important;
+        }
+        #example3 .tabulator-row:hover .tabulator-cell.bk-active-cell { background: #e8f1fd !important; }
+        #example3 .tabulator-cell.bk-range-cell { background: #dbeafe !important; }
+        #example3 .tabulator-row:hover .tabulator-cell.bk-range-cell { background: #dbeafe !important; }
+        #example3.bk-noselect, #example3.bk-noselect * { user-select: none; }
+
+        #example3 .tabulator-cell.cb-saving-cell { background: #fff8df !important; }
+        #example3 .tabulator-cell.cb-saved-cell  { background: #e9f8ef !important; }
+        #example3 .tabulator-cell.cb-error-cell  { background: #fdecec !important; box-shadow: inset 0 0 0 2px #dc3545; }
+
+        #example3 .bk-wrap { white-space: normal !important; overflow-wrap: anywhere; line-height: 1.35; }
+        #example3 .bk-kredit { color: #0d3b6e; font-weight: 600; }
+        #example3 .tabulator-cell.bk-editable { cursor: cell; }
+
+        .bk-sum-pop {
+            position: fixed; z-index: 1080; display: none;
+            background: #0d3b6e; color: #fff; font-size: 12px; line-height: 1;
+            padding: 8px 12px; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.28);
+            pointer-events: none; white-space: nowrap;
+        }
+        .bk-sum-pop b { color: #ffd166; }
+        #bkInfo { padding: 2px 2px 8px; }
+
+        /* Dropdown editor list: item terpilih (biru muda) vs terarah/hover (solid) */
+        .tabulator-edit-list { border: 1px solid #1b6fd8 !important; border-radius: 4px;
+            box-shadow: 0 6px 22px rgba(13,59,110,.20); font-size: 12px; }
+        .tabulator-edit-list .tabulator-edit-list-item { padding: 7px 12px; color: #1f2d3d; }
+        .tabulator-edit-list .tabulator-edit-list-item.active { background: #e8f1fd; color: #0d3b6e; font-weight: 600; }
+        .tabulator-edit-list .tabulator-edit-list-item.focused,
+        .tabulator-edit-list .tabulator-edit-list-item.hover,
+        .tabulator-edit-list .tabulator-edit-list-item:hover {
+            background: #0d6efd !important; color: #fff !important; outline: none !important;
+        }
+
+        /* ===== Filter per-kolom (popup + badge) ===== */
+        .th-filter-link { cursor: pointer; text-decoration: underline; text-decoration-style: dashed; text-underline-offset: 3px; color: #fff; }
+        .th-filter-link:hover { color: #f9e79f !important; }
+        .th-filter-link i { font-size: 9px; margin-left: 4px; opacity: 0.75; }
+        .th-filter-link.th-filter-active { color: #ffe08a !important; }
         .col-search-popup {
-            display: none;
-            position: fixed;
-            z-index: 9999;
-            background: #fff;
-            border: 2px solid #0d3b6e;
-            border-radius: 8px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-            padding: 14px 16px;
-            width: 320px;
+            display: none; position: fixed; z-index: 9999; background: #fff;
+            border: 2px solid #0d3b6e; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+            padding: 14px 16px; width: 320px;
         }
-        .col-search-popup .popup-title {
-            font-size: 13px; font-weight: 700; color: #0d3b6e; margin-bottom: 10px;
-        }
+        .col-search-popup .popup-title { font-size: 13px; font-weight: 700; color: #0d3b6e; margin-bottom: 10px; }
         .col-search-popup .popup-title i { margin-right: 6px; }
         .col-search-popup .form-control-sm { font-size: 12px; height: 32px; }
         .col-search-popup .btn-cari {
@@ -82,199 +86,26 @@
             font-size: 12px; font-weight: 600; padding: 6px 14px; cursor: pointer;
         }
         .col-search-popup .btn-cari:hover { background: #1a5276; }
-        .col-search-popup .popup-footer {
-            margin-top: 8px; display: flex; justify-content: space-between; align-items: center;
-        }
-        .col-search-popup .btn-reset-col {
-            font-size: 11px; color: #999; cursor: pointer; text-decoration: underline;
-            background: none; border: none; padding: 0;
-        }
+        .col-search-popup .popup-footer { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .col-search-popup .btn-reset-col { font-size: 11px; color: #999; cursor: pointer; text-decoration: underline; background: none; border: none; padding: 0; }
         .col-search-popup .btn-reset-col:hover { color: #c0392b; }
-        .col-search-popup .btn-close-col {
-            font-size: 11px; color: #999; cursor: pointer; background: none; border: none; padding: 0;
-        }
+        .col-search-popup .btn-close-col { font-size: 11px; color: #999; cursor: pointer; background: none; border: none; padding: 0; }
         .col-search-popup .btn-close-col:hover { color: #333; }
-        .th-filter-active { background: rgba(249,231,79,0.3) !important; }
-
-        /* Active filter badges */
-        .active-filters-bar {
-            display: none;
-            padding: 6px 0 10px;
-        }
+        .active-filters-bar { display: none; padding: 6px 0 10px; }
         .active-filters-bar .filter-badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: #e8f0f8; border: 1px solid #b8d4ea; border-radius: 4px;
-            padding: 4px 10px; font-size: 11px; color: #0d3b6e; font-weight: 600;
-            margin-right: 6px;
+            display: inline-flex; align-items: center; gap: 6px; background: #e8f0f8; border: 1px solid #b8d4ea;
+            border-radius: 4px; padding: 4px 10px; font-size: 11px; color: #0d3b6e; font-weight: 600; margin-right: 6px;
         }
-        .active-filters-bar .filter-badge .remove-filter {
-            cursor: pointer; color: #c0392b; font-weight: 800; font-size: 13px;
-        }
-        .active-filters-bar .filter-badge .remove-filter:hover { color: #e74c3c; }
-        .active-filters-bar .btn-clear-all {
-            font-size: 11px; color: #c0392b; cursor: pointer; text-decoration: underline;
-            background: none; border: none; padding: 0; margin-left: 6px;
-        }
-        #example3 td.cb-spreadsheet-cell {
-            cursor: cell;
-            outline: none;
-            position: relative;
-        }
-        #example3 td.cb-editable-cell::after {
-            content: '';
-            position: absolute;
-            right: 4px;
-            bottom: 4px;
-            width: 0;
-            height: 0;
-            border-left: 5px solid transparent;
-            border-bottom: 5px solid rgba(13, 59, 110, .35);
-            opacity: 0;
-        }
-        #example3 td.cb-editable-cell:hover::after,
-        #example3 td.cb-active-cell::after {
-            opacity: 1;
-        }
-        #example3 td.cb-active-cell {
-            box-shadow: inset 0 0 0 2px #0d6efd, inset 0 0 0 9999px rgba(13, 110, 253, .08);
-            background: #eef7ff !important;
-            outline: 2px solid #0d6efd;
-            outline-offset: -2px;
-        }
-        #example3 td.cb-editing-cell {
-            padding: 2px !important;
-            overflow: visible;
-        }
-        #example3 td.cb-saving-cell {
-            background: #fff8df !important;
-        }
-        #example3 td.cb-saved-cell {
-            background: #e9f8ef !important;
-        }
-        #example3 td.cb-error-cell {
-            background: #fdecec !important;
-            box-shadow: inset 0 0 0 2px #dc3545;
-        }
-        .cb-inline-editor {
-            width: 100%;
-            min-width: 100%;
-            height: 100%;
-            border: 1px solid #1f8ef1;
-            border-radius: 0;
-            padding: 5px 7px;
-            font-size: 12px;
-            background: #fff;
-            color: #1f2d3d;
-            outline: none;
-        }
-        textarea.cb-inline-editor {
-            min-height: 58px;
-            resize: vertical;
-            white-space: normal;
-        }
-        textarea.cb-inline-editor-wide {
-            width: 100%;
-            max-width: 100%;
-            min-height: 72px;
-            line-height: 1.35;
-            box-shadow: 0 4px 18px rgba(15, 23, 42, .14);
-            white-space: normal;
-            overflow-wrap: anywhere;
-        }
-        #example3 .select2-container--bootstrap4 .select2-selection {
-            border: 1px solid #1f8ef1;
-            border-radius: 0;
-            min-height: 32px;
-            font-size: 12px;
-        }
-        .cb-inline-dropdown.select2-dropdown {
-            border-color: #1f8ef1;
-            font-size: 12px;
-            z-index: 99999;
-        }
+        .active-filters-bar .filter-badge .remove-filter { cursor: pointer; color: #c0392b; font-weight: 800; font-size: 13px; }
+        .active-filters-bar .btn-clear-all { font-size: 11px; color: #c0392b; cursor: pointer; text-decoration: underline; background: none; border: none; padding: 0; margin-left: 6px; }
     </style>
 @endpush
 
-{{-- Active filter indicators --}}
 <div class="active-filters-bar" id="active-filters-bar"></div>
+<div id="bkInfo" class="small text-secondary">Memuat data...</div>
+<div id="example3"></div>
 
-<table id="example3" class="table table-bordered table-hover">
-    <thead>
-        <tr>
-            <th><input type="checkbox" id="select_all_ids"></th>
-            <th>No</th>
-            <th><span class="th-filter-link" data-filter-key="agenda">Agenda <i class="fas fa-search"></i></span></th>
-            <th>No Bukti</th>
-            <th><span class="th-filter-link" data-filter-key="tanggal">Tanggal <i class="fas fa-calendar-alt"></i></span></th>
-            <th><span class="th-filter-link" data-filter-key="sumber">Sumber Dana <i class="fas fa-filter"></i></span></th>
-            <th><span class="th-filter-link" data-filter-key="bank">Bank Tujuan <i class="fas fa-filter"></i></span></th>
-            <th><span class="th-filter-link" data-filter-key="kategori">Kriteria <i class="fas fa-filter"></i></span></th>
-            <th><span class="th-filter-link" data-filter-key="sub">Sub Kriteria <i class="fas fa-filter"></i></span></th>
-            <th><span class="th-filter-link" data-filter-key="item">Item Sub Kriteria <i class="fas fa-filter"></i></span></th>
-            <th><span class="th-filter-link" data-filter-key="jenis">Jenis Pembayaran <i class="fas fa-filter"></i></span></th>
-            <th><span class="th-filter-link" data-filter-key="penerima">Penerima <i class="fas fa-search"></i></span></th>
-            <th><span class="th-filter-link" data-filter-key="uraian">Uraian <i class="fas fa-search"></i></span></th>
-            <th><span class="th-filter-link" data-filter-key="kredit">Kredit <i class="fas fa-search"></i></span></th>
-            <th><span class="th-filter-link" data-filter-key="keterangan">Keterangan <i class="fas fa-search"></i></span></th>
-        </tr>
-    </thead>
-</table>
-
-{{-- ============ POPUP: Tanggal ============ --}}
-<div class="col-search-popup" id="popup-tanggal">
-    <div class="popup-title"><i class="fas fa-calendar-alt"></i>Filter Tanggal</div>
-    <div class="mb-2">
-        <label style="font-size:11px; color:#666; font-weight:600;">Dari Tanggal</label>
-        <input type="date" class="form-control form-control-sm" id="filter-tgl-dari">
-    </div>
-    <div class="mb-2">
-        <label style="font-size:11px; color:#666; font-weight:600;">Sampai Tanggal</label>
-        <input type="date" class="form-control form-control-sm" id="filter-tgl-sampai">
-    </div>
-    <button class="btn-cari" id="btn-cari-tanggal" style="width:100%;"><i class="fas fa-filter mr-1"></i>Terapkan</button>
-    <div class="popup-footer">
-        <button class="btn-reset-col" id="btn-reset-tanggal"><i class="fas fa-times mr-1"></i>Reset</button>
-        <button class="btn-close-col" id="btn-close-tanggal">Tutup</button>
-    </div>
-</div>
-
-{{-- ============ POPUP: Sumber Dana ============ --}}
-<div class="col-search-popup" id="popup-sumber">
-    <div class="popup-title"><i class="fas fa-filter"></i>Filter Sumber Dana</div>
-    <select class="form-control form-control-sm" id="filter-sumber-dana">
-        <option value="">-- Semua Sumber Dana --</option>
-        @foreach($sumberDana as $sd)
-            <option value="{{ $sd->nama_sumber_dana }}">{{ $sd->nama_sumber_dana }}</option>
-        @endforeach
-    </select>
-    <div style="margin-top:10px;">
-        <button class="btn-cari" id="btn-cari-sumber" style="width:100%;"><i class="fas fa-filter mr-1"></i>Terapkan</button>
-    </div>
-    <div class="popup-footer">
-        <button class="btn-reset-col" id="btn-reset-sumber"><i class="fas fa-times mr-1"></i>Reset</button>
-        <button class="btn-close-col" id="btn-close-sumber">Tutup</button>
-    </div>
-</div>
-
-{{-- ============ POPUP: Uraian ============ --}}
-<div class="col-search-popup" id="popup-uraian">
-    <div class="popup-title"><i class="fas fa-search"></i>Cari Uraian</div>
-    <div class="input-group">
-        <input type="text" class="form-control form-control-sm" id="uraian-search-input"
-               placeholder="Ketik kata kunci, misal: TBS" autocomplete="off" style="border-radius:4px 0 0 4px;">
-        <div class="input-group-append">
-            <button class="btn-cari" id="btn-cari-uraian" type="button" style="border-radius:0 4px 4px 0;">
-                <i class="fas fa-search"></i>
-            </button>
-        </div>
-    </div>
-    <div class="popup-footer">
-        <button class="btn-reset-col" id="btn-reset-uraian"><i class="fas fa-times mr-1"></i>Reset</button>
-        <button class="btn-close-col" id="btn-close-uraian">Tutup</button>
-    </div>
-</div>
-
-{{-- ============ POPUP: Generic Column Filter ============ --}}
+{{-- Popup filter generik (dipakai semua kolom) --}}
 <div class="col-search-popup" id="popup-generic-filter">
     <div class="popup-title" id="generic-filter-title"><i class="fas fa-filter"></i>Filter</div>
     <div id="generic-filter-body"></div>
@@ -289,1273 +120,644 @@
 
 @push('scripts')
     <script>
-        $(document).ready(function () {
-            // Column indexes (0-based in DataTable columns array)
-            var COL_TANGGAL = 4;
-            var COL_SUMBER  = 5;
-            var COL_URAIAN  = 12;
-            var BULK_EDIT_FIELDS = [
-                'id_sumber_dana',
-                'id_bank_tujuan',
-                'id_kategori_kriteria',
-                'id_sub_kriteria',
-                'id_item_sub_kriteria',
-                'id_jenis_pembayaran'
-            ];
-            var selectedInlineIds = {};
-            var inlineOptions = {
-                bankTujuan: @json($bankTujuan->map(fn($row) => ['value' => (string) $row->id_bank_tujuan, 'label' => $row->nama_tujuan])->values()),
-                sumberDana: @json($sumberDana->map(fn($row) => ['value' => (string) $row->id_sumber_dana, 'label' => $row->nama_sumber_dana])->values()),
-                kategori: @json($kategoriKriteria->map(fn($row) => ['value' => (string) $row->id_kategori_kriteria, 'label' => $row->nama_kriteria])->values()),
-                jenisPembayaran: @json($jenisPembayaran->map(fn($row) => ['value' => (string) $row->id_jenis_pembayaran, 'label' => $row->nama_jenis_pembayaran])->values())
+        (function () {
+            'use strict';
+
+            var el = document.getElementById('example3');
+            if (!el || !window.Tabulator) { return; }
+
+            // ── Opsi referensi statis (id → nama) ──
+            var refValues = {
+                sumberDana: @json($sumberDana->pluck('nama_sumber_dana', 'id_sumber_dana')),
+                bankTujuan: @json($bankTujuan->pluck('nama_tujuan', 'id_bank_tujuan')),
+                kategori:   @json($kategoriKriteria->pluck('nama_kriteria', 'id_kategori_kriteria')),
+                jenis:      @json($jenisPembayaran->pluck('nama_jenis_pembayaran', 'id_jenis_pembayaran'))
             };
+            function withDash(map) { var o = { '-': '-' }; Object.keys(map).forEach(function (k) { o[k] = map[k]; }); return o; }
+            var editorValues = {
+                sumberDana: withDash(refValues.sumberDana),
+                bankTujuan: withDash(refValues.bankTujuan),
+                kategori:   withDash(refValues.kategori),
+                jenis:      withDash(refValues.jenis)
+            };
+
+            // ── Peta dependensi Sub Kriteria (per Kriteria) & Item (per Sub) ──
+            var subKriteriaAll = @json($subKriteria->map(fn($r) => ['id' => (string) $r->id_sub_kriteria, 'kat' => (string) $r->id_kategori_kriteria, 'nama' => trim($r->nama_sub_kriteria)])->values());
+            var itemSubAll = @json($itemSubKriteria->map(fn($r) => ['id' => (string) $r->id_item_sub_kriteria, 'sub' => (string) $r->id_sub_kriteria, 'nama' => trim($r->nama_item_sub_kriteria)])->values());
+
+            var subsByKategori = {}, subNameById = { '-': '-' };
+            subKriteriaAll.forEach(function (s) {
+                subNameById[s.id] = s.nama;
+                (subsByKategori[s.kat] = subsByKategori[s.kat] || { '-': '-' })[s.id] = s.nama;
+            });
+            var itemsBySub = {}, itemNameById = { '-': '-' }, _seenItem = {};
+            itemSubAll.forEach(function (it) {
+                itemNameById[it.id] = it.nama;
+                var grp = itemsBySub[it.sub] = itemsBySub[it.sub] || { '-': '-' };
+                var key = it.sub + '|' + it.nama.toLowerCase();
+                if (!_seenItem[key]) { _seenItem[key] = true; grp[it.id] = it.nama; }   // dedupe nama per sub
+            });
+
+            // Opsi untuk filter select (pakai nama)
             var filterOptions = {
-                sumber: @json($sumberDana->map(fn($row) => ['value' => $row->nama_sumber_dana, 'label' => $row->nama_sumber_dana])->values()),
-                bank: @json($bankTujuan->map(fn($row) => ['value' => $row->nama_tujuan, 'label' => $row->nama_tujuan])->values()),
-                kategori: @json($kategoriKriteria->map(fn($row) => ['value' => $row->nama_kriteria, 'label' => $row->nama_kriteria])->values()),
-                sub: @json($subKriteria->map(fn($row) => ['value' => $row->nama_sub_kriteria, 'label' => $row->nama_sub_kriteria])->values()),
-                item: @json($itemSubKriteria->map(fn($row) => ['value' => $row->nama_item_sub_kriteria, 'label' => $row->nama_item_sub_kriteria])->unique('value')->values()),
-                jenis: @json($jenisPembayaran->map(fn($row) => ['value' => $row->nama_jenis_pembayaran, 'label' => $row->nama_jenis_pembayaran])->values())
-            };
-            var columnFilters = {
-                agenda: { label: 'Agenda', col: 2, type: 'text', icon: 'fas fa-search' },
-                tanggal: { label: 'Tanggal', col: 4, type: 'date', icon: 'fas fa-calendar-alt' },
-                sumber: { label: 'Sumber Dana', col: 5, type: 'select', icon: 'fas fa-filter', options: filterOptions.sumber },
-                bank: { label: 'Bank Tujuan', col: 6, type: 'select', icon: 'fas fa-filter', options: filterOptions.bank },
-                kategori: { label: 'Kriteria', col: 7, type: 'select', icon: 'fas fa-filter', options: filterOptions.kategori },
-                sub: { label: 'Sub Kriteria', col: 8, type: 'select', icon: 'fas fa-filter', options: filterOptions.sub },
-                item: { label: 'Item Sub Kriteria', col: 9, type: 'select', icon: 'fas fa-filter', options: filterOptions.item },
-                jenis: { label: 'Jenis Pembayaran', col: 10, type: 'select', icon: 'fas fa-filter', options: filterOptions.jenis },
-                penerima: { label: 'Penerima', col: 11, type: 'text', icon: 'fas fa-search' },
-                uraian: { label: 'Uraian', col: 12, type: 'text', icon: 'fas fa-search' },
-                kredit: { label: 'Kredit', col: 13, type: 'text', icon: 'fas fa-search' },
-                keterangan: { label: 'Keterangan', col: 14, type: 'text', icon: 'fas fa-search' }
-            };
-            var currentGenericFilterKey = null;
-            // Opsi "-" di semua dropdown = kosongkan nilai (dokumen tanpa data itu)
-            inlineOptions.kategori.unshift({ value: '-', label: '-' });
-            inlineOptions.sumberDana.unshift({ value: '-', label: '-' });
-            inlineOptions.bankTujuan.unshift({ value: '-', label: '-' });
-            inlineOptions.jenisPembayaran.unshift({ value: '-', label: '-' });
-            var editableColumns = {
-                2:  { field: 'agenda_tahun', type: 'text' },
-                3:  { field: 'no_bukti', type: 'text' },
-                4:  { field: 'tanggal', type: 'date' },
-                5:  { field: 'id_sumber_dana', type: 'select', source: 'sumberDana' },
-                6:  { field: 'id_bank_tujuan', type: 'select', source: 'bankTujuan' },
-                7:  { field: 'id_kategori_kriteria', type: 'select', source: 'kategori' },
-                8:  { field: 'id_sub_kriteria', type: 'select', source: 'subKriteria' },
-                9:  { field: 'id_item_sub_kriteria', type: 'select', source: 'itemSubKriteria' },
-                10: { field: 'id_jenis_pembayaran', type: 'select', source: 'jenisPembayaran' },
-                11: { field: 'penerima', type: 'text' },
-                12: { field: 'uraian', type: 'textarea' },
-                13: { field: 'kredit', type: 'currency' },
-                14: { field: 'keterangan', type: 'textarea' }
+                sumber: @json($sumberDana->map(fn($r) => ['value' => $r->nama_sumber_dana, 'label' => $r->nama_sumber_dana])->values()),
+                bank:   @json($bankTujuan->map(fn($r) => ['value' => $r->nama_tujuan, 'label' => $r->nama_tujuan])->values()),
+                kategori: @json($kategoriKriteria->map(fn($r) => ['value' => $r->nama_kriteria, 'label' => $r->nama_kriteria])->values()),
+                sub:    @json($subKriteria->map(fn($r) => ['value' => $r->nama_sub_kriteria, 'label' => $r->nama_sub_kriteria])->values()),
+                item:   @json($itemSubKriteria->map(fn($r) => ['value' => $r->nama_item_sub_kriteria, 'label' => $r->nama_item_sub_kriteria])->unique('value')->values()),
+                jenis:  @json($jenisPembayaran->map(fn($r) => ['value' => $r->nama_jenis_pembayaran, 'label' => $r->nama_jenis_pembayaran])->values())
             };
 
-            function renderInlineText(data, type) {
-                return type === 'display' ? escapeHtml(data || '-') : (data || '');
+            var BULK_FIELDS = ['id_sumber_dana', 'id_bank_tujuan', 'id_kategori_kriteria',
+                'id_sub_kriteria', 'id_item_sub_kriteria', 'id_jenis_pembayaran'];
+
+            var bkSelected = {};
+            var bkTotal = null;
+
+            // ── Formatter ──
+            function fmtRef(mapKey, fallbackField) {
+                return function (cell) {
+                    var v = cell.getValue();
+                    if (v === null || v === undefined || v === '' || v === '-') return '-';
+                    var name = refValues[mapKey][String(v)];
+                    if (name) return name;
+                    var fb = cell.getRow().getData()[fallbackField];
+                    return fb || '-';
+                };
             }
-
-            // Tanpa pagination: data dimuat bertahap per 100 baris oleh
-            // CbInfiniteTable (append saat scroll mendekati dasar tabel), baris
-            // yang sudah tampil tidak dibuang. Pencarian & filter kolom tetap
-            // dieksekusi server terhadap SELURUH data via cbLoader.applyFilters().
-            var table = $('#example3').DataTable({
-                processing: true,
-                serverSide: false,
-                paging: false,
-                ordering: false,
-                autoWidth: false,
-                rowId: function (row) {
-                    return row && row.id_bank_keluar ? 'bank-keluar-' + row.id_bank_keluar : null;
-                },
-                scrollX: true,
-                scrollY: '60vh',
-                scrollCollapse: true,
-                dom: 'frti',
-                columns: [
-                    { data: 'checkbox',            width: '35px' },
-                    { data: 'DT_RowIndex',         width: '45px',  orderable: false, searchable: false, title: 'No', render: renderInlineText },
-                    { data: 'agenda_tahun',        width: '105px', render: renderInlineText },
-                    { data: 'no_bukti',            width: '72px',  defaultContent: '-', title: 'No Bukti', render: renderInlineText },
-                    { data: 'tanggal',             width: '110px', render: renderInlineText },
-                    { data: 'sumber_dana',         width: '250px' },
-                    { data: 'bank_tujuan',         width: '180px' },
-                    { data: 'kategori_kriteria',   width: '220px' },
-                    { data: 'sub_kriteria',        width: '205px' },
-                    { data: 'item_sub_kriteria',   width: '245px' },
-                    { data: 'jenis_pembayaran',    width: '135px' },
-                    { data: 'penerima',            width: '220px' },
-                    { data: 'uraian',              width: '560px' },
-                    {
-                        data: 'kredit',
-                        width: '130px',
-                        className: 'text-right',
-                        render: function (data) {
-                            if (data === null || data === undefined || data === '') return '0';
-                            return data;
-                        }
-                    },
-                    { data: 'keterangan',          width: '240px' }
-                ],
-                columnDefs: [
-                    {
-                        targets: '_all',
-                        createdCell: function (td, cellData, rowData, row, col) {
-                            if (col === 0) return;
-                            $(td)
-                                .addClass('cb-spreadsheet-cell')
-                                .attr('tabindex', '0')
-                                .attr('data-col-index', col);
-                            if (editableColumns[col]) {
-                                $(td)
-                                    .addClass('cb-editable-cell')
-                                    .attr('data-field', editableColumns[col].field);
-                            }
-                        }
-                    }
-                ]
-            });
-
-            var cbLoader = CbInfiniteTable.init('#example3', {
-                url: "{{ route('bank-keluar.data') }}",
-                chunkSize: 100,
-                extraParams: function () {
-                    return {
-                        filter_tgl_dari: $('#filter-tgl-dari').val() || '',
-                        filter_tgl_sampai: $('#filter-tgl-sampai').val() || ''
-                    };
-                }
-            });
-
-            var activeCell = null;
-            var restoreActive = null;
-            var shiftSelectAnchorCell = null;
-
-            function cellColumn($cell) {
-                return parseInt($cell.attr('data-col-index'), 10);
+            function fmtSub(cell) {
+                var v = cell.getValue();
+                if (v === null || v === undefined || v === '' || v === '-') return '-';
+                return subNameById[String(v)] || cell.getRow().getData().sub_kriteria || '-';
             }
-
-            function setActiveCell($cell, options) {
-                options = options || {};
-                if (!$cell || !$cell.length || $cell.hasClass('cb-editing-cell')) return;
-                $('#example3 tbody td.cb-active-cell').removeClass('cb-active-cell');
-                activeCell = $cell;
-                activeCell.addClass('cb-active-cell');
-                // preventScroll saat skipScroll: aktivasi otomatis tidak boleh
-                // membuat halaman melompat ke posisi sel
-                try {
-                    activeCell[0].focus({ preventScroll: !!options.skipScroll });
-                } catch (err) {
-                    activeCell.focus();
-                }
-                if (!options.skipScroll && activeCell[0] && activeCell[0].scrollIntoView) {
-                    activeCell[0].scrollIntoView({ block: 'nearest', inline: 'nearest' });
-                }
+            function fmtItem(cell) {
+                var v = cell.getValue();
+                if (v === null || v === undefined || v === '' || v === '-') return '-';
+                return itemNameById[String(v)] || cell.getRow().getData().item_sub_kriteria || '-';
             }
-
-            function activateCellFromPointer(e, $cell) {
-                if ($(e.target).is('input, select, textarea, button, a, label')) return;
-                shiftSelectAnchorCell = $cell;
-                setActiveCell($cell, { skipScroll: true });
+            function fmtTanggal(cell) {
+                var v = cell.getValue();
+                if (!v) return '-';
+                return (typeof moment !== 'undefined') ? moment(v, 'YYYY-MM-DD').format('DD MMMM YYYY') : v;
             }
-
-            function selectRowsBetweenCells($fromCell, $toCell) {
-                var $rows = $('#example3 tbody tr');
-                var start = $rows.index($fromCell.closest('tr'));
-                var end = $rows.index($toCell.closest('tr'));
-
-                if (start < 0 || end < 0) return;
-                if (start > end) {
-                    var tmp = start;
-                    start = end;
-                    end = tmp;
-                }
-
-                $rows.slice(start, end + 1).each(function () {
-                    var rowData = table.row(this).data();
-                    if (!rowData || !rowData.id_bank_keluar) return;
-                    var id = String(rowData.id_bank_keluar);
-                    selectedInlineIds[id] = true;
-                    $(this).find('.checkbox_ids').prop('checked', true);
-                });
-                syncSelectAllCheckbox();
-            }
-
-            function findCellByRowId(rowId, colIndex) {
-                var found = $();
-                table.rows({ page: 'current' }).every(function () {
-                    var data = this.data();
-                    if (String(data.id_bank_keluar) === String(rowId)) {
-                        found = $(this.node()).children('td').eq(colIndex);
-                    }
-                });
-                return found;
-            }
-
-            function ensureActiveCell() {
-                if (restoreActive) {
-                    var $restored = findCellByRowId(restoreActive.id, restoreActive.col);
-                    restoreActive = null;
-                    if ($restored.length) {
-                        setActiveCell($restored);
-                        return;
-                    }
-                }
-                if (activeCell && activeCell.length && !$.contains(document, activeCell[0])) {
-                    activeCell = null;
-                }
-                // Saat halaman baru dibuka: sel pertama langsung aktif tanpa
-                // harus diklik dulu (keyboard navigasi langsung jalan)
-                if (!activeCell || !activeCell.length) {
-                    var $pertama = $('#example3 tbody td.cb-spreadsheet-cell').first();
-                    if ($pertama.length) {
-                        shiftSelectAnchorCell = $pertama;
-                        setActiveCell($pertama, { skipScroll: true });
-                    }
-                }
-            }
-
-            function syncScrollBodyHeight() {
-                var info = table.page.info();
-                var $scrollBody = $(table.table().container()).find('.dataTables_scrollBody');
-
-                if (!$scrollBody.length) return;
-
-                if (info.recordsDisplay > 0 && info.recordsDisplay <= 12 && !document.body.classList.contains('cb-table-fullscreen')) {
-                    $scrollBody.css({
-                        height: 'auto',
-                        maxHeight: 'none',
-                        minHeight: 0
-                    });
-                    return;
-                }
-
-                $scrollBody.css({
-                    height: '60vh',
-                    maxHeight: '60vh',
-                    minHeight: ''
-                });
-            }
-
-            function protectNativeScrollbars() {
-                var scrollBody = $(table.table().container()).find('.dataTables_scrollBody')[0];
-                if (!scrollBody || scrollBody._cbBankKeluarScrollbarGuard) return;
-
-                scrollBody._cbBankKeluarScrollbarGuard = true;
-                scrollBody.addEventListener('pointerdown', function (event) {
-                    var rect = scrollBody.getBoundingClientRect();
-                    var verticalScrollbarWidth = scrollBody.offsetWidth - scrollBody.clientWidth;
-                    var horizontalScrollbarHeight = scrollBody.offsetHeight - scrollBody.clientHeight;
-                    var onVerticalScrollbar = verticalScrollbarWidth > 0 && event.clientX >= rect.right - verticalScrollbarWidth - 2;
-                    var onHorizontalScrollbar = horizontalScrollbarHeight > 0 && event.clientY >= rect.bottom - horizontalScrollbarHeight - 2;
-
-                    if (onVerticalScrollbar || onHorizontalScrollbar) {
-                        event.stopImmediatePropagation();
-                    }
-                }, true);
-            }
-
-            table.on('draw', function () {
-                syncScrollBodyHeight();
-                protectNativeScrollbars();
-                reapplyCheckedRows();
-                ensureActiveCell();
-            });
-
-            table.on('init.dt', protectNativeScrollbars);
-
-            $(document).on('change', '.checkbox_ids', function () {
-                var id = String($(this).val());
-                if (this.checked) {
-                    selectedInlineIds[id] = true;
-                } else {
-                    delete selectedInlineIds[id];
-                }
-                syncSelectAllCheckbox();
-            });
-
-            $(document).on('click', '#select_all_ids', function () {
-                var checked = this.checked;
-                setTimeout(function () {
-                    $('.checkbox_ids').each(function () {
-                        var id = String($(this).val());
-                        if (checked) {
-                            selectedInlineIds[id] = true;
-                        } else {
-                            delete selectedInlineIds[id];
-                        }
-                    });
-                    reapplyCheckedRows();
-                }, 0);
-            });
-
-            $('#example3 tbody').on('pointerdown', 'td.cb-spreadsheet-cell', function (e) {
-                if (e.pointerType === 'mouse' && e.button !== 0) return;
-                activateCellFromPointer(e, $(this));
-                e.stopPropagation();
-            });
-
-            $('#example3 tbody').on('click', 'td.cb-spreadsheet-cell', function (e) {
-                activateCellFromPointer(e, $(this));
-            });
-
-            $('#example3 tbody').on('dblclick', 'td.cb-editable-cell', function () {
-                beginInlineEdit($(this));
-            });
-
-            $('#example3 tbody').on('keydown', 'td.cb-spreadsheet-cell', function (e) {
-                var $cell = $(this);
-                if ($cell.hasClass('cb-editing-cell')) return;
-
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    beginInlineEdit($cell);
-                    return;
-                }
-
-                var col = cellColumn($cell);
-                var $row = $cell.closest('tr');
-                var $target = $();
-
-                if (e.shiftKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-                    e.preventDefault();
-                    if (!shiftSelectAnchorCell || !shiftSelectAnchorCell.length || !$.contains(document, shiftSelectAnchorCell[0])) {
-                        shiftSelectAnchorCell = $cell;
-                    }
-                    $target = e.key === 'ArrowDown'
-                        ? $row.next('tr').children('td').eq(col)
-                        : $row.prev('tr').children('td').eq(col);
-
-                    if ($target.length && $target.hasClass('cb-spreadsheet-cell')) {
-                        selectRowsBetweenCells(shiftSelectAnchorCell, $target);
-                        setActiveCell($target);
-                    }
-                    return;
-                }
-
-                if (e.key === 'ArrowRight' || e.key === 'Tab') {
-                    e.preventDefault();
-                    $target = $row.children('td').eq(col + 1);
-                } else if (e.key === 'ArrowLeft') {
-                    e.preventDefault();
-                    $target = $row.children('td').eq(col - 1);
-                } else if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    $target = $row.next('tr').children('td').eq(col);
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    $target = $row.prev('tr').children('td').eq(col);
-                }
-
-                if ($target.length && $target.hasClass('cb-spreadsheet-cell')) {
-                    shiftSelectAnchorCell = $target;
-                    setActiveCell($target);
-                }
-            });
-
-            function getCellRawValue(rowData, meta) {
-                var value = rowData[meta.field];
-                if (meta.field === 'tanggal') value = rowData.tanggal_raw || '';
-                if (meta.field === 'kredit') value = rowData.kredit_raw || rowData.kredit || 0;
-                if (value === null || value === undefined || value === '') {
-                    // Kolom referensi kosong tampil sebagai opsi "-" di dropdown
-                    return String(meta.field).indexOf('id_') === 0 ? '-' : '';
-                }
-                return value;
-            }
-
-            function escapeHtml(value) {
-                return $('<div>').text(value === null || value === undefined ? '' : value).html();
-            }
-
-            function formatRupiah(value) {
-                var raw = String(value || '').replace(/\D/g, '');
+            function fmtRupiah(cell) {
+                var v = cell.getValue();
+                var raw = String(v === null || v === undefined ? '' : v).replace(/[^\d]/g, '');
                 return raw ? raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '0';
             }
-
-            function currencyToNumber(value) {
-                return String(value || '').replace(/\D/g, '') || '0';
+            function fmtText(cell) {
+                var v = cell.getValue();
+                return (v === null || v === undefined || v === '') ? '-' : v;
             }
-
-            function optionLabel(options, value) {
-                var match = (options || []).find(function (opt) {
-                    return String(opt.value) === String(value);
-                });
-                return match ? match.label : '-';
+            function fmtCheckbox(cell) {
+                var id = cell.getRow().getData().id_bank_keluar;
+                return '<input type="checkbox" class="checkbox_ids" name="ids[]" value="' + id + '"' +
+                    (bkSelected[String(id)] ? ' checked' : '') + '>';
             }
+            function fmtSelectAll() { return '<input type="checkbox" id="select_all_ids">'; }
 
-            function resolvedOptions(options) {
-                var deferred = $.Deferred();
-                deferred.resolve(options);
-                return deferred.promise();
-            }
-
-            function keepOptionInView($option) {
-                var option = $option.get(0);
-                var list = $('.select2-container--open .select2-results__options').get(0);
-                if (!option || !list) return;
-
-                var optionTop = option.offsetTop;
-                var optionBottom = optionTop + option.offsetHeight;
-                var listTop = list.scrollTop;
-                var listBottom = listTop + list.clientHeight;
-
-                if (optionTop < listTop) {
-                    list.scrollTop = optionTop;
-                } else if (optionBottom > listBottom) {
-                    list.scrollTop = optionBottom - list.clientHeight;
-                }
-            }
-
-            function highlightInlineOption($options, index) {
-                var $option = $options.eq(index);
-                $options.removeClass('select2-results__option--highlighted');
-                $option.addClass('select2-results__option--highlighted');
-                keepOptionInView($option);
-            }
-
-            function bindInlineDropdownKeyboard($select, chooseHighlighted, cancelEdit) {
-                $(document).off('keydown.cbInlineSelect2').on('keydown.cbInlineSelect2', function (e) {
-                    if (!$('.select2-container--open').length) return;
-
-                    var $options = $('.select2-container--open .select2-results__option[role="option"]').not('[aria-disabled="true"]');
-                    if (!$options.length) return;
-
-                    var currentIndex = $options.index($('.select2-container--open .select2-results__option--highlighted'));
-
-                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        e.stopImmediatePropagation();
-
-                        var nextIndex = currentIndex;
-                        if (e.key === 'ArrowDown') {
-                            nextIndex = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, $options.length - 1);
-                        } else {
-                            nextIndex = currentIndex < 0 ? $options.length - 1 : Math.max(currentIndex - 1, 0);
-                        }
-                        highlightInlineOption($options, nextIndex);
-                        return false;
-                    }
-
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        e.stopImmediatePropagation();
-                        var $highlighted = $('.select2-container--open .select2-results__option--highlighted').first();
-                        if (!$highlighted.length) $highlighted = $options.first();
-                        var selectedData = $highlighted.data('data');
-                        var selectedValue = selectedData && selectedData.id !== undefined
-                            ? selectedData.id
-                            : null;
-
-                        if (selectedValue === null) {
-                            var selectedText = $.trim($highlighted.text());
-                            $select.find('option').each(function () {
-                                if ($.trim($(this).text()) === selectedText) {
-                                    selectedValue = $(this).val();
-                                    return false;
-                                }
-                            });
-                        }
-
-                        if (selectedValue !== null) {
-                            $select.val(String(selectedValue)).trigger('change.select2');
-                        }
-                        chooseHighlighted();
-                        return false;
-                    }
-
-                    if (e.key === 'Escape') {
-                        e.preventDefault();
-                        e.stopImmediatePropagation();
-                        cancelEdit();
-                        return false;
-                    }
-                });
-            }
-
-            function getSelectOptions(meta, rowData) {
-                if (meta.source === 'subKriteria') {
-                    var kategori = rowData.id_kategori_kriteria || '-';
-                    if (kategori === '-') return resolvedOptions([{ value: '-', label: '-' }]);
-                    return $.get('/get-sub-kriteria/' + kategori).then(function (rows) {
-                        var options = [{ value: '-', label: '-' }];
-                        (rows || []).forEach(function (row) {
-                            options.push({ value: String(row.id_sub_kriteria), label: row.nama_sub_kriteria });
-                        });
-                        return options;
-                    });
-                }
-
-                if (meta.source === 'itemSubKriteria') {
-                    var sub = rowData.id_sub_kriteria || '-';
-                    if (sub === '-') return resolvedOptions([{ value: '-', label: '-' }]);
-                    return $.get('/get-item-sub-kriteria/' + sub).then(function (rows) {
-                        var options = [{ value: '-', label: '-' }];
-                        (rows || []).forEach(function (row) {
-                            options.push({ value: String(row.id_item_sub_kriteria), label: row.nama_item_sub_kriteria });
-                        });
-                        return options;
-                    });
-                }
-
-                return resolvedOptions(inlineOptions[meta.source] || []);
-            }
-
-            function buildPayload(rowData, field, value) {
-                var payload = {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    _method: 'PUT',
-                    agenda_tahun: rowData.agenda_tahun || '',
-                    tanggal: rowData.tanggal_raw || '',
-                    id_bank_tujuan: rowData.id_bank_tujuan || '',
-                    id_sumber_dana: rowData.id_sumber_dana || '',
-                    id_kategori_kriteria: rowData.id_kategori_kriteria || '-',
-                    id_sub_kriteria: rowData.id_sub_kriteria || '-',
-                    id_item_sub_kriteria: rowData.id_item_sub_kriteria || '-',
-                    id_jenis_pembayaran: rowData.id_jenis_pembayaran || '',
-                    penerima: rowData.penerima || '',
-                    uraian: rowData.uraian || '',
-                    kredit: rowData.kredit_raw || currencyToNumber(rowData.kredit),
-                    keterangan: rowData.keterangan || ''
+            // Judul kolom dengan pemicu filter
+            function titleFilter(label, key, icon) {
+                return function () {
+                    return '<span class="th-filter-link" data-filter-key="' + key + '">' +
+                        label + ' <i class="' + (icon || 'fas fa-filter') + '"></i></span>';
                 };
-
-                if (field === 'tanggal') payload.tanggal = value || '';
-                else if (field === 'kredit') payload.kredit = currencyToNumber(value);
-                else payload[field] = value || '';
-
-                if (field === 'id_kategori_kriteria') {
-                    payload.id_kategori_kriteria = value || '-';
-                    payload.id_sub_kriteria = '-';
-                    payload.id_item_sub_kriteria = '-';
-                }
-                if (field === 'id_sub_kriteria') {
-                    payload.id_sub_kriteria = value || '-';
-                    payload.id_item_sub_kriteria = '-';
-                }
-                if (field === 'id_item_sub_kriteria') {
-                    payload.id_item_sub_kriteria = value || '-';
-                }
-                if (field === 'id_jenis_pembayaran' && optionLabel(inlineOptions.jenisPembayaran, value) === 'MPN') {
-                    payload.penerima = 'Modul Penerimaan Negara (MPN)';
-                }
-
-                return payload;
             }
 
-            function buildFieldPayload(field, value) {
-                var payload = {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    _method: 'PUT'
-                };
-
-                if (field === 'kredit') payload.kredit = currencyToNumber(value);
-                else payload[field] = value || '';
-
-                if (field === 'id_kategori_kriteria') {
-                    payload.id_kategori_kriteria = value || '-';
-                    payload.id_sub_kriteria = '-';
-                    payload.id_item_sub_kriteria = '-';
-                }
-                if (field === 'id_sub_kriteria') {
-                    payload.id_sub_kriteria = value || '-';
-                    payload.id_item_sub_kriteria = '-';
-                }
-                if (field === 'id_item_sub_kriteria') {
-                    payload.id_item_sub_kriteria = value || '-';
-                }
-                if (field === 'id_jenis_pembayaran' && optionLabel(inlineOptions.jenisPembayaran, value) === 'MPN') {
-                    payload.penerima = 'Modul Penerimaan Negara (MPN)';
-                }
-
-                return payload;
-            }
-
-            function syncSelectAllCheckbox() {
-                var $boxes = $('.checkbox_ids');
-                var total = $boxes.length;
-                var checked = $boxes.filter(':checked').length;
-                $('#select_all_ids').prop('checked', total > 0 && checked === total);
-            }
-
-            function rememberCheckedRowsFromDom() {
-                $('.checkbox_ids').each(function () {
-                    var id = String($(this).val());
-                    if (this.checked) {
-                        selectedInlineIds[id] = true;
-                    } else {
-                        delete selectedInlineIds[id];
-                    }
+            // Editor textarea: Enter=simpan, Shift+Enter=baris baru
+            function textareaEnterSave(cell, onRendered, success, cancel) {
+                var val = cell.getValue();
+                var ta = document.createElement('textarea');
+                ta.value = (val === null || val === undefined) ? '' : val;
+                ta.style.cssText = 'width:100%;box-sizing:border-box;min-height:60px;padding:4px 6px;' +
+                    'border:1px solid #1b6fd8;font:inherit;line-height:1.35;resize:vertical;outline:none;';
+                var finished = false;
+                function done()  { if (finished) return; finished = true; success(ta.value); }
+                function abort() { if (finished) return; finished = true; cancel(); }
+                onRendered(function () {
+                    ta.focus();
+                    ta.style.height = Math.max(60, ta.scrollHeight) + 'px';
+                    try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e) {}
                 });
-                syncSelectAllCheckbox();
-            }
-
-            function reapplyCheckedRows() {
-                $('.checkbox_ids').each(function () {
-                    this.checked = !!selectedInlineIds[String($(this).val())];
+                ta.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); done(); }
+                    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); abort(); }
                 });
-                syncSelectAllCheckbox();
+                ta.addEventListener('blur', function () { done(); });
+                return ta;
             }
 
-            function selectedRowIds() {
-                rememberCheckedRowsFromDom();
-                return Object.keys(selectedInlineIds);
-            }
-
-            function targetIdsForInlineSave(rowData, field) {
-                var selectedIds = selectedRowIds();
-                var currentId = String(rowData.id_bank_keluar);
-                var canBulk = BULK_EDIT_FIELDS.indexOf(field) !== -1 && selectedIds.indexOf(currentId) !== -1;
-
-                return canBulk && selectedIds.length > 1 ? selectedIds : [currentId];
-            }
-
-            function rowAndCellById(rowId, colIndex) {
-                var result = null;
-                table.rows({ page: 'current' }).every(function () {
-                    var data = this.data();
-                    if (String(data.id_bank_keluar) === String(rowId)) {
-                        result = {
-                            rowData: data,
-                            cell: $(this.node()).children('td').eq(colIndex)
-                        };
+            var table = new Tabulator(el, {
+                index: 'id_bank_keluar',
+                height: '62vh',
+                layout: localStorage.getItem('tabulator-cb-bank-keluar-columns') ? 'fitData' : 'fitColumns',
+                persistence: { columns: ['width'] },
+                persistenceID: 'cb-bank-keluar',
+                movableColumns: false,
+                editTriggerEvent: 'dblclick',
+                columnHeaderVertAlign: 'middle',
+                placeholder: 'Belum ada data Bank Keluar.',
+                columnDefaults: { resizable: true, headerSort: false, minWidth: 40, variableHeight: true },
+                columns: [
+                    { title: '', titleFormatter: fmtSelectAll, field: '_cb', width: 40, hozAlign: 'center', resizable: false, formatter: fmtCheckbox },
+                    { title: 'No', field: 'DT_RowIndex', width: 52, hozAlign: 'center' },
+                    { titleFormatter: titleFilter('Agenda', 'agenda', 'fas fa-search'), field: 'agenda_tahun', width: 105, formatter: fmtText, editor: 'input', cssClass: 'bk-editable' },
+                    { title: 'No Bukti', field: 'no_bukti', width: 80, formatter: fmtText, editor: 'input', cssClass: 'bk-editable' },
+                    { titleFormatter: titleFilter('Tanggal', 'tanggal', 'fas fa-calendar-alt'), field: 'tanggal_raw', width: 120, hozAlign: 'center', formatter: fmtTanggal, editor: 'input', editorParams: { elementAttributes: { type: 'date' } }, cssClass: 'bk-editable' },
+                    { titleFormatter: titleFilter('Sumber Dana', 'sumber'), field: 'id_sumber_dana', width: 220, widthGrow: 2, formatter: fmtRef('sumberDana', 'sumber_dana'), cssClass: 'bk-wrap bk-editable', editor: 'list', editorParams: { values: editorValues.sumberDana, autocomplete: true, listOnEmpty: true } },
+                    { titleFormatter: titleFilter('Bank Tujuan', 'bank'), field: 'id_bank_tujuan', width: 180, widthGrow: 1, formatter: fmtRef('bankTujuan', 'bank_tujuan'), cssClass: 'bk-wrap bk-editable', editor: 'list', editorParams: { values: editorValues.bankTujuan, autocomplete: true, listOnEmpty: true } },
+                    { titleFormatter: titleFilter('Kriteria', 'kategori'), field: 'id_kategori_kriteria', width: 200, widthGrow: 1, formatter: fmtRef('kategori', 'kategori_kriteria'), cssClass: 'bk-wrap bk-editable', editor: 'list', editorParams: { values: editorValues.kategori, autocomplete: true, listOnEmpty: true } },
+                    { titleFormatter: titleFilter('Sub Kriteria', 'sub'), field: 'id_sub_kriteria', width: 200, widthGrow: 1, formatter: fmtSub, cssClass: 'bk-wrap bk-editable', editor: 'list',
+                      editorParams: function (cell) {
+                          var kat = cell.getRow().getData().id_kategori_kriteria;
+                          return { values: subsByKategori[String(kat)] || { '-': '-' }, autocomplete: true, listOnEmpty: true };
+                      } },
+                    { titleFormatter: titleFilter('Item Sub Kriteria', 'item'), field: 'id_item_sub_kriteria', width: 240, widthGrow: 1, formatter: fmtItem, cssClass: 'bk-wrap bk-editable', editor: 'list',
+                      editorParams: function (cell) {
+                          var sub = cell.getRow().getData().id_sub_kriteria;
+                          return { values: itemsBySub[String(sub)] || { '-': '-' }, autocomplete: true, listOnEmpty: true };
+                      } },
+                    { titleFormatter: titleFilter('Jenis Pembayaran', 'jenis'), field: 'id_jenis_pembayaran', width: 135, formatter: fmtRef('jenis', 'jenis_pembayaran'), cssClass: 'bk-editable', editor: 'list', editorParams: { values: editorValues.jenis, autocomplete: true, listOnEmpty: true } },
+                    { titleFormatter: titleFilter('Penerima', 'penerima', 'fas fa-search'), field: 'penerima', width: 200, widthGrow: 1, formatter: fmtText, cssClass: 'bk-wrap bk-editable', editor: 'input' },
+                    { titleFormatter: titleFilter('Uraian', 'uraian', 'fas fa-search'), field: 'uraian', width: 320, widthGrow: 3, formatter: fmtText, cssClass: 'bk-wrap bk-editable', editor: textareaEnterSave, tooltip: true },
+                    { titleFormatter: titleFilter('Kredit', 'kredit', 'fas fa-search'), field: 'kredit_raw', width: 130, hozAlign: 'right', formatter: fmtRupiah, cssClass: 'bk-kredit bk-editable', editor: 'number' },
+                    { titleFormatter: titleFilter('Keterangan', 'keterangan', 'fas fa-search'), field: 'keterangan', width: 220, widthGrow: 1, formatter: fmtText, cssClass: 'bk-wrap bk-editable', editor: textareaEnterSave }
+                ],
+                rowFormatter: function (row) {
+                    var d = row.getData();
+                    var cb = row.getElement().querySelector('input.checkbox_ids');
+                    if (cb) cb.checked = !!bkSelected[String(d.id_bank_keluar)];
+                    if (bkActive && String(d.id_bank_keluar) === String(bkActive.id)) {
+                        var c = row.getCell(bkActive.field);
+                        if (c) c.getElement().classList.add('bk-active-cell');
                     }
-                });
-                return result;
+                    bkPaintRow(row);
+                }
+            });
+
+            // ============ PILIHAN BARIS (checkbox) ============
+            function bkSelectedIds() { return Object.keys(bkSelected); }
+            function syncHeaderCheckbox() {
+                var total = table.getDataCount();
+                var h = document.getElementById('select_all_ids');
+                if (h) h.checked = total > 0 && bkSelectedIds().length >= total;
+            }
+            function refreshCheckboxUI() {
+                el.querySelectorAll('input.checkbox_ids').forEach(function (cb) { cb.checked = !!bkSelected[cb.value]; });
+                syncHeaderCheckbox();
+            }
+            $(el).on('change', 'input.checkbox_ids', function () {
+                if (this.checked) bkSelected[this.value] = true; else delete bkSelected[this.value];
+                syncHeaderCheckbox();
+            });
+            $(el).on('click', '#select_all_ids', function (e) {
+                e.stopPropagation();
+                var check = this.checked;
+                bkSelected = {};
+                if (check) { table.getData().forEach(function (d) { bkSelected[String(d.id_bank_keluar)] = true; }); }
+                refreshCheckboxUI();
+            });
+            $(el).on('mousedown', 'input.checkbox_ids, #select_all_ids', function (e) { e.stopPropagation(); });
+            window.bkSelectedIds = bkSelectedIds;
+            window.bkClearSelection = function () { bkSelected = {}; refreshCheckboxUI(); };
+
+            // ============ INLINE EDIT ============
+            function csrf() { return $('meta[name="csrf-token"]').attr('content'); }
+            function bkRowById(id) { return table.getRows().find(function (r) { return String(r.getData().id_bank_keluar) === String(id); }) || null; }
+            function bkShowInfo(title, iconCls, msg) {
+                if ($('#modalInfo').length) {
+                    $('#modalInfoTitle').text(title); $('#modalInfoIcon').attr('class', iconCls);
+                    $('#modalInfoMsg').text(msg); $('#modalInfo').modal('show');
+                } else { alert(msg); }
+            }
+            function payloadFor(field, v) {
+                var p = { _token: csrf(), _method: 'PUT' };
+                if (field === 'kredit_raw')       p.kredit = (v === null || v === '' ? 0 : v);
+                else if (field === 'tanggal_raw') p.tanggal = v || '';
+                else                              p[field] = (v === null || v === undefined ? '' : v);
+                return p;
+            }
+            // Field tambahan yang harus ikut dikirim (cascade) saat kolom tertentu berubah
+            function cascadeFor(field, value) {
+                var extra = {};
+                if (field === 'id_kategori_kriteria') { extra.id_sub_kriteria = '-'; extra.id_item_sub_kriteria = '-'; }
+                else if (field === 'id_sub_kriteria') { extra.id_item_sub_kriteria = '-'; }
+                else if (field === 'id_jenis_pembayaran' && refValues.jenis[String(value)] === 'MPN') {
+                    extra.penerima = 'Modul Penerimaan Negara (MPN)';
+                }
+                return extra;
+            }
+            // Terapkan cascade ke data baris (agar tampilan langsung ikut berubah)
+            function applyCascadeToRow(row, field, value) {
+                if (field === 'id_kategori_kriteria') row.update({ id_sub_kriteria: '-', id_item_sub_kriteria: '-', sub_kriteria: '-', item_sub_kriteria: '-' });
+                else if (field === 'id_sub_kriteria') row.update({ id_item_sub_kriteria: '-', item_sub_kriteria: '-' });
+                else if (field === 'id_jenis_pembayaran' && refValues.jenis[String(value)] === 'MPN') row.update({ penerima: 'Modul Penerimaan Negara (MPN)' });
             }
 
-            function formatTanggalDisplay(value) {
-                if (!value) return '-';
-                if (typeof moment !== 'undefined') {
-                    return moment(value, 'YYYY-MM-DD').format('DD MMMM YYYY');
+            table.on('cellEdited', function (cell) {
+                var editedRow = cell.getRow();
+                window.requestAnimationFrame(function () { editedRow.normalizeHeight(); });
+
+                var field = cell.getField();
+                var d = editedRow.getData();
+                var id = String(d.id_bank_keluar);
+                var value = cell.getValue();
+
+                var targets = [id];
+                if (BULK_FIELDS.indexOf(field) !== -1) {
+                    var sel = bkSelectedIds();
+                    if (sel.indexOf(id) !== -1 && sel.length > 1) targets = sel;
                 }
 
-                var parts = String(value).split('-');
-                return parts.length === 3 ? parts[2] + '-' + parts[1] + '-' + parts[0] : value;
-            }
-
-            function inlineDisplayValue(meta, value, payload, $cell) {
-                if (meta.field === 'tanggal') return formatTanggalDisplay(payload.tanggal);
-                if (meta.field === 'kredit') return formatRupiah(payload.kredit);
-                if (meta.type === 'select') {
-                    var selectedText = $cell.data('selected-label');
-                    return selectedText || '-';
-                }
-                return value || '-';
-            }
-
-            function applyInlineSaveToRow($cell, meta, rowData, value, payload) {
-                var display = inlineDisplayValue(meta, value, payload, $cell);
-
-                rowData[meta.field] = payload[meta.field];
-                if (Object.prototype.hasOwnProperty.call(payload, 'tanggal')) rowData.tanggal_raw = payload.tanggal;
-                if (Object.prototype.hasOwnProperty.call(payload, 'kredit')) rowData.kredit_raw = payload.kredit;
-
-                if (meta.field === 'tanggal') rowData.tanggal = display;
-                if (meta.field === 'kredit') rowData.kredit = display;
-                if (meta.field === 'id_sumber_dana') rowData.sumber_dana = display;
-                if (meta.field === 'id_bank_tujuan') rowData.bank_tujuan = display;
-                if (meta.field === 'id_kategori_kriteria') {
-                    rowData.kategori_kriteria = display;
-                    rowData.id_sub_kriteria = null;
-                    rowData.sub_kriteria = '-';
-                    rowData.id_item_sub_kriteria = null;
-                    rowData.item_sub_kriteria = '-';
-                    $cell.closest('tr').children('td').eq(8).text('-');
-                    $cell.closest('tr').children('td').eq(9).text('-');
-                }
-                if (meta.field === 'id_sub_kriteria') {
-                    rowData.sub_kriteria = display;
-                    rowData.id_item_sub_kriteria = null;
-                    rowData.item_sub_kriteria = '-';
-                    $cell.closest('tr').children('td').eq(9).text('-');
-                }
-                if (meta.field === 'id_item_sub_kriteria') rowData.item_sub_kriteria = display;
-                if (meta.field === 'id_jenis_pembayaran') {
-                    rowData.jenis_pembayaran = display;
-                    if (Object.prototype.hasOwnProperty.call(payload, 'penerima') && payload.penerima !== rowData.penerima) {
-                        rowData.penerima = payload.penerima;
-                        $cell.closest('tr').children('td').eq(11).text(payload.penerima || '-');
+                var extra = cascadeFor(field, value);
+                var calls = [], touched = [];
+                targets.forEach(function (tid) {
+                    var trow = bkRowById(tid);
+                    if (trow) {
+                        if (tid !== id) { var upd = {}; upd[field] = value; trow.update(upd); }
+                        applyCascadeToRow(trow, field, value);
+                        var tcell = trow.getCell(field);
+                        if (tcell) {
+                            var ce = tcell.getElement();
+                            ce.classList.remove('cb-error-cell', 'cb-saved-cell');
+                            ce.classList.add('cb-saving-cell');
+                            touched.push(tcell);
+                        }
                     }
-                }
-                if (meta.field === 'penerima') rowData.penerima = value;
-                if (meta.field === 'uraian') rowData.uraian = value;
-                if (meta.field === 'keterangan') rowData.keterangan = value;
-
-                table.row($cell.closest('tr')).data(rowData);
-                reapplyCheckedRows();
-
-                var $newCell = findCellByRowId(rowData.id_bank_keluar, cellColumn($cell));
-                setActiveCell($newCell.length ? $newCell : $cell);
-                return $newCell.length ? $newCell : $cell;
-            }
-
-            function saveInlineCell($cell, meta, rowData, value) {
-                var col = cellColumn($cell);
-                var targetIds = targetIdsForInlineSave(rowData, meta.field);
-                var selectedLabel = $cell.data('selected-label');
-                var ajaxCalls = [];
-                var visibleTargets = [];
-
-                targetIds.forEach(function (id) {
-                    var target = rowAndCellById(id, col);
-                    var payload = targetIds.length > 1
-                        ? buildFieldPayload(meta.field, value)
-                        : buildPayload(rowData, meta.field, value);
-
-                    if (target && target.cell.length) {
-                        target.cell
-                            .data('selected-label', selectedLabel)
-                            .removeClass('cb-error-cell cb-saved-cell')
-                            .addClass('cb-saving-cell');
-                        visibleTargets.push({
-                            id: id,
-                            payload: payload,
-                            rowData: target.rowData,
-                            cell: target.cell
-                        });
-                    }
-
-                    ajaxCalls.push($.ajax({
-                        url: '/bank-keluar/' + id,
-                        type: 'POST',
-                        data: payload
-                    }));
+                    calls.push($.ajax({ url: '/bank-keluar/' + tid, type: 'POST', data: $.extend(payloadFor(field, value), extra) }));
                 });
 
-                $.when.apply($, ajaxCalls).done(function () {
-                    var updatedCells = [];
-                    visibleTargets.forEach(function (target) {
-                        var $updatedTargetCell = applyInlineSaveToRow(target.cell, meta, target.rowData, value, target.payload);
-                        $updatedTargetCell.removeClass('cb-saving-cell cb-error-cell').addClass('cb-saved-cell');
-                        updatedCells.push($updatedTargetCell);
-                    });
-
-                    var $updatedCell = findCellByRowId(rowData.id_bank_keluar, col);
-                    if ($updatedCell.length) setActiveCell($updatedCell);
-
-                    setTimeout(function () {
-                        updatedCells.forEach(function ($updatedTargetCell) {
-                            $updatedTargetCell.removeClass('cb-saved-cell');
-                        });
-                    }, 900);
+                $.when.apply($, calls).done(function () {
+                    touched.forEach(function (tc) { var ce = tc.getElement(); ce.classList.remove('cb-saving-cell', 'cb-error-cell'); ce.classList.add('cb-saved-cell'); });
+                    setTimeout(function () { touched.forEach(function (tc) { tc.getElement().classList.remove('cb-saved-cell'); }); }, 900);
                 }).fail(function (xhr) {
-                    visibleTargets.forEach(function (target) {
-                        target.cell.removeClass('cb-saving-cell').addClass('cb-error-cell');
-                    });
-                    var msg = (xhr.responseJSON && (xhr.responseJSON.message || xhr.responseJSON.error))
-                        ? (xhr.responseJSON.message || xhr.responseJSON.error)
-                        : 'Gagal menyimpan perubahan sel.';
-                    $('#modalInfoTitle').text('Gagal');
-                    $('#modalInfoIcon').attr('class', 'fas fa-times-circle text-danger mr-2');
-                    $('#modalInfoMsg').text(msg);
-                    $('#modalInfo').modal('show');
+                    touched.forEach(function (tc) { var ce = tc.getElement(); ce.classList.remove('cb-saving-cell'); ce.classList.add('cb-error-cell'); });
+                    var msg = (xhr.responseJSON && (xhr.responseJSON.message || xhr.responseJSON.error)) || 'Gagal menyimpan perubahan sel.';
+                    bkShowInfo('Gagal', 'fas fa-times-circle text-danger mr-2', msg);
                 });
+            });
+
+            // ============ SEL AKTIF + BLOK + COPY + SUM ============
+            var bkActive = null, bkAnchor = null, bkRange = null, bkDrag = false;
+            var pop = document.createElement('div');
+            pop.className = 'bk-sum-pop';
+            document.body.appendChild(pop);
+
+            function bkVisCols() { return table.getColumns().filter(function (c) { return c.isVisible() && c.getField() !== '_cb'; }); }
+            function bkCellPos(cell) {
+                var p = cell.getRow().getPosition(), cols = bkVisCols(), ci = -1;
+                for (var i = 0; i < cols.length; i++) { if (cols[i].getField() === cell.getField()) { ci = i; break; } }
+                return (p === false || ci < 0) ? null : { r: p - 1, c: ci };
+            }
+            function bkClearActiveEl() { el.querySelectorAll('.tabulator-cell.bk-active-cell').forEach(function (n) { n.classList.remove('bk-active-cell'); }); }
+            function bkSetActive(cell) { bkClearActiveEl(); bkActive = { id: cell.getRow().getData().id_bank_keluar, field: cell.getField() }; cell.getElement().classList.add('bk-active-cell'); }
+            function bkGetActiveCell() {
+                if (!bkActive) return null;
+                var row = table.getRows().find(function (r) { return String(r.getData().id_bank_keluar) === String(bkActive.id); });
+                return row ? row.getCell(bkActive.field) : null;
+            }
+            function bkPaintRow(row) {
+                if (!bkRange) return;
+                var p = row.getPosition(); if (p === false) return;
+                var r = p - 1; if (r < bkRange.r1 || r > bkRange.r2) return;
+                var cols = bkVisCols();
+                for (var c = bkRange.c1; c <= bkRange.c2 && c < cols.length; c++) {
+                    var cell = row.getCell(cols[c]); var ce = cell && cell.getElement();
+                    if (ce && ce.classList) ce.classList.add('bk-range-cell');
+                }
+            }
+            function bkApplyRange() {
+                el.querySelectorAll('.tabulator-cell.bk-range-cell').forEach(function (n) { n.classList.remove('bk-range-cell'); });
+                if (!bkRange) return;
+                table.getRows().slice(bkRange.r1, bkRange.r2 + 1).forEach(bkPaintRow);
+            }
+            function bkSetRange(a, b) { bkRange = { r1: Math.min(a.r, b.r), r2: Math.max(a.r, b.r), c1: Math.min(a.c, b.c), c2: Math.max(a.c, b.c) }; bkApplyRange(); }
+            function bkClearRange() { bkRange = null; bkApplyRange(); pop.style.display = 'none'; }
+            function bkParseNum(v) {
+                if (v === null || v === undefined) return null;
+                var s = String(v).replace(/<[^>]*>/g, '').trim();
+                if (!s || s === '-') return null;
+                var neg = /^\(.*\)$/.test(s);
+                s = s.replace(/[()\s]/g, '').replace(/^Rp/i, '');
+                if (!/^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(s) && !/^-?\d+(,\d+)?$/.test(s)) return null;
+                var n = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+                if (isNaN(n)) return null;
+                return neg ? -n : n;
+            }
+            function bkPosXY(mx, my) {
+                var x = mx || 0, y = my || 0;
+                var lastRow = table.getRows()[bkRange.r2];
+                var lastCell = lastRow && lastRow.getCell(bkVisCols()[bkRange.c2]);
+                var ce = lastCell && lastCell.getElement();
+                if (ce && ce.getBoundingClientRect) { var rc = ce.getBoundingClientRect(); if (rc.width || rc.height) { x = rc.right + 8; y = rc.bottom + 8; } }
+                var pr = pop.getBoundingClientRect();
+                x = Math.min(Math.max(8, x), window.innerWidth - pr.width - 8);
+                y = Math.min(Math.max(8, y), window.innerHeight - pr.height - 8);
+                pop.style.left = x + 'px'; pop.style.top = y + 'px';
+            }
+            function bkShowSum(mx, my) {
+                if (!bkRange || (bkRange.r1 === bkRange.r2 && bkRange.c1 === bkRange.c2)) { pop.style.display = 'none'; return; }
+                var rows = table.getRows().slice(bkRange.r1, bkRange.r2 + 1);
+                var cols = bkVisCols().slice(bkRange.c1, bkRange.c2 + 1);
+                var sum = 0, n = 0;
+                rows.forEach(function (row) {
+                    cols.forEach(function (col) {
+                        var cell = row.getCell(col);
+                        var val = bkParseNum(cell ? cell.getElement().innerText : '');
+                        if (val !== null) { sum += val; n++; }
+                    });
+                });
+                if (!n) { pop.style.display = 'none'; return; }
+                var fmt = function (x) { return x.toLocaleString('id-ID', { maximumFractionDigits: 2 }); };
+                pop.innerHTML = 'Jumlah: <b>' + fmt(sum) + '</b>' + (n > 1 ? ' &nbsp;·&nbsp; Data angka: <b>' + n + '</b>' : '');
+                pop.style.display = 'block';
+                bkPosXY(mx, my);
             }
 
-            function beginInlineEdit($cell) {
-                var col = cellColumn($cell);
-                var meta = editableColumns[col];
-                if (!meta || $cell.hasClass('cb-editing-cell')) return;
+            table.on('cellMouseDown', function (e, cell) {
+                if (e.button !== 0) return;
+                if (cell.getField() === '_cb') return;
+                var tag = (e.target && e.target.tagName) || '';
+                if (/INPUT|TEXTAREA|SELECT/.test(tag)) return;
+                var p = bkCellPos(cell); if (!p) return;
+                pop.style.display = 'none';
+                if (e.shiftKey && bkAnchor) { bkSetRange(bkAnchor, p); bkShowSum(e.clientX, e.clientY); e.preventDefault(); return; }
+                bkAnchor = p; bkDrag = true; el.classList.add('bk-noselect'); bkSetActive(cell); bkSetRange(p, p); e.preventDefault();
+            });
+            table.on('cellMouseEnter', function (e, cell) {
+                if (!bkDrag || !bkAnchor) return;
+                if (cell.getField() === '_cb') return;
+                var p = bkCellPos(cell); if (p) bkSetRange(bkAnchor, p);
+            });
+            document.addEventListener('mouseup', function (e) {
+                if (!bkDrag) return;
+                bkDrag = false; el.classList.remove('bk-noselect');
+                if (bkRange && bkRange.r1 === bkRange.r2 && bkRange.c1 === bkRange.c2) bkClearRange();
+                else bkShowSum(e.clientX, e.clientY);
+            });
+            table.on('cellClick', function (e, cell) {
+                if (cell.getField() === '_cb') return;
+                var tag = (e.target && e.target.tagName) || '';
+                if (/INPUT|TEXTAREA|SELECT/.test(tag)) return;
+                bkSetActive(cell);
+            });
 
-                var rowData = table.row($cell.closest('tr')).data();
-                if (!rowData || !rowData.id_bank_keluar) return;
+            document.addEventListener('keydown', function (e) {
+                function isEditorEl(n) { var t = (n && n.tagName) || ''; return t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA'; }
+                if (isEditorEl(e.target) || isEditorEl(document.activeElement)) return;
 
-                var originalHtml = $cell.html();
-                var currentValue = getCellRawValue(rowData, meta);
-                $cell.addClass('cb-editing-cell').removeClass('cb-saved-cell cb-error-cell').empty();
-
-                function finishEdit($editor, shouldSave) {
-                    if (!$cell.hasClass('cb-editing-cell')) return;
-                    var nextValue = $editor.val();
-                    if ($editor.is('select')) {
-                        $cell.data('selected-label', $.trim($editor.find('option:selected').text()));
-                    }
-                    if ($editor.hasClass('select2-hidden-accessible')) {
-                        $(document).off('keydown.cbInlineSelect2');
-                        $editor.off('select2:select select2:close');
-                        $editor.select2('destroy');
-                    }
-                    $cell.removeClass('cb-editing-cell').html(originalHtml);
-                    setActiveCell($cell);
-                    if (shouldSave && String(nextValue) !== String(currentValue)) {
-                        saveInlineCell($cell, meta, rowData, nextValue);
-                    }
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+                    if (!bkRange && !bkActive) return;
+                    e.preventDefault(); bkCopy(e); return;
                 }
+                if (!bkActive) return;
+                if (e.key === 'Escape') { bkClearActiveEl(); bkActive = null; bkClearRange(); return; }
+                if (e.key === 'Enter' || e.key === 'F2') {
+                    var editCell = bkGetActiveCell();
+                    if (editCell) { e.preventDefault(); editCell.edit(true); }
+                    return;
+                }
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) === -1) return;
 
-                if (meta.type === 'select') {
-                    var selectionMade = false;
-                    var $select = $('<select class="cb-inline-editor cb-inline-select"></select>').prop('disabled', true);
-                    $select.append('<option value="">Memuat...</option>');
-                    $cell.append($select);
-                    getSelectOptions(meta, rowData).done(function (options) {
-                        $select.empty();
-                        (options || []).forEach(function (opt) {
-                            $select.append('<option value="' + escapeHtml(opt.value) + '">' + escapeHtml(opt.label) + '</option>');
-                        });
-                        $select.val(String(currentValue)).prop('disabled', false);
+                var cell = bkGetActiveCell(); if (!cell) return;
+                e.preventDefault();
+                var cols = bkVisCols(), rows = table.getRows(), pos = bkCellPos(cell);
+                if (!pos) return;
 
-                        if ($.fn.select2) {
-                            $select.select2({
-                                theme: 'bootstrap4',
-                                width: '100%',
-                                dropdownParent: $('body'),
-                                minimumResultsForSearch: Infinity,
-                                dropdownCssClass: 'cb-inline-dropdown'
-                            });
-                            setTimeout(function () {
-                                $select.select2('open');
-                                bindInlineDropdownKeyboard(
-                                    $select,
-                                    function () {
-                                        selectionMade = true;
-                                        finishEdit($select, true);
-                                    },
-                                    function () {
-                                        finishEdit($select, false);
-                                    }
-                                );
-                                var $options = $('.select2-container--open .select2-results__option[role="option"]').not('[aria-disabled="true"]');
-                                var selectedIndex = Math.max(0, $options.index($('.select2-container--open .select2-results__option[aria-selected="true"]').first()));
-                                highlightInlineOption($options, selectedIndex);
-                            }, 0);
-                        } else {
-                            $select.focus();
-                        }
-                    });
-                    $select.on('select2:select', function () {
-                        selectionMade = true;
-                        finishEdit($select, true);
-                    });
-                    $select.on('select2:close', function () {
-                        if (!selectionMade) finishEdit($select, false);
-                    });
-                    $select.on('change', function () {
-                        if (!$.fn.select2) finishEdit($select, true);
-                    });
-                    $select.on('keydown', function (e) {
-                        if (e.key === 'Enter') { e.preventDefault(); finishEdit($select, true); }
-                        if (e.key === 'Escape') { e.preventDefault(); finishEdit($select, false); }
-                    });
+                if (e.shiftKey) {
+                    if (!bkRange || !bkAnchor) bkAnchor = pos;
+                    var nr = pos.r, nc = pos.c;
+                    if (e.key === 'ArrowUp') nr = Math.max(0, pos.r - 1);
+                    else if (e.key === 'ArrowDown') nr = Math.min(rows.length - 1, pos.r + 1);
+                    else if (e.key === 'ArrowLeft') nc = Math.max(0, pos.c - 1);
+                    else if (e.key === 'ArrowRight') nc = Math.min(cols.length - 1, pos.c + 1);
+                    if (nr === pos.r && nc === pos.c) return;
+                    var trow = rows[nr]; if (!trow) return;
+                    bkActive = { id: trow.getData().id_bank_keluar, field: cols[nc].getField() };
+                    bkClearActiveEl(); bkSetRange(bkAnchor, { r: nr, c: nc });
+                    var applyActive = function () {
+                        var ac = bkGetActiveCell();
+                        if (ac && ac.getElement()) ac.getElement().classList.add('bk-active-cell');
+                        bkApplyRange(); bkShowSum();
+                    };
+                    var pr1 = table.scrollToRow(trow, 'nearest', false);
+                    if (pr1 && pr1.then) pr1.then(applyActive).catch(applyActive); else window.requestAnimationFrame(applyActive);
                     return;
                 }
 
-                var $editor;
-                if (meta.type === 'textarea') {
-                    $editor = $('<textarea class="cb-inline-editor"></textarea>').val(currentValue);
-                } else if (meta.field === 'penerima') {
-                    $editor = $('<textarea class="cb-inline-editor cb-inline-editor-wide"></textarea>').val(currentValue);
-                } else {
-                    var inputType = meta.type === 'date' ? 'date' : 'text';
-                    $editor = $('<input class="cb-inline-editor">').attr('type', inputType);
-                    $editor.val(meta.type === 'currency' ? formatRupiah(currentValue) : currentValue);
-                    if (meta.type === 'currency') {
-                        $editor.on('input', function () {
-                            this.value = formatRupiah(this.value);
-                        });
-                    }
-                }
-
-                $cell.append($editor);
-                $editor.focus().select();
-                $editor.on('keydown', function (e) {
-                    if (e.key === 'Escape') {
-                        e.preventDefault();
-                        finishEdit($editor, false);
-                        return;
-                    }
-
-                    if (e.key === 'Enter') {
-                        if ($editor.is('textarea') && e.shiftKey) return;
-                        e.preventDefault();
-                        finishEdit($editor, true);
-                    }
-                });
-                $editor.on('blur', function () {
-                    finishEdit($editor, true);
-                });
-            }
-
-            ensureActiveCell();
-
-            // =============================================
-            // POPUP HELPERS
-            // =============================================
-            function openPopup($popup, $trigger) {
-                // close all popups first
-                $('.col-search-popup').fadeOut(50);
-                var offset = $trigger.offset();
-                $popup.css({
-                    top: offset.top + $trigger.outerHeight() + 4,
-                    left: Math.min(offset.left, $(window).width() - 340)
-                }).fadeIn(150);
-            }
-
-            function closeAllPopups() {
-                $('.col-search-popup').fadeOut(100);
-            }
-
-            // Close popups when clicking outside
-            $(document).on('click', function(e) {
-                if (!$(e.target).closest('.col-search-popup, .th-filter-link').length) {
-                    closeAllPopups();
-                }
+                bkClearRange();
+                var row = cell.getRow();
+                var ci = cols.findIndex(function (c) { return c.getField() === bkActive.field; });
+                var target = null;
+                if (e.key === 'ArrowLeft'  && ci > 0)               target = row.getCell(cols[ci - 1]);
+                if (e.key === 'ArrowRight' && ci < cols.length - 1) target = row.getCell(cols[ci + 1]);
+                if (e.key === 'ArrowUp')   { var pv = row.getPrevRow(); if (pv) target = pv.getCell(bkActive.field); }
+                if (e.key === 'ArrowDown') { var nx = row.getNextRow(); if (nx) target = nx.getCell(bkActive.field); }
+                if (target) { bkSetActive(target); if (target.getElement()) target.getElement().scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
             });
-            $('.col-search-popup').on('click', function(e) { e.stopPropagation(); });
 
-            // Track active filters
-            var activeFilters = {};
+            function bkCopy(e) {
+                var vcols = bkVisCols(), rows, cols;
+                if (bkRange) { rows = table.getRows().slice(bkRange.r1, bkRange.r2 + 1); cols = vcols.slice(bkRange.c1, bkRange.c2 + 1); }
+                else {
+                    var c = bkGetActiveCell(); if (!c) return;
+                    rows = [c.getRow()];
+                    var ci = vcols.findIndex(function (x) { return x.getField() === bkActive.field; });
+                    cols = ci >= 0 ? [vcols[ci]] : [];
+                }
+                if (!cols.length) return;
+                var tsv = rows.map(function (row) {
+                    return cols.map(function (col) {
+                        var cell = row.getCell(col);
+                        var t = cell ? (cell.getElement().innerText || '') : '';
+                        return t.replace(/\r?\n/g, ' ').replace(/\t/g, ' ').trim();
+                    }).join('\t');
+                }).join('\n');
+                var flash = function () { bkFlashCopied(e); };
+                if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(tsv).then(flash).catch(function () { bkFallbackCopy(tsv); flash(); });
+                else { bkFallbackCopy(tsv); flash(); }
+            }
+            function bkFallbackCopy(text) {
+                var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (err) {} document.body.removeChild(ta);
+            }
+            function bkFlashCopied(e) {
+                pop.innerHTML = '<b>✓</b> Disalin'; pop.style.display = 'block';
+                if (bkRange) bkPosXY(e && e.clientX, e && e.clientY);
+                else {
+                    var c = bkGetActiveCell(); var rc = c && c.getElement().getBoundingClientRect();
+                    var x = rc ? rc.right + 8 : (e ? e.clientX : 20), y = rc ? rc.bottom + 8 : (e ? e.clientY : 20);
+                    var pr = pop.getBoundingClientRect();
+                    pop.style.left = Math.min(Math.max(8, x), window.innerWidth - pr.width - 8) + 'px';
+                    pop.style.top = Math.min(Math.max(8, y), window.innerHeight - pr.height - 8) + 'px';
+                }
+                setTimeout(function () {
+                    if (bkRange && !(bkRange.r1 === bkRange.r2 && bkRange.c1 === bkRange.c2)) bkShowSum();
+                    else pop.style.display = 'none';
+                }, 900);
+            }
+
+            // ============ PEMUATAN DATA (SEKALI MUAT PENUH) ============
+            var BK_URL = @json(route('bank-keluar.data'));
+            function bkFetchUrl() {
+                var usp = new URLSearchParams();
+                usp.append('draw', 1); usp.append('start', 0); usp.append('length', 1000000);
+                return BK_URL + '?' + usp.toString();
+            }
+            function updateInfo() {
+                var info = document.getElementById('bkInfo'); if (!info || bkTotal === null) return;
+                var shown = table.getDataCount(true);
+                if (bkTotal === 0) { info.textContent = 'Tidak ada data.'; return; }
+                var filtered = Object.keys(activeFilters).length > 0;
+                info.textContent = filtered
+                    ? ('Menampilkan ' + shown.toLocaleString('id-ID') + ' dari ' + bkTotal.toLocaleString('id-ID') + ' data (terfilter).')
+                    : ('Menampilkan ' + bkTotal.toLocaleString('id-ID') + ' data — geser kolom untuk melebarkan, klik/seret sel untuk memilih (Ctrl+C menyalin).');
+            }
+            function loadData() {
+                var info = document.getElementById('bkInfo'); if (info) info.textContent = 'Memuat data...';
+                return fetch(bkFetchUrl(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                    .then(function (json) {
+                        var rows = (json && json.data) || [];
+                        bkTotal = parseInt((json && (json.recordsTotal || json.recordsFiltered)) || rows.length, 10);
+                        return table.setData(rows);
+                    })
+                    .then(function () { updateInfo(); refreshCheckboxUI(); })
+                    .catch(function () { if (info) info.textContent = 'Gagal memuat data — tekan Refresh untuk mencoba lagi.'; });
+            }
+            window.bkReload = function () { bkClearRange(); bkActive = null; return loadData(); };
+
+            var realigned = false;
+            table.on('dataProcessed', function () {
+                if (realigned) return; realigned = true;
+                window.requestAnimationFrame(function () { table.redraw(true); });
+            });
+            table.on('tableBuilt', function () { loadData(); });
+
+            // ============ FILTER PER-KOLOM (client-side Tabulator) ============
+            var columnFilters = {
+                agenda:    { label: 'Agenda', field: 'agenda_tahun', type: 'text', icon: 'fas fa-search' },
+                tanggal:   { label: 'Tanggal', field: 'tanggal_raw', type: 'date', icon: 'fas fa-calendar-alt' },
+                sumber:    { label: 'Sumber Dana', field: 'sumber_dana', type: 'select', icon: 'fas fa-filter', options: filterOptions.sumber },
+                bank:      { label: 'Bank Tujuan', field: 'bank_tujuan', type: 'select', icon: 'fas fa-filter', options: filterOptions.bank },
+                kategori:  { label: 'Kriteria', field: 'kategori_kriteria', type: 'select', icon: 'fas fa-filter', options: filterOptions.kategori },
+                sub:       { label: 'Sub Kriteria', field: 'sub_kriteria', type: 'select', icon: 'fas fa-filter', options: filterOptions.sub },
+                item:      { label: 'Item Sub Kriteria', field: 'item_sub_kriteria', type: 'select', icon: 'fas fa-filter', options: filterOptions.item },
+                jenis:     { label: 'Jenis Pembayaran', field: 'jenis_pembayaran', type: 'select', icon: 'fas fa-filter', options: filterOptions.jenis },
+                penerima:  { label: 'Penerima', field: 'penerima', type: 'text', icon: 'fas fa-search' },
+                uraian:    { label: 'Uraian', field: 'uraian', type: 'text', icon: 'fas fa-search' },
+                kredit:    { label: 'Kredit', field: 'kredit_raw', type: 'kredit', icon: 'fas fa-search' },
+                keterangan:{ label: 'Keterangan', field: 'keterangan', type: 'text', icon: 'fas fa-search' }
+            };
+            var activeFilters = {};      // key -> { label, value } atau { label, dari, sampai }
+            var currentFilterKey = null;
+
+            function escapeHtml(v) { return $('<div>').text(v === null || v === undefined ? '' : v).html(); }
+
+            function bkApplyClientFilters() {
+                var filters = [];
+                Object.keys(activeFilters).forEach(function (key) {
+                    var f = activeFilters[key], cfg = columnFilters[key];
+                    if (!f || !cfg) return;
+                    if (cfg.type === 'date') {
+                        if (f.dari)   filters.push({ field: 'tanggal_raw', type: '>=', value: f.dari });
+                        if (f.sampai) filters.push({ field: 'tanggal_raw', type: '<=', value: f.sampai });
+                    } else if (cfg.type === 'kredit') {
+                        filters.push({ field: 'kredit_raw', type: 'like', value: String(f.value).replace(/[^\d]/g, '') });
+                    } else {
+                        filters.push({ field: cfg.field, type: 'like', value: f.value });
+                    }
+                });
+                table.setFilter(filters);
+                updateInfo();
+            }
 
             function updateFilterBar() {
-                var $bar = $('#active-filters-bar');
-                var html = '';
-                var hasFilter = false;
-
-                if (activeFilters.tanggal) {
-                    hasFilter = true;
-                    html += '<span class="filter-badge"><i class="fas fa-calendar-alt"></i> Tanggal: ' +
-                            activeFilters.tanggal + ' <span class="remove-filter" data-filter="tanggal">✕</span></span>';
-                }
-                if (activeFilters.sumber) {
-                    hasFilter = true;
-                    html += '<span class="filter-badge"><i class="fas fa-university"></i> Sumber: ' +
-                            activeFilters.sumber + ' <span class="remove-filter" data-filter="sumber">✕</span></span>';
-                }
-                if (activeFilters.uraian) {
-                    hasFilter = true;
-                    html += '<span class="filter-badge"><i class="fas fa-search"></i> Uraian: "' +
-                            activeFilters.uraian + '" <span class="remove-filter" data-filter="uraian">✕</span></span>';
-                }
-
-                if (hasFilter) {
-                    html += '<button class="btn-clear-all" id="btn-clear-all-filters"><i class="fas fa-times mr-1"></i>Hapus Semua Filter</button>';
-                    $bar.html(html).slideDown(150);
-                } else {
-                    $bar.slideUp(150);
-                }
-            }
-
-            // Remove individual filter badge
-            $(document).on('click', '.remove-filter', function() {
-                var filter = $(this).data('filter');
-                if (filter === 'tanggal') {
-                    $('#filter-tgl-dari').val('');
-                    $('#filter-tgl-sampai').val('');
-                    delete activeFilters.tanggal;
-                    cbLoader.applyFilters();
-                } else if (filter === 'sumber') {
-                    $('#filter-sumber-dana').val('');
-                    delete activeFilters.sumber;
-                    cbLoader.setColumnSearch(COL_SUMBER, ''); cbLoader.applyFilters();
-                } else if (filter === 'uraian') {
-                    $('#uraian-search-input').val('');
-                    delete activeFilters.uraian;
-                    cbLoader.setColumnSearch(COL_URAIAN, ''); cbLoader.applyFilters();
-                }
-                updateFilterBar();
-            });
-
-            // Clear all filters
-            $(document).on('click', '#btn-clear-all-filters', function() {
-                $('#filter-tgl-dari').val('');
-                $('#filter-tgl-sampai').val('');
-                $('#filter-sumber-dana').val('');
-                $('#uraian-search-input').val('');
-                activeFilters = {};
-                cbLoader.setColumnSearch(COL_SUMBER, '');
-                cbLoader.setColumnSearch(COL_URAIAN, '');
-                cbLoader.applyFilters();
-                updateFilterBar();
-            });
-
-            function filterLabelValue(key, value) {
-                var config = columnFilters[key];
-                if (!config) return value || '';
-                if (config.type === 'date') return value || '';
-                return value ? String(value) : '';
-            }
-
-            updateFilterBar = function () {
-                var $bar = $('#active-filters-bar');
-                var html = '';
-                var hasFilter = false;
-
+                var $bar = $('#active-filters-bar'), html = '', has = false;
                 Object.keys(activeFilters).forEach(function (key) {
-                    var filter = activeFilters[key];
-                    var config = columnFilters[key];
-                    if (!filter || !config) return;
-                    hasFilter = true;
-                    html += '<span class="filter-badge"><i class="' + config.icon + '"></i> ' +
-                        escapeHtml(config.label) + ': ' + escapeHtml(filter.label) +
-                        ' <span class="remove-filter" data-filter="' + key + '">x</span></span>';
+                    var f = activeFilters[key], cfg = columnFilters[key];
+                    if (!f || !cfg) return;
+                    has = true;
+                    html += '<span class="filter-badge"><i class="' + cfg.icon + '"></i> ' + escapeHtml(cfg.label) + ': ' +
+                        escapeHtml(f.label) + ' <span class="remove-filter" data-filter="' + key + '">✕</span></span>';
                 });
-
-                if (hasFilter) {
-                    html += '<button class="btn-clear-all" id="btn-clear-all-filters"><i class="fas fa-times mr-1"></i>Hapus Semua Filter</button>';
-                    $bar.html(html).slideDown(150);
-                } else {
-                    $bar.slideUp(150);
-                }
-
-                $('.th-filter-link').each(function () {
-                    var key = $(this).data('filter-key');
-                    $(this).toggleClass('th-filter-active', !!activeFilters[key]);
+                if (has) { html += '<button class="btn-clear-all" id="btn-clear-all-filters"><i class="fas fa-times mr-1"></i>Hapus Semua Filter</button>'; $bar.html(html).slideDown(120); }
+                else $bar.slideUp(120);
+                $('#example3 .th-filter-link').each(function () {
+                    var k = $(this).data('filter-key');
+                    $(this).toggleClass('th-filter-active', !!activeFilters[k]);
                 });
-            };
-
-            function clearColumnFilter(key) {
-                var config = columnFilters[key];
-                if (!config) return;
-
-                if (config.type === 'date') {
-                    $('#filter-tgl-dari').val('');
-                    $('#filter-tgl-sampai').val('');
-                    delete activeFilters[key];
-                    cbLoader.applyFilters();
-                    return;
-                }
-
-                delete activeFilters[key];
-                cbLoader.setColumnSearch(config.col, ''); cbLoader.applyFilters();
             }
 
-            function buildGenericFilterControl(key) {
-                var config = columnFilters[key];
-                var current = activeFilters[key] ? activeFilters[key].value : '';
+            function openPopup($popup, x, y) {
+                $('.col-search-popup').hide();
+                $popup.css({ top: y + 4, left: Math.min(x, $(window).width() - 340) }).fadeIn(120);
+            }
+            function closeAllPopups() { $('.col-search-popup').fadeOut(90); }
 
-                if (config.type === 'date') {
-                    return '<div class="mb-2">' +
-                        '<label style="font-size:11px; color:#666; font-weight:600;">Dari Tanggal</label>' +
-                        '<input type="date" class="form-control form-control-sm" id="generic-date-from" value="' + escapeHtml($('#filter-tgl-dari').val()) + '">' +
-                        '</div>' +
-                        '<div class="mb-2">' +
-                        '<label style="font-size:11px; color:#666; font-weight:600;">Sampai Tanggal</label>' +
-                        '<input type="date" class="form-control form-control-sm" id="generic-date-to" value="' + escapeHtml($('#filter-tgl-sampai').val()) + '">' +
-                        '</div>';
+            function buildFilterControl(key) {
+                var cfg = columnFilters[key], cur = activeFilters[key] || {};
+                if (cfg.type === 'date') {
+                    return '<div class="mb-2"><label style="font-size:11px;color:#666;font-weight:600;">Dari Tanggal</label>' +
+                        '<input type="date" class="form-control form-control-sm" id="gen-date-from" value="' + escapeHtml(cur.dari || '') + '"></div>' +
+                        '<div class="mb-2"><label style="font-size:11px;color:#666;font-weight:600;">Sampai Tanggal</label>' +
+                        '<input type="date" class="form-control form-control-sm" id="gen-date-to" value="' + escapeHtml(cur.sampai || '') + '"></div>';
                 }
-
-                if (config.type === 'select') {
-                    var html = '<select class="form-control form-control-sm" id="generic-filter-input">' +
-                        '<option value="">-- Semua ' + escapeHtml(config.label) + ' --</option>';
-                    (config.options || []).forEach(function (opt) {
-                        var selected = String(current) === String(opt.value) ? ' selected' : '';
-                        html += '<option value="' + escapeHtml(opt.value) + '"' + selected + '>' + escapeHtml(opt.label) + '</option>';
+                if (cfg.type === 'select') {
+                    var html = '<select class="form-control form-control-sm" id="gen-filter-input"><option value="">-- Semua ' + escapeHtml(cfg.label) + ' --</option>';
+                    (cfg.options || []).forEach(function (opt) {
+                        html += '<option value="' + escapeHtml(opt.value) + '"' + (String(cur.value) === String(opt.value) ? ' selected' : '') + '>' + escapeHtml(opt.label) + '</option>';
                     });
                     return html + '</select>';
                 }
-
-                return '<div class="input-group">' +
-                    '<input type="text" class="form-control form-control-sm" id="generic-filter-input" ' +
-                    'placeholder="Ketik kata kunci" autocomplete="off" value="' + escapeHtml(current) + '" style="border-radius:4px 0 0 4px;">' +
-                    '<div class="input-group-append">' +
-                    '<button class="btn-cari" id="btn-apply-generic-filter-icon" type="button" style="border-radius:0 4px 4px 0;">' +
-                    '<i class="fas fa-search"></i>' +
-                    '</button>' +
-                    '</div>' +
-                    '</div>';
+                return '<div class="input-group"><input type="text" class="form-control form-control-sm" id="gen-filter-input" ' +
+                    'placeholder="Ketik kata kunci" autocomplete="off" value="' + escapeHtml(cur.value || '') + '" style="border-radius:4px 0 0 4px;">' +
+                    '<div class="input-group-append"><button class="btn-cari" id="gen-filter-icon" type="button" style="border-radius:0 4px 4px 0;"><i class="fas fa-search"></i></button></div></div>';
             }
 
-            function openGenericFilter(key, $trigger) {
-                var config = columnFilters[key];
-                if (!config) return;
-
-                currentGenericFilterKey = key;
-                $('#generic-filter-title').html('<i class="' + config.icon + '"></i>' +
-                    (config.type === 'text' ? 'Cari ' : 'Filter ') + escapeHtml(config.label));
-                $('#generic-filter-body').html(buildGenericFilterControl(key));
-                openPopup($('#popup-generic-filter'), $trigger);
-                $('#generic-filter-input, #generic-date-from').first().focus();
+            function openFilter(key, x, y) {
+                var cfg = columnFilters[key]; if (!cfg) return;
+                currentFilterKey = key;
+                $('#generic-filter-title').html('<i class="' + cfg.icon + '"></i>' + (cfg.type === 'select' || cfg.type === 'date' ? 'Filter ' : 'Cari ') + escapeHtml(cfg.label));
+                $('#generic-filter-body').html(buildFilterControl(key));
+                openPopup($('#popup-generic-filter'), x, y);
+                setTimeout(function () { $('#gen-filter-input, #gen-date-from').first().focus(); }, 60);
             }
 
-            function applyGenericFilter() {
-                var key = currentGenericFilterKey;
-                var config = columnFilters[key];
-                if (!config) return;
-
-                if (config.type === 'date') {
-                    var dari = $('#generic-date-from').val();
-                    var sampai = $('#generic-date-to').val();
-                    $('#filter-tgl-dari').val(dari);
-                    $('#filter-tgl-sampai').val(sampai);
-
+            function applyFilter() {
+                var key = currentFilterKey, cfg = columnFilters[key]; if (!cfg) return;
+                if (cfg.type === 'date') {
+                    var dari = $('#gen-date-from').val(), sampai = $('#gen-date-to').val();
                     if (dari || sampai) {
                         var label = dari && sampai ? dari + ' s/d ' + sampai : (dari ? 'dari ' + dari : 's/d ' + sampai);
-                        activeFilters[key] = { label: label, value: label };
-                    } else {
-                        delete activeFilters[key];
-                    }
-                    cbLoader.applyFilters();
+                        activeFilters[key] = { label: label, dari: dari, sampai: sampai };
+                    } else delete activeFilters[key];
                 } else {
-                    var value = ($('#generic-filter-input').val() || '').trim();
-                    if (value) {
-                        activeFilters[key] = { label: filterLabelValue(key, value), value: value };
-                    } else {
-                        delete activeFilters[key];
-                    }
-                    cbLoader.setColumnSearch(config.col, value); cbLoader.applyFilters();
+                    var value = ($('#gen-filter-input').val() || '').trim();
+                    if (value) activeFilters[key] = { label: value, value: value };
+                    else delete activeFilters[key];
                 }
-
-                updateFilterBar();
-                closeAllPopups();
+                bkApplyClientFilters(); updateFilterBar(); closeAllPopups();
             }
+            function clearFilter(key) { delete activeFilters[key]; bkApplyClientFilters(); updateFilterBar(); }
 
-            $(document).off('click', '.remove-filter').on('click', '.remove-filter', function () {
-                clearColumnFilter($(this).data('filter'));
-                updateFilterBar();
-            });
-
-            $(document).off('click', '#btn-clear-all-filters').on('click', '#btn-clear-all-filters', function () {
-                $('#filter-tgl-dari').val('');
-                $('#filter-tgl-sampai').val('');
-                Object.keys(columnFilters).forEach(function (key) {
-                    var config = columnFilters[key];
-                    if (config.type !== 'date') cbLoader.setColumnSearch(config.col, '');
-                });
-                activeFilters = {};
-                cbLoader.applyFilters();
-                updateFilterBar();
-            });
-
-            $(document).on('click', '.th-filter-link', function (e) {
+            $(document).on('click', '#example3 .th-filter-link', function (e) {
                 e.stopPropagation();
-                openGenericFilter($(this).data('filter-key'), $(this));
+                var rc = this.getBoundingClientRect();
+                openFilter($(this).data('filter-key'), rc.left, rc.bottom);
             });
-
-            $('#btn-apply-generic-filter').on('click', applyGenericFilter);
-            $('#generic-filter-body').on('click', '#btn-apply-generic-filter-icon', applyGenericFilter);
-            $('#generic-filter-body').on('keydown', '#generic-filter-input', function (e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    applyGenericFilter();
-                }
+            $('.col-search-popup').on('click', function (e) { e.stopPropagation(); });
+            $(document).on('click', function (e) {
+                if (!$(e.target).closest('.col-search-popup, .th-filter-link').length) closeAllPopups();
             });
-            $('#btn-reset-generic-filter').on('click', function () {
-                clearColumnFilter(currentGenericFilterKey);
-                updateFilterBar();
-                closeAllPopups();
-            });
+            $('#btn-apply-generic-filter').on('click', applyFilter);
+            $('#generic-filter-body').on('click', '#gen-filter-icon', applyFilter);
+            $('#generic-filter-body').on('keydown', '#gen-filter-input', function (e) { if (e.key === 'Enter') { e.preventDefault(); applyFilter(); } });
+            $('#btn-reset-generic-filter').on('click', function () { if (currentFilterKey) clearFilter(currentFilterKey); closeAllPopups(); });
             $('#btn-close-generic-filter').on('click', closeAllPopups);
-
-            // =============================================
-            // TANGGAL FILTER
-            // =============================================
-            $(document).on('click', '#th-tanggal-click', function(e) {
-                e.stopPropagation();
-                openPopup($('#popup-tanggal'), $(this));
-            });
-
-            $('#btn-cari-tanggal').on('click', function() {
-                var dari = $('#filter-tgl-dari').val();
-                var sampai = $('#filter-tgl-sampai').val();
-                if (dari || sampai) {
-                    var label = '';
-                    if (dari && sampai) label = dari + ' s/d ' + sampai;
-                    else if (dari) label = 'dari ' + dari;
-                    else label = 's/d ' + sampai;
-                    activeFilters.tanggal = label;
-                } else {
-                    delete activeFilters.tanggal;
-                }
-                cbLoader.applyFilters();
-                updateFilterBar();
-                closeAllPopups();
-            });
-
-            $('#btn-reset-tanggal').on('click', function() {
-                $('#filter-tgl-dari').val('');
-                $('#filter-tgl-sampai').val('');
-                delete activeFilters.tanggal;
-                cbLoader.applyFilters();
-                updateFilterBar();
-                closeAllPopups();
-            });
-
-            $('#btn-close-tanggal').on('click', closeAllPopups);
-
-            // =============================================
-            // SUMBER DANA FILTER
-            // =============================================
-            $(document).on('click', '#th-sumber-click', function(e) {
-                e.stopPropagation();
-                openPopup($('#popup-sumber'), $(this));
-            });
-
-            $('#btn-cari-sumber').on('click', function() {
-                var val = $('#filter-sumber-dana').val();
-                cbLoader.setColumnSearch(COL_SUMBER, val); cbLoader.applyFilters();
-                if (val) {
-                    activeFilters.sumber = val;
-                } else {
-                    delete activeFilters.sumber;
-                }
-                updateFilterBar();
-                closeAllPopups();
-            });
-
-            // Also apply on change
-            $('#filter-sumber-dana').on('change', function() {
-                var val = $(this).val();
-                cbLoader.setColumnSearch(COL_SUMBER, val); cbLoader.applyFilters();
-                if (val) {
-                    activeFilters.sumber = val;
-                } else {
-                    delete activeFilters.sumber;
-                }
-                updateFilterBar();
-            });
-
-            $('#btn-reset-sumber').on('click', function() {
-                $('#filter-sumber-dana').val('');
-                delete activeFilters.sumber;
-                cbLoader.setColumnSearch(COL_SUMBER, ''); cbLoader.applyFilters();
-                updateFilterBar();
-                closeAllPopups();
-            });
-
-            $('#btn-close-sumber').on('click', closeAllPopups);
-
-            // =============================================
-            // URAIAN FILTER
-            // =============================================
-            $(document).on('click', '#th-uraian-click', function(e) {
-                e.stopPropagation();
-                openPopup($('#popup-uraian'), $(this));
-                $('#uraian-search-input').focus();
-            });
-
-            $('#btn-cari-uraian').on('click', doUraianSearch);
-            $('#uraian-search-input').on('keydown', function(e) {
-                if (e.key === 'Enter') { e.preventDefault(); doUraianSearch(); }
-            });
-
-            function doUraianSearch() {
-                var keyword = $('#uraian-search-input').val().trim();
-                cbLoader.setColumnSearch(COL_URAIAN, keyword); cbLoader.applyFilters();
-                if (keyword) {
-                    activeFilters.uraian = keyword;
-                } else {
-                    delete activeFilters.uraian;
-                }
-                updateFilterBar();
-                closeAllPopups();
-            }
-
-            $('#btn-reset-uraian').on('click', function() {
-                $('#uraian-search-input').val('');
-                delete activeFilters.uraian;
-                cbLoader.setColumnSearch(COL_URAIAN, ''); cbLoader.applyFilters();
-                updateFilterBar();
-                closeAllPopups();
-            });
-
-            $('#btn-close-uraian').on('click', closeAllPopups);
-        });
-    </script>
-    {{-- Blok sel ala spreadsheet + popup Jumlah (drag / Shift+klik) --}}
-    <script src="{{ asset('js/cb-cell-range-sum.js') }}"></script>
-    <script>
-        $(function () { CbCellRangeSum.init('#example3'); });
+            $(document).on('click', '.remove-filter', function () { clearFilter($(this).data('filter')); });
+            $(document).on('click', '#btn-clear-all-filters', function () { activeFilters = {}; bkApplyClientFilters(); updateFilterBar(); });
+        })();
     </script>
 @endpush
 @include('cash_bank.modal.editKeluar')

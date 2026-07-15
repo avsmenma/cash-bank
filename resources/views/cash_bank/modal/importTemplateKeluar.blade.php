@@ -225,9 +225,7 @@ $(document).ready(function () {
             success: function (res) {
                 $('#ModalPreviewTemplateKeluar').modal('hide');
                 alert('✅ ' + res.success);
-                if ($.fn.DataTable.isDataTable('#example3')) {
-                    window.cbTableReload('#example3');
-                }
+                if (window.bkReload) window.bkReload();
                 btn.html('<i class="fas fa-check mr-1"></i>Konfirmasi Import (<span id="confirmCountTemplateKeluar">0</span> baris)');
             },
             error: function (xhr) {

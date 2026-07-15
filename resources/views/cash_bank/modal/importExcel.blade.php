@@ -192,10 +192,7 @@ $(document).ready(function () {
             success: function (res) {
                 $('#ModalPreviewImportKeluar').modal('hide');
                 alert('✅ ' + res.success);
-                // Reload DataTable
-                if ($.fn.DataTable.isDataTable('#example3')) {
-                    window.cbTableReload('#example3');
-                }
+                if (window.bkReload) window.bkReload();
             },
             error: function (xhr) {
                 btn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Konfirmasi Import');

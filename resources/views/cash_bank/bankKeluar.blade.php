@@ -107,7 +107,7 @@
       <a href="javascript:void(0)" class="btn btn-success btn-sm" data-toggle="modal" data-target="#ModalCreateKeluar">
         <i class="fas fa-plus mr-1"></i>Tambah Data
       </a>
-      <button type="button" class="btn btn-info btn-sm" id="btnRefreshTable" onclick="window.cbTableReload('#example3');">
+      <button type="button" class="btn btn-info btn-sm" id="btnRefreshTable" onclick="window.bkReload && window.bkReload();">
         <i class="fas fa-sync-alt mr-1"></i>Refresh
       </button>
       <div class="ml-auto d-flex" style="gap:8px;">
@@ -405,8 +405,7 @@
             contentType: false,
             success: function (res) {
                 $('#editKeluar').modal('hide');
-                // Reload DataTable tanpa reset halaman/entries
-                window.cbTableReload('#example3');
+                if (window.bkReload) window.bkReload();
                 // Tampilkan notifikasi
                 $('#modalInfoTitle').text('Berhasil');
                 $('#modalInfoIcon').attr('class', 'fas fa-check-circle text-success mr-2');
@@ -425,17 +424,13 @@
         });
     });
 
-    $(document).on('click', '#select_all_ids', function () {
-        $('.checkbox_ids').prop('checked', this.checked);
-    });
-
-    // Tampung IDs yang akan dihapus
+    // IDs yang akan dihapus — sumber: pilihan yang di-track tabel Tabulator (tahan
+    // re-render virtual DOM), bukan DOM checkbox yang hanya sebagian ter-render.
     var _pendingDeleteIds = [];
 
     $(document).on('click', '#deleteAllSelectedRecord', function (e) {
         e.preventDefault();
-        _pendingDeleteIds = [];
-        $('.checkbox_ids:checked').each(function () { _pendingDeleteIds.push($(this).val()); });
+        _pendingDeleteIds = (window.bkSelectedIds ? window.bkSelectedIds() : []).slice();
 
         if (_pendingDeleteIds.length === 0) {
             $('#modalInfoTitle').text('Perhatian');
@@ -458,7 +453,8 @@
             data: JSON.stringify({ ids: _pendingDeleteIds, _token: '{{ csrf_token() }}' }),
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
             success: function (res) {
-                window.cbTableReload('#example3');
+                if (window.bkClearSelection) window.bkClearSelection();
+                if (window.bkReload) window.bkReload();
                 $('#select_all_ids').prop('checked', false);
                 $('#modalInfoTitle').text('Berhasil');
                 $('#modalInfoIcon').attr('class', 'fas fa-check-circle text-success mr-2');

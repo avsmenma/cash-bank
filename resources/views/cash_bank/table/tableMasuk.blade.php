@@ -72,7 +72,15 @@
             padding: 7px 12px;
             color: #1f2d3d;
         }
-        .tabulator-edit-list .tabulator-edit-list-item.active,
+        /* Item yang sedang tersimpan (nilai lama): latar biru MUDA, bukan solid */
+        .tabulator-edit-list .tabulator-edit-list-item.active {
+            background: #e8f1fd;
+            color: #0d3b6e;
+            font-weight: 600;
+        }
+        /* Hanya item yang diarahkan (panah) / di-hover yang solid biru — supaya
+           tidak ada dua item solid sekaligus. Rule ini di bawah .active agar saat
+           item terpilih juga sedang diarahkan, versi solid yang menang. */
         .tabulator-edit-list .tabulator-edit-list-item.focused,
         .tabulator-edit-list .tabulator-edit-list-item.hover,
         .tabulator-edit-list .tabulator-edit-list-item:hover {

@@ -227,7 +227,15 @@
                             @forelse($bankVAList as $index => $va)
                             <tr>
                                 <td class="text-center align-middle">{{ $index + 1 }}.</td>
-                                <td class="align-middle">{{ $va->nama_tujuan }}</td>
+                                <td class="align-middle">
+                                    <a href="{{ route('daftarBank.detail', $va->id_bank_tujuan) }}"
+                                       style="color:#1a5276; font-weight:600; text-decoration:none;"
+                                       onmouseover="this.style.textDecoration='underline'"
+                                       onmouseout="this.style.textDecoration='none'"
+                                       title="Lihat detail transaksi VA ini">
+                                        {{ $va->nama_tujuan }}
+                                    </a>
+                                </td>
                                 <td class="text-right align-middle {{ $va->saldo != 0 ? 'font-weight-bold' : 'text-muted' }}">
                                     @if($va->saldo < 0)
                                         <span style="color:#c0392b;">({{ number_format(abs($va->saldo), 0, ',', '.') }})</span>

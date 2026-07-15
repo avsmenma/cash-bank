@@ -888,6 +888,10 @@ class BankMasukController extends Controller
         }
 
         $tempPath = $request->file('fileTemplate')->store('import_temp_masuk', 'local');
+        if (!$tempPath) {
+            \Log::error('previewTemplate masuk: gagal menyimpan file sementara (cek izin tulis storage/app/private/import_temp_masuk).');
+            return response()->json(['message' => 'Gagal menyimpan file sementara di server. Hubungi admin (izin tulis folder storage).'], 500);
+        }
         session(['masuk_template_temp' => $tempPath]);
 
         $hasil = $this->parseTemplateMasuk(

@@ -664,7 +664,7 @@
                 if (!info || bmTotal === null) return;
                 var loaded = table.getDataCount();
                 if (bmTotal === 0) info.textContent = 'Tidak ada data.';
-                else info.textContent = 'Menampilkan ' + loaded.toLocaleString('id-ID') + ' data — geser kolom untuk melebarkan, klik/seret sel untuk memilih (Ctrl+C menyalin).';
+                else info.textContent = 'Menampilkan ' + loaded.toLocaleString('id-ID') + ' data.';
             }
             function loadData() {
                 var info = document.getElementById('bmInfo');

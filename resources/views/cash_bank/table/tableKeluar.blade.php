@@ -620,7 +620,7 @@
                 var filtered = Object.keys(activeFilters).length > 0;
                 info.textContent = filtered
                     ? ('Menampilkan ' + shown.toLocaleString('id-ID') + ' dari ' + bkTotal.toLocaleString('id-ID') + ' data (terfilter).')
-                    : ('Menampilkan ' + bkTotal.toLocaleString('id-ID') + ' data — geser kolom untuk melebarkan, klik/seret sel untuk memilih (Ctrl+C menyalin).');
+                    : ('Menampilkan ' + bkTotal.toLocaleString('id-ID') + ' data.');
             }
             function loadData() {
                 var info = document.getElementById('bkInfo'); if (info) info.textContent = 'Memuat data...';

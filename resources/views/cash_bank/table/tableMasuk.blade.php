@@ -302,6 +302,12 @@
             }
 
             table.on('cellEdited', function (cell) {
+                // Hitung ulang tinggi baris agar teks panjang (Uraian/Keterangan)
+                // yang baru diketik langsung memuai — variableHeight tidak otomatis
+                // menyesuaikan setelah inline edit.
+                var editedRow = cell.getRow();
+                window.requestAnimationFrame(function () { editedRow.normalizeHeight(); });
+
                 var field = cell.getField();
                 var d = cell.getRow().getData();
                 var id = String(d.id_bank_masuk);

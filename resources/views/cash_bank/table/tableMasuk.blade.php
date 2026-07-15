@@ -455,6 +455,12 @@
                 }
                 if (!bmActive) return;
                 if (e.key === 'Escape') { bmClearActiveEl(); bmActive = null; bmClearRange(); return; }
+                // Enter di sel aktif = masuk mode edit (selain dobel-klik)
+                if (e.key === 'Enter' || e.key === 'F2') {
+                    var editCell = bmGetActiveCell();
+                    if (editCell) { e.preventDefault(); editCell.edit(true); }
+                    return;
+                }
                 if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) === -1) return;
 
                 var cell = bmGetActiveCell();

@@ -4,7 +4,9 @@
         #example2 {
             border: 1px solid #d0dce8;
             font-size: 12px;
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            /* Ikuti font default aplikasi (sama dengan tabel Bank Keluar), jangan
+               paksa Segoe UI agar tampilan konsisten antar halaman. */
+            font-family: inherit;
         }
         #example2 .tabulator-header { background: #0d3b6e; border-bottom: 2px solid #082948; }
         #example2 .tabulator-header .tabulator-col {

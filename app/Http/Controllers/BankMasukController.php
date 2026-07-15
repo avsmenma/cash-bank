@@ -158,25 +158,7 @@ class BankMasukController extends Controller
             ->addColumn('debet_raw', function ($row) {
                 return (float) $row->debet;
             })
-            ->addColumn('aksi', function ($row) {
-                return '
-                <button class="btn btn-warning btn-sm" 
-                    data-toggle="modal"
-                        data-target="#edit"
-                        data-id="' . $row->id_bank_masuk . '"
-                        data-agenda="' . $row->agenda_tahun . '"
-                        data-penerima="' . $row->penerima . '"
-                        data-uraian="' . $row->uraian . '"
-                        data-tanggal="' . $row->tanggal . '"
-                        data-bank="' . $row->id_bank_tujuan . '"
-                        data-sumber="' . $row->id_sumber_dana . '"
-                        data-kategori="' . $row->id_kategori_kriteria . '"
-                        data-jenis="' . $row->id_jenis_pembayaran . '"
-                        data-keterangan="' . $row->keterangan . '"
-                        data-debet="' . $row->debet . '">Edit</button>
-                ';
-            })
-            ->rawColumns(['checkbox', 'aksi'])
+            ->rawColumns(['checkbox'])
             ->make(true);
     }
 

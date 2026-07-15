@@ -140,7 +140,6 @@
             <th>Jenis</th>
             <th>Debet</th>
             <th>Keterangan</th>
-            <th>Aksi</th>
         </tr>
     </thead>
 </table>
@@ -182,7 +181,6 @@
                 11: { field: 'debet', type: 'currency' },
                 12: { field: 'keterangan', type: 'textarea' }
             };
-            var COL_AKSI = 13;
 
             // Tanpa pagination: data dimuat bertahap per 100 baris oleh
             // CbInfiniteTable (append saat scroll mendekati dasar tabel).
@@ -212,14 +210,13 @@
                     { data: 'uraian',            width: '560px' },
                     { data: 'jenis_pembayaran',  width: '100px' },
                     { data: 'debet',             width: '130px', className: 'text-right' },
-                    { data: 'keterangan',        width: '240px' },
-                    { data: 'aksi',              width: '70px', orderable: false, searchable: false }
+                    { data: 'keterangan',        width: '240px' }
                 ],
                 columnDefs: [
                     {
                         targets: '_all',
                         createdCell: function (td, cellData, rowData, row, col) {
-                            if (col === 0 || col === COL_AKSI) return;
+                            if (col === 0) return;
                             $(td)
                                 .addClass('cb-spreadsheet-cell')
                                 .attr('tabindex', '0')
@@ -862,4 +859,3 @@
         $(function () { CbCellRangeSum.init('#example2'); });
     </script>
 @endpush
-@include('cash_bank.modal.edit')

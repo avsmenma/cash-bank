@@ -536,19 +536,50 @@
                 var cell = bmGetActiveCell();
                 if (!cell) return;
                 e.preventDefault();
-                bmClearRange();
 
-                var row = cell.getRow();
                 var cols = bmVisCols();
+                var rows = table.getRows();
+                var pos = bmCellPos(cell);
+                if (!pos) return;
+
+                // Shift+Panah: PERLUAS blok dari sel aktif (ala spreadsheet).
+                if (e.shiftKey) {
+                    if (!bmRange || !bmAnchor) bmAnchor = pos;   // mulai blok dari sel aktif
+                    var nr = pos.r, nc = pos.c;
+                    if (e.key === 'ArrowUp')         nr = Math.max(0, pos.r - 1);
+                    else if (e.key === 'ArrowDown')  nr = Math.min(rows.length - 1, pos.r + 1);
+                    else if (e.key === 'ArrowLeft')  nc = Math.max(0, pos.c - 1);
+                    else if (e.key === 'ArrowRight') nc = Math.min(cols.length - 1, pos.c + 1);
+                    if (nr === pos.r && nc === pos.c) return;    // sudah di tepi
+                    var trow = rows[nr];
+                    if (!trow) return;
+                    bmActive = { id: trow.getData().id_bank_masuk, field: cols[nc].getField() };
+                    bmClearActiveEl();
+                    bmSetRange(bmAnchor, { r: nr, c: nc });
+                    var applyActive = function () {
+                        var ac = bmGetActiveCell();
+                        if (ac && ac.getElement()) ac.getElement().classList.add('bm-active-cell');
+                        bmApplyRange();      // baris yang baru ter-render ikut terwarnai
+                        bmShowSum();
+                    };
+                    var pr1 = table.scrollToRow(trow, 'nearest', false);
+                    if (pr1 && pr1.then) pr1.then(applyActive).catch(applyActive);
+                    else window.requestAnimationFrame(applyActive);
+                    return;
+                }
+
+                // Panah biasa: pindah sel aktif + hapus blok
+                bmClearRange();
+                var row = cell.getRow();
                 var ci = cols.findIndex(function (c) { return c.getField() === bmActive.field; });
                 var target = null;
                 if (e.key === 'ArrowLeft'  && ci > 0)               target = row.getCell(cols[ci - 1]);
                 if (e.key === 'ArrowRight' && ci < cols.length - 1) target = row.getCell(cols[ci + 1]);
-                if (e.key === 'ArrowUp')   { var pr = row.getPrevRow(); if (pr) target = pr.getCell(bmActive.field); }
-                if (e.key === 'ArrowDown') { var nr = row.getNextRow(); if (nr) target = nr.getCell(bmActive.field); }
+                if (e.key === 'ArrowUp')   { var pv = row.getPrevRow(); if (pv) target = pv.getCell(bmActive.field); }
+                if (e.key === 'ArrowDown') { var nx = row.getNextRow(); if (nx) target = nx.getCell(bmActive.field); }
                 if (target) {
                     bmSetActive(target);
-                    target.getElement().scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                    if (target.getElement()) target.getElement().scrollIntoView({ block: 'nearest', inline: 'nearest' });
                 }
             });
 

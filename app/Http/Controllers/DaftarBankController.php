@@ -182,6 +182,12 @@ class daftarBankController extends Controller
      */
     public function showDetail($id)
     {
+        // Cegah IDOR: user role "va" hanya boleh melihat VA miliknya sendiri.
+        $user = auth()->user();
+        if ($user && $user->role === 'va' && (string) $user->id_bank_tujuan !== (string) $id) {
+            abort(403, 'Anda tidak berhak mengakses data VA ini.');
+        }
+
         $va = BankTujuan::findOrFail($id);
 
         // Get Bank Masuk transactions for this VA

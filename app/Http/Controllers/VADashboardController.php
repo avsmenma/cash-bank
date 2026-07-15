@@ -98,7 +98,21 @@ class VADashboardController extends Controller
      */
     public function exportExcelById(Request $request, $id)
     {
+        $this->authorizeVaAccess($id);
         return $this->streamLedgerExcel(BankTujuan::findOrFail($id), $this->buildLedger($id), $request);
+    }
+
+    /**
+     * Cegah IDOR: user role "va" hanya boleh mengakses VA miliknya sendiri.
+     * Role internal (admin/programmer/dll) yang memakai panel Daftar VA tetap
+     * bebas mengakses semua VA seperti sebelumnya.
+     */
+    private function authorizeVaAccess($id): void
+    {
+        $user = Auth::user();
+        if ($user && $user->role === 'va' && (string) $user->id_bank_tujuan !== (string) $id) {
+            abort(403, 'Anda tidak berhak mengakses data VA ini.');
+        }
     }
 
     /**

@@ -130,6 +130,20 @@
 }
 #rkTable .tabulator-row:hover .tabulator-cell.rk-active-cell { background: #e8f1fd !important; }
 
+/* Blok sel (drag ala Google Sheets) */
+#rkTable .tabulator-cell.rk-range-cell { background: #dbeafe !important; }
+#rkTable .tabulator-row:hover .tabulator-cell.rk-range-cell { background: #dbeafe !important; }
+#rkTable.rk-noselect, #rkTable.rk-noselect * { user-select: none; }
+
+/* Popup kecil hasil penjumlahan sel yang diblok */
+.rk-sum-pop {
+    position: fixed; z-index: 1080; display: none;
+    background: #0d3b6e; color: #fff; font-size: 12px; line-height: 1;
+    padding: 8px 12px; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.28);
+    pointer-events: none; white-space: nowrap;
+}
+.rk-sum-pop b { color: #ffd166; }
+
 #rkTable .rk-wrap { white-space: normal !important; overflow-wrap: anywhere; line-height: 1.35; }
 #rkTable .rk-debet { color: #1a7a3d; font-weight: 600; }
 #rkTable .rk-kredit { color: #c0392b; font-weight: 600; }
@@ -230,17 +244,39 @@ function resetFilter() {
                 var cls = row.getData().DT_RowClass;
                 if (cls) row.getElement().classList.add(cls);
                 // Virtual render Tabulator membuat ulang elemen baris saat scroll —
-                // pasang kembali highlight active cell bila baris ini pemiliknya.
+                // pasang kembali highlight active cell & blok sel bila baris ini pemiliknya.
                 if (rkActive && row.getData().no === rkActive.no) {
                     var c = row.getCell(rkActive.field);
                     if (c) c.getElement().classList.add('rk-active-cell');
                 }
+                rkPaintRow(row);
             }
         });
 
-        // ===== ACTIVE CELL (ala spreadsheet) =====
-        // Klik sel untuk memilih; panah ⬅⬆⬇➡ memindah pilihan; Esc menghapus pilihan.
-        var rkActive = null; // { no, field } — identitas sel aktif (tahan terhadap re-render)
+        // ===== ACTIVE CELL + BLOK SEL (ala spreadsheet) =====
+        // Klik sel untuk memilih; drag (atau Shift+klik) memblok banyak sel dan
+        // memunculkan popup Jumlah; panah ⬅⬆⬇➡ memindah pilihan; Esc menghapus.
+        var rkActive   = null;  // { no, field } — sel aktif (tahan terhadap re-render)
+        var rkAnchor   = null;  // { r, c } — titik awal blok
+        var rkRange    = null;  // { r1, c1, r2, c2 } — blok ternormalisasi
+        var rkDragging = false;
+
+        var rkPop = document.createElement('div');
+        rkPop.className = 'rk-sum-pop';
+        document.body.appendChild(rkPop);
+
+        function rkVisCols() {
+            return table.getColumns().filter(function (c) { return c.isVisible(); });
+        }
+        function rkCellPos(cell) {
+            var p = cell.getRow().getPosition();
+            var cols = rkVisCols();
+            var ci = -1;
+            for (var i = 0; i < cols.length; i++) {
+                if (cols[i].getField() === cell.getField()) { ci = i; break; }
+            }
+            return (p === false || ci < 0) ? null : { r: p - 1, c: ci };
+        }
 
         function rkClearActiveEl() {
             el.querySelectorAll('.tabulator-cell.rk-active-cell').forEach(function (n) {
@@ -258,6 +294,125 @@ function resetFilter() {
             return row ? row.getCell(rkActive.field) : null;
         }
 
+        // --- blok sel ---
+        function rkPaintRow(row) {
+            if (!rkRange) return;
+            var p = row.getPosition();
+            if (p === false) return;
+            var r = p - 1;
+            if (r < rkRange.r1 || r > rkRange.r2) return;
+            var cols = rkVisCols();
+            for (var c = rkRange.c1; c <= rkRange.c2 && c < cols.length; c++) {
+                var cell = row.getCell(cols[c]);
+                var ce = cell && cell.getElement();
+                if (ce && ce.classList) ce.classList.add('rk-range-cell');
+            }
+        }
+        function rkApplyRange() {
+            el.querySelectorAll('.tabulator-cell.rk-range-cell').forEach(function (n) {
+                n.classList.remove('rk-range-cell');
+            });
+            if (!rkRange) return;
+            table.getRows().slice(rkRange.r1, rkRange.r2 + 1).forEach(rkPaintRow);
+        }
+        function rkSetRange(a, b) {
+            rkRange = {
+                r1: Math.min(a.r, b.r), r2: Math.max(a.r, b.r),
+                c1: Math.min(a.c, b.c), c2: Math.max(a.c, b.c)
+            };
+            rkApplyRange();
+        }
+        function rkClearRange() {
+            rkRange = null;
+            rkApplyRange();
+            rkPop.style.display = 'none';
+        }
+
+        // Angka format Indonesia: "1.039.538.838", "(2.500)", "12,5". Tanggal,
+        // kode agenda, dan teks lain ditolak agar tidak ikut terjumlah.
+        function rkParseNum(v) {
+            if (v === null || v === undefined) return null;
+            var s = String(v).replace(/<[^>]*>/g, '').trim();
+            if (!s || s === '-') return null;
+            var neg = /^\(.*\)$/.test(s);
+            s = s.replace(/[()\s]/g, '').replace(/^Rp/i, '');
+            if (!/^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(s) && !/^-?\d+(,\d+)?$/.test(s)) return null;
+            var n = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+            if (isNaN(n)) return null;
+            return neg ? -n : n;
+        }
+        function rkShowPop(mx, my) {
+            if (!rkRange || (rkRange.r1 === rkRange.r2 && rkRange.c1 === rkRange.c2)) {
+                rkPop.style.display = 'none';
+                return;
+            }
+            var rows = table.getRows().slice(rkRange.r1, rkRange.r2 + 1);
+            var cols = rkVisCols().slice(rkRange.c1, rkRange.c2 + 1);
+            var sum = 0, n = 0;
+            rows.forEach(function (row) {
+                var d = row.getData();
+                cols.forEach(function (col) {
+                    var v = rkParseNum(d[col.getField()]);
+                    if (v !== null) { sum += v; n++; }
+                });
+            });
+            if (!n) { rkPop.style.display = 'none'; return; }
+            var fmt = function (x) { return x.toLocaleString('id-ID', { maximumFractionDigits: 2 }); };
+            rkPop.innerHTML = 'Jumlah: <b>' + fmt(sum) + '</b>' + (n > 1
+                ? ' &nbsp;·&nbsp; Rata-rata: <b>' + fmt(sum / n) + '</b> &nbsp;·&nbsp; Data angka: <b>' + n + '</b>'
+                : '');
+            rkPop.style.display = 'block';
+
+            // Tempel dekat sel kanan-bawah blok; bila selnya di luar layar pakai posisi mouse.
+            var x = mx || 0, y = my || 0;
+            var lastRow = table.getRows()[rkRange.r2];
+            var lastCell = lastRow && lastRow.getCell(rkVisCols()[rkRange.c2]);
+            var ce = lastCell && lastCell.getElement();
+            if (ce && ce.getBoundingClientRect) {
+                var rc = ce.getBoundingClientRect();
+                if (rc.width || rc.height) { x = rc.right + 8; y = rc.bottom + 8; }
+            }
+            var pr = rkPop.getBoundingClientRect();
+            x = Math.min(Math.max(8, x), window.innerWidth  - pr.width  - 8);
+            y = Math.min(Math.max(8, y), window.innerHeight - pr.height - 8);
+            rkPop.style.left = x + 'px';
+            rkPop.style.top  = y + 'px';
+        }
+
+        table.on('cellMouseDown', function (e, cell) {
+            if (e.button !== 0) return;
+            var p = rkCellPos(cell);
+            if (!p) return;
+            rkPop.style.display = 'none';
+            if (e.shiftKey && rkAnchor) {          // Shift+klik: perluas blok dari anchor
+                rkSetRange(rkAnchor, p);
+                rkShowPop(e.clientX, e.clientY);
+                e.preventDefault();
+                return;
+            }
+            rkAnchor = p;
+            rkDragging = true;
+            el.classList.add('rk-noselect');
+            rkSetActive(cell);
+            rkSetRange(p, p);
+            e.preventDefault();
+        });
+        table.on('cellMouseEnter', function (e, cell) {
+            if (!rkDragging || !rkAnchor) return;
+            var p = rkCellPos(cell);
+            if (p) rkSetRange(rkAnchor, p);
+        });
+        document.addEventListener('mouseup', function (e) {
+            if (!rkDragging) return;
+            rkDragging = false;
+            el.classList.remove('rk-noselect');
+            if (rkRange && rkRange.r1 === rkRange.r2 && rkRange.c1 === rkRange.c2) {
+                rkClearRange();                    // klik tunggal: cukup active cell
+            } else {
+                rkShowPop(e.clientX, e.clientY);
+            }
+        });
+
         table.on('cellClick', function (e, cell) { rkSetActive(cell); });
 
         document.addEventListener('keydown', function (e) {
@@ -265,15 +420,16 @@ function resetFilter() {
             var tag = (document.activeElement && document.activeElement.tagName) || '';
             if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
 
-            if (e.key === 'Escape') { rkClearActiveEl(); rkActive = null; return; }
+            if (e.key === 'Escape') { rkClearActiveEl(); rkActive = null; rkClearRange(); return; }
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) === -1) return;
 
             var cell = rkGetActiveCell();
             if (!cell) return;
             e.preventDefault();
+            rkClearRange();
 
             var row = cell.getRow();
-            var cols = table.getColumns().filter(function (c) { return c.isVisible(); });
+            var cols = rkVisCols();
             var ci = cols.findIndex(function (c) { return c.getField() === rkActive.field; });
             var target = null;
             if (e.key === 'ArrowLeft'  && ci > 0)               target = row.getCell(cols[ci - 1]);

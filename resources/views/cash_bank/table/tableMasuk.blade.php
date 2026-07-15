@@ -58,6 +58,27 @@
         .bm-sum-pop b { color: #ffd166; }
 
         #bmInfo { padding: 2px 2px 8px; }
+
+        /* Dropdown editor list (Sumber Dana/Bank/Kriteria/Jenis): item terarah &
+           terpilih pakai latar SOLID biru, bukan sekadar outline (ditempel ke body,
+           jadi selektornya global). */
+        .tabulator-edit-list {
+            border: 1px solid #1b6fd8 !important;
+            border-radius: 4px;
+            box-shadow: 0 6px 22px rgba(13, 59, 110, .20);
+            font-size: 12px;
+        }
+        .tabulator-edit-list .tabulator-edit-list-item {
+            padding: 7px 12px;
+            color: #1f2d3d;
+        }
+        .tabulator-edit-list .tabulator-edit-list-item.active,
+        .tabulator-edit-list .tabulator-edit-list-item.hover,
+        .tabulator-edit-list .tabulator-edit-list-item:hover {
+            background: #0d6efd !important;
+            color: #ffffff !important;
+            outline: none !important;
+        }
     </style>
 @endpush
 

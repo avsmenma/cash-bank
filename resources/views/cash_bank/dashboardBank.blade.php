@@ -61,6 +61,16 @@
                 background: #1a5276;
                 z-index: 5;
             }
+            /* Input inline SALDO SAP */
+            #tblSaldoVA .sap-inline-input {
+                min-width: 130px;
+                border-color: #ced4da;
+                font-size: 12px;
+                text-align: right;
+            }
+            #tblSaldoVA .sap-inline-input.is-saving { background-color: #fff8db; }
+            #tblSaldoVA .sap-inline-input.is-saved { border-color: #28a745; background-color: #f1fff5; }
+            #tblSaldoVA .sap-inline-input.is-error { border-color: #dc3545; background-color: #fff5f5; }
         </style>
 
         {{-- LAYOUT BERSEBELAHAN --}}
@@ -230,7 +240,7 @@
                                 <td class="text-center align-middle">{{ $index + 1 }}.</td>
                                 <td class="align-middle">
                                     <a href="{{ route('daftarBank.detail', $va->id_bank_tujuan) }}"
-                                       style="color:#1a5276; font-weight:600; text-decoration:none;"
+                                       style="color:#000; font-weight:600; text-decoration:none;"
                                        onmouseover="this.style.textDecoration='underline'"
                                        onmouseout="this.style.textDecoration='none'"
                                        title="Lihat detail transaksi VA ini">
@@ -246,9 +256,14 @@
                                         -
                                     @endif
                                 </td>
-                                {{-- SALDO SAP: nilai versi SAP (diinput manual di halaman Daftar VA) --}}
-                                <td class="text-right align-middle {{ $va->sap_nilai != 0 ? 'font-weight-bold' : 'text-muted' }}">
-                                    {{ $va->sap_nilai != 0 ? $va->sap : '-' }}
+                                {{-- SALDO SAP: bisa diedit langsung (inline), tersimpan otomatis --}}
+                                <td class="text-center align-middle">
+                                    <input type="text"
+                                        class="form-control form-control-sm sap-inline-input"
+                                        value="{{ $va->sap }}"
+                                        data-id="{{ $va->id_bank_tujuan }}"
+                                        data-original="{{ $va->sap }}"
+                                        placeholder="Input SAP">
                                 </td>
                             </tr>
                             @empty
@@ -271,7 +286,7 @@
                                         {{ number_format($totalSaldoVA, 0, ',', '.') }}
                                     @endif
                                 </td>
-                                <td class="text-right font-weight-bold text-white align-middle" style="padding:10px 8px;">
+                                <td id="sapTotalCell" class="text-right font-weight-bold text-white align-middle" style="padding:10px 8px;">
                                     {{ $totalSaldoSap != 0 ? number_format($totalSaldoSap, 0, ',', '.') : '-' }}
                                 </td>
                             </tr>
@@ -425,6 +440,78 @@
 
     window.addEventListener('load', syncVAHeight);
     window.addEventListener('resize', syncVAHeight);
+
+    // ===================== INLINE EDIT SALDO SAP =====================
+    // Sama seperti halaman Daftar VA: ketik nilai, tersimpan otomatis saat
+    // blur/Enter via PATCH /daftarBank/{id}/sap. Footer "Total SAP" ikut update.
+    $(function () {
+        function formatSapValue(value) {
+            var digits = String(value || '').replace(/\D/g, '');
+            if (!digits) return '';
+            digits = digits.replace(/^0+/, '') || '0';
+            return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        function recalcTotalSap() {
+            var total = 0;
+            $('#tblSaldoVA .sap-inline-input').each(function () {
+                total += parseInt(String($(this).val()).replace(/\D/g, ''), 10) || 0;
+            });
+            $('#sapTotalCell').text(total > 0 ? formatSapValue(String(total)) : '-');
+        }
+
+        function saveSap(input) {
+            var $input = $(input);
+            var id = $input.data('id');
+            var currentValue = formatSapValue($input.val());
+            var originalValue = String($input.data('original') || '').trim();
+
+            $input.val(currentValue);
+            if (currentValue === originalValue) return;
+
+            $input.prop('disabled', true).removeClass('is-saved is-error').addClass('is-saving');
+
+            $.ajax({
+                url: "{{ url('/daftarBank') }}/" + id + "/sap",
+                method: 'PATCH',
+                data: { sap: currentValue },
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function (response) {
+                    var savedValue = response.sap || '';
+                    $input.data('original', savedValue).val(savedValue)
+                          .removeClass('is-saving is-error').addClass('is-saved');
+                    recalcTotalSap();
+                    setTimeout(function () { $input.removeClass('is-saved'); }, 1200);
+                },
+                error: function () {
+                    $input.removeClass('is-saving is-saved').addClass('is-error');
+                    alert('Gagal menyimpan SAP. Silakan coba lagi.');
+                },
+                complete: function () { $input.prop('disabled', false); }
+            });
+        }
+
+        $('#tblSaldoVA').on('focus', '.sap-inline-input', function () {
+            $(this).data('original', $(this).val().trim());
+        });
+
+        $('#tblSaldoVA').on('input', '.sap-inline-input', function () {
+            var cursorPosition = this.selectionStart;
+            var beforeLength = this.value.length;
+            this.value = formatSapValue(this.value);
+            var afterLength = this.value.length;
+            this.setSelectionRange(
+                cursorPosition + (afterLength - beforeLength),
+                cursorPosition + (afterLength - beforeLength)
+            );
+        });
+
+        $('#tblSaldoVA').on('blur', '.sap-inline-input', function () { saveSap(this); });
+
+        $('#tblSaldoVA').on('keydown', '.sap-inline-input', function (event) {
+            if (event.key === 'Enter') { event.preventDefault(); $(this).blur(); }
+        });
+    });
 </script>
 
 @endsection

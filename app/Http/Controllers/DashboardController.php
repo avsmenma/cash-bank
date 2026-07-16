@@ -1094,6 +1094,9 @@ class dashboardController extends Controller
                 $va->saldo = (float) $va->total_masuk - (float) $va->total_keluar;
                 // Nilai numerik SAP untuk penjumlahan total (buang pemisah titik).
                 $va->sap_nilai = (float) preg_replace('/\D+/', '', (string) $va->sap);
+                // Selisih = Saldo Akhir - Saldo SAP (dihitung ulang di sisi klien
+                // setiap kali SAP diedit; ini nilai awal saat halaman dimuat).
+                $va->selisih = $va->saldo - $va->sap_nilai;
                 return $va;
             });
 

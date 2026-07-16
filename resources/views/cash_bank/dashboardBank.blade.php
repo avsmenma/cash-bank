@@ -413,6 +413,13 @@
         var v = Number(cell.getValue()) || 0;
         return v === 0 ? '<span class="text-muted">-</span>' : idNum(v);
     }
+    // SELISIH = Saldo Akhir - Saldo SAP (negatif ditandai merah + kurung).
+    function fmtSelisih(cell) {
+        var v = Number(cell.getValue()) || 0;
+        if (v === 0) return '<span class="text-muted">-</span>';
+        if (v < 0)  return '<span style="color:#c0392b;">(' + idNum(Math.abs(v)) + ')</span>';
+        return idNum(v);
+    }
     function fmtNama(cell) {
         var d = cell.getRow().getData();
         var url = BASE + '/' + d.id_bank_tujuan + '/detail';
@@ -421,10 +428,12 @@
     }
 
     // ── Baris Total (bottomCalc) ──
-    function calcSaldo(values, data) { var s = 0; data.forEach(function (r) { s += Number(r.saldo) || 0; }); return s; }
-    function calcSap(values, data)   { var s = 0; data.forEach(function (r) { s += Number(r.sap_nilai) || 0; }); return s; }
-    function calcFmtSaldo(cell) { var v = Number(cell.getValue()) || 0; return v < 0 ? '(' + idNum(Math.abs(v)) + ')' : idNum(v); }
-    function calcFmtSap(cell)   { var v = Number(cell.getValue()) || 0; return v === 0 ? '-' : idNum(v); }
+    function calcSaldo(values, data)   { var s = 0; data.forEach(function (r) { s += Number(r.saldo) || 0; }); return s; }
+    function calcSap(values, data)     { var s = 0; data.forEach(function (r) { s += Number(r.sap_nilai) || 0; }); return s; }
+    function calcSelisih(values, data) { var s = 0; data.forEach(function (r) { s += Number(r.selisih) || 0; }); return s; }
+    function calcFmtSaldo(cell)   { var v = Number(cell.getValue()) || 0; return v < 0 ? '(' + idNum(Math.abs(v)) + ')' : idNum(v); }
+    function calcFmtSap(cell)     { var v = Number(cell.getValue()) || 0; return v === 0 ? '-' : idNum(v); }
+    function calcFmtSelisih(cell) { var v = Number(cell.getValue()) || 0; return v < 0 ? '(' + idNum(Math.abs(v)) + ')' : idNum(v); }
 
     var table = new Tabulator(el, {
         index: 'id_bank_tujuan',
@@ -447,7 +456,9 @@
               formatter: fmtSaldo, bottomCalc: calcSaldo, bottomCalcFormatter: calcFmtSaldo },
             { title: 'SALDO SAP', field: 'sap_nilai', width: 160, hozAlign: 'right', headerHozAlign: 'center',
               formatter: fmtSap, editor: 'number', editorParams: { min: 0, selectContents: true },
-              cssClass: 'va-editable', bottomCalc: calcSap, bottomCalcFormatter: calcFmtSap }
+              cssClass: 'va-editable', bottomCalc: calcSap, bottomCalcFormatter: calcFmtSap },
+            { title: 'SELISIH', field: 'selisih', width: 160, hozAlign: 'right', headerHozAlign: 'center',
+              formatter: fmtSelisih, bottomCalc: calcSelisih, bottomCalcFormatter: calcFmtSelisih }
         ],
 
         rowFormatter: function (row) {
@@ -464,8 +475,14 @@
     // ============ SIMPAN SAP SAAT SEL DIEDIT ============
     table.on('cellEdited', function (cell) {
         if (cell.getField() !== 'sap_nilai') return;
-        var id = cell.getRow().getData().id_bank_tujuan;
+        var row = cell.getRow();
+        var id = row.getData().id_bank_tujuan;
         var value = Math.round(Number(cell.getValue()) || 0);
+
+        // SELISIH = Saldo Akhir - SAP baru → perbarui langsung; sel & total SELISIH
+        // di footer ikut dihitung ulang oleh Tabulator.
+        row.update({ selisih: (Number(row.getData().saldo) || 0) - value });
+
         var ce = cell.getElement();
         ce.classList.remove('cb-saved-cell', 'cb-error-cell');
         ce.classList.add('cb-saving-cell');

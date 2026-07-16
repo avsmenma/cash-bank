@@ -61,16 +61,23 @@
                 background: #1a5276;
                 z-index: 5;
             }
-            /* Input inline SALDO SAP */
-            #tblSaldoVA .sap-inline-input {
-                min-width: 130px;
-                border-color: #ced4da;
-                font-size: 12px;
+            /* SALDO SAP — sel ala spreadsheet (dobel-klik untuk edit, seperti Bank Masuk/Keluar) */
+            #tblSaldoVA .sap-cell { cursor: cell; }
+            #tblSaldoVA .sap-cell:hover { background: #eef4fb; }
+            #tblSaldoVA .sap-edit-input {
+                width: 100%;
+                box-sizing: border-box;
                 text-align: right;
+                border: 1px solid #1b6fd8;
+                border-radius: 3px;
+                padding: 3px 6px;
+                font-size: 12px;
+                outline: none;
             }
-            #tblSaldoVA .sap-inline-input.is-saving { background-color: #fff8db; }
-            #tblSaldoVA .sap-inline-input.is-saved { border-color: #28a745; background-color: #f1fff5; }
-            #tblSaldoVA .sap-inline-input.is-error { border-color: #dc3545; background-color: #fff5f5; }
+            /* Status simpan per sel */
+            #tblSaldoVA .sap-cell.cb-saving-cell { background: #fff8df !important; }
+            #tblSaldoVA .sap-cell.cb-saved-cell  { background: #e9f8ef !important; }
+            #tblSaldoVA .sap-cell.cb-error-cell  { background: #fdecec !important; box-shadow: inset 0 0 0 2px #dc3545; }
         </style>
 
         {{-- LAYOUT BERSEBELAHAN --}}
@@ -256,14 +263,12 @@
                                         -
                                     @endif
                                 </td>
-                                {{-- SALDO SAP: bisa diedit langsung (inline), tersimpan otomatis --}}
-                                <td class="text-center align-middle">
-                                    <input type="text"
-                                        class="form-control form-control-sm sap-inline-input"
-                                        value="{{ $va->sap }}"
-                                        data-id="{{ $va->id_bank_tujuan }}"
-                                        data-original="{{ $va->sap }}"
-                                        placeholder="Input SAP">
+                                {{-- SALDO SAP: dobel-klik untuk edit (ala Bank Masuk/Keluar), tersimpan otomatis --}}
+                                <td class="text-right align-middle sap-cell {{ $va->sap_nilai != 0 ? 'font-weight-bold' : 'text-muted' }}"
+                                    data-id="{{ $va->id_bank_tujuan }}"
+                                    data-value="{{ $va->sap }}"
+                                    title="Klik dua kali untuk mengubah SALDO SAP">
+                                    {{ $va->sap_nilai != 0 ? $va->sap : '-' }}
                                 </td>
                             </tr>
                             @empty
@@ -441,9 +446,10 @@
     window.addEventListener('load', syncVAHeight);
     window.addEventListener('resize', syncVAHeight);
 
-    // ===================== INLINE EDIT SALDO SAP =====================
-    // Sama seperti halaman Daftar VA: ketik nilai, tersimpan otomatis saat
-    // blur/Enter via PATCH /daftarBank/{id}/sap. Footer "Total SAP" ikut update.
+    // ============ SALDO SAP — INLINE EDIT ALA BANK MASUK/KELUAR ============
+    // Sel tampil sebagai teks biasa. Dobel-klik → sel jadi editor; Enter/keluar
+    // fokus menyimpan (Esc membatalkan) via PATCH /daftarBank/{id}/sap, dengan
+    // umpan-balik warna kuning→hijau (gagal: merah). Footer "Total SAP" ikut update.
     $(function () {
         function formatSapValue(value) {
             var digits = String(value || '').replace(/\D/g, '');
@@ -452,64 +458,88 @@
             return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
         }
 
+        function displayText(v) { return (v && v !== '') ? v : '-'; }
+
         function recalcTotalSap() {
             var total = 0;
-            $('#tblSaldoVA .sap-inline-input').each(function () {
-                total += parseInt(String($(this).val()).replace(/\D/g, ''), 10) || 0;
+            $('#tblSaldoVA .sap-cell').each(function () {
+                total += parseInt(String($(this).attr('data-value') || '').replace(/\D/g, ''), 10) || 0;
             });
             $('#sapTotalCell').text(total > 0 ? formatSapValue(String(total)) : '-');
         }
 
-        function saveSap(input) {
-            var $input = $(input);
-            var id = $input.data('id');
-            var currentValue = formatSapValue($input.val());
-            var originalValue = String($input.data('original') || '').trim();
+        // Kembalikan sel ke tampilan teks biasa dengan nilai tertentu.
+        function renderCell($td, value) {
+            $td.attr('data-value', value)
+               .removeClass('font-weight-bold text-muted')
+               .addClass((value && value !== '') ? 'font-weight-bold' : 'text-muted')
+               .text(displayText(value));
+        }
 
-            $input.val(currentValue);
-            if (currentValue === originalValue) return;
+        function saveCell($td, newValue) {
+            var id = $td.attr('data-id');
+            var original = String($td.attr('data-value') || '').trim();
 
-            $input.prop('disabled', true).removeClass('is-saved is-error').addClass('is-saving');
+            // Tidak berubah → cukup kembalikan tampilan.
+            if (newValue === original) { renderCell($td, original); return; }
+
+            $td.removeClass('cb-saved-cell cb-error-cell').addClass('cb-saving-cell')
+               .removeClass('text-muted').addClass('font-weight-bold')
+               .text(displayText(newValue));
 
             $.ajax({
                 url: "{{ url('/daftarBank') }}/" + id + "/sap",
                 method: 'PATCH',
-                data: { sap: currentValue },
+                data: { sap: newValue },
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
                 success: function (response) {
-                    var savedValue = response.sap || '';
-                    $input.data('original', savedValue).val(savedValue)
-                          .removeClass('is-saving is-error').addClass('is-saved');
+                    renderCell($td, response.sap || '');
                     recalcTotalSap();
-                    setTimeout(function () { $input.removeClass('is-saved'); }, 1200);
+                    $td.removeClass('cb-saving-cell cb-error-cell').addClass('cb-saved-cell');
+                    setTimeout(function () { $td.removeClass('cb-saved-cell'); }, 900);
                 },
                 error: function () {
-                    $input.removeClass('is-saving is-saved').addClass('is-error');
+                    renderCell($td, original);
+                    $td.removeClass('cb-saving-cell cb-saved-cell').addClass('cb-error-cell');
                     alert('Gagal menyimpan SAP. Silakan coba lagi.');
-                },
-                complete: function () { $input.prop('disabled', false); }
+                    setTimeout(function () { $td.removeClass('cb-error-cell'); }, 1500);
+                }
             });
         }
 
-        $('#tblSaldoVA').on('focus', '.sap-inline-input', function () {
-            $(this).data('original', $(this).val().trim());
+        // Dobel-klik: ubah sel menjadi editor.
+        $('#tblSaldoVA').on('dblclick', '.sap-cell', function () {
+            var $td = $(this);
+            if ($td.find('input.sap-edit-input').length) return; // sudah mode edit
+            var original = String($td.attr('data-value') || '').trim();
+            var $input = $('<input type="text" class="sap-edit-input" placeholder="0">').val(original);
+            $td.empty().append($input);
+            $input.trigger('focus');
+            try { var l = $input.val().length; $input[0].setSelectionRange(l, l); } catch (e) {}
         });
 
-        $('#tblSaldoVA').on('input', '.sap-inline-input', function () {
-            var cursorPosition = this.selectionStart;
-            var beforeLength = this.value.length;
+        // Format ribuan saat mengetik.
+        $('#tblSaldoVA').on('input', 'input.sap-edit-input', function () {
+            var pos = this.selectionStart, before = this.value.length;
             this.value = formatSapValue(this.value);
-            var afterLength = this.value.length;
-            this.setSelectionRange(
-                cursorPosition + (afterLength - beforeLength),
-                cursorPosition + (afterLength - beforeLength)
-            );
+            var after = this.value.length;
+            try { this.setSelectionRange(pos + (after - before), pos + (after - before)); } catch (e) {}
         });
 
-        $('#tblSaldoVA').on('blur', '.sap-inline-input', function () { saveSap(this); });
+        // Enter = simpan, Esc = batal.
+        $('#tblSaldoVA').on('keydown', 'input.sap-edit-input', function (event) {
+            if (event.key === 'Enter') { event.preventDefault(); this.blur(); }
+            else if (event.key === 'Escape') {
+                event.preventDefault();
+                $(this).data('cancelled', true);
+                renderCell($(this).closest('.sap-cell'), String($(this).closest('.sap-cell').attr('data-value') || ''));
+            }
+        });
 
-        $('#tblSaldoVA').on('keydown', '.sap-inline-input', function (event) {
-            if (event.key === 'Enter') { event.preventDefault(); $(this).blur(); }
+        // Keluar fokus = simpan (kecuali dibatalkan lewat Esc).
+        $('#tblSaldoVA').on('blur', 'input.sap-edit-input', function () {
+            if ($(this).data('cancelled')) return;
+            saveCell($(this).closest('.sap-cell'), formatSapValue($(this).val()));
         });
     });
 </script>

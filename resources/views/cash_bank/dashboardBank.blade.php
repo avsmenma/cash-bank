@@ -45,6 +45,7 @@
         <style>
             /* ===== Tabel Bank VA — Tabulator (spreadsheet ala Bank Masuk/Keluar) ===== */
             #tblSaldoVA { font-size: 12.5px; border: 1px solid #cdd9e5; }
+            #tblSaldoVA:focus { outline: none; }
             #tblSaldoVA .tabulator-header { background: #1a5276; border-bottom: 2px solid #0e3a56; }
             #tblSaldoVA .tabulator-header .tabulator-col {
                 background: #1a5276 !important; color: #fff !important; font-weight: 600; font-size: 11.5px;
@@ -390,6 +391,7 @@
 
     var el = document.getElementById('tblSaldoVA');
     if (!el || !window.Tabulator) { return; }
+    el.setAttribute('tabindex', '-1');   // bisa difokuskan → event 'paste' terarah ke tabel
 
     // Data VA sudah dirender server-side — tak perlu AJAX terpisah.
     var VA_DATA = @json($bankVAList->values());
@@ -615,6 +617,7 @@
         if (isEditorTag((e.target && e.target.tagName) || '')) return;
         var p = vaCellPos(cell);
         if (!p) return;
+        try { el.focus({ preventScroll: true }); } catch (err) { try { el.focus(); } catch (e2) {} }
         pop.style.display = 'none';
         if (e.shiftKey && vaAnchor) {
             vaSetRange(vaAnchor, p); vaShowSum(e.clientX, e.clientY); e.preventDefault(); return;
@@ -760,6 +763,83 @@
             else pop.style.display = 'none';
         }, 900);
     }
+
+    // ── TEMPEL (PASTE) ke kolom SALDO SAP tanpa masuk mode edit ──
+    // Salin satu kolom angka (dari Excel atau dari kolom SAP), pilih sel SAP awal,
+    // lalu Ctrl+V → nilai mengisi ke bawah. Hanya kolom SAP yang menerima nilai;
+    // tiap sel tersimpan otomatis (memicu cellEdited) dan SELISIH ikut dihitung.
+    function vaDigits(s) { return String(s == null ? '' : s).split(',')[0].replace(/\D/g, ''); }
+    function vaSetSap(row, col, val) {
+        if (!row || !col) return;
+        var cell = row.getCell(col);
+        if (cell) cell.setValue(val);   // memicu cellEdited → simpan + hitung SELISIH
+    }
+    function vaParseClip(text) {
+        var t = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        var lines = t.split('\n');
+        while (lines.length && lines[lines.length - 1] === '') lines.pop();
+        return lines.map(function (l) { return l.split('\t'); });
+    }
+    function vaPaste(text) {
+        var matrix = vaParseClip(text);
+        if (!matrix.length) return;
+        var cols = vaCols(), rows = table.getRows();
+        var sapIdx = cols.findIndex(function (c) { return c.getField() === 'sap_nilai'; });
+        if (sapIdx < 0) return;
+
+        var startR;
+        if (vaRange) startR = vaRange.r1;
+        else if (vaActive) { var ac = vaGetActiveCell(); var p = ac && vaCellPos(ac); if (!p) return; startR = p.r; }
+        else return;
+
+        // Satu nilai + blok terpilih → isi seluruh blok (kolom SAP) dengan nilai itu.
+        if (matrix.length === 1 && matrix[0].length === 1 && vaRange &&
+            !(vaRange.r1 === vaRange.r2 && vaRange.c1 === vaRange.c2)) {
+            var one = vaDigits(matrix[0][0]);
+            if (one === '') return;
+            var v1 = parseInt(one, 10) || 0;
+            for (var r = vaRange.r1; r <= vaRange.r2; r++) vaSetSap(rows[r], cols[sapIdx], v1);
+            return;
+        }
+
+        // Kolom tunggal → tulis menurun ke kolom SAP (kasus paling umum).
+        var singleCol = matrix.every(function (rr) { return rr.length <= 1; });
+        if (singleCol) {
+            for (var i = 0; i < matrix.length; i++) {
+                var raw = vaDigits(matrix[i][0] || '');
+                if (raw === '') continue;
+                vaSetSap(rows[startR + i], cols[sapIdx], parseInt(raw, 10) || 0);
+            }
+            return;
+        }
+
+        // Multi-kolom → jangkar di kolom aktif; hanya sel SAP yang menerima (ala Excel).
+        var startC;
+        if (vaRange) startC = vaRange.c1;
+        else { var ac2 = vaGetActiveCell(); var p2 = ac2 && vaCellPos(ac2); startC = p2 ? p2.c : sapIdx; }
+        for (var i2 = 0; i2 < matrix.length; i2++) {
+            for (var j = 0; j < matrix[i2].length; j++) {
+                var col = cols[startC + j];
+                if (!col || col.getField() !== 'sap_nilai') continue;
+                var raw2 = vaDigits(matrix[i2][j]);
+                if (raw2 === '') continue;
+                vaSetSap(rows[startR + i2], col, parseInt(raw2, 10) || 0);
+            }
+        }
+    }
+
+    document.addEventListener('paste', function (e) {
+        // Jangan ganggu paste normal saat sedang mengetik di editor/input.
+        if (isEditorTag((e.target && e.target.tagName) || '') ||
+            isEditorTag((document.activeElement && document.activeElement.tagName) || '')) return;
+        if (!vaActive && !vaRange) return;              // tak ada sel terpilih → abaikan
+        var cd = e.clipboardData || window.clipboardData;
+        if (!cd) return;
+        var text = cd.getData('text/plain') || cd.getData('text') || '';
+        if (!text) return;
+        e.preventDefault();
+        vaPaste(text);
+    });
 })();
 </script>
 @endpush

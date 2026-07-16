@@ -98,7 +98,9 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="form-label" for="debet">Debet <span class="text-danger">*</span></label>
-                                <input type="number" name="debet" id="debet" class="form-control rupiah-input" placeholder="0" step="0.01" required>
+                                {{-- type="text" (bukan number): input diformat ribuan dengan pemisah titik (mis. 1.000.000).
+                                     Pada input number, titik dianggap desimal + step="0.01" menolak nilainya (419/invalid). --}}
+                                <input type="text" inputmode="numeric" name="debet" id="debet" class="form-control rupiah-input" placeholder="0" required>
                             </div>
                         </div>
                     </div>

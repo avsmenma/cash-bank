@@ -166,6 +166,13 @@ class BankMasukController extends Controller
     {
         // dd($request->method(), $request->all());
 
+        // Debet dikirim dalam format ribuan (mis. "1.000.000"). Buang pemisah titik
+        // sebelum divalidasi, agar nilai jutaan (yang punya >1 titik) tidak ditolak
+        // aturan `numeric` — is_numeric('1.000.000') = false.
+        $request->merge([
+            'debet' => str_replace('.', '', (string) $request->debet),
+        ]);
+
         $validated = $request->validate([
             'tanggal' => 'required|date',
             'debet' => 'required|numeric',
@@ -181,7 +188,7 @@ class BankMasukController extends Controller
             'uraian' => $request->uraian,
             'penerima' => $request->penerima,
             'tanggal' => $request->tanggal,
-            'debet' => str_replace('.', '', $request->debet) ?? 0,
+            'debet' => $request->debet ?? 0,
             'kredit' => 0,
             'keterangan' => $request->keterangan,
         ]);

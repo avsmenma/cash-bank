@@ -243,13 +243,18 @@
                     movableColumns: false,
                     columnDefaults: { headerSort: false, minWidth: 30, variableHeight: true },
                     renderVertical: 'basic',
+                    // Batasi tinggi tabel → muncul scrollbar vertikal saat baris banyak
+                    // (mis. page size 100 tanpa filter). Header & baris TOTAL tetap terlihat.
+                    maxHeight: '75vh',
                     pagination: true,
                     paginationSize: 10,
                     paginationSizeSelector: [10, 25, 50, 100],
                     paginationCounter: 'rows',
                     placeholder: 'Belum ada transaksi untuk VA ini.',
                     columns: [
-                        { title: 'No', field: 'no', width: 55, hozAlign: 'center' },
+                        // No mengikuti urutan baris yang sedang tampil (ikut filter),
+                        // selalu mulai dari 1 — hindari kesan "loncat"/terpotong.
+                        { title: 'No', field: 'no', width: 55, hozAlign: 'center', formatter: 'rownum' },
                         {
                             title: 'Tanggal', field: 'tanggal', width: 135, hozAlign: 'center',
                             formatter: function (cell) { return fmtTanggal(cell.getValue()); }

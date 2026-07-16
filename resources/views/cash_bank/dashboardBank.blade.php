@@ -43,41 +43,48 @@
         </div>
 
         <style>
-            /* Header & footer tabel VA menempel saat isi tabel di-scroll */
-            #cbVAScroll {
-                overflow: auto;
-                flex: 1;
-                min-height: 0;
+            /* ===== Tabel Bank VA — Tabulator (spreadsheet ala Bank Masuk/Keluar) ===== */
+            #tblSaldoVA { font-size: 12.5px; border: 1px solid #cdd9e5; }
+            #tblSaldoVA .tabulator-header { background: #1a5276; border-bottom: 2px solid #0e3a56; }
+            #tblSaldoVA .tabulator-header .tabulator-col {
+                background: #1a5276 !important; color: #fff !important; font-weight: 600; font-size: 11.5px;
+                border-right: 1px solid rgba(255,255,255,.25) !important;
             }
-            #tblSaldoVA thead th {
-                position: sticky;
-                top: 0;
-                background: #1a5276;
-                z-index: 5;
+            #tblSaldoVA .tabulator-header .tabulator-col .tabulator-col-title { color: #fff; white-space: normal; }
+            #tblSaldoVA .tabulator-tableholder { scrollbar-gutter: stable; }
+            #tblSaldoVA .tabulator-cell { border-right: 1px solid #d5e0ea; padding: 8px; }
+            #tblSaldoVA .tabulator-row.tabulator-row-even { background: #fbfdff; }
+            #tblSaldoVA .tabulator-row:hover .tabulator-cell { background: #f0f5fb; }
+            #tblSaldoVA .va-name-link { color: #000; font-weight: 600; text-decoration: none; }
+            #tblSaldoVA .va-name-link:hover { text-decoration: underline; }
+            #tblSaldoVA .tabulator-cell.va-editable { cursor: cell; }
+
+            /* Baris total (bottomCalc) — biru tua seperti footer lama */
+            #tblSaldoVA .tabulator-calcs-holder,
+            #tblSaldoVA .tabulator-row.tabulator-calcs { background: #1a5276 !important; }
+            #tblSaldoVA .tabulator-row.tabulator-calcs .tabulator-cell {
+                background: #1a5276 !important; color: #fff !important; font-weight: 700;
+                border-right-color: rgba(255,255,255,.2) !important;
             }
-            #tblSaldoVA tfoot td {
-                position: sticky;
-                bottom: 0;
-                background: #1a5276;
-                z-index: 5;
+
+            /* Sel aktif / blok / status simpan (ala spreadsheet) */
+            #tblSaldoVA .tabulator-cell.va-active-cell { outline: 2px solid #1b6fd8; outline-offset: -2px; background: #e8f1fd !important; }
+            #tblSaldoVA .tabulator-row:hover .tabulator-cell.va-active-cell { background: #e8f1fd !important; }
+            #tblSaldoVA .tabulator-cell.va-range-cell { background: #dbeafe !important; }
+            #tblSaldoVA .tabulator-row:hover .tabulator-cell.va-range-cell { background: #dbeafe !important; }
+            #tblSaldoVA.va-noselect, #tblSaldoVA.va-noselect * { user-select: none; }
+            #tblSaldoVA .tabulator-cell.cb-saving-cell { background: #fff8df !important; }
+            #tblSaldoVA .tabulator-cell.cb-saved-cell  { background: #e9f8ef !important; }
+            #tblSaldoVA .tabulator-cell.cb-error-cell  { background: #fdecec !important; box-shadow: inset 0 0 0 2px #dc3545; }
+
+            /* Popup jumlah blok sel */
+            .va-sum-pop {
+                position: fixed; z-index: 1080; display: none;
+                background: #0d3b6e; color: #fff; font-size: 12px; line-height: 1;
+                padding: 8px 12px; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.28);
+                pointer-events: none; white-space: nowrap;
             }
-            /* SALDO SAP — sel ala spreadsheet (dobel-klik untuk edit, seperti Bank Masuk/Keluar) */
-            #tblSaldoVA .sap-cell { cursor: cell; }
-            #tblSaldoVA .sap-cell:hover { background: #eef4fb; }
-            #tblSaldoVA .sap-edit-input {
-                width: 100%;
-                box-sizing: border-box;
-                text-align: right;
-                border: 1px solid #1b6fd8;
-                border-radius: 3px;
-                padding: 3px 6px;
-                font-size: 12px;
-                outline: none;
-            }
-            /* Status simpan per sel */
-            #tblSaldoVA .sap-cell.cb-saving-cell { background: #fff8df !important; }
-            #tblSaldoVA .sap-cell.cb-saved-cell  { background: #e9f8ef !important; }
-            #tblSaldoVA .sap-cell.cb-error-cell  { background: #fdecec !important; box-shadow: inset 0 0 0 2px #dc3545; }
+            .va-sum-pop b { color: #ffd166; }
         </style>
 
         {{-- LAYOUT BERSEBELAHAN --}}
@@ -228,75 +235,12 @@
             </div>
             </div>{{-- end kolom kiri --}}
 
-            {{-- ====== TABEL BANK VIRTUAL ACCOUNT (KANAN) ====== --}}
-            {{-- Tinggi card disamakan dengan kolom kiri oleh syncVAHeight(); sisanya scroll --}}
-            <div id="cbVACard" class="card shadow mb-0" style="border-top:4px solid #1a5276; flex:1; min-width:380px; display:flex; flex-direction:column; align-self:flex-start;">
-                <div id="cbVAScroll" class="card-body p-0">
-                    <table class="table table-bordered mb-0" id="tblSaldoVA" style="font-size:12.5px;">
-                        <thead>
-                            <tr style="background:#1a5276;">
-                                <th class="text-center font-weight-bold text-white" style="padding:10px 8px; width:40px;">No.</th>
-                                <th class="font-weight-bold text-white" style="padding:10px 8px;">Nama Bank / VA</th>
-                                <th class="text-center font-weight-bold text-white" style="padding:10px 8px; min-width:160px;">Saldo Akhir (Rp)</th>
-                                <th class="text-center font-weight-bold text-white" style="padding:10px 8px; min-width:160px;">SALDO SAP</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($bankVAList as $index => $va)
-                            <tr>
-                                <td class="text-center align-middle">{{ $index + 1 }}.</td>
-                                <td class="align-middle">
-                                    <a href="{{ route('daftarBank.detail', $va->id_bank_tujuan) }}"
-                                       style="color:#000; font-weight:600; text-decoration:none;"
-                                       onmouseover="this.style.textDecoration='underline'"
-                                       onmouseout="this.style.textDecoration='none'"
-                                       title="Lihat detail transaksi VA ini">
-                                        {{ $va->nama_tujuan }}
-                                    </a>
-                                </td>
-                                <td class="text-right align-middle {{ $va->saldo != 0 ? 'font-weight-bold' : 'text-muted' }}">
-                                    @if($va->saldo < 0)
-                                        <span style="color:#c0392b;">({{ number_format(abs($va->saldo), 0, ',', '.') }})</span>
-                                    @elseif($va->saldo > 0)
-                                        {{ number_format($va->saldo, 0, ',', '.') }}
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                                {{-- SALDO SAP: dobel-klik untuk edit (ala Bank Masuk/Keluar), tersimpan otomatis --}}
-                                <td class="text-right align-middle sap-cell {{ $va->sap_nilai != 0 ? 'font-weight-bold' : 'text-muted' }}"
-                                    data-id="{{ $va->id_bank_tujuan }}"
-                                    data-value="{{ $va->sap }}"
-                                    title="Klik dua kali untuk mengubah SALDO SAP">
-                                    {{ $va->sap_nilai != 0 ? $va->sap : '-' }}
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-3">
-                                    Tidak ada data Bank Virtual Account
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                        <tfoot>
-                            <tr style="background:#1a5276;">
-                                <td colspan="2" class="text-center font-weight-bold text-white align-middle" style="padding:10px 8px;">
-                                    Total Saldo VA
-                                </td>
-                                <td class="text-right font-weight-bold text-white align-middle" style="padding:10px 8px;">
-                                    @if($totalSaldoVA < 0)
-                                        ({{ number_format(abs($totalSaldoVA), 0, ',', '.') }})
-                                    @else
-                                        {{ number_format($totalSaldoVA, 0, ',', '.') }}
-                                    @endif
-                                </td>
-                                <td id="sapTotalCell" class="text-right font-weight-bold text-white align-middle" style="padding:10px 8px;">
-                                    {{ $totalSaldoSap != 0 ? number_format($totalSaldoSap, 0, ',', '.') : '-' }}
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
+            {{-- ====== TABEL BANK VIRTUAL ACCOUNT (KANAN) — Tabulator spreadsheet ====== --}}
+            <div id="cbVACard" class="card shadow mb-0" style="border-top:4px solid #1a5276; flex:1; min-width:380px; align-self:flex-start;">
+                <div class="card-body p-0">
+                    {{-- Klik sel = pilih; dobel-klik/Enter SALDO SAP = edit (tersimpan otomatis);
+                         panah = navigasi; drag/Shift = blok + jumlah; Ctrl+C = salin. --}}
+                    <div id="tblSaldoVA"></div>
                 </div>
             </div>
 
@@ -428,120 +372,376 @@
         }
     });
 
-    // Samakan tinggi card Bank VA dengan kolom kiri (tabel Saldo + Informasi Saldo).
-    // Saat layout menyempit dan card turun ke bawah kolom kiri, tinggi dibiarkan auto.
-    function syncVAHeight() {
-        var left = document.getElementById('cbLeftCol');
-        var card = document.getElementById('cbVACard');
-        if (!left || !card) return;
+    // (Tabel Bank VA kini memakai Tabulator; skripnya ada di bawah pada stack
+    //  'scripts' agar dijalankan setelah jQuery & Tabulator selesai dimuat.)
+</script>
 
-        card.style.height = 'auto';
+{{-- ============================================================
+     TABEL BANK VA — TABULATOR (spreadsheet penuh ala Bank Masuk/Keluar)
+     Ditaruh di stack 'scripts' (dirender SETELAH jQuery & Tabulator).
+     Fitur: pilih sel (klik), navigasi panah, blok drag/Shift + jumlah,
+     Ctrl+C salin, dobel-klik/Enter untuk edit SALDO SAP (tersimpan
+     otomatis via PATCH), dan baris Total (bottomCalc).
+     ============================================================ --}}
+@push('scripts')
+<script>
+(function () {
+    'use strict';
 
-        var stacked = card.getBoundingClientRect().top >= left.getBoundingClientRect().bottom - 5;
-        if (!stacked && card.offsetHeight > left.offsetHeight) {
-            card.style.height = left.offsetHeight + 'px';
-        }
+    var el = document.getElementById('tblSaldoVA');
+    if (!el || !window.Tabulator) { return; }
+
+    // Data VA sudah dirender server-side — tak perlu AJAX terpisah.
+    var VA_DATA = @json($bankVAList->values());
+    var BASE = "{{ url('/daftarBank') }}";
+    function csrf() { return $('meta[name="csrf-token"]').attr('content'); }
+
+    function esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function idNum(v) { return (Math.round(Number(v) || 0)).toLocaleString('id-ID'); }
+
+    // ── Formatter tampilan ──
+    function fmtSaldo(cell) {
+        var v = Number(cell.getValue()) || 0;
+        if (v === 0) return '<span class="text-muted">-</span>';
+        if (v < 0)  return '<span style="color:#c0392b;">(' + idNum(Math.abs(v)) + ')</span>';
+        return idNum(v);
+    }
+    function fmtSap(cell) {
+        var v = Number(cell.getValue()) || 0;
+        return v === 0 ? '<span class="text-muted">-</span>' : idNum(v);
+    }
+    function fmtNama(cell) {
+        var d = cell.getRow().getData();
+        var url = BASE + '/' + d.id_bank_tujuan + '/detail';
+        return '<a href="' + url + '" class="va-name-link" '
+            + 'title="Lihat detail transaksi VA ini">' + esc(d.nama_tujuan) + '</a>';
     }
 
-    window.addEventListener('load', syncVAHeight);
-    window.addEventListener('resize', syncVAHeight);
+    // ── Baris Total (bottomCalc) ──
+    function calcSaldo(values, data) { var s = 0; data.forEach(function (r) { s += Number(r.saldo) || 0; }); return s; }
+    function calcSap(values, data)   { var s = 0; data.forEach(function (r) { s += Number(r.sap_nilai) || 0; }); return s; }
+    function calcFmtSaldo(cell) { var v = Number(cell.getValue()) || 0; return v < 0 ? '(' + idNum(Math.abs(v)) + ')' : idNum(v); }
+    function calcFmtSap(cell)   { var v = Number(cell.getValue()) || 0; return v === 0 ? '-' : idNum(v); }
 
-    // ============ SALDO SAP — INLINE EDIT ALA BANK MASUK/KELUAR ============
-    // Sel tampil sebagai teks biasa. Dobel-klik → sel jadi editor; Enter/keluar
-    // fokus menyimpan (Esc membatalkan) via PATCH /daftarBank/{id}/sap, dengan
-    // umpan-balik warna kuning→hijau (gagal: merah). Footer "Total SAP" ikut update.
-    $(function () {
-        function formatSapValue(value) {
-            var digits = String(value || '').replace(/\D/g, '');
-            if (!digits) return '';
-            digits = digits.replace(/^0+/, '') || '0';
-            return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    var table = new Tabulator(el, {
+        index: 'id_bank_tujuan',
+        data: VA_DATA,
+        layout: 'fitColumns',
+        maxHeight: '72vh',
+        movableColumns: false,
+        editTriggerEvent: 'dblclick',            // dobel-klik = edit; klik tunggal = pilih sel
+        columnHeaderVertAlign: 'middle',
+        placeholder: 'Tidak ada data Bank Virtual Account.',
+        columnDefaults: { resizable: true, headerSort: false, minWidth: 40 },
+        columns: [
+            { title: 'No', formatter: 'rownum', width: 52, hozAlign: 'center', headerHozAlign: 'center' },
+            { title: 'Nama Bank / VA', field: 'nama_tujuan', minWidth: 150, widthGrow: 3, formatter: fmtNama,
+              bottomCalc: function () { return 'Total Saldo VA'; },
+              bottomCalcFormatter: function (cell) { return cell.getValue(); } },
+            { title: 'Saldo Akhir (Rp)', field: 'saldo', width: 160, hozAlign: 'right', headerHozAlign: 'center',
+              formatter: fmtSaldo, bottomCalc: calcSaldo, bottomCalcFormatter: calcFmtSaldo },
+            { title: 'SALDO SAP', field: 'sap_nilai', width: 160, hozAlign: 'right', headerHozAlign: 'center',
+              formatter: fmtSap, editor: 'number', editorParams: { min: 0, selectContents: true },
+              cssClass: 'va-editable', bottomCalc: calcSap, bottomCalcFormatter: calcFmtSap }
+        ],
+
+        rowFormatter: function (row) {
+            // Virtual DOM membuat ulang baris saat scroll — pasang lagi sorotan sel aktif & blok.
+            var d = row.getData();
+            if (vaActive && String(d.id_bank_tujuan) === String(vaActive.id)) {
+                var c = row.getCell(vaActive.field);
+                if (c) c.getElement().classList.add('va-active-cell');
+            }
+            vaPaintRow(row);
         }
+    });
 
-        function displayText(v) { return (v && v !== '') ? v : '-'; }
+    // ============ SIMPAN SAP SAAT SEL DIEDIT ============
+    table.on('cellEdited', function (cell) {
+        if (cell.getField() !== 'sap_nilai') return;
+        var id = cell.getRow().getData().id_bank_tujuan;
+        var value = Math.round(Number(cell.getValue()) || 0);
+        var ce = cell.getElement();
+        ce.classList.remove('cb-saved-cell', 'cb-error-cell');
+        ce.classList.add('cb-saving-cell');
 
-        function recalcTotalSap() {
-            var total = 0;
-            $('#tblSaldoVA .sap-cell').each(function () {
-                total += parseInt(String($(this).attr('data-value') || '').replace(/\D/g, ''), 10) || 0;
-            });
-            $('#sapTotalCell').text(total > 0 ? formatSapValue(String(total)) : '-');
-        }
-
-        // Kembalikan sel ke tampilan teks biasa dengan nilai tertentu.
-        function renderCell($td, value) {
-            $td.attr('data-value', value)
-               .removeClass('font-weight-bold text-muted')
-               .addClass((value && value !== '') ? 'font-weight-bold' : 'text-muted')
-               .text(displayText(value));
-        }
-
-        function saveCell($td, newValue) {
-            var id = $td.attr('data-id');
-            var original = String($td.attr('data-value') || '').trim();
-
-            // Tidak berubah → cukup kembalikan tampilan.
-            if (newValue === original) { renderCell($td, original); return; }
-
-            $td.removeClass('cb-saved-cell cb-error-cell').addClass('cb-saving-cell')
-               .removeClass('text-muted').addClass('font-weight-bold')
-               .text(displayText(newValue));
-
-            $.ajax({
-                url: "{{ url('/daftarBank') }}/" + id + "/sap",
-                method: 'PATCH',
-                data: { sap: newValue },
-                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-                success: function (response) {
-                    renderCell($td, response.sap || '');
-                    recalcTotalSap();
-                    $td.removeClass('cb-saving-cell cb-error-cell').addClass('cb-saved-cell');
-                    setTimeout(function () { $td.removeClass('cb-saved-cell'); }, 900);
-                },
-                error: function () {
-                    renderCell($td, original);
-                    $td.removeClass('cb-saving-cell cb-saved-cell').addClass('cb-error-cell');
-                    alert('Gagal menyimpan SAP. Silakan coba lagi.');
-                    setTimeout(function () { $td.removeClass('cb-error-cell'); }, 1500);
-                }
-            });
-        }
-
-        // Dobel-klik: ubah sel menjadi editor.
-        $('#tblSaldoVA').on('dblclick', '.sap-cell', function () {
-            var $td = $(this);
-            if ($td.find('input.sap-edit-input').length) return; // sudah mode edit
-            var original = String($td.attr('data-value') || '').trim();
-            var $input = $('<input type="text" class="sap-edit-input" placeholder="0">').val(original);
-            $td.empty().append($input);
-            $input.trigger('focus');
-            try { var l = $input.val().length; $input[0].setSelectionRange(l, l); } catch (e) {}
-        });
-
-        // Format ribuan saat mengetik.
-        $('#tblSaldoVA').on('input', 'input.sap-edit-input', function () {
-            var pos = this.selectionStart, before = this.value.length;
-            this.value = formatSapValue(this.value);
-            var after = this.value.length;
-            try { this.setSelectionRange(pos + (after - before), pos + (after - before)); } catch (e) {}
-        });
-
-        // Enter = simpan, Esc = batal.
-        $('#tblSaldoVA').on('keydown', 'input.sap-edit-input', function (event) {
-            if (event.key === 'Enter') { event.preventDefault(); this.blur(); }
-            else if (event.key === 'Escape') {
-                event.preventDefault();
-                $(this).data('cancelled', true);
-                renderCell($(this).closest('.sap-cell'), String($(this).closest('.sap-cell').attr('data-value') || ''));
+        $.ajax({
+            url: BASE + '/' + id + '/sap',
+            method: 'PATCH',
+            data: { sap: value },
+            headers: { 'X-CSRF-TOKEN': csrf() },
+            success: function () {
+                ce.classList.remove('cb-saving-cell', 'cb-error-cell');
+                ce.classList.add('cb-saved-cell');
+                setTimeout(function () { ce.classList.remove('cb-saved-cell'); }, 900);
+            },
+            error: function () {
+                ce.classList.remove('cb-saving-cell');
+                ce.classList.add('cb-error-cell');
+                alert('Gagal menyimpan SAP. Silakan coba lagi.');
             }
         });
-
-        // Keluar fokus = simpan (kecuali dibatalkan lewat Esc).
-        $('#tblSaldoVA').on('blur', 'input.sap-edit-input', function () {
-            if ($(this).data('cancelled')) return;
-            saveCell($(this).closest('.sap-cell'), formatSapValue($(this).val()));
-        });
     });
+
+    // ============ SEL AKTIF + BLOK SEL (ala spreadsheet) + COPY + JUMLAH ============
+    var vaActive = null;   // { id, field }
+    var vaAnchor = null;   // { r, c }
+    var vaRange  = null;   // { r1, c1, r2, c2 }
+    var vaDrag   = false;
+
+    var pop = document.createElement('div');
+    pop.className = 'va-sum-pop';
+    document.body.appendChild(pop);
+
+    function vaCols() { return table.getColumns().filter(function (c) { return c.isVisible(); }); }
+    function vaCellPos(cell) {
+        var p = cell.getRow().getPosition();
+        var cols = vaCols(), ci = -1;
+        for (var i = 0; i < cols.length; i++) { if (cols[i].getField() === cell.getField()) { ci = i; break; } }
+        return (p === false || ci < 0) ? null : { r: p - 1, c: ci };
+    }
+    function vaClearActiveEl() {
+        el.querySelectorAll('.tabulator-cell.va-active-cell').forEach(function (n) { n.classList.remove('va-active-cell'); });
+    }
+    function vaSetActive(cell) {
+        vaClearActiveEl();
+        vaActive = { id: cell.getRow().getData().id_bank_tujuan, field: cell.getField() };
+        cell.getElement().classList.add('va-active-cell');
+    }
+    function vaGetActiveCell() {
+        if (!vaActive) return null;
+        var row = table.getRows().find(function (r) { return String(r.getData().id_bank_tujuan) === String(vaActive.id); });
+        return row ? row.getCell(vaActive.field) : null;
+    }
+    function vaPaintRow(row) {
+        if (!vaRange) return;
+        var p = row.getPosition();
+        if (p === false) return;
+        var r = p - 1;
+        if (r < vaRange.r1 || r > vaRange.r2) return;
+        var cols = vaCols();
+        for (var c = vaRange.c1; c <= vaRange.c2 && c < cols.length; c++) {
+            var cell = row.getCell(cols[c]);
+            var ce = cell && cell.getElement();
+            if (ce && ce.classList) ce.classList.add('va-range-cell');
+        }
+    }
+    function vaApplyRange() {
+        el.querySelectorAll('.tabulator-cell.va-range-cell').forEach(function (n) { n.classList.remove('va-range-cell'); });
+        if (!vaRange) return;
+        table.getRows().slice(vaRange.r1, vaRange.r2 + 1).forEach(vaPaintRow);
+    }
+    function vaSetRange(a, b) {
+        vaRange = { r1: Math.min(a.r, b.r), r2: Math.max(a.r, b.r), c1: Math.min(a.c, b.c), c2: Math.max(a.c, b.c) };
+        vaApplyRange();
+    }
+    function vaClearRange() { vaRange = null; vaApplyRange(); pop.style.display = 'none'; }
+
+    // Angka format Indonesia: "1.500.000", "(2.500)". Teks ditolak.
+    function vaParseNum(v) {
+        if (v === null || v === undefined) return null;
+        var s = String(v).replace(/<[^>]*>/g, '').trim();
+        if (!s || s === '-') return null;
+        var neg = /^\(.*\)$/.test(s);
+        s = s.replace(/[()\s]/g, '').replace(/^Rp/i, '');
+        if (!/^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(s) && !/^-?\d+(,\d+)?$/.test(s)) return null;
+        var n = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+        if (isNaN(n)) return null;
+        return neg ? -n : n;
+    }
+    function vaPosXY(mx, my) {
+        var x = mx || 0, y = my || 0;
+        var lastRow = table.getRows()[vaRange.r2];
+        var lastCell = lastRow && lastRow.getCell(vaCols()[vaRange.c2]);
+        var ce = lastCell && lastCell.getElement();
+        if (ce && ce.getBoundingClientRect) {
+            var rc = ce.getBoundingClientRect();
+            if (rc.width || rc.height) { x = rc.right + 8; y = rc.bottom + 8; }
+        }
+        var pr = pop.getBoundingClientRect();
+        x = Math.min(Math.max(8, x), window.innerWidth - pr.width - 8);
+        y = Math.min(Math.max(8, y), window.innerHeight - pr.height - 8);
+        pop.style.left = x + 'px';
+        pop.style.top = y + 'px';
+    }
+    function vaShowSum(mx, my) {
+        if (!vaRange || (vaRange.r1 === vaRange.r2 && vaRange.c1 === vaRange.c2)) { pop.style.display = 'none'; return; }
+        var rows = table.getRows().slice(vaRange.r1, vaRange.r2 + 1);
+        var cols = vaCols().slice(vaRange.c1, vaRange.c2 + 1);
+        var sum = 0, n = 0;
+        rows.forEach(function (row) {
+            cols.forEach(function (col) {
+                var cell = row.getCell(col);
+                var val = cell ? vaParseNum(cell.getElement().innerText) : null;
+                if (val !== null) { sum += val; n++; }
+            });
+        });
+        if (!n) { pop.style.display = 'none'; return; }
+        pop.innerHTML = 'Jumlah: <b>' + sum.toLocaleString('id-ID', { maximumFractionDigits: 2 }) + '</b>'
+            + (n > 1 ? ' &nbsp;·&nbsp; Data angka: <b>' + n + '</b>' : '');
+        pop.style.display = 'block';
+        vaPosXY(mx, my);
+    }
+
+    function fromLink(e) { return e.target && e.target.closest && e.target.closest('a'); }
+    function isEditorTag(t) { return t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA'; }
+
+    table.on('cellMouseDown', function (e, cell) {
+        if (e.button !== 0) return;
+        if (fromLink(e)) return;                          // klik link nama → biarkan navigasi
+        if (isEditorTag((e.target && e.target.tagName) || '')) return;
+        var p = vaCellPos(cell);
+        if (!p) return;
+        pop.style.display = 'none';
+        if (e.shiftKey && vaAnchor) {
+            vaSetRange(vaAnchor, p); vaShowSum(e.clientX, e.clientY); e.preventDefault(); return;
+        }
+        vaAnchor = p; vaDrag = true;
+        el.classList.add('va-noselect');
+        vaSetActive(cell); vaSetRange(p, p);
+        e.preventDefault();
+    });
+    table.on('cellMouseEnter', function (e, cell) {
+        if (!vaDrag || !vaAnchor) return;
+        var p = vaCellPos(cell);
+        if (p) vaSetRange(vaAnchor, p);
+    });
+    document.addEventListener('mouseup', function (e) {
+        if (!vaDrag) return;
+        vaDrag = false;
+        el.classList.remove('va-noselect');
+        if (vaRange && vaRange.r1 === vaRange.r2 && vaRange.c1 === vaRange.c2) vaClearRange();
+        else vaShowSum(e.clientX, e.clientY);
+    });
+    table.on('cellClick', function (e, cell) {
+        if (fromLink(e)) return;
+        if (isEditorTag((e.target && e.target.tagName) || '')) return;
+        vaSetActive(cell);
+    });
+
+    // Navigasi panah + Esc + Enter(F2) edit + Ctrl/Cmd+C copy
+    document.addEventListener('keydown', function (e) {
+        if (isEditorTag((e.target && e.target.tagName) || '') ||
+            isEditorTag((document.activeElement && document.activeElement.tagName) || '')) return;
+
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+            if (!vaRange && !vaActive) return;
+            e.preventDefault(); vaCopy(e); return;
+        }
+        if (!vaActive) return;
+        if (e.key === 'Escape') { vaClearActiveEl(); vaActive = null; vaClearRange(); return; }
+        if (e.key === 'Enter' || e.key === 'F2') {
+            var ec = vaGetActiveCell();
+            if (ec) { e.preventDefault(); ec.edit(true); }   // hanya kolom SAP yang punya editor
+            return;
+        }
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) === -1) return;
+
+        var cols = vaCols();
+        var rows = table.getRows();
+        var cell = vaGetActiveCell();
+        if (!cell) return;
+        var pos = vaCellPos(cell);
+        if (!pos) return;
+        e.preventDefault();
+
+        // Shift+Panah: perluas blok dari sel aktif.
+        if (e.shiftKey) {
+            if (!vaRange || !vaAnchor) vaAnchor = pos;
+            var nr = pos.r, nc = pos.c;
+            if (e.key === 'ArrowUp')         nr = Math.max(0, pos.r - 1);
+            else if (e.key === 'ArrowDown')  nr = Math.min(rows.length - 1, pos.r + 1);
+            else if (e.key === 'ArrowLeft')  nc = Math.max(0, pos.c - 1);
+            else if (e.key === 'ArrowRight') nc = Math.min(cols.length - 1, pos.c + 1);
+            if (nr === pos.r && nc === pos.c) return;
+            var trow = rows[nr];
+            if (!trow) return;
+            vaActive = { id: trow.getData().id_bank_tujuan, field: cols[nc].getField() };
+            vaClearActiveEl();
+            vaSetRange(vaAnchor, { r: nr, c: nc });
+            var applyActive = function () {
+                var ac = vaGetActiveCell();
+                if (ac && ac.getElement()) ac.getElement().classList.add('va-active-cell');
+                vaApplyRange(); vaShowSum();
+            };
+            var pr1 = table.scrollToRow(trow, 'nearest', false);
+            if (pr1 && pr1.then) pr1.then(applyActive).catch(applyActive);
+            else window.requestAnimationFrame(applyActive);
+            return;
+        }
+
+        // Panah biasa: pindah sel aktif + hapus blok.
+        vaClearRange();
+        var row = cell.getRow();
+        var ci = cols.findIndex(function (c) { return c.getField() === vaActive.field; });
+        var target = null;
+        if (e.key === 'ArrowLeft'  && ci > 0)               target = row.getCell(cols[ci - 1]);
+        if (e.key === 'ArrowRight' && ci < cols.length - 1) target = row.getCell(cols[ci + 1]);
+        if (e.key === 'ArrowUp')   { var pv = row.getPrevRow(); if (pv) target = pv.getCell(vaActive.field); }
+        if (e.key === 'ArrowDown') { var nx = row.getNextRow(); if (nx) target = nx.getCell(vaActive.field); }
+        if (target) {
+            vaSetActive(target);
+            if (target.getElement()) target.getElement().scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    });
+
+    // ── Salin blok/sel aktif ke clipboard sebagai TSV ──
+    function vaCopy(e) {
+        var cols0 = vaCols(), rows, cols;
+        if (vaRange) {
+            rows = table.getRows().slice(vaRange.r1, vaRange.r2 + 1);
+            cols = cols0.slice(vaRange.c1, vaRange.c2 + 1);
+        } else {
+            var c = vaGetActiveCell();
+            if (!c) return;
+            rows = [c.getRow()];
+            var ci = cols0.findIndex(function (x) { return x.getField() === vaActive.field; });
+            cols = ci >= 0 ? [cols0[ci]] : [];
+        }
+        if (!cols.length) return;
+        var tsv = rows.map(function (row) {
+            return cols.map(function (col) {
+                var cell = row.getCell(col);
+                var t = cell ? (cell.getElement().innerText || '') : '';
+                return t.replace(/\r?\n/g, ' ').replace(/\t/g, ' ').trim();
+            }).join('\t');
+        }).join('\n');
+
+        var flash = function () { vaFlash(e); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(tsv).then(flash).catch(function () { vaFallbackCopy(tsv); flash(); });
+        } else { vaFallbackCopy(tsv); flash(); }
+    }
+    function vaFallbackCopy(text) {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch (err) {}
+        document.body.removeChild(ta);
+    }
+    function vaFlash(e) {
+        pop.innerHTML = '<b>✓</b> Disalin';
+        pop.style.display = 'block';
+        if (vaRange) { vaPosXY(e && e.clientX, e && e.clientY); }
+        else {
+            var c = vaGetActiveCell();
+            var rc = c && c.getElement().getBoundingClientRect();
+            var x = rc ? rc.right + 8 : (e ? e.clientX : 20);
+            var y = rc ? rc.bottom + 8 : (e ? e.clientY : 20);
+            var pr = pop.getBoundingClientRect();
+            pop.style.left = Math.min(Math.max(8, x), window.innerWidth - pr.width - 8) + 'px';
+            pop.style.top = Math.min(Math.max(8, y), window.innerHeight - pr.height - 8) + 'px';
+        }
+        setTimeout(function () {
+            if (vaRange && !(vaRange.r1 === vaRange.r2 && vaRange.c1 === vaRange.c2)) vaShowSum();
+            else pop.style.display = 'none';
+        }, 900);
+    }
+})();
 </script>
+@endpush
 
 @endsection

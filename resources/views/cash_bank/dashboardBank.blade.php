@@ -430,7 +430,9 @@
         index: 'id_bank_tujuan',
         data: VA_DATA,
         layout: 'fitColumns',
-        maxHeight: '72vh',
+        // Tanpa tinggi tetap: tabel merender SEMUA baris & memanjang ke bawah —
+        // tidak ada scrollbar vertikal internal, dan lebih ringan karena tak ada
+        // render virtual (itu yang bikin jeda/lag sesaat saat sel SAP disimpan).
         movableColumns: false,
         editTriggerEvent: 'dblclick',            // dobel-klik = edit; klik tunggal = pilih sel
         columnHeaderVertAlign: 'middle',
@@ -471,6 +473,7 @@
         $.ajax({
             url: BASE + '/' + id + '/sap',
             method: 'PATCH',
+            global: false,                 // jangan picu event ajax global (lebih ringan)
             data: { sap: value },
             headers: { 'X-CSRF-TOKEN': csrf() },
             success: function () {

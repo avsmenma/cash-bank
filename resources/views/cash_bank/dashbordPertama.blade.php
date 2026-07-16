@@ -157,12 +157,12 @@
     // Urutan kategori Penerimaan
     // ================================================================
     $pnOrder = [
-        'Penjualan CPO'                   => 1,
-        'Penjualan Kernel'                => 2,
+        'Penjualan CPO (Minyak Sawit)'    => 1,
+        'Penjualan Kernel (Inti Sawit)'   => 2,
         'Hapor'                           => 3,
         'Penjualan TBS'                   => 4,
-        'Penjualan Cangkang'              => 5,
-        'Penjualan Karet'                 => 6,
+        'Penjualan Cangkang (CK)'         => 5,
+        'Penjualan Karet (SIR 20/LUMP)'   => 6,
         'KSO (Titip Olah/Revenue Sharing)'=> 7,
         'KSU Batubara'                    => 8,
         'Lainnya'                         => 9,

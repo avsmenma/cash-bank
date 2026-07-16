@@ -1082,18 +1082,23 @@ class dashboardController extends Controller
         $totalSaldoBank = $sumberDanaList->sum('saldo_va');
 
         // Ambil saldo per Bank Virtual Account (bank_tujuan)
+        // Kolom `sap` = saldo versi SAP (diinput manual di halaman Daftar VA),
+        // disimpan sebagai string berformat ribuan mis. "26.750".
         $bankVAList = DB::table('bank_tujuan')
-            ->select('bank_tujuan.id_bank_tujuan', 'bank_tujuan.nama_tujuan')
+            ->select('bank_tujuan.id_bank_tujuan', 'bank_tujuan.nama_tujuan', 'bank_tujuan.sap')
             ->selectRaw('COALESCE((SELECT SUM(debet) FROM bank_masuk WHERE bank_masuk.id_bank_tujuan = bank_tujuan.id_bank_tujuan), 0) as total_masuk')
             ->selectRaw('COALESCE((SELECT SUM(kredit) FROM bank_keluars WHERE bank_keluars.id_bank_tujuan = bank_tujuan.id_bank_tujuan), 0) as total_keluar')
             ->orderBy('bank_tujuan.nama_tujuan')
             ->get()
             ->map(function ($va) {
                 $va->saldo = (float) $va->total_masuk - (float) $va->total_keluar;
+                // Nilai numerik SAP untuk penjumlahan total (buang pemisah titik).
+                $va->sap_nilai = (float) preg_replace('/\D+/', '', (string) $va->sap);
                 return $va;
             });
 
         $totalSaldoVA = $bankVAList->sum('saldo');
+        $totalSaldoSap = $bankVAList->sum('sap_nilai');
 
         // Cari saldo Rek 408 (Bank Mandiri OPEX, no. rek mengandung '9702740-8')
         $saldoRek408 = 0;
@@ -1126,6 +1131,7 @@ class dashboardController extends Controller
             'totalSaldoBank',
             'bankVAList',
             'totalSaldoVA',
+            'totalSaldoSap',
             'saldoRek408',
             'noRek408',
             'digitAkhirRek',

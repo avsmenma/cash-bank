@@ -221,6 +221,7 @@
                                 <th class="text-center font-weight-bold text-white" style="padding:10px 8px; width:40px;">No.</th>
                                 <th class="font-weight-bold text-white" style="padding:10px 8px;">Nama Bank / VA</th>
                                 <th class="text-center font-weight-bold text-white" style="padding:10px 8px; min-width:160px;">Saldo Akhir (Rp)</th>
+                                <th class="text-center font-weight-bold text-white" style="padding:10px 8px; min-width:160px;">SALDO SAP</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -245,10 +246,14 @@
                                         -
                                     @endif
                                 </td>
+                                {{-- SALDO SAP: nilai versi SAP (diinput manual di halaman Daftar VA) --}}
+                                <td class="text-right align-middle {{ $va->sap_nilai != 0 ? 'font-weight-bold' : 'text-muted' }}">
+                                    {{ $va->sap_nilai != 0 ? $va->sap : '-' }}
+                                </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="3" class="text-center text-muted py-3">
+                                <td colspan="4" class="text-center text-muted py-3">
                                     Tidak ada data Bank Virtual Account
                                 </td>
                             </tr>
@@ -265,6 +270,9 @@
                                     @else
                                         {{ number_format($totalSaldoVA, 0, ',', '.') }}
                                     @endif
+                                </td>
+                                <td class="text-right font-weight-bold text-white align-middle" style="padding:10px 8px;">
+                                    {{ $totalSaldoSap != 0 ? number_format($totalSaldoSap, 0, ',', '.') : '-' }}
                                 </td>
                             </tr>
                         </tfoot>

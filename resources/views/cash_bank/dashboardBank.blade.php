@@ -769,50 +769,70 @@
     // lalu Ctrl+V → nilai mengisi ke bawah. Hanya kolom SAP yang menerima nilai;
     // tiap sel tersimpan otomatis (memicu cellEdited) dan SELISIH ikut dihitung.
     function vaDigits(s) { return String(s == null ? '' : s).split(',')[0].replace(/\D/g, ''); }
-    function vaSetSap(row, col, val) {
-        if (!row || !col) return;
-        var cell = row.getCell(col);
-        if (cell) cell.setValue(val);   // memicu cellEdited → simpan + hitung SELISIH
-    }
     function vaParseClip(text) {
         var t = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         var lines = t.split('\n');
         while (lines.length && lines[lines.length - 1] === '') lines.pop();
         return lines.map(function (l) { return l.split('\t'); });
     }
+    // Simpan satu nilai SAP ke server + umpan-balik warna pada sel-nya.
+    function vaSaveSap(id, val) {
+        var row = table.getRow(id);
+        var cell = row && row.getCell('sap_nilai');
+        var ce = cell && cell.getElement();
+        if (ce) { ce.classList.remove('cb-saved-cell', 'cb-error-cell'); ce.classList.add('cb-saving-cell'); }
+        $.ajax({
+            url: BASE + '/' + id + '/sap',
+            method: 'PATCH', global: false,
+            data: { sap: val },
+            headers: { 'X-CSRF-TOKEN': csrf() },
+            success: function () {
+                if (ce) { ce.classList.remove('cb-saving-cell', 'cb-error-cell'); ce.classList.add('cb-saved-cell'); setTimeout(function () { ce.classList.remove('cb-saved-cell'); }, 900); }
+            },
+            error: function () {
+                if (ce) { ce.classList.remove('cb-saving-cell'); ce.classList.add('cb-error-cell'); }
+            }
+        });
+    }
+
     function vaPaste(text) {
         var matrix = vaParseClip(text);
         if (!matrix.length) return;
-        var cols = vaCols(), rows = table.getRows();
-        var sapIdx = cols.findIndex(function (c) { return c.getField() === 'sap_nilai'; });
-        if (sapIdx < 0) return;
-        var sapCol = cols[sapIdx];
-
-        // Ambil nilai clipboard = kolom pertama tiap baris (SAP butuh 1 kolom angka).
-        var vals = matrix.map(function (rr) { return vaDigits(rr[0] || ''); });
+        var rows = table.getRows();
+        var vals = matrix.map(function (rr) { return vaDigits(rr[0] || ''); });   // 1 kolom angka
         if (!vals.length) return;
 
-        // (1) ADA BLOK terpilih → isi kolom SAP untuk SEMUA baris di blok sekaligus.
-        //     Bila nilai clipboard lebih pendek dari blok, diulang (tiling); satu
-        //     nilai → seluruh blok terisi nilai itu.
+        // Kumpulkan baris target + indeks nilai clipboard yang dipakai.
+        var picks = [];   // { row: RowComponent, vi: indeks nilai }
         if (vaRange && !(vaRange.r1 === vaRange.r2 && vaRange.c1 === vaRange.c2)) {
+            // ADA BLOK → semua baris di blok; nilai clipboard diulang (tiling) bila pendek.
             var k = 0;
-            for (var r = vaRange.r1; r <= vaRange.r2; r++, k++) {
-                var v = vals[k % vals.length];
-                if (v === '') continue;                 // sel clipboard kosong → lewati
-                vaSetSap(rows[r], sapCol, parseInt(v, 10) || 0);
-            }
-            return;
+            for (var r = vaRange.r1; r <= vaRange.r2; r++, k++) { if (rows[r]) picks.push({ row: rows[r], vi: k }); }
+        } else {
+            // TANPA blok → menurun mulai sel aktif.
+            var startR;
+            if (vaActive) { var ac = vaGetActiveCell(); var p = ac && vaCellPos(ac); if (!p) return; startR = p.r; }
+            else return;
+            for (var i = 0; i < vals.length; i++) { if (rows[startR + i]) picks.push({ row: rows[startR + i], vi: i }); }
         }
 
-        // (2) TANPA blok (satu sel aktif) → tulis nilai menurun mulai sel aktif.
-        var startR;
-        if (vaActive) { var ac = vaGetActiveCell(); var p = ac && vaCellPos(ac); if (!p) return; startR = p.r; }
-        else return;
-        for (var i = 0; i < vals.length; i++) {
-            if (vals[i] === '') continue;
-            vaSetSap(rows[startR + i], sapCol, parseInt(vals[i], 10) || 0);
-        }
+        // Bangun update SEKALIGUS (satu render — hindari re-render per sel yang bikin
+        // referensi baris kadaluarsa sehingga hanya sel pertama tersimpan) + daftar simpan.
+        var dataUpdates = [], saves = [];
+        picks.forEach(function (pk) {
+            var v = vals[pk.vi % vals.length];
+            if (v === '') return;
+            var val = parseInt(v, 10) || 0;
+            var d = pk.row.getData();
+            dataUpdates.push({ id_bank_tujuan: d.id_bank_tujuan, sap_nilai: val, selisih: (Number(d.saldo) || 0) - val });
+            saves.push({ id: d.id_bank_tujuan, val: val });
+        });
+        if (!dataUpdates.length) return;
+
+        function afterRender() { saves.forEach(function (s) { vaSaveSap(s.id, s.val); }); }
+        var pr = table.updateData(dataUpdates);   // satu kali render; SELISIH & total ikut
+        if (pr && pr.then) { pr.then(afterRender)['catch'](afterRender); }
+        else { afterRender(); }
     }
 
     document.addEventListener('paste', function (e) {

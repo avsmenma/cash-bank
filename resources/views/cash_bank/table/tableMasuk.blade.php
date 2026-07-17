@@ -368,11 +368,54 @@
                 return p;
             }
 
+            // ============ UNDO / REDO (Ctrl+Z / Ctrl+Y) ============
+            function createUndoManager(cfg) {
+                var undoStack = [], redoStack = [], MAX = 100, pending = null;
+                function snap(row) { var d = row.getData(), s = {}; cfg.trackFields.forEach(function (f) { s[f] = d[f]; }); (cfg.companions || []).forEach(function (cf) { s[cf] = d[cf]; }); return s; }
+                function diff(b, a) { return cfg.trackFields.filter(function (f) { return String(b[f] == null ? '' : b[f]) !== String(a[f] == null ? '' : a[f]); }); }
+                function push(entry) { if (!entry.length) return; undoStack.push(entry); if (undoStack.length > MAX) undoStack.shift(); redoStack = []; }
+                function findRow(id) { var rows = cfg.table.getRows(); for (var i = 0; i < rows.length; i++) { if (String(cfg.getId(rows[i].getData())) === String(id)) return rows[i]; } return null; }
+                return {
+                    snapshotRows: function (ids) { var m = {}; ids.forEach(function (id) { var r = findRow(id); if (r) m[String(id)] = snap(r); }); return m; },
+                    recordBatch: function (before, after) { var e = []; Object.keys(after).forEach(function (id) { var b = before[id], a = after[id]; if (!b || !a) return; var ch = diff(b, a); if (ch.length) e.push({ id: id, before: b, after: a, fields: ch }); }); push(e); },
+                    beginEdit: function (row) { pending = { id: String(cfg.getId(row.getData())), before: snap(row) }; },
+                    commitEdit: function (row) { if (!pending) return; var id = String(cfg.getId(row.getData())); if (pending.id !== id) { pending = null; return; } var a = snap(row); var ch = diff(pending.before, a); if (ch.length) push([{ id: id, before: pending.before, after: a, fields: ch }]); pending = null; },
+                    undo: function () { if (!undoStack.length) return false; var e = undoStack.pop(); e.forEach(function (rc) { var row = findRow(rc.id); if (row) cfg.applyState(row, rc.before, rc.fields); }); redoStack.push(e); return true; },
+                    redo: function () { if (!redoStack.length) return false; var e = redoStack.pop(); e.forEach(function (rc) { var row = findRow(rc.id); if (row) cfg.applyState(row, rc.after, rc.fields); }); undoStack.push(e); return true; }
+                };
+            }
+            var bmUndo = createUndoManager({
+                table: table,
+                getId: function (d) { return d.id_bank_masuk; },
+                trackFields: ['agenda_tahun', 'no_bukti', 'tanggal_raw', 'id_sumber_dana', 'id_bank_tujuan', 'id_kategori_kriteria', 'penerima', 'uraian', 'id_jenis_pembayaran', 'debet_raw', 'keterangan'],
+                companions: [],
+                applyState: function (row, state, fields) {
+                    var id = row.getData().id_bank_masuk;
+                    var grid = {}; fields.forEach(function (f) { grid[f] = state[f]; });
+                    row.update(grid);
+                    var backend = { _token: csrf(), _method: 'PUT' };
+                    fields.forEach(function (f) {
+                        var v = state[f];
+                        if (f === 'debet_raw') backend.debet = (v === '' || v == null ? 0 : v);
+                        else if (f === 'tanggal_raw') backend.tanggal = (v || '');
+                        else if (f.indexOf('id_') === 0) backend[f] = (v == null || v === '' || v === '-' ? '-' : v);
+                        else backend[f] = (v == null ? '' : v);
+                    });
+                    function els() { return fields.map(function (f) { var c = row.getCell(f); return c ? c.getElement() : null; }).filter(Boolean); }
+                    els().forEach(function (e) { e.classList.remove('cb-saved-cell', 'cb-error-cell'); e.classList.add('cb-saving-cell'); });
+                    $.ajax({ url: '/bank-masuk/' + id, type: 'POST', global: false, data: backend })
+                        .done(function () { els().forEach(function (e) { e.classList.remove('cb-saving-cell', 'cb-error-cell'); e.classList.add('cb-saved-cell'); }); setTimeout(function () { els().forEach(function (e) { e.classList.remove('cb-saved-cell'); }); }, 900); })
+                        .fail(function () { els().forEach(function (e) { e.classList.remove('cb-saving-cell'); e.classList.add('cb-error-cell'); }); });
+                }
+            });
+            table.on('cellEditing', function (cell) { bmUndo.beginEdit(cell.getRow()); });
+
             table.on('cellEdited', function (cell) {
                 // Hitung ulang tinggi baris agar teks panjang (Uraian/Keterangan)
                 // yang baru diketik langsung memuai — variableHeight tidak otomatis
                 // menyesuaikan setelah inline edit.
                 var editedRow = cell.getRow();
+                bmUndo.commitEdit(editedRow);
                 window.requestAnimationFrame(function () { editedRow.normalizeHeight(); });
 
                 var field = cell.getField();
@@ -585,6 +628,9 @@
                 }
                 if (isEditorEl(e.target) || isEditorEl(document.activeElement)) return;
 
+                // Undo (Ctrl+Z) / Redo (Ctrl+Y atau Ctrl+Shift+Z)
+                if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); bmUndo.undo(); return; }
+                if ((e.ctrlKey || e.metaKey) && ((e.key === 'y' || e.key === 'Y') || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) { e.preventDefault(); bmUndo.redo(); return; }
                 if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
                     if (!bmRange && !bmActive) return;
                     e.preventDefault();
@@ -826,7 +872,12 @@
                         for (var j = 0; j < matrix[i].length; j++) add(rows[r0 + i], cols[c0 + j], matrix[i][j]);
                     }
                 }
+                if (!targets.length) return;
+                var _ids = [], _seen = {};
+                targets.forEach(function (t) { if (!_seen[t.id]) { _seen[t.id] = true; _ids.push(t.id); } });
+                var _before = bmUndo.snapshotRows(_ids);
                 bmApplyTargets(targets);
+                bmUndo.recordBatch(_before, bmUndo.snapshotRows(_ids));
             }
 
             function bmClearSelection() {
@@ -846,7 +897,11 @@
                     if (ac && bmEditable(ac.getColumn())) add(ac.getRow(), ac.getColumn());
                 }
                 if (!targets.length) return false;
+                var _ids = [], _seen = {};
+                targets.forEach(function (t) { if (!_seen[t.id]) { _seen[t.id] = true; _ids.push(t.id); } });
+                var _before = bmUndo.snapshotRows(_ids);
                 bmApplyTargets(targets);
+                bmUndo.recordBatch(_before, bmUndo.snapshotRows(_ids));
                 return true;
             }
 

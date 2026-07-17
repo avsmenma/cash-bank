@@ -474,12 +474,52 @@
         }
     });
 
+    // ============ UNDO / REDO (Ctrl+Z / Ctrl+Y) ============
+    // Manajer undo generik: mengingat nilai lama tiap perubahan, lalu saat undo
+    // mengembalikan nilai lama DI LAYAR sekaligus menyimpannya kembali ke server.
+    function createUndoManager(cfg) {
+        var undoStack = [], redoStack = [], MAX = 100, pending = null;
+        function snap(row) { var d = row.getData(), s = {}; cfg.trackFields.forEach(function (f) { s[f] = d[f]; }); (cfg.companions || []).forEach(function (cf) { s[cf] = d[cf]; }); return s; }
+        function diff(b, a) { return cfg.trackFields.filter(function (f) { return String(b[f] == null ? '' : b[f]) !== String(a[f] == null ? '' : a[f]); }); }
+        function push(entry) { if (!entry.length) return; undoStack.push(entry); if (undoStack.length > MAX) undoStack.shift(); redoStack = []; }
+        function findRow(id) { var rows = cfg.table.getRows(); for (var i = 0; i < rows.length; i++) { if (String(cfg.getId(rows[i].getData())) === String(id)) return rows[i]; } return null; }
+        return {
+            snapshotRows: function (ids) { var m = {}; ids.forEach(function (id) { var r = findRow(id); if (r) m[String(id)] = snap(r); }); return m; },
+            recordBatch: function (before, after) { var e = []; Object.keys(after).forEach(function (id) { var b = before[id], a = after[id]; if (!b || !a) return; var ch = diff(b, a); if (ch.length) e.push({ id: id, before: b, after: a, fields: ch }); }); push(e); },
+            beginEdit: function (row) { pending = { id: String(cfg.getId(row.getData())), before: snap(row) }; },
+            commitEdit: function (row) { if (!pending) return; var id = String(cfg.getId(row.getData())); if (pending.id !== id) { pending = null; return; } var a = snap(row); var ch = diff(pending.before, a); if (ch.length) push([{ id: id, before: pending.before, after: a, fields: ch }]); pending = null; },
+            undo: function () { if (!undoStack.length) return false; var e = undoStack.pop(); e.forEach(function (rc) { var row = findRow(rc.id); if (row) cfg.applyState(row, rc.before, rc.fields); }); redoStack.push(e); return true; },
+            redo: function () { if (!redoStack.length) return false; var e = redoStack.pop(); e.forEach(function (rc) { var row = findRow(rc.id); if (row) cfg.applyState(row, rc.after, rc.fields); }); undoStack.push(e); return true; }
+        };
+    }
+
+    var vaUndo = createUndoManager({
+        table: table,
+        getId: function (d) { return d.id_bank_tujuan; },
+        trackFields: ['sap_nilai'],
+        companions: [],
+        applyState: function (row, state, fields) {
+            var id = row.getData().id_bank_tujuan;
+            var sap = Math.round(Number(state.sap_nilai) || 0);
+            row.update({ sap_nilai: sap, selisih: (Number(row.getData().saldo) || 0) - sap });
+            var cell = row.getCell('sap_nilai'); var ce = cell && cell.getElement();
+            if (ce) { ce.classList.remove('cb-saved-cell', 'cb-error-cell'); ce.classList.add('cb-saving-cell'); }
+            $.ajax({ url: BASE + '/' + id + '/sap', method: 'PATCH', global: false, data: { sap: sap }, headers: { 'X-CSRF-TOKEN': csrf() } })
+                .done(function () { if (ce) { ce.classList.remove('cb-saving-cell', 'cb-error-cell'); ce.classList.add('cb-saved-cell'); setTimeout(function () { ce.classList.remove('cb-saved-cell'); }, 900); } })
+                .fail(function () { if (ce) { ce.classList.remove('cb-saving-cell'); ce.classList.add('cb-error-cell'); } });
+        }
+    });
+
+    // Rekam nilai lama saat mulai edit inline sel SAP (dobel-klik).
+    table.on('cellEditing', function (cell) { if (cell.getField() === 'sap_nilai') vaUndo.beginEdit(cell.getRow()); });
+
     // ============ SIMPAN SAP SAAT SEL DIEDIT ============
     table.on('cellEdited', function (cell) {
         if (cell.getField() !== 'sap_nilai') return;
         var row = cell.getRow();
         var id = row.getData().id_bank_tujuan;
         var value = Math.round(Number(cell.getValue()) || 0);
+        vaUndo.commitEdit(row);
 
         // SELISIH = Saldo Akhir - SAP baru → perbarui langsung; sel & total SELISIH
         // di footer ikut dihitung ulang oleh Tabulator.
@@ -650,6 +690,9 @@
         if (isEditorTag((e.target && e.target.tagName) || '') ||
             isEditorTag((document.activeElement && document.activeElement.tagName) || '')) return;
 
+        // Undo (Ctrl+Z) / Redo (Ctrl+Y atau Ctrl+Shift+Z)
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); vaUndo.undo(); return; }
+        if ((e.ctrlKey || e.metaKey) && ((e.key === 'y' || e.key === 'Y') || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) { e.preventDefault(); vaUndo.redo(); return; }
         if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
             if (!vaRange && !vaActive) return;
             e.preventDefault(); vaCopy(e); return;
@@ -837,10 +880,14 @@
         });
         if (!dataUpdates.length) return;
 
+        var undoBefore = vaUndo.snapshotRows(saves.map(function (s) { return s.id; }));
+        var undoAfter = {}; saves.forEach(function (s) { undoAfter[String(s.id)] = { sap_nilai: s.val }; });
+
         function afterRender() { saves.forEach(function (s) { vaSaveSap(s.id, s.val); }); }
         var pr = table.updateData(dataUpdates);   // satu kali render; SELISIH & total ikut
         if (pr && pr.then) { pr.then(afterRender)['catch'](afterRender); }
         else { afterRender(); }
+        vaUndo.recordBatch(undoBefore, undoAfter);
     }
 
     // Kosongkan SALDO SAP pada sel aktif / seluruh blok (dipicu Delete/Backspace).
@@ -873,10 +920,14 @@
         });
         if (!dataUpdates.length) return true;   // tidak ada yang perlu dihapus, tapi tetap ditangani
 
+        var undoBefore = vaUndo.snapshotRows(saves);
+        var undoAfter = {}; saves.forEach(function (id) { undoAfter[String(id)] = { sap_nilai: 0 }; });
+
         function afterClear() { saves.forEach(function (id) { vaSaveSap(id, ''); }); }   // '' → server simpan null
         var pr = table.updateData(dataUpdates);
         if (pr && pr.then) { pr.then(afterClear)['catch'](afterClear); }
         else { afterClear(); }
+        vaUndo.recordBatch(undoBefore, undoAfter);
         return true;
     }
 

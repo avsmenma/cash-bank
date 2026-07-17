@@ -172,6 +172,59 @@
                 return '<input type="checkbox" id="select_all_ids">';
             }
 
+            // Editor tanggal kustom: tampil & ketik dd-mm-yyyy, SIMPAN hanya saat
+            // Enter / keluar-fokus, dan WAJIB tahun 4 digit. Nilai disimpan tetap
+            // yyyy-mm-dd (cocok formatter & backend).
+            function cbDateToRaw(str) {
+                var s = String(str == null ? '' : str).trim();
+                if (!s) return null;
+                var m = s.match(/^(\d{1,2})\D+(\d{1,2})\D+(\d{4})$/);
+                if (!m) {
+                    var g = s.replace(/\D/g, '');
+                    if (g.length === 8) m = [null, g.slice(0, 2), g.slice(2, 4), g.slice(4, 8)];
+                    else return null;
+                }
+                var d = parseInt(m[1], 10), mo = parseInt(m[2], 10), y = parseInt(m[3], 10);
+                if (!d || !mo || !y || d < 1 || d > 31 || mo < 1 || mo > 12 || y < 1000) return null;
+                var dt = new Date(y, mo - 1, d);
+                if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+                var p = function (n) { return (n < 10 ? '0' : '') + n; };
+                return y + '-' + p(mo) + '-' + p(d);
+            }
+            function cbRawToDMY(raw) {
+                var m = String(raw || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+                if (!m) return raw ? String(raw) : '';
+                var p = function (n) { return n.length < 2 ? '0' + n : n; };
+                return p(m[3]) + '-' + p(m[2]) + '-' + m[1];
+            }
+            function cbDateEditor(cell, onRendered, success, cancel) {
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.setAttribute('inputmode', 'numeric');
+                input.placeholder = 'dd-mm-yyyy';
+                input.value = cbRawToDMY(cell.getValue());
+                input.style.cssText = 'width:100%;box-sizing:border-box;padding:4px 6px;border:1px solid #1b6fd8;font:inherit;text-align:center;outline:none;';
+                var done = false;
+                function commit(fromEnter) {
+                    if (done) return;
+                    var val = input.value.trim();
+                    if (val === '') { done = true; cancel(); return; }          // kosong → batal (nilai lama)
+                    var raw = cbDateToRaw(val);
+                    if (raw === null) {
+                        if (fromEnter) { input.style.borderColor = '#dc3545'; input.style.background = '#fff5f5'; return; }
+                        done = true; cancel(); return;                          // keluar-fokus tapi invalid → batal
+                    }
+                    done = true; success(raw);
+                }
+                onRendered(function () { input.focus(); try { input.select(); } catch (e) {} });
+                input.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); commit(true); }
+                    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (!done) { done = true; cancel(); } }
+                });
+                input.addEventListener('blur', function () { commit(false); });
+                return input;
+            }
+
             // Editor textarea custom: Enter = SIMPAN, Shift+Enter = baris baru.
             // (Editor "textarea" bawaan Tabulator menjadikan Enter sebagai baris
             // baru sehingga tidak pernah menyimpan lewat Enter.)
@@ -220,7 +273,10 @@
                     { title: 'No Bukti', field: 'no_bukti', width: 80, formatter: fmtText,
                       editor: 'input', cssClass: 'bm-editable' },
                     { title: 'Tanggal', field: 'tanggal_raw', width: 120, hozAlign: 'center', formatter: fmtTanggal,
-                      editor: 'input', editorParams: { elementAttributes: { type: 'date' } }, cssClass: 'bm-editable' },
+                      // Editor tanggal: ketik dd-mm-yyyy, SIMPAN hanya saat Enter / keluar-fokus.
+                      // (native <input type=date> menyimpan begitu 1 angka tahun diketik → jadi 0002,
+                      //  dan tampil mm/dd/yyyy). Nilai tetap disimpan yyyy-mm-dd agar cocok backend.
+                      editor: cbDateEditor, cssClass: 'bm-editable' },
                     { title: 'Sumber Dana', field: 'id_sumber_dana', width: 220, widthGrow: 2,
                       formatter: fmtRef('sumberDana', 'sumber_dana'), cssClass: 'bm-wrap bm-editable',
                       editor: 'list', editorParams: { values: editorValues.sumberDana, autocomplete: true, listOnEmpty: true } },

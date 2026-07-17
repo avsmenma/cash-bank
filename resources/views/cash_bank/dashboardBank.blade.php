@@ -654,6 +654,14 @@
             if (!vaRange && !vaActive) return;
             e.preventDefault(); vaCopy(e); return;
         }
+        // Delete / Backspace → kosongkan SALDO SAP pada sel aktif / seluruh blok
+        // (tanpa masuk mode edit). preventDefault penting agar Backspace tidak
+        // memicu "kembali" di browser.
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+            if (!vaActive && !vaRange) return;
+            if (vaClearSelection()) e.preventDefault();
+            return;
+        }
         if (!vaActive) return;
         if (e.key === 'Escape') { vaClearActiveEl(); vaActive = null; vaClearRange(); return; }
         if (e.key === 'Enter' || e.key === 'F2') {
@@ -833,6 +841,43 @@
         var pr = table.updateData(dataUpdates);   // satu kali render; SELISIH & total ikut
         if (pr && pr.then) { pr.then(afterRender)['catch'](afterRender); }
         else { afterRender(); }
+    }
+
+    // Kosongkan SALDO SAP pada sel aktif / seluruh blok (dipicu Delete/Backspace).
+    // Nilai jadi 0 (tampil "-"), SELISIH = Saldo Akhir, dan di server disimpan null.
+    // Mengembalikan true bila ada aksi yang ditangani.
+    function vaClearSelection() {
+        var cols = vaCols(), rows = table.getRows();
+        var sapIdx = -1;
+        for (var i = 0; i < cols.length; i++) { if (cols[i].getField() === 'sap_nilai') { sapIdx = i; break; } }
+        if (sapIdx < 0) return false;
+
+        var pickRows = [];
+        if (vaRange && !(vaRange.r1 === vaRange.r2 && vaRange.c1 === vaRange.c2)) {
+            if (sapIdx < vaRange.c1 || sapIdx > vaRange.c2) return false;   // blok tak mencakup kolom SAP
+            for (var r = vaRange.r1; r <= vaRange.r2; r++) { if (rows[r]) pickRows.push(rows[r]); }
+        } else if (vaActive && vaActive.field === 'sap_nilai') {
+            var row = table.getRow(vaActive.id);
+            if (row) pickRows.push(row);
+        } else {
+            return false;   // sel aktif bukan kolom SAP → tak ada yang dihapus
+        }
+        if (!pickRows.length) return false;
+
+        var dataUpdates = [], saves = [];
+        pickRows.forEach(function (row) {
+            var d = row.getData();
+            if ((Number(d.sap_nilai) || 0) === 0) return;   // sudah kosong → lewati
+            dataUpdates.push({ id_bank_tujuan: d.id_bank_tujuan, sap_nilai: 0, selisih: (Number(d.saldo) || 0) });
+            saves.push(d.id_bank_tujuan);
+        });
+        if (!dataUpdates.length) return true;   // tidak ada yang perlu dihapus, tapi tetap ditangani
+
+        function afterClear() { saves.forEach(function (id) { vaSaveSap(id, ''); }); }   // '' → server simpan null
+        var pr = table.updateData(dataUpdates);
+        if (pr && pr.then) { pr.then(afterClear)['catch'](afterClear); }
+        else { afterClear(); }
+        return true;
     }
 
     document.addEventListener('paste', function (e) {

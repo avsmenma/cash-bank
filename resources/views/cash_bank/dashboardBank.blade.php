@@ -786,45 +786,32 @@
         var cols = vaCols(), rows = table.getRows();
         var sapIdx = cols.findIndex(function (c) { return c.getField() === 'sap_nilai'; });
         if (sapIdx < 0) return;
+        var sapCol = cols[sapIdx];
 
+        // Ambil nilai clipboard = kolom pertama tiap baris (SAP butuh 1 kolom angka).
+        var vals = matrix.map(function (rr) { return vaDigits(rr[0] || ''); });
+        if (!vals.length) return;
+
+        // (1) ADA BLOK terpilih → isi kolom SAP untuk SEMUA baris di blok sekaligus.
+        //     Bila nilai clipboard lebih pendek dari blok, diulang (tiling); satu
+        //     nilai → seluruh blok terisi nilai itu.
+        if (vaRange && !(vaRange.r1 === vaRange.r2 && vaRange.c1 === vaRange.c2)) {
+            var k = 0;
+            for (var r = vaRange.r1; r <= vaRange.r2; r++, k++) {
+                var v = vals[k % vals.length];
+                if (v === '') continue;                 // sel clipboard kosong → lewati
+                vaSetSap(rows[r], sapCol, parseInt(v, 10) || 0);
+            }
+            return;
+        }
+
+        // (2) TANPA blok (satu sel aktif) → tulis nilai menurun mulai sel aktif.
         var startR;
-        if (vaRange) startR = vaRange.r1;
-        else if (vaActive) { var ac = vaGetActiveCell(); var p = ac && vaCellPos(ac); if (!p) return; startR = p.r; }
+        if (vaActive) { var ac = vaGetActiveCell(); var p = ac && vaCellPos(ac); if (!p) return; startR = p.r; }
         else return;
-
-        // Satu nilai + blok terpilih → isi seluruh blok (kolom SAP) dengan nilai itu.
-        if (matrix.length === 1 && matrix[0].length === 1 && vaRange &&
-            !(vaRange.r1 === vaRange.r2 && vaRange.c1 === vaRange.c2)) {
-            var one = vaDigits(matrix[0][0]);
-            if (one === '') return;
-            var v1 = parseInt(one, 10) || 0;
-            for (var r = vaRange.r1; r <= vaRange.r2; r++) vaSetSap(rows[r], cols[sapIdx], v1);
-            return;
-        }
-
-        // Kolom tunggal → tulis menurun ke kolom SAP (kasus paling umum).
-        var singleCol = matrix.every(function (rr) { return rr.length <= 1; });
-        if (singleCol) {
-            for (var i = 0; i < matrix.length; i++) {
-                var raw = vaDigits(matrix[i][0] || '');
-                if (raw === '') continue;
-                vaSetSap(rows[startR + i], cols[sapIdx], parseInt(raw, 10) || 0);
-            }
-            return;
-        }
-
-        // Multi-kolom → jangkar di kolom aktif; hanya sel SAP yang menerima (ala Excel).
-        var startC;
-        if (vaRange) startC = vaRange.c1;
-        else { var ac2 = vaGetActiveCell(); var p2 = ac2 && vaCellPos(ac2); startC = p2 ? p2.c : sapIdx; }
-        for (var i2 = 0; i2 < matrix.length; i2++) {
-            for (var j = 0; j < matrix[i2].length; j++) {
-                var col = cols[startC + j];
-                if (!col || col.getField() !== 'sap_nilai') continue;
-                var raw2 = vaDigits(matrix[i2][j]);
-                if (raw2 === '') continue;
-                vaSetSap(rows[startR + i2], col, parseInt(raw2, 10) || 0);
-            }
+        for (var i = 0; i < vals.length; i++) {
+            if (vals[i] === '') continue;
+            vaSetSap(rows[startR + i], sapCol, parseInt(vals[i], 10) || 0);
         }
     }
 

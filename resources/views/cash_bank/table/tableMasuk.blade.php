@@ -774,6 +774,8 @@
                     var id = refReverse[FIELD_REF[field]][t.toLowerCase()];
                     return (id !== undefined) ? { value: id } : { skip: true };
                 }
+                // Pengaman: kolom id_* yang tak dikenal jangan ditempeli teks mentah.
+                if (field.indexOf('id_') === 0) return { skip: true };
                 return { value: (t === '-' ? '' : t) };   // kolom teks biasa
             }
             function bmParseClip(text) {

@@ -725,6 +725,10 @@
                     var id = refReverse[FIELD_REF[field]][t.toLowerCase()];
                     return (id !== undefined) ? { value: id } : { skip: true };
                 }
+                // Kolom id_* lain (Sub Kriteria / Item Sub Kriteria) bersifat hierarkis &
+                // dinamis (nilainya tergantung induk). JANGAN tempel teks mentah ke sini —
+                // itu memicu "Server Error". Dilewati sampai konversi bertingkat disiapkan.
+                if (field.indexOf('id_') === 0) return { skip: true };
                 return { value: (t === '-' ? '' : t) };   // kolom teks biasa
             }
             function bkParseClip(text) {

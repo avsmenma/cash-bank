@@ -746,11 +746,108 @@
                     if (!row) return;
                     var cell = row.getCell(t.field);
                     if (!cell) return;
-                    if (t.clear) { cell.setValue(''); return; }
+                    // Kolom referensi (id_*) dikosongkan dgn '-' (backend ubah '-' → null).
+                    // '' hanya aman utk teks/angka/tanggal; utk kategori/sub/item '' bikin error.
+                    if (t.clear) { cell.setValue(t.field.indexOf('id_') === 0 ? '-' : ''); return; }
                     var conv = bkConvert(t.field, t.text);
                     if (conv.skip) return;
                     cell.setValue(conv.value);
                 });
+            }
+
+            // ── Konversi nama → id untuk hierarki Kriteria → Sub → Item ──
+            function bkKatIdByName(name) {
+                var t = String(name == null ? '' : name).trim();
+                if (t === '' || t === '-') return '-';
+                var id = refReverse.kategori[t.toLowerCase()];
+                return (id !== undefined) ? id : null;                 // null = nama tak dikenal
+            }
+            function bkSubIdByName(kat, name) {
+                var t = String(name == null ? '' : name).trim();
+                if (t === '' || t === '-') return '-';
+                var opts = subsByKategori[String(kat)] || [];
+                for (var i = 0; i < opts.length; i++) if (String(opts[i].label).trim().toLowerCase() === t.toLowerCase()) return opts[i].value;
+                return null;
+            }
+            function bkItemIdByName(sub, name) {
+                var t = String(name == null ? '' : name).trim();
+                if (t === '' || t === '-') return '-';
+                var opts = itemsBySub[String(sub)] || [];
+                for (var i = 0; i < opts.length; i++) if (String(opts[i].label).trim().toLowerCase() === t.toLowerCase()) return opts[i].value;
+                return null;
+            }
+
+            // Simpan SATU baris hasil tempel dalam SATU permintaan (hindari balapan cascade
+            // pada Kriteria/Sub/Item). fields = { field: teksClipboard }.
+            function bkSaveRow(id, fields) {
+                var row = table.getRow(id);
+                if (!row) return;
+                var d = row.getData();
+                var grid = {}, backend = {}, touchedFields = [];
+                function setBackend(field, val) {
+                    if (field === 'kredit_raw') backend.kredit = (val === '' || val === null ? 0 : val);
+                    else if (field === 'tanggal_raw') backend.tanggal = (val || '');
+                    else backend[field] = val;
+                }
+
+                // Kolom non-hierarki (sumber dana, bank, jenis, teks, angka, tanggal).
+                Object.keys(fields).forEach(function (field) {
+                    if (field === 'id_kategori_kriteria' || field === 'id_sub_kriteria' || field === 'id_item_sub_kriteria') return;
+                    var conv = bkConvert(field, fields[field]);
+                    if (conv.skip) return;
+                    grid[field] = conv.value;
+                    setBackend(field, conv.value);
+                    touchedFields.push(field);
+                    if (field === 'id_jenis_pembayaran' && refValues.jenis[String(conv.value)] === 'MPN') {
+                        grid.penerima = 'Modul Penerimaan Negara (MPN)'; backend.penerima = 'Modul Penerimaan Negara (MPN)';
+                    }
+                });
+
+                // Hierarki: Kriteria → Sub → Item, dikonversi dalam konteks induknya.
+                var hasKat = ('id_kategori_kriteria' in fields), hasSub = ('id_sub_kriteria' in fields), hasItem = ('id_item_sub_kriteria' in fields);
+                if (hasKat || hasSub || hasItem) {
+                    var curKat = (d.id_kategori_kriteria == null || d.id_kategori_kriteria === '') ? '-' : String(d.id_kategori_kriteria);
+                    var finalKat = curKat, katChanged = false;
+                    if (hasKat) {
+                        var kid = bkKatIdByName(fields.id_kategori_kriteria);
+                        if (kid !== null && String(kid) !== curKat) {
+                            finalKat = String(kid); katChanged = true;
+                            grid.id_kategori_kriteria = kid; setBackend('id_kategori_kriteria', kid); touchedFields.push('id_kategori_kriteria');
+                        }
+                    }
+                    var curSub = (d.id_sub_kriteria == null || d.id_sub_kriteria === '') ? '-' : String(d.id_sub_kriteria);
+                    var finalSub = curSub;
+                    if (hasSub) { var sid = bkSubIdByName(finalKat, fields.id_sub_kriteria); if (sid !== null) finalSub = String(sid); else if (katChanged) finalSub = '-'; }
+                    else if (katChanged) finalSub = '-';
+                    if (finalSub !== curSub) {
+                        grid.id_sub_kriteria = finalSub; grid.sub_kriteria = (finalSub === '-' ? '-' : (subNameById[finalSub] || '-'));
+                        setBackend('id_sub_kriteria', finalSub); if (hasSub) touchedFields.push('id_sub_kriteria');
+                    }
+                    var curItem = (d.id_item_sub_kriteria == null || d.id_item_sub_kriteria === '') ? '-' : String(d.id_item_sub_kriteria);
+                    var subChangedNow = (finalSub !== curSub);
+                    var finalItem = curItem;
+                    if (hasItem) { var iid = bkItemIdByName(finalSub, fields.id_item_sub_kriteria); if (iid !== null) finalItem = String(iid); else if (subChangedNow) finalItem = '-'; }
+                    else if (subChangedNow) finalItem = '-';
+                    if (finalItem !== curItem) {
+                        grid.id_item_sub_kriteria = finalItem; grid.item_sub_kriteria = (finalItem === '-' ? '-' : (itemNameById[finalItem] || '-'));
+                        setBackend('id_item_sub_kriteria', finalItem); if (hasItem) touchedFields.push('id_item_sub_kriteria');
+                    }
+                }
+
+                if (!touchedFields.length) return;
+                row.update(grid);   // perbarui tampilan tanpa memicu cellEdited/AJAX per sel
+
+                function cellsEls() {
+                    var r = table.getRow(id); if (!r) return [];
+                    return touchedFields.map(function (f) { var c = r.getCell(f); return c ? c.getElement() : null; }).filter(Boolean);
+                }
+                cellsEls().forEach(function (e) { e.classList.remove('cb-saved-cell', 'cb-error-cell'); e.classList.add('cb-saving-cell'); });
+                $.ajax({ url: '/bank-keluar/' + id, type: 'POST', global: false, data: $.extend({ _token: csrf(), _method: 'PUT' }, backend) })
+                    .done(function () {
+                        cellsEls().forEach(function (e) { e.classList.remove('cb-saving-cell', 'cb-error-cell'); e.classList.add('cb-saved-cell'); });
+                        setTimeout(function () { cellsEls().forEach(function (e) { e.classList.remove('cb-saved-cell'); }); }, 900);
+                    })
+                    .fail(function () { cellsEls().forEach(function (e) { e.classList.remove('cb-saving-cell'); e.classList.add('cb-error-cell'); }); });
             }
 
             function bkPaste(text) {
@@ -759,10 +856,12 @@
                 var cols = bkVisCols(), rows = table.getRows();
                 var block = bkRange && !(bkRange.r1 === bkRange.r2 && bkRange.c1 === bkRange.c2);
                 var single = (matrix.length === 1 && matrix[0].length === 1);
-                var targets = [];
+                var byRow = {}, order = [];
                 function add(row, col, text) {
                     if (!row || !col || !bkEditable(col)) return;
-                    targets.push({ id: row.getData().id_bank_keluar, field: col.getField(), text: text });
+                    var id = row.getData().id_bank_keluar;
+                    if (!byRow[id]) { byRow[id] = {}; order.push(id); }
+                    byRow[id][col.getField()] = text;
                 }
                 if (single && block) {
                     var val = matrix[0][0];
@@ -777,7 +876,7 @@
                         for (var j = 0; j < matrix[i].length; j++) add(rows[r0 + i], cols[c0 + j], matrix[i][j]);
                     }
                 }
-                bkApplyTargets(targets);
+                order.forEach(function (id) { bkSaveRow(id, byRow[id]); });
             }
 
             function bkClearSelection() {

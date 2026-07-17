@@ -137,6 +137,7 @@
 
             var el = document.getElementById('example2');
             if (!el || !window.Tabulator) { return; }
+            el.setAttribute('tabindex', '-1');   // bisa difokuskan → event 'paste' terarah ke tabel
 
             // ── Formatter ──
             function fmtRef(mapKey, fallbackField) {
@@ -537,6 +538,7 @@
                 if (/INPUT|TEXTAREA|SELECT/.test(tag)) return;   // sedang mengetik di editor
                 var p = bmCellPos(cell);
                 if (!p) return;
+                try { el.focus({ preventScroll: true }); } catch (err) { try { el.focus(); } catch (e2) {} }
                 pop.style.display = 'none';
                 if (e.shiftKey && bmAnchor) {          // Shift+klik: perluas blok dari anchor
                     bmSetRange(bmAnchor, p);
@@ -587,6 +589,13 @@
                     if (!bmRange && !bmActive) return;
                     e.preventDefault();
                     bmCopy(e);
+                    return;
+                }
+                // Delete / Backspace → kosongkan sel aktif / seluruh blok (tanpa mode edit).
+                // preventDefault agar Backspace tidak memicu "kembali" di browser.
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    if (!bmActive && !bmRange) return;
+                    if (bmClearSelection()) e.preventDefault();
                     return;
                 }
                 if (!bmActive) return;
@@ -705,6 +714,151 @@
                     else pop.style.display = 'none';
                 }, 900);
             }
+
+            // ============ TEMPEL (PASTE) & KOSONGKAN (DELETE/BACKSPACE) ala spreadsheet ============
+            // Peta balik nama→id untuk kolom referensi (dropdown), agar teks yang ditempel
+            // (nama) dikonversi kembali ke id saat disimpan.
+            var FIELD_REF = {
+                id_sumber_dana: 'sumberDana',
+                id_bank_tujuan: 'bankTujuan',
+                id_kategori_kriteria: 'kategori',
+                id_jenis_pembayaran: 'jenis'
+            };
+            var refReverse = {};
+            Object.keys(refValues).forEach(function (mapKey) {
+                var rev = {}, map = refValues[mapKey];
+                Object.keys(map).forEach(function (id) { rev[String(map[id]).trim().toLowerCase()] = id; });
+                refReverse[mapKey] = rev;
+            });
+
+            var ID_MONTHS = {
+                januari: 1, februari: 2, maret: 3, april: 4, mei: 5, juni: 6, juli: 7, agustus: 8,
+                september: 9, oktober: 10, november: 11, desember: 12,
+                january: 1, february: 2, march: 3, may: 5, june: 6, july: 7, august: 8, october: 10, december: 12
+            };
+            function bmPad2(n) { return (n < 10 ? '0' : '') + n; }
+            function bmValidYMD(y, mo, d) {
+                if (!y || !mo || !d || d < 1 || d > 31 || mo < 1 || mo > 12 || y < 1000) return null;
+                var dt = new Date(y, mo - 1, d);
+                if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+                return y + '-' + bmPad2(mo) + '-' + bmPad2(d);
+            }
+            function bmParseAnyDate(text) {
+                var s = String(text == null ? '' : text).trim();
+                if (!s) return null;
+                var iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+                if (iso) return bmValidYMD(+iso[1], +iso[2], +iso[3]);
+                var dmy = cbDateToRaw(s);                                    // dd-mm-yyyy / ddmmyyyy
+                if (dmy) return dmy;
+                var nm = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);      // "16 Juli 2026"
+                if (nm) { var mo = ID_MONTHS[nm[2].toLowerCase()]; if (mo) return bmValidYMD(+nm[3], mo, +nm[1]); }
+                return null;
+            }
+            function bmEditable(col) { try { var d = col.getDefinition(); return !!(d && d.editor); } catch (e) { return false; } }
+
+            // Teks clipboard → nilai tersimpan sesuai jenis kolom.
+            // { value } = terapkan; { skip:true } = lewati (mis. tanggal/dropdown tak dikenali).
+            function bmConvert(field, text) {
+                var t = String(text == null ? '' : text).trim();
+                if (field === 'tanggal_raw') {
+                    if (t === '' || t === '-') return { skip: true };
+                    var raw = bmParseAnyDate(t);
+                    return raw ? { value: raw } : { skip: true };
+                }
+                if (field === 'debet_raw') {
+                    var digits = t.replace(/\D/g, '');
+                    return { value: digits === '' ? '' : (parseInt(digits, 10) || 0) };
+                }
+                if (FIELD_REF[field]) {
+                    if (t === '' || t === '-') return { value: '' };
+                    var id = refReverse[FIELD_REF[field]][t.toLowerCase()];
+                    return (id !== undefined) ? { value: id } : { skip: true };
+                }
+                return { value: (t === '-' ? '' : t) };   // kolom teks biasa
+            }
+            function bmParseClip(text) {
+                var t = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                var lines = t.split('\n');
+                while (lines.length && lines[lines.length - 1] === '') lines.pop();
+                return lines.map(function (l) { return l.split('\t'); });
+            }
+
+            // Terapkan daftar target lewat pencarian baris SEGAR (by id) agar aman dari
+            // re-render di tengah proses (mis. cellEdited yang memanggil row.update).
+            function bmApplyTargets(targets) {
+                targets.forEach(function (t) {
+                    var row = table.getRow(t.id);
+                    if (!row) return;
+                    var cell = row.getCell(t.field);
+                    if (!cell) return;
+                    if (t.clear) { cell.setValue(''); return; }
+                    var conv = bmConvert(t.field, t.text);
+                    if (conv.skip) return;
+                    cell.setValue(conv.value);
+                });
+            }
+
+            function bmPaste(text) {
+                var matrix = bmParseClip(text);
+                if (!matrix.length) return;
+                var cols = bmVisCols(), rows = table.getRows();
+                var block = bmRange && !(bmRange.r1 === bmRange.r2 && bmRange.c1 === bmRange.c2);
+                var single = (matrix.length === 1 && matrix[0].length === 1);
+                var targets = [];
+                function add(row, col, text) {
+                    if (!row || !col || !bmEditable(col)) return;
+                    targets.push({ id: row.getData().id_bank_masuk, field: col.getField(), text: text });
+                }
+                if (single && block) {
+                    // Satu nilai + blok → isi semua sel (yang bisa diedit) di blok.
+                    var val = matrix[0][0];
+                    for (var r = bmRange.r1; r <= bmRange.r2; r++) {
+                        for (var c = bmRange.c1; c <= bmRange.c2; c++) add(rows[r], cols[c], val);
+                    }
+                } else {
+                    // Selain itu → tempel grid mulai pojok kiri-atas blok / sel aktif.
+                    var r0, c0;
+                    if (block) { r0 = bmRange.r1; c0 = bmRange.c1; }
+                    else { var ac = bmGetActiveCell(); var p = ac && bmCellPos(ac); if (!p) return; r0 = p.r; c0 = p.c; }
+                    for (var i = 0; i < matrix.length; i++) {
+                        for (var j = 0; j < matrix[i].length; j++) add(rows[r0 + i], cols[c0 + j], matrix[i][j]);
+                    }
+                }
+                bmApplyTargets(targets);
+            }
+
+            function bmClearSelection() {
+                var cols = bmVisCols(), rows = table.getRows();
+                var block = bmRange && !(bmRange.r1 === bmRange.r2 && bmRange.c1 === bmRange.c2);
+                var targets = [];
+                function add(row, col) {
+                    if (!row || !col || !bmEditable(col)) return;
+                    targets.push({ id: row.getData().id_bank_masuk, field: col.getField(), clear: true });
+                }
+                if (block) {
+                    for (var r = bmRange.r1; r <= bmRange.r2; r++) {
+                        for (var c = bmRange.c1; c <= bmRange.c2; c++) add(rows[r], cols[c]);
+                    }
+                } else {
+                    var ac = bmGetActiveCell();
+                    if (ac && bmEditable(ac.getColumn())) add(ac.getRow(), ac.getColumn());
+                }
+                if (!targets.length) return false;
+                bmApplyTargets(targets);
+                return true;
+            }
+
+            document.addEventListener('paste', function (e) {
+                if (/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '') ||
+                    /INPUT|TEXTAREA|SELECT/.test((document.activeElement && document.activeElement.tagName) || '')) return;
+                if (!bmActive && !bmRange) return;
+                var cd = e.clipboardData || window.clipboardData;
+                if (!cd) return;
+                var text = cd.getData('text/plain') || cd.getData('text') || '';
+                if (!text) return;
+                e.preventDefault();
+                bmPaste(text);
+            });
 
             // ============ PEMUATAN DATA (SEKALI MUAT PENUH — virtual DOM anti-lag) ============
             var BM_URL = @json(route('bank-masuk.data'));

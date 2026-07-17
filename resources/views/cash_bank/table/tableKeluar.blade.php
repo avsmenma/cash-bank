@@ -125,6 +125,7 @@
 
             var el = document.getElementById('example3');
             if (!el || !window.Tabulator) { return; }
+            el.setAttribute('tabindex', '-1');   // bisa difokuskan → event 'paste' terarah ke tabel
 
             // ── Opsi referensi statis (id → nama) ──
             var refValues = {
@@ -542,6 +543,7 @@
                 var tag = (e.target && e.target.tagName) || '';
                 if (/INPUT|TEXTAREA|SELECT/.test(tag)) return;
                 var p = bkCellPos(cell); if (!p) return;
+                try { el.focus({ preventScroll: true }); } catch (err) { try { el.focus(); } catch (e2) {} }
                 pop.style.display = 'none';
                 if (e.shiftKey && bkAnchor) { bkSetRange(bkAnchor, p); bkShowSum(e.clientX, e.clientY); e.preventDefault(); return; }
                 bkAnchor = p; bkDrag = true; el.classList.add('bk-noselect'); bkSetActive(cell); bkSetRange(p, p); e.preventDefault();
@@ -571,6 +573,12 @@
                 if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
                     if (!bkRange && !bkActive) return;
                     e.preventDefault(); bkCopy(e); return;
+                }
+                // Delete / Backspace → kosongkan sel aktif / seluruh blok (tanpa mode edit).
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    if (!bkActive && !bkRange) return;
+                    if (bkClearSelection()) e.preventDefault();
+                    return;
                 }
                 if (!bkActive) return;
                 if (e.key === 'Escape') { bkClearActiveEl(); bkActive = null; bkClearRange(); return; }
@@ -658,6 +666,148 @@
                     else pop.style.display = 'none';
                 }, 900);
             }
+
+            // ============ TEMPEL (PASTE) & KOSONGKAN (DELETE/BACKSPACE) ala spreadsheet ============
+            // Peta balik nama→id kolom referensi (dropdown), agar teks (nama) yang ditempel
+            // dikonversi kembali ke id saat disimpan.
+            var FIELD_REF = {
+                id_sumber_dana: 'sumberDana',
+                id_bank_tujuan: 'bankTujuan',
+                id_kategori_kriteria: 'kategori',
+                id_jenis_pembayaran: 'jenis'
+            };
+            var refReverse = {};
+            Object.keys(refValues).forEach(function (mapKey) {
+                var rev = {}, map = refValues[mapKey];
+                Object.keys(map).forEach(function (id) { rev[String(map[id]).trim().toLowerCase()] = id; });
+                refReverse[mapKey] = rev;
+            });
+
+            var ID_MONTHS = {
+                januari: 1, februari: 2, maret: 3, april: 4, mei: 5, juni: 6, juli: 7, agustus: 8,
+                september: 9, oktober: 10, november: 11, desember: 12,
+                january: 1, february: 2, march: 3, may: 5, june: 6, july: 7, august: 8, october: 10, december: 12
+            };
+            function bkPad2(n) { return (n < 10 ? '0' : '') + n; }
+            function bkValidYMD(y, mo, d) {
+                if (!y || !mo || !d || d < 1 || d > 31 || mo < 1 || mo > 12 || y < 1000) return null;
+                var dt = new Date(y, mo - 1, d);
+                if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+                return y + '-' + bkPad2(mo) + '-' + bkPad2(d);
+            }
+            function bkParseAnyDate(text) {
+                var s = String(text == null ? '' : text).trim();
+                if (!s) return null;
+                var iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+                if (iso) return bkValidYMD(+iso[1], +iso[2], +iso[3]);
+                var dmy = cbDateToRaw(s);                                    // dd-mm-yyyy / ddmmyyyy
+                if (dmy) return dmy;
+                var nm = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);      // "16 Juli 2026"
+                if (nm) { var mo = ID_MONTHS[nm[2].toLowerCase()]; if (mo) return bkValidYMD(+nm[3], mo, +nm[1]); }
+                return null;
+            }
+            function bkEditable(col) { try { var d = col.getDefinition(); return !!(d && d.editor); } catch (e) { return false; } }
+
+            // Teks clipboard → nilai tersimpan sesuai jenis kolom.
+            function bkConvert(field, text) {
+                var t = String(text == null ? '' : text).trim();
+                if (field === 'tanggal_raw') {
+                    if (t === '' || t === '-') return { skip: true };
+                    var raw = bkParseAnyDate(t);
+                    return raw ? { value: raw } : { skip: true };
+                }
+                if (field === 'kredit_raw') {
+                    var digits = t.replace(/\D/g, '');
+                    return { value: digits === '' ? '' : (parseInt(digits, 10) || 0) };
+                }
+                if (FIELD_REF[field]) {
+                    if (t === '' || t === '-') return { value: '' };
+                    var id = refReverse[FIELD_REF[field]][t.toLowerCase()];
+                    return (id !== undefined) ? { value: id } : { skip: true };
+                }
+                return { value: (t === '-' ? '' : t) };   // kolom teks biasa
+            }
+            function bkParseClip(text) {
+                var t = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                var lines = t.split('\n');
+                while (lines.length && lines[lines.length - 1] === '') lines.pop();
+                return lines.map(function (l) { return l.split('\t'); });
+            }
+
+            // Terapkan target lewat pencarian baris SEGAR (by id) agar aman dari re-render
+            // di tengah proses (mis. cellEdited yang memanggil row.update untuk MPN).
+            function bkApplyTargets(targets) {
+                targets.forEach(function (t) {
+                    var row = table.getRow(t.id);
+                    if (!row) return;
+                    var cell = row.getCell(t.field);
+                    if (!cell) return;
+                    if (t.clear) { cell.setValue(''); return; }
+                    var conv = bkConvert(t.field, t.text);
+                    if (conv.skip) return;
+                    cell.setValue(conv.value);
+                });
+            }
+
+            function bkPaste(text) {
+                var matrix = bkParseClip(text);
+                if (!matrix.length) return;
+                var cols = bkVisCols(), rows = table.getRows();
+                var block = bkRange && !(bkRange.r1 === bkRange.r2 && bkRange.c1 === bkRange.c2);
+                var single = (matrix.length === 1 && matrix[0].length === 1);
+                var targets = [];
+                function add(row, col, text) {
+                    if (!row || !col || !bkEditable(col)) return;
+                    targets.push({ id: row.getData().id_bank_keluar, field: col.getField(), text: text });
+                }
+                if (single && block) {
+                    var val = matrix[0][0];
+                    for (var r = bkRange.r1; r <= bkRange.r2; r++) {
+                        for (var c = bkRange.c1; c <= bkRange.c2; c++) add(rows[r], cols[c], val);
+                    }
+                } else {
+                    var r0, c0;
+                    if (block) { r0 = bkRange.r1; c0 = bkRange.c1; }
+                    else { var ac = bkGetActiveCell(); var p = ac && bkCellPos(ac); if (!p) return; r0 = p.r; c0 = p.c; }
+                    for (var i = 0; i < matrix.length; i++) {
+                        for (var j = 0; j < matrix[i].length; j++) add(rows[r0 + i], cols[c0 + j], matrix[i][j]);
+                    }
+                }
+                bkApplyTargets(targets);
+            }
+
+            function bkClearSelection() {
+                var cols = bkVisCols(), rows = table.getRows();
+                var block = bkRange && !(bkRange.r1 === bkRange.r2 && bkRange.c1 === bkRange.c2);
+                var targets = [];
+                function add(row, col) {
+                    if (!row || !col || !bkEditable(col)) return;
+                    targets.push({ id: row.getData().id_bank_keluar, field: col.getField(), clear: true });
+                }
+                if (block) {
+                    for (var r = bkRange.r1; r <= bkRange.r2; r++) {
+                        for (var c = bkRange.c1; c <= bkRange.c2; c++) add(rows[r], cols[c]);
+                    }
+                } else {
+                    var ac = bkGetActiveCell();
+                    if (ac && bkEditable(ac.getColumn())) add(ac.getRow(), ac.getColumn());
+                }
+                if (!targets.length) return false;
+                bkApplyTargets(targets);
+                return true;
+            }
+
+            document.addEventListener('paste', function (e) {
+                if (/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '') ||
+                    /INPUT|TEXTAREA|SELECT/.test((document.activeElement && document.activeElement.tagName) || '')) return;
+                if (!bkActive && !bkRange) return;
+                var cd = e.clipboardData || window.clipboardData;
+                if (!cd) return;
+                var text = cd.getData('text/plain') || cd.getData('text') || '';
+                if (!text) return;
+                e.preventDefault();
+                bkPaste(text);
+            });
 
             // ============ PEMUATAN DATA (SEKALI MUAT PENUH) ============
             var BK_URL = @json(route('bank-keluar.data'));

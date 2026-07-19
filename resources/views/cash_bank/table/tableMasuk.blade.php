@@ -863,11 +863,22 @@
                     for (var r = bmRange.r1; r <= bmRange.r2; r++) {
                         for (var c = bmRange.c1; c <= bmRange.c2; c++) add(rows[r], cols[c], val);
                     }
+                } else if (block) {
+                    // Blok multi-sel + data ≥1 sel → tile data ke SELURUH blok (ala Excel).
+                    // Ulangi di suatu dimensi hanya bila ukuran blok kelipatan ukuran data;
+                    // selain itu tempel data sekali dari pojok kiri-atas blok.
+                    var rowCount = bmRange.r2 - bmRange.r1 + 1;
+                    var colCount = bmRange.c2 - bmRange.c1 + 1;
+                    var repRows = (rowCount % matrix.length === 0) ? rowCount : matrix.length;
+                    for (var i = 0; i < repRows; i++) {
+                        var srcRow = matrix[i % matrix.length];
+                        var repCols = (srcRow.length && colCount % srcRow.length === 0) ? colCount : srcRow.length;
+                        for (var j = 0; j < repCols; j++) add(rows[bmRange.r1 + i], cols[bmRange.c1 + j], srcRow[j % srcRow.length]);
+                    }
                 } else {
-                    // Selain itu → tempel grid mulai pojok kiri-atas blok / sel aktif.
-                    var r0, c0;
-                    if (block) { r0 = bmRange.r1; c0 = bmRange.c1; }
-                    else { var ac = bmGetActiveCell(); var p = ac && bmCellPos(ac); if (!p) return; r0 = p.r; c0 = p.c; }
+                    // Tanpa blok → tempel grid mulai dari sel aktif.
+                    var ac = bmGetActiveCell(); var p = ac && bmCellPos(ac); if (!p) return;
+                    var r0 = p.r, c0 = p.c;
                     for (var i = 0; i < matrix.length; i++) {
                         for (var j = 0; j < matrix[i].length; j++) add(rows[r0 + i], cols[c0 + j], matrix[i][j]);
                     }

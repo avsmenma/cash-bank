@@ -917,10 +917,22 @@
                     for (var r = bkRange.r1; r <= bkRange.r2; r++) {
                         for (var c = bkRange.c1; c <= bkRange.c2; c++) add(rows[r], cols[c], val);
                     }
+                } else if (block) {
+                    // Blok multi-sel + data ≥1 sel → tile data ke SELURUH blok (ala Excel).
+                    // Ulangi di suatu dimensi hanya bila ukuran blok kelipatan ukuran data;
+                    // selain itu tempel data sekali dari pojok kiri-atas blok.
+                    var rowCount = bkRange.r2 - bkRange.r1 + 1;
+                    var colCount = bkRange.c2 - bkRange.c1 + 1;
+                    var repRows = (rowCount % matrix.length === 0) ? rowCount : matrix.length;
+                    for (var i = 0; i < repRows; i++) {
+                        var srcRow = matrix[i % matrix.length];
+                        var repCols = (srcRow.length && colCount % srcRow.length === 0) ? colCount : srcRow.length;
+                        for (var j = 0; j < repCols; j++) add(rows[bkRange.r1 + i], cols[bkRange.c1 + j], srcRow[j % srcRow.length]);
+                    }
                 } else {
-                    var r0, c0;
-                    if (block) { r0 = bkRange.r1; c0 = bkRange.c1; }
-                    else { var ac = bkGetActiveCell(); var p = ac && bkCellPos(ac); if (!p) return; r0 = p.r; c0 = p.c; }
+                    // Tanpa blok → tempel grid mulai dari sel aktif.
+                    var ac = bkGetActiveCell(); var p = ac && bkCellPos(ac); if (!p) return;
+                    var r0 = p.r, c0 = p.c;
                     for (var i = 0; i < matrix.length; i++) {
                         for (var j = 0; j < matrix[i].length; j++) add(rows[r0 + i], cols[c0 + j], matrix[i][j]);
                     }

@@ -481,6 +481,11 @@
             function bmVisCols() {
                 return table.getColumns().filter(function (c) { return c.isVisible() && c.getField() !== '_cb'; });
             }
+            // Baris dalam urutan tampil (setelah filter/sort). Basisnya SAMA dengan
+            // row.getPosition() (1-based atas display rows), sehingga indeks blok/tempel
+            // tetap benar saat filter aktif. table.getRows() polos = SEMUA baris (termasuk
+            // yang tersaring keluar) → indeks meleset saat filter aktif.
+            function bmRowsInView() { return table.getRows('active'); }
             function bmCellPos(cell) {
                 var p = cell.getRow().getPosition();
                 var cols = bmVisCols(), ci = -1;
@@ -516,7 +521,7 @@
             function bmApplyRange() {
                 el.querySelectorAll('.tabulator-cell.bm-range-cell').forEach(function (n) { n.classList.remove('bm-range-cell'); });
                 if (!bmRange) return;
-                table.getRows().slice(bmRange.r1, bmRange.r2 + 1).forEach(bmPaintRow);
+                bmRowsInView().slice(bmRange.r1, bmRange.r2 + 1).forEach(bmPaintRow);
             }
             function bmSetRange(a, b) {
                 bmRange = {
@@ -541,7 +546,7 @@
             }
             function bmPosXY(mx, my) {
                 var x = mx || 0, y = my || 0;
-                var lastRow = table.getRows()[bmRange.r2];
+                var lastRow = bmRowsInView()[bmRange.r2];
                 var lastCell = lastRow && lastRow.getCell(bmVisCols()[bmRange.c2]);
                 var ce = lastCell && lastCell.getElement();
                 if (ce && ce.getBoundingClientRect) {
@@ -556,7 +561,7 @@
             }
             function bmShowSum(mx, my) {
                 if (!bmRange || (bmRange.r1 === bmRange.r2 && bmRange.c1 === bmRange.c2)) { pop.style.display = 'none'; return; }
-                var rows = table.getRows().slice(bmRange.r1, bmRange.r2 + 1);
+                var rows = bmRowsInView().slice(bmRange.r1, bmRange.r2 + 1);
                 var cols = bmVisCols().slice(bmRange.c1, bmRange.c2 + 1);
                 var sum = 0, n = 0;
                 rows.forEach(function (row) {
@@ -659,7 +664,7 @@
                 e.preventDefault();
 
                 var cols = bmVisCols();
-                var rows = table.getRows();
+                var rows = bmRowsInView();
                 var pos = bmCellPos(cell);
                 if (!pos) return;
 
@@ -708,7 +713,7 @@
             function bmCopy(e) {
                 var vcols = bmVisCols(), rows, cols;
                 if (bmRange) {
-                    rows = table.getRows().slice(bmRange.r1, bmRange.r2 + 1);
+                    rows = bmRowsInView().slice(bmRange.r1, bmRange.r2 + 1);
                     cols = vcols.slice(bmRange.c1, bmRange.c2 + 1);
                 } else {
                     var c = bmGetActiveCell();
@@ -849,7 +854,7 @@
             function bmPaste(text) {
                 var matrix = bmParseClip(text);
                 if (!matrix.length) return;
-                var cols = bmVisCols(), rows = table.getRows();
+                var cols = bmVisCols(), rows = bmRowsInView();
                 var block = bmRange && !(bmRange.r1 === bmRange.r2 && bmRange.c1 === bmRange.c2);
                 var single = (matrix.length === 1 && matrix[0].length === 1);
                 var targets = [];
@@ -892,7 +897,7 @@
             }
 
             function bmClearSelection() {
-                var cols = bmVisCols(), rows = table.getRows();
+                var cols = bmVisCols(), rows = bmRowsInView();
                 var block = bmRange && !(bmRange.r1 === bmRange.r2 && bmRange.c1 === bmRange.c2);
                 var targets = [];
                 function add(row, col) {

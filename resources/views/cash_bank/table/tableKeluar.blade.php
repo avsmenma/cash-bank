@@ -513,6 +513,11 @@
             document.body.appendChild(pop);
 
             function bkVisCols() { return table.getColumns().filter(function (c) { return c.isVisible() && c.getField() !== '_cb'; }); }
+            // Baris dalam urutan tampil (setelah filter/sort). Basisnya SAMA dengan
+            // row.getPosition() (1-based atas display rows), sehingga indeks blok/tempel
+            // tetap benar saat filter aktif. table.getRows() polos = SEMUA baris (termasuk
+            // yang tersaring keluar) → indeks meleset saat filter aktif.
+            function bkRowsInView() { return table.getRows('active'); }
             function bkCellPos(cell) {
                 var p = cell.getRow().getPosition(), cols = bkVisCols(), ci = -1;
                 for (var i = 0; i < cols.length; i++) { if (cols[i].getField() === cell.getField()) { ci = i; break; } }
@@ -538,7 +543,7 @@
             function bkApplyRange() {
                 el.querySelectorAll('.tabulator-cell.bk-range-cell').forEach(function (n) { n.classList.remove('bk-range-cell'); });
                 if (!bkRange) return;
-                table.getRows().slice(bkRange.r1, bkRange.r2 + 1).forEach(bkPaintRow);
+                bkRowsInView().slice(bkRange.r1, bkRange.r2 + 1).forEach(bkPaintRow);
             }
             function bkSetRange(a, b) { bkRange = { r1: Math.min(a.r, b.r), r2: Math.max(a.r, b.r), c1: Math.min(a.c, b.c), c2: Math.max(a.c, b.c) }; bkApplyRange(); }
             function bkClearRange() { bkRange = null; bkApplyRange(); pop.style.display = 'none'; }
@@ -555,7 +560,7 @@
             }
             function bkPosXY(mx, my) {
                 var x = mx || 0, y = my || 0;
-                var lastRow = table.getRows()[bkRange.r2];
+                var lastRow = bkRowsInView()[bkRange.r2];
                 var lastCell = lastRow && lastRow.getCell(bkVisCols()[bkRange.c2]);
                 var ce = lastCell && lastCell.getElement();
                 if (ce && ce.getBoundingClientRect) { var rc = ce.getBoundingClientRect(); if (rc.width || rc.height) { x = rc.right + 8; y = rc.bottom + 8; } }
@@ -566,7 +571,7 @@
             }
             function bkShowSum(mx, my) {
                 if (!bkRange || (bkRange.r1 === bkRange.r2 && bkRange.c1 === bkRange.c2)) { pop.style.display = 'none'; return; }
-                var rows = table.getRows().slice(bkRange.r1, bkRange.r2 + 1);
+                var rows = bkRowsInView().slice(bkRange.r1, bkRange.r2 + 1);
                 var cols = bkVisCols().slice(bkRange.c1, bkRange.c2 + 1);
                 var sum = 0, n = 0;
                 rows.forEach(function (row) {
@@ -640,7 +645,7 @@
 
                 var cell = bkGetActiveCell(); if (!cell) return;
                 e.preventDefault();
-                var cols = bkVisCols(), rows = table.getRows(), pos = bkCellPos(cell);
+                var cols = bkVisCols(), rows = bkRowsInView(), pos = bkCellPos(cell);
                 if (!pos) return;
 
                 if (e.shiftKey) {
@@ -677,7 +682,7 @@
 
             function bkCopy(e) {
                 var vcols = bkVisCols(), rows, cols;
-                if (bkRange) { rows = table.getRows().slice(bkRange.r1, bkRange.r2 + 1); cols = vcols.slice(bkRange.c1, bkRange.c2 + 1); }
+                if (bkRange) { rows = bkRowsInView().slice(bkRange.r1, bkRange.r2 + 1); cols = vcols.slice(bkRange.c1, bkRange.c2 + 1); }
                 else {
                     var c = bkGetActiveCell(); if (!c) return;
                     rows = [c.getRow()];
@@ -902,7 +907,7 @@
             function bkPaste(text) {
                 var matrix = bkParseClip(text);
                 if (!matrix.length) return;
-                var cols = bkVisCols(), rows = table.getRows();
+                var cols = bkVisCols(), rows = bkRowsInView();
                 var block = bkRange && !(bkRange.r1 === bkRange.r2 && bkRange.c1 === bkRange.c2);
                 var single = (matrix.length === 1 && matrix[0].length === 1);
                 var byRow = {}, order = [];
@@ -944,7 +949,7 @@
             }
 
             function bkClearSelection() {
-                var cols = bkVisCols(), rows = table.getRows();
+                var cols = bkVisCols(), rows = bkRowsInView();
                 var block = bkRange && !(bkRange.r1 === bkRange.r2 && bkRange.c1 === bkRange.c2);
                 var targets = [];
                 function add(row, col) {

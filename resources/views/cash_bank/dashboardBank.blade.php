@@ -559,6 +559,10 @@
     document.body.appendChild(pop);
 
     function vaCols() { return table.getColumns().filter(function (c) { return c.isVisible(); }); }
+    // Baris dalam urutan tampil (setelah filter). Basisnya SAMA dengan row.getPosition()
+    // (1-based atas display rows), sehingga indeks blok/tempel tetap benar saat filter aktif.
+    // table.getRows() polos = SEMUA baris (termasuk yang tersaring keluar) → indeks meleset.
+    function vaRowsInView() { return table.getRows('active'); }
     function vaCellPos(cell) {
         var p = cell.getRow().getPosition();
         var cols = vaCols(), ci = -1;
@@ -594,7 +598,7 @@
     function vaApplyRange() {
         el.querySelectorAll('.tabulator-cell.va-range-cell').forEach(function (n) { n.classList.remove('va-range-cell'); });
         if (!vaRange) return;
-        table.getRows().slice(vaRange.r1, vaRange.r2 + 1).forEach(vaPaintRow);
+        vaRowsInView().slice(vaRange.r1, vaRange.r2 + 1).forEach(vaPaintRow);
     }
     function vaSetRange(a, b) {
         vaRange = { r1: Math.min(a.r, b.r), r2: Math.max(a.r, b.r), c1: Math.min(a.c, b.c), c2: Math.max(a.c, b.c) };
@@ -616,7 +620,7 @@
     }
     function vaPosXY(mx, my) {
         var x = mx || 0, y = my || 0;
-        var lastRow = table.getRows()[vaRange.r2];
+        var lastRow = vaRowsInView()[vaRange.r2];
         var lastCell = lastRow && lastRow.getCell(vaCols()[vaRange.c2]);
         var ce = lastCell && lastCell.getElement();
         if (ce && ce.getBoundingClientRect) {
@@ -631,7 +635,7 @@
     }
     function vaShowSum(mx, my) {
         if (!vaRange || (vaRange.r1 === vaRange.r2 && vaRange.c1 === vaRange.c2)) { pop.style.display = 'none'; return; }
-        var rows = table.getRows().slice(vaRange.r1, vaRange.r2 + 1);
+        var rows = vaRowsInView().slice(vaRange.r1, vaRange.r2 + 1);
         var cols = vaCols().slice(vaRange.c1, vaRange.c2 + 1);
         var sum = 0, n = 0;
         rows.forEach(function (row) {
@@ -715,7 +719,7 @@
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) === -1) return;
 
         var cols = vaCols();
-        var rows = table.getRows();
+        var rows = vaRowsInView();
         var cell = vaGetActiveCell();
         if (!cell) return;
         var pos = vaCellPos(cell);
@@ -766,7 +770,7 @@
     function vaCopy(e) {
         var cols0 = vaCols(), rows, cols;
         if (vaRange) {
-            rows = table.getRows().slice(vaRange.r1, vaRange.r2 + 1);
+            rows = vaRowsInView().slice(vaRange.r1, vaRange.r2 + 1);
             cols = cols0.slice(vaRange.c1, vaRange.c2 + 1);
         } else {
             var c = vaGetActiveCell();
@@ -849,7 +853,7 @@
     function vaPaste(text) {
         var matrix = vaParseClip(text);
         if (!matrix.length) return;
-        var rows = table.getRows();
+        var rows = vaRowsInView();
         var vals = matrix.map(function (rr) { return vaDigits(rr[0] || ''); });   // 1 kolom angka
         if (!vals.length) return;
 
@@ -894,7 +898,7 @@
     // Nilai jadi 0 (tampil "-"), SELISIH = Saldo Akhir, dan di server disimpan null.
     // Mengembalikan true bila ada aksi yang ditangani.
     function vaClearSelection() {
-        var cols = vaCols(), rows = table.getRows();
+        var cols = vaCols(), rows = vaRowsInView();
         var sapIdx = -1;
         for (var i = 0; i < cols.length; i++) { if (cols[i].getField() === 'sap_nilai') { sapIdx = i; break; } }
         if (sapIdx < 0) return false;

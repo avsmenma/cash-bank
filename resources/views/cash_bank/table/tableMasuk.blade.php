@@ -684,7 +684,12 @@
                     bmSetRange(bmAnchor, { r: nr, c: nc });
                     var applyActive = function () {
                         var ac = bmGetActiveCell();
-                        if (ac && ac.getElement()) ac.getElement().classList.add('bm-active-cell');
+                        if (ac && ac.getElement()) {
+                            ac.getElement().classList.add('bm-active-cell');
+                            // Ikuti sel aktif juga secara horizontal (spt mode panah biasa),
+                            // agar tabel bergeser saat blok diperluas ke kolom/baris di luar viewport.
+                            ac.getElement().scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                        }
                         bmApplyRange();      // baris yang baru ter-render ikut terwarnai
                         bmShowSum();
                     };

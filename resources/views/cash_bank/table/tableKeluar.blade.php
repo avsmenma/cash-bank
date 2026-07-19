@@ -661,7 +661,12 @@
                     bkClearActiveEl(); bkSetRange(bkAnchor, { r: nr, c: nc });
                     var applyActive = function () {
                         var ac = bkGetActiveCell();
-                        if (ac && ac.getElement()) ac.getElement().classList.add('bk-active-cell');
+                        if (ac && ac.getElement()) {
+                            ac.getElement().classList.add('bk-active-cell');
+                            // Ikuti sel aktif juga secara horizontal (spt mode panah biasa),
+                            // agar tabel bergeser saat blok diperluas ke kolom/baris di luar viewport.
+                            ac.getElement().scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                        }
                         bkApplyRange(); bkShowSum();
                     };
                     var pr1 = table.scrollToRow(trow, 'nearest', false);

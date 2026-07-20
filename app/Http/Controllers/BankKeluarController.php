@@ -19,6 +19,7 @@ use App\Exports\excelBankKeluar;
 use App\Models\KategoriKriteria;
 use App\Exports\reportKeluarExcel;
 use App\Imports\importSheetKeluar;
+use App\Services\AgendaTanggalBayarSync;
 use Illuminate\Support\Facades\DB;
 use App\Models\GabunganMasukKeluar;
 use Maatwebsite\Excel\Facades\Excel;
@@ -356,7 +357,28 @@ class BankKeluarController extends Controller
                     ->where('id', $dokumen->id)
                     ->update($syncPayload);
             }
+        } elseif (!empty($input)) {
+            // Nomor agenda komposit ('5006_2026') bukan angka, sehingga dulu
+            // seluruh blok di atas terlewat: dokumen tidak pernah tertaut dan
+            // tanggal bayarnya tidak ikut ke Agenda Online. Cocokkan langsung
+            // ke nomor_agenda yang formatnya memang sama.
+            $dokumen = DB::connection('mysql_agenda_online')
+                ->table('dokumens')
+                ->where('nomor_agenda', $input)
+                ->first();
+
+            if ($dokumen) {
+                $dokumen_id = $dokumen->id;
+                $agenda_tahun = $dokumen->nomor_agenda;
+            }
         }
+
+        // Tanggal transaksi ikut mengisi tanggal_dibayar dokumen Agenda Online.
+        // Aman dipanggil untuk kedua jalur di atas: hanya mengisi yang kosong.
+        app(AgendaTanggalBayarSync::class)->sinkronkan([
+            ['agenda_tahun' => $agenda_tahun, 'tanggal' => $request->tanggal],
+        ]);
+
         $pakaiSplit = $request->filled('split.kredit');
         $kreditUtama = $pakaiSplit ? 0 : ($validated['kredit'] ?? 0);
         BankKeluar::create([
@@ -3093,6 +3115,9 @@ class BankKeluarController extends Controller
             \Log::error('confirmTemplate gagal menyimpan: ' . $e->getMessage());
             return response()->json(['message' => 'Import gagal saat menyimpan: ' . $e->getMessage()], 500);
         }
+
+        // Tanggal transaksi ikut mengisi tanggal_dibayar dokumen Agenda Online.
+        app(AgendaTanggalBayarSync::class)->sinkronkan($hasil['inserts']);
 
         \Illuminate\Support\Facades\Storage::disk('local')->delete($tempPath);
         session()->forget('keluar_template_temp');

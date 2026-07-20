@@ -209,6 +209,7 @@ class ImportKeluarCsv
         $errorCount = 0;
         $skipCount  = 0;
         $batchData = [];
+        $barisAgenda = [];
         $batchSize = 100;
 
         DB::beginTransaction();
@@ -269,6 +270,15 @@ class ImportKeluarCsv
                     $batchData[] = $record;
                     $successCount++;
 
+                    // Kumpulkan pasangan agenda+tanggal saja (ringan); sinkron
+                    // ke Agenda Online dijalankan sekali setelah commit.
+                    if (!empty($record['agenda_tahun']) && !empty($record['tanggal'])) {
+                        $barisAgenda[] = [
+                            'agenda_tahun' => $record['agenda_tahun'],
+                            'tanggal' => $record['tanggal'],
+                        ];
+                    }
+
                     if (count($batchData) >= $batchSize) {
                         BankKeluar::insert($batchData);
                         $batchData = [];
@@ -288,6 +298,11 @@ class ImportKeluarCsv
 
             DB::commit();
             fclose($handle);
+
+            // Tanggal transaksi ikut mengisi tanggal_dibayar dokumen Agenda
+            // Online. Dijalankan massal SETELAH commit — inilah pengganti blok
+            // per-baris lama yang dimatikan karena bikin impor timeout.
+            (new \App\Services\AgendaTanggalBayarSync())->sinkronkan($barisAgenda);
 
             Log::info("CSV Import: {$successCount} success, {$errorCount} errors out of {$rowCount} rows");
 
@@ -337,36 +352,11 @@ class ImportKeluarCsv
         // Parse nilai kredit: CSV bank keluar punya kolom 'kredit', fallback ke 'debet'
         $kredit = $this->parseNilai($data['kredit'] ?? $data['debet'] ?? 0);
 
-        // NOTE: Agenda Online update dinonaktifkan saat bulk import untuk mencegah timeout.
-        // Setiap baris yang punya agenda_tahun mengandung '_2026' sebelumnya membuat query
-        // ke database kedua (mysql_agenda_online) yang menyebabkan import 3000+ baris timeout.
+        // Sengaja TIDAK menembak database kedua per baris — dulu itulah yang
+        // membuat impor 3000+ baris timeout. Nomor agenda + tanggalnya dikumpulkan
+        // oleh pemanggil, lalu disinkronkan sekali secara massal setelah commit
+        // lewat App\Services\AgendaTanggalBayarSync.
         $dokumenId = null;
-
-        /*
-        if (!empty($agendaTahun) && strpos($agendaTahun, '_2026') !== false) {
-            try {
-                $dokumen = DB::connection('mysql_agenda_online')
-                    ->table('dokumens')
-                    ->where('nomor_agenda', $agendaTahun)
-                    ->first();
-
-                if ($dokumen) {
-                    $dokumenId = $dokumen->id;
-
-                    DB::connection('mysql_agenda_online')
-                        ->table('dokumens')
-                        ->where('id', $dokumen->id)
-                        ->update([
-                            'status_pembayaran' => 'sudah_dibayar',
-                            'dibayar' => $kredit,
-                            'tanggal_dibayar' => $tanggal,
-                        ]);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Agenda Online update failed for {$agendaTahun}: " . $e->getMessage());
-            }
-        }
-        */
 
         // =====================================
         // BUILD RECORD (using cache - no query!)

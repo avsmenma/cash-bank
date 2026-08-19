@@ -116,19 +116,20 @@
             $(document).ready(function () {
                 var selectedYear = parseInt($('#filterTahun').val()) || new Date().getFullYear();
                 var prevYear = selectedYear - 1;
+                var tableData = @json($cashflowData);
 
                 function formatRupiah(cell) {
                     var val = cell.getValue();
                     if (val === null || val === undefined || val === '') return '-';
                     var num = Number(val);
-                    if (isNaN(num)) return val;
-                    var formatted = Math.abs(num).toLocaleString('id-ID');
+                    if (isNaN(num) || num === 0) return '-';
+                    var formatted = Math.abs(num).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
                     return num < 0 ? '(' + formatted + ')' : formatted;
                 }
 
                 // Inisialisasi Tabel Tabulator
                 var table = new Tabulator("#tableCashFlow", {
-                    data: [],
+                    data: tableData,
                     placeholder: "<div class='py-4 text-muted'><i class='fas fa-info-circle mr-1'></i> Belum ada data Cash Flow untuk periode ini.</div>",
                     layout: "fitColumns",
                     responsiveLayout: true,
@@ -139,15 +140,15 @@
                             width: 180,
                             hozAlign: "center",
                             headerHozAlign: "center",
-                            headerSort: false
+                            headerSort: true
                         },
                         {
                             title: "Uraian",
                             field: "uraian",
-                            minWidth: 280,
+                            minWidth: 320,
                             hozAlign: "left",
                             headerHozAlign: "center",
-                            headerSort: false
+                            headerSort: true
                         },
                         {
                             title: "Realisasi " + selectedYear,
@@ -155,7 +156,7 @@
                             hozAlign: "right",
                             headerHozAlign: "center",
                             formatter: formatRupiah,
-                            headerSort: false
+                            headerSort: true
                         },
                         {
                             title: "Realisasi " + prevYear,
@@ -163,18 +164,27 @@
                             hozAlign: "right",
                             headerHozAlign: "center",
                             formatter: formatRupiah,
-                            headerSort: false
+                            headerSort: true
                         }
                     ]
                 });
 
-                // Perubahan dropdown Tahun -> update judul kolom secara dinamis
-                $('#filterTahun').on('change', function () {
-                    var yr = parseInt($(this).val()) || new Date().getFullYear();
-                    var prevYr = yr - 1;
+                // Perubahan filter Bulan / Tahun -> reload halaman dengan parameter query
+                function applyFilter() {
+                    var yr = $('#filterTahun').val();
+                    var bln = $('#filterBulan').val();
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('tahun', yr);
+                    if (bln) {
+                        url.searchParams.set('bulan', bln);
+                    } else {
+                        url.searchParams.delete('bulan');
+                    }
+                    window.location.href = url.toString();
+                }
 
-                    table.updateColumnDefinition("realisasi_tahun", { title: "Realisasi " + yr });
-                    table.updateColumnDefinition("realisasi_tahun_lalu", { title: "Realisasi " + prevYr });
+                $('#filterTahun, #filterBulan').on('change', function () {
+                    applyFilter();
                 });
             });
         </script>

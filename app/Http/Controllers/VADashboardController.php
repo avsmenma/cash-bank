@@ -33,6 +33,19 @@ class VADashboardController extends Controller
     }
 
     /**
+     * Show the Cash Flow page for the logged-in VA user.
+     */
+    public function cashflow()
+    {
+        $user = Auth::user();
+        $id = $user->id_bank_tujuan;
+
+        $va = BankTujuan::findOrFail($id);
+
+        return view('cash_bank.va.cashflow', compact('va'));
+    }
+
+    /**
      * Gabungkan Bank Masuk & Bank Keluar milik satu VA menjadi buku pembantu
      * (urut tanggal, saldo berjalan kumulatif).
      */

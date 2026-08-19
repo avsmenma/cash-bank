@@ -45,10 +45,71 @@ class VADashboardController extends Controller
         $currentYear = (int) date('Y');
         $selectedYear = (int) ($request->get('tahun', $currentYear));
         $selectedBulan = $request->get('bulan', '');
+        $prevYear = $selectedYear - 1;
 
-        $years = range($currentYear + 1, 2023);
+        $years = \App\Models\Cashflow::where('id_bank_tujuan', $id)
+            ->whereNotNull('tahun')
+            ->pluck('tahun')
+            ->unique()
+            ->sortDesc()
+            ->values()
+            ->toArray();
 
-        return view('cash_bank.va.cashflow', compact('va', 'years', 'currentYear', 'selectedYear', 'selectedBulan'));
+        if (empty($years)) {
+            $years = range($currentYear + 1, 2023);
+        }
+
+        // Query transaksi cashflow khusus untuk unit/kebun ini
+        $query = \App\Models\Cashflow::where('id_bank_tujuan', $id);
+
+        if (!empty($selectedBulan) && is_numeric($selectedBulan)) {
+            $query->where('bulan', (int) $selectedBulan);
+        }
+
+        // Ambil transaksi untuk tahun pilihan dan tahun lalu
+        $transactions = (clone $query)->whereIn('tahun', [$selectedYear, $prevYear])->get();
+
+        // Dictionary standarisasi referensi
+        $references = \App\Models\CashflowReference::all()->keyBy('reference_key');
+
+        // Kelompokkan per Reference Key (reference_key_1)
+        $groupedData = [];
+
+        foreach ($transactions as $tx) {
+            $key = $tx->reference_key_1 ?: ($tx->reference_key_3 ? $tx->reference_key_3 . '000' : 'A0209029');
+
+            if (!isset($groupedData[$key])) {
+                $refObj = $references->get($key);
+                $uraian = $refObj ? $refObj->uraian : ($tx->uraian ?: $tx->name_of_offsetting_account ?: $key);
+
+                $groupedData[$key] = [
+                    'reference_key' => $key,
+                    'uraian' => $uraian,
+                    'realisasi_tahun' => 0.0,
+                    'realisasi_tahun_lalu' => 0.0,
+                ];
+            }
+
+            $amt = (float) $tx->amount;
+            if ($tx->tahun == $selectedYear) {
+                $groupedData[$key]['realisasi_tahun'] += $amt;
+            } elseif ($tx->tahun == $prevYear) {
+                $groupedData[$key]['realisasi_tahun_lalu'] += $amt;
+            }
+        }
+
+        // Urutkan berdasarkan Reference Key secara abjad/standar
+        ksort($groupedData);
+        $cashflowData = array_values($groupedData);
+
+        return view('cash_bank.va.cashflow', compact(
+            'va',
+            'years',
+            'currentYear',
+            'selectedYear',
+            'selectedBulan',
+            'cashflowData'
+        ));
     }
 
     /**

@@ -7,8 +7,8 @@ use App\Models\Cashflow;
 use App\Models\CashflowReference;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use XMLReader;
+use ZipArchive;
 
 class CashflowImportService
 {
@@ -51,8 +51,40 @@ class CashflowImportService
             '5E19000001' => 'LONGKALI',
             '5E03000001' => 'DEKAN',
             '5E20000001' => 'RAREN',
-            '1D01000001' => 'UGKB', // Distrik Labuhan Batu fallback to UGKB or PPPBB
+            '1D01000001' => 'UGKB',
         ];
+    }
+
+    /**
+     * Helper to parse sharedStrings from XLSX zip archive.
+     */
+    private function getSharedStrings(ZipArchive $zip): array
+    {
+        $sharedStrings = [];
+        $ssXml = $zip->getFromName('xl/sharedStrings.xml');
+        if ($ssXml) {
+            $xml = new XMLReader();
+            $xml->xml($ssXml);
+            while ($xml->read()) {
+                if ($xml->nodeType === XMLReader::ELEMENT && $xml->name === 'si') {
+                    $siXml = $xml->readOuterXml();
+                    $siEl = simplexml_load_string($siXml);
+                    if (isset($siEl->t)) {
+                        $sharedStrings[] = (string) $siEl->t;
+                    } else {
+                        $text = '';
+                        if (isset($siEl->r)) {
+                            foreach ($siEl->r as $r) {
+                                $text .= (string) $r->t;
+                            }
+                        }
+                        $sharedStrings[] = $text;
+                    }
+                }
+            }
+            $xml->close();
+        }
+        return $sharedStrings;
     }
 
     /**
@@ -64,40 +96,74 @@ class CashflowImportService
             throw new \Exception("File Standarisasi Reffkey tidak ditemukan: {$filePath}");
         }
 
-        $reader = IOFactory::createReaderForFile($filePath);
-        $reader->setReadDataOnly(true);
-        $spreadsheet = $reader->load($filePath);
-        $sheet = $spreadsheet->getActiveSheet();
-        $highestRow = $sheet->getHighestRow();
+        $zip = new ZipArchive();
+        if ($zip->open($filePath) !== true) {
+            throw new \Exception("Gagal membuka file zip: {$filePath}");
+        }
+
+        $sharedStrings = $this->getSharedStrings($zip);
+        $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+        if (!$sheetXml) {
+            $zip->close();
+            throw new \Exception("Lembar kerja sheet1.xml tidak ditemukan pada file {$filePath}");
+        }
+
+        $xml = new XMLReader();
+        $xml->xml($sheetXml);
 
         $records = [];
         $now = now();
 
-        for ($row = 9; $row <= $highestRow; $row++) {
-            $k3 = trim((string) $sheet->getCell("A{$row}")->getValue());
-            $k3Name = trim((string) $sheet->getCell("B{$row}")->getValue());
-            $k1 = trim((string) $sheet->getCell("C{$row}")->getValue());
-            $desc = trim((string) $sheet->getCell("D{$row}")->getValue());
-            $nature = trim((string) $sheet->getCell("E{$row}")->getValue());
+        while ($xml->read()) {
+            if ($xml->nodeType === XMLReader::ELEMENT && $xml->name === 'row') {
+                $rNum = (int) $xml->getAttribute('r');
+                if ($rNum < 9) {
+                    continue; // Header ada di baris 1-8
+                }
 
-            if (empty($k1) || str_starts_with($k1, 'ARUS KAS') || $k1 === 'Penerimaan' || $k1 === 'Pengeluaran') {
-                continue;
+                $rowXml = $xml->readOuterXml();
+                $rowEl = simplexml_load_string($rowXml);
+
+                $cols = [];
+                foreach ($rowEl->c as $c) {
+                    $ref = (string) $c['r'];
+                    $colLetter = preg_replace('/[0-9]/', '', $ref);
+                    $t = (string) $c['t'];
+                    $val = (string) $c->v;
+                    if ($t === 's' && isset($sharedStrings[(int) $val])) {
+                        $val = $sharedStrings[(int) $val];
+                    }
+                    $cols[$colLetter] = $val;
+                }
+
+                $k3 = trim($cols['A'] ?? '');
+                $k3Name = trim($cols['B'] ?? '');
+                $k1 = trim($cols['C'] ?? '');
+                $desc = trim($cols['D'] ?? '');
+                $nature = trim($cols['E'] ?? '');
+
+                if (empty($k1) || str_starts_with($k1, 'ARUS KAS') || $k1 === 'Penerimaan' || $k1 === 'Pengeluaran') {
+                    continue;
+                }
+
+                if (empty($desc)) {
+                    $desc = !empty($k3Name) && $k3Name !== '#N/A' ? $k3Name : $k1;
+                }
+
+                $records[$k1] = [
+                    'reference_key' => $k1,
+                    'parent_key' => $k3 ?: null,
+                    'parent_name' => $k3Name && $k3Name !== '#N/A' ? $k3Name : null,
+                    'uraian' => $desc,
+                    'nature' => $nature ?: null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
             }
-
-            if (empty($desc)) {
-                $desc = !empty($k3Name) && $k3Name !== '#N/A' ? $k3Name : $k1;
-            }
-
-            $records[$k1] = [
-                'reference_key' => $k1,
-                'parent_key' => $k3 ?: null,
-                'parent_name' => $k3Name && $k3Name !== '#N/A' ? $k3Name : null,
-                'uraian' => $desc,
-                'nature' => $nature ?: null,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
         }
+
+        $xml->close();
+        $zip->close();
 
         // Tambahkan default mapping untuk kode-kode induk (...000)
         $defaults000 = [
@@ -145,6 +211,18 @@ class CashflowImportService
             throw new \Exception("File Cashflow.xlsx tidak ditemukan: {$filePath}");
         }
 
+        $zip = new ZipArchive();
+        if ($zip->open($filePath) !== true) {
+            throw new \Exception("Gagal membuka file zip: {$filePath}");
+        }
+
+        $sharedStrings = $this->getSharedStrings($zip);
+        $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+        if (!$sheetXml) {
+            $zip->close();
+            throw new \Exception("Lembar kerja sheet1.xml tidak ditemukan pada file {$filePath}");
+        }
+
         // 1. Load BankTujuan lookup
         $btMap = [];
         $bankTujuans = BankTujuan::all();
@@ -159,113 +237,128 @@ class CashflowImportService
             }
         }
 
-        // Fallback default (id 1 = PPPBB)
         $defaultBtId = $bankTujuans->first()->id_bank_tujuan ?? 1;
 
         // 2. Load References dictionary
         $refMap = CashflowReference::pluck('uraian', 'reference_key')->toArray();
 
-        // 3. Read spreadsheet
-        $reader = IOFactory::createReaderForFile($filePath);
-        $reader->setReadDataOnly(true);
-        $spreadsheet = $reader->load($filePath);
-        $sheet = $spreadsheet->getActiveSheet();
-        $highestRow = $sheet->getHighestRow();
+        // 3. Fast streaming parse sheet1.xml
+        $xml = new XMLReader();
+        $xml->xml($sheetXml);
 
         $rowsToInsert = [];
         $totalInserted = 0;
         $now = now();
 
-        for ($row = 2; $row <= $highestRow; $row++) {
-            $docNum = trim((string) $sheet->getCell("A{$row}")->getValue());
-            if (empty($docNum)) {
-                continue;
-            }
+        while ($xml->read()) {
+            if ($xml->nodeType === XMLReader::ELEMENT && $xml->name === 'row') {
+                $rNum = (int) $xml->getAttribute('r');
+                if ($rNum <= 1) {
+                    continue; // Skip header
+                }
 
-            $postingDateRaw = $sheet->getCell("B{$row}")->getValue();
-            $postingDate = null;
-            $bulan = null;
-            $tahun = null;
+                $rowXml = $xml->readOuterXml();
+                $rowEl = simplexml_load_string($rowXml);
 
-            if (is_numeric($postingDateRaw)) {
-                try {
-                    $dt = ExcelDate::excelToDateTimeObject($postingDateRaw);
-                    $postingDate = $dt->format('Y-m-d');
-                    $bulan = (int) $dt->format('m');
-                    $tahun = (int) $dt->format('Y');
-                } catch (\Exception $e) {}
-            } elseif (!empty($postingDateRaw)) {
-                try {
-                    $dt = new \DateTime($postingDateRaw);
-                    $postingDate = $dt->format('Y-m-d');
-                    $bulan = (int) $dt->format('m');
-                    $tahun = (int) $dt->format('Y');
-                } catch (\Exception $e) {}
-            }
+                $cols = [];
+                foreach ($rowEl->c as $c) {
+                    $ref = (string) $c['r'];
+                    $colLetter = preg_replace('/[0-9]/', '', $ref);
+                    $t = (string) $c['t'];
+                    $val = (string) $c->v;
+                    if ($t === 's' && isset($sharedStrings[(int) $val])) {
+                        $val = $sharedStrings[(int) $val];
+                    }
+                    $cols[$colLetter] = $val;
+                }
 
-            // Fallback tahun/bulan dari Kolom V (Year/Month e.g. "2026/01")
-            $yearMonthRaw = trim((string) $sheet->getCell("V{$row}")->getValue());
-            if (empty($tahun) && !empty($yearMonthRaw) && str_contains($yearMonthRaw, '/')) {
-                $parts = explode('/', $yearMonthRaw);
-                $tahun = (int) $parts[0];
-                $bulan = (int) $parts[1];
-            }
+                $docNum = trim($cols['A'] ?? '');
+                if (empty($docNum)) {
+                    continue;
+                }
 
-            $period = (int) $sheet->getCell("C{$row}")->getValue() ?: ($bulan ?: 1);
-            $account = trim((string) $sheet->getCell("D{$row}")->getValue());
-            $prctr = trim((string) $sheet->getCell("I{$row}")->getValue());
-            $prctrName = trim((string) $sheet->getCell("J{$row}")->getValue());
-            $offsettingAcc = trim((string) $sheet->getCell("K{$row}")->getValue());
-            $offsettingAccName = trim((string) $sheet->getCell("L{$row}")->getValue());
-            $postingKey = trim((string) $sheet->getCell("N{$row}")->getValue());
-            $amountRaw = (float) $sheet->getCell("O{$row}")->getValue();
-            $text = trim((string) $sheet->getCell("Q{$row}")->getValue());
-            $glDesc = trim((string) $sheet->getCell("S{$row}")->getValue());
-            $refKeyRaw = trim((string) $sheet->getCell("W{$row}")->getValue());
-            $costCenter = trim((string) $sheet->getCell("AC{$row}")->getValue());
-            $refKey3 = trim((string) $sheet->getCell("AE{$row}")->getValue());
-            $refKey1 = trim((string) $sheet->getCell("AL{$row}")->getValue());
+                $postingDateRaw = $cols['B'] ?? null;
+                $postingDate = null;
+                $bulan = null;
+                $tahun = null;
 
-            // Reference Key 1 prioritization
-            if (empty($refKey1)) {
-                $refKey1 = !empty($refKey3) ? $refKey3 . '000' : 'A0209029';
-            }
+                if (is_numeric($postingDateRaw)) {
+                    $valNum = (float) $postingDateRaw;
+                    if ($valNum > 25569) {
+                        $unix = ($valNum - 25569) * 86400;
+                        $postingDate = gmdate('Y-m-d', (int) $unix);
+                        $bulan = (int) gmdate('m', (int) $unix);
+                        $tahun = (int) gmdate('Y', (int) $unix);
+                    }
+                } elseif (!empty($postingDateRaw)) {
+                    try {
+                        $dt = new \DateTime($postingDateRaw);
+                        $postingDate = $dt->format('Y-m-d');
+                        $bulan = (int) $dt->format('m');
+                        $tahun = (int) $dt->format('Y');
+                    } catch (\Exception $e) {}
+                }
 
-            // Find Uraian from standard reference dictionary
-            $uraian = $refMap[$refKey1] ?? ($refMap[$refKey3] ?? ($offsettingAccName ?: $text));
+                // Fallback tahun/bulan dari Kolom V (Year/Month e.g. "2026/01")
+                $yearMonthRaw = trim($cols['V'] ?? '');
+                if (empty($tahun) && !empty($yearMonthRaw) && str_contains($yearMonthRaw, '/')) {
+                    $parts = explode('/', $yearMonthRaw);
+                    $tahun = (int) $parts[0];
+                    $bulan = (int) $parts[1];
+                }
 
-            // Map Bank Tujuan
-            $idBankTujuan = $btMap[$prctr] ?? $defaultBtId;
+                $period = (int) ($cols['C'] ?? 0) ?: ($bulan ?: 1);
+                $account = trim($cols['D'] ?? '');
+                $prctr = trim($cols['I'] ?? '');
+                $prctrName = trim($cols['J'] ?? '');
+                $offsettingAcc = trim($cols['K'] ?? '');
+                $offsettingAccName = trim($cols['L'] ?? '');
+                $postingKey = trim($cols['N'] ?? '');
+                $amountRaw = (float) ($cols['O'] ?? 0);
+                $text = trim($cols['Q'] ?? '');
+                $glDesc = trim($cols['S'] ?? '');
+                $refKeyRaw = trim($cols['W'] ?? '');
+                $costCenter = trim($cols['AC'] ?? '');
+                $refKey3 = trim($cols['AE'] ?? '');
+                $refKey1 = trim($cols['AL'] ?? '');
 
-            $rowsToInsert[] = [
-                'id_bank_tujuan' => $idBankTujuan,
-                'profit_center' => $prctr ?: null,
-                'nama_profit_center' => $prctrName ?: null,
-                'document_number' => $docNum,
-                'posting_date' => $postingDate,
-                'posting_period' => $period,
-                'bulan' => $bulan ?: 1,
-                'tahun' => $tahun ?: (int) date('Y'),
-                'account' => $account ?: null,
-                'offsetting_account' => $offsettingAcc ?: null,
-                'name_of_offsetting_account' => $offsettingAccName ?: null,
-                'posting_key' => $postingKey ?: null,
-                'amount' => $amountRaw,
-                'text' => $text ?: null,
-                'gl_account_desc' => $glDesc ?: null,
-                'reference_key' => $refKeyRaw ?: null,
-                'reference_key_1' => $refKey1,
-                'reference_key_3' => $refKey3 ?: null,
-                'cost_center' => $costCenter ?: null,
-                'uraian' => $uraian,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
+                if (empty($refKey1)) {
+                    $refKey1 = !empty($refKey3) ? $refKey3 . '000' : 'A0209029';
+                }
 
-            if (count($rowsToInsert) >= 1000) {
-                Cashflow::insert($rowsToInsert);
-                $totalInserted += count($rowsToInsert);
-                $rowsToInsert = [];
+                $uraian = $refMap[$refKey1] ?? ($refMap[$refKey3] ?? ($offsettingAccName ?: $text));
+                $idBankTujuan = $btMap[$prctr] ?? $defaultBtId;
+
+                $rowsToInsert[] = [
+                    'id_bank_tujuan' => $idBankTujuan,
+                    'profit_center' => $prctr ?: null,
+                    'nama_profit_center' => $prctrName ?: null,
+                    'document_number' => $docNum,
+                    'posting_date' => $postingDate,
+                    'posting_period' => $period,
+                    'bulan' => $bulan ?: 1,
+                    'tahun' => $tahun ?: (int) date('Y'),
+                    'account' => $account ?: null,
+                    'offsetting_account' => $offsettingAcc ?: null,
+                    'name_of_offsetting_account' => $offsettingAccName ?: null,
+                    'posting_key' => $postingKey ?: null,
+                    'amount' => $amountRaw,
+                    'text' => $text ?: null,
+                    'gl_account_desc' => $glDesc ?: null,
+                    'reference_key' => $refKeyRaw ?: null,
+                    'reference_key_1' => $refKey1,
+                    'reference_key_3' => $refKey3 ?: null,
+                    'cost_center' => $costCenter ?: null,
+                    'uraian' => $uraian,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+
+                if (count($rowsToInsert) >= 1000) {
+                    Cashflow::insert($rowsToInsert);
+                    $totalInserted += count($rowsToInsert);
+                    $rowsToInsert = [];
+                }
             }
         }
 
@@ -273,6 +366,9 @@ class CashflowImportService
             Cashflow::insert($rowsToInsert);
             $totalInserted += count($rowsToInsert);
         }
+
+        $xml->close();
+        $zip->close();
 
         return $totalInserted;
     }

@@ -16,6 +16,9 @@ use App\Models\RencanaPenerima;
 use App\Models\SaldoAwal;
 use App\Models\DaftarBank;
 use App\Models\DaftarRekening;
+use App\Models\Cashflow;
+use App\Models\CashflowReference;
+use App\Services\CashflowImportService;
 
 class ProgrammerController extends Controller
 {
@@ -25,6 +28,20 @@ class ProgrammerController extends Controller
     private function getTableMap(): array
     {
         return [
+            'cashflows' => [
+                'model' => Cashflow::class,
+                'name' => 'Cash Flow Transaksi SAP',
+                'icon' => 'fas fa-money-bill-wave',
+                'color' => '#27ae60',
+                'primary_key' => 'id',
+            ],
+            'cashflow_references' => [
+                'model' => CashflowReference::class,
+                'name' => 'Standarisasi Reff Key',
+                'icon' => 'fas fa-tags',
+                'color' => '#3498db',
+                'primary_key' => 'id',
+            ],
             'bank_keluar' => [
                 'model' => BankKeluar::class,
                 'name' => 'Bank Keluar',
@@ -460,5 +477,61 @@ class ProgrammerController extends Controller
                 ->orderBy('nama_jenis_pembayaran')
                 ->get(['id_jenis_pembayaran', 'nama_jenis_pembayaran']),
         ];
+    }
+
+    /**
+     * Import raw Cashflow.xlsx and Standarisasi Reffkey.
+     */
+    public function importCashflow(Request $request, CashflowImportService $service)
+    {
+        ini_set('max_execution_time', '600');
+        ini_set('memory_limit', '1024M');
+
+        try {
+            $refCount = 0;
+            $cfCount = 0;
+
+            // 1. Process Standarisasi Reffkey if file uploaded or exists in docs
+            $refFile = null;
+            if ($request->hasFile('file_standarisasi')) {
+                $refFile = $request->file('file_standarisasi')->getPathname();
+            } else {
+                $defaultRef = base_path('../docs/Standarisasi Reffkey (1).xlsx');
+                if (file_exists($defaultRef)) {
+                    $refFile = $defaultRef;
+                } elseif (file_exists(base_path('docs/Standarisasi Reffkey (1).xlsx'))) {
+                    $refFile = base_path('docs/Standarisasi Reffkey (1).xlsx');
+                }
+            }
+
+            if ($refFile && file_exists($refFile)) {
+                $refCount = $service->importStandarisasiReffkey($refFile);
+            }
+
+            // 2. Process Cashflow.xlsx if file uploaded or exists in docs
+            $cfFile = null;
+            if ($request->hasFile('file_cashflow')) {
+                $cfFile = $request->file('file_cashflow')->getPathname();
+            } else {
+                $defaultCf = base_path('../docs/Cashflow.xlsx');
+                if (file_exists($defaultCf)) {
+                    $cfFile = $defaultCf;
+                } elseif (file_exists(base_path('docs/Cashflow.xlsx'))) {
+                    $cfFile = base_path('docs/Cashflow.xlsx');
+                }
+            }
+
+            if ($cfFile && file_exists($cfFile)) {
+                if ($request->boolean('truncate_first', true)) {
+                    Cashflow::truncate();
+                }
+                $cfCount = $service->importCashflowTransactions($cfFile);
+            }
+
+            return redirect()->back()->with('success', "Import berhasil! {$refCount} kode referensi standarisasi dan {$cfCount} baris transaksi cashflow berhasil diimport.");
+        } catch (\Exception $e) {
+            \Log::error('Import Cashflow Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return redirect()->back()->with('error', 'Gagal import cashflow: ' . $e->getMessage());
+        }
     }
 }

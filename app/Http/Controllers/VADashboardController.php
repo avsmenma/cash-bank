@@ -35,14 +35,20 @@ class VADashboardController extends Controller
     /**
      * Show the Cash Flow page for the logged-in VA user.
      */
-    public function cashflow()
+    public function cashflow(Request $request)
     {
         $user = Auth::user();
         $id = $user->id_bank_tujuan;
 
         $va = BankTujuan::findOrFail($id);
 
-        return view('cash_bank.va.cashflow', compact('va'));
+        $currentYear = (int) date('Y');
+        $selectedYear = (int) ($request->get('tahun', $currentYear));
+        $selectedBulan = $request->get('bulan', '');
+
+        $years = range($currentYear + 1, 2023);
+
+        return view('cash_bank.va.cashflow', compact('va', 'years', 'currentYear', 'selectedYear', 'selectedBulan'));
     }
 
     /**

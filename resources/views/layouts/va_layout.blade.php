@@ -85,6 +85,15 @@
                             </a>
                         </li>
 
+                        <!-- CASH FLOW -->
+                        <li class="nav-item">
+                            <a href="{{ route('va.cashflow') }}"
+                                class="nav-link {{ request()->routeIs('va.cashflow') ? 'active' : ''}}">
+                                <i class="nav-icon fas fa-money-bill-wave"></i>
+                                <p>Cash Flow</p>
+                            </a>
+                        </li>
+
 
                     </ul>
                 </nav>

@@ -470,9 +470,62 @@
         <div class="d-flex align-items-center justify-content-between flex-wrap">
             <div>
                 <h2><i class="fas fa-terminal"></i> Programmer Panel</h2>
-                <p class="mt-1">Data Management Console — Hapus data tanpa akses database langsung</p>
+                <p class="mt-1">Data Management Console — Hapus data & Import SAP Cash Flow</p>
             </div>
             <span class="badge-role"><i class="fas fa-shield-alt mr-1"></i> ROLE: PROGRAMMER</span>
+        </div>
+    </div>
+
+    {{-- ===== IMPORT CASH FLOW SAP PANEL ===== --}}
+    <div class="keyword-panel mb-4">
+        <div class="keyword-panel-header" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);">
+            <h5><i class="fas fa-file-excel mr-2 text-warning"></i>Import Cash Flow & Standarisasi Reference Key (SAP)</h5>
+            <span class="badge badge-warning text-dark font-weight-bold"><i class="fas fa-magic mr-1"></i>Auto Match 33 Unit/Kebun</span>
+        </div>
+        <div class="keyword-panel-body">
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>{{ session('error') }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            @endif
+
+            <form action="{{ route('programmer.importCashflow') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="row align-items-end">
+                    <div class="col-lg-5 mb-3">
+                        <label class="small font-weight-bold text-dark"><i class="fas fa-file-invoice-dollar text-success mr-1"></i>File Mentah Transaksi Cashflow (.xlsx)</label>
+                        <input type="file" name="file_cashflow" class="form-control-file border p-2 rounded bg-light" accept=".xlsx,.xls">
+                        <small class="text-muted d-block mt-1">Kosongkan jika ingin menggunakan file server: <code>docs/Cashflow.xlsx</code></small>
+                    </div>
+                    <div class="col-lg-4 mb-3">
+                        <label class="small font-weight-bold text-dark"><i class="fas fa-book text-info mr-1"></i>File Standarisasi Reference Key (.xlsx)</label>
+                        <input type="file" name="file_standarisasi" class="form-control-file border p-2 rounded bg-light" accept=".xlsx,.xls">
+                        <small class="text-muted d-block mt-1">Kosongkan jika ingin menggunakan file server: <code>docs/Standarisasi Reffkey (1).xlsx</code></small>
+                    </div>
+                    <div class="col-lg-3 mb-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="truncate_first" id="chkTruncateFirst" value="1" checked>
+                            <label class="form-check-label small font-weight-bold" for="chkTruncateFirst">
+                                Timpa data lama (Truncate)
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-block font-weight-bold shadow-sm" onclick="return confirm('Mulai proses import data Cash Flow? Proses ini mungkin memakan waktu beberapa detik.')">
+                            <i class="fas fa-upload mr-1"></i> Mulai Import Cash Flow
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 

@@ -3,9 +3,10 @@
     @push('styles')
         <link rel="stylesheet" href="{{ asset('plugins/tabulator/tabulator_semanticui.min.css') }}">
         <style>
+            /* Tampilan kompak: setara zoom browser 80%, konsisten dengan Virtual Account */
             .content-header,
             section.content {
-                zoom: 0.85;
+                zoom: 0.8;
             }
 
             /* Tabulator — styling konsisten dengan tema Navy standard Cash Bank */
@@ -23,6 +24,7 @@
                 text-align: center;
             }
 
+            /* Garis pemisah kolom header: putih & tebal */
             #tableCashFlow .tabulator-header .tabulator-col {
                 border-right: 2px solid rgba(255, 255, 255, 0.9) !important;
             }
@@ -40,16 +42,6 @@
             #tableCashFlow .tabulator-row {
                 border-bottom: 1px solid #C9D4DF !important;
             }
-
-            #tableCashFlow .tabulator-calcs-holder,
-            #tableCashFlow .tabulator-row.tabulator-calcs-bottom,
-            #tableCashFlow .tabulator-row.tabulator-calcs-bottom .tabulator-cell {
-                background-color: #1E3A5F !important;
-                color: #fff !important;
-                font-weight: 700;
-                border-color: rgba(255, 255, 255, 0.25) !important;
-                border-right: 2px solid rgba(255, 255, 255, 0.9) !important;
-            }
         </style>
     @endpush
 
@@ -57,11 +49,11 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0 font-weight-bold">Cash Flow</h1>
+                    <h1>Cash Flow</h1>
                 </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{{ route('va.dashboard') }}">Virtual Account</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('va.dashboard') }}">Home</a></li>
                         <li class="breadcrumb-item active">Cash Flow</li>
                     </ol>
                 </div>
@@ -71,38 +63,48 @@
 
     <section class="content">
         <div class="container-fluid">
-            <div class="card card-outline card-success shadow-sm">
-                <div class="card-header">
-                    <h3 class="card-title font-weight-bold">
-                        <i class="fas fa-money-bill-wave mr-1"></i> Cash Flow — {{ $va->nama_tujuan }}
-                    </h3>
-                </div>
+            <div class="row">
+                <div class="col-12">
+                    <div class="invoice p-3 mb-3">
 
-                <div class="card-body">
-                    <!-- Filter Dropdown: Hanya Bulan dan Tahun -->
-                    <div class="row mb-3">
-                        <div class="col-12 d-flex align-items-center flex-wrap">
-                            <label for="filterBulan" class="mr-2 mb-0 font-weight-bold">Bulan</label>
-                            <select id="filterBulan" class="form-control form-control-sm mr-3" style="width: 140px;">
-                                <option value="">Semua</option>
-                                @foreach (['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'] as $val => $nama)
-                                    <option value="{{ $val }}" {{ $selectedBulan == $val ? 'selected' : '' }}>{{ $nama }}</option>
-                                @endforeach
-                            </select>
-
-                            <label for="filterTahun" class="mr-2 mb-0 font-weight-bold">Tahun</label>
-                            <select id="filterTahun" class="form-control form-control-sm" style="width: 120px;">
-                                @foreach ($years as $y)
-                                    <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>{{ $y }}</option>
-                                @endforeach
-                            </select>
+                        <!-- Header -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h4>
+                                    <i class="fas fa-money-bill-wave"></i>
+                                    Cash Flow — {{ $va->nama_tujuan }}
+                                </h4>
+                                <p class="text-muted mb-0">Laporan Cash Flow Realisasi per Reference Key</p>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Wadah Tabel Tabulator -->
-                    <div class="row">
-                        <div class="col-12">
-                            <div id="tableCashFlow" style="min-height: 250px;"></div>
+                        <hr>
+
+                        <!-- Filter Dropdown: Bulan dan Tahun -->
+                        <div class="row mb-3">
+                            <div class="col-12 d-flex align-items-center flex-wrap">
+                                <label for="filterBulan" class="mr-2 mb-0 font-weight-bold">Bulan</label>
+                                <select id="filterBulan" class="form-control form-control-sm mr-3" style="width: 140px;">
+                                    <option value="">Semua</option>
+                                    @foreach (['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'] as $val => $nama)
+                                        <option value="{{ $val }}" {{ $selectedBulan == $val ? 'selected' : '' }}>{{ $nama }}</option>
+                                    @endforeach
+                                </select>
+
+                                <label for="filterTahun" class="mr-2 mb-0 font-weight-bold">Tahun</label>
+                                <select id="filterTahun" class="form-control form-control-sm" style="width: 120px;">
+                                    @foreach ($years as $y)
+                                        <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>{{ $y }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Wadah Tabel Tabulator -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div id="tableCashFlow" style="min-height: 250px;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -127,12 +129,20 @@
                     return num < 0 ? '(' + formatted + ')' : formatted;
                 }
 
-                // Inisialisasi Tabel Tabulator
+                // Cek apakah user pernah mengubah lebar kolom (tersimpan di localStorage)
+                var userSized = !!localStorage.getItem('tabulator-cb-va-cashflow-columns');
+
+                // Inisialisasi Tabel Tabulator dengan persistensi lebar kolom & tanpa arrow sort
                 var table = new Tabulator("#tableCashFlow", {
+                    persistence: { columns: ['width'] },
+                    persistenceID: 'cb-va-cashflow',
                     data: tableData,
+                    layout: userSized ? 'fitData' : 'fitColumns',
+                    columnHeaderVertAlign: 'middle',
+                    movableColumns: false,
+                    columnDefaults: { headerSort: false, minWidth: 30, variableHeight: true },
+                    renderVertical: 'basic',
                     placeholder: "<div class='py-4 text-muted'><i class='fas fa-info-circle mr-1'></i> Belum ada data Cash Flow untuk periode ini.</div>",
-                    layout: "fitColumns",
-                    responsiveLayout: true,
                     columns: [
                         {
                             title: "Reference Key",
@@ -140,31 +150,34 @@
                             width: 180,
                             hozAlign: "center",
                             headerHozAlign: "center",
-                            headerSort: true
+                            headerSort: false
                         },
                         {
                             title: "Uraian",
                             field: "uraian",
-                            minWidth: 320,
+                            minWidth: 300,
+                            widthGrow: 3,
                             hozAlign: "left",
                             headerHozAlign: "center",
-                            headerSort: true
+                            headerSort: false
                         },
                         {
                             title: "Realisasi " + selectedYear,
                             field: "realisasi_tahun",
+                            width: 180,
                             hozAlign: "right",
                             headerHozAlign: "center",
                             formatter: formatRupiah,
-                            headerSort: true
+                            headerSort: false
                         },
                         {
                             title: "Realisasi " + prevYear,
                             field: "realisasi_tahun_lalu",
+                            width: 180,
                             hozAlign: "right",
                             headerHozAlign: "center",
                             formatter: formatRupiah,
-                            headerSort: true
+                            headerSort: false
                         }
                     ]
                 });

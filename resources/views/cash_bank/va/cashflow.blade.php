@@ -3,10 +3,18 @@
     @push('styles')
         <link rel="stylesheet" href="{{ asset('plugins/tabulator/tabulator_semanticui.min.css') }}">
         <style>
-            /* Tampilan kompak: setara zoom browser 80%, konsisten dengan Virtual Account */
-            .content-header,
+            /* Tampilan kompak DISETEL LEWAT UKURAN HURUF, bukan `zoom`.
+               Catatan penting: `zoom: 0.8` merusak layout fitColumns Tabulator —
+               ia membaca lebar wadah hasil getBoundingClientRect() yang sudah
+               terkena zoom (mis. 1263px) lalu menetapkan lebar kolom dalam satuan
+               CSS px pada wadah yang sebenarnya 1582px, sehingga tabel selalu
+               kurang selebar wadah x (1 - zoom) dan menyisakan ruang kosong. */
+            .content-header h1 {
+                font-size: 1.5rem;
+            }
+
             section.content {
-                zoom: 0.8;
+                font-size: 13px;
             }
 
             /* ===== Palet mengikuti berkas baku "Laporan Arus Kas" PTPN ===== */
@@ -29,7 +37,7 @@
             }
 
             .cf-kop .cf-perusahaan {
-                font-size: 15px;
+                font-size: 12px;
                 font-weight: 700;
                 letter-spacing: .12em;
                 color: var(--cf-navy);
@@ -37,7 +45,7 @@
             }
 
             .cf-kop .cf-judul {
-                font-size: 21px;
+                font-size: 17px;
                 font-weight: 700;
                 color: var(--cf-navy);
                 text-transform: uppercase;
@@ -46,13 +54,13 @@
             }
 
             .cf-kop .cf-unit {
-                font-size: 14px;
+                font-size: 12px;
                 font-weight: 600;
                 color: #37506e;
             }
 
             .cf-kop .cf-periode {
-                font-size: 12px;
+                font-size: 11px;
                 color: #6B7280;
                 font-style: italic;
             }
@@ -72,7 +80,7 @@
             .cf-kartu.bersih { border-left-color: var(--cf-total); }
 
             .cf-kartu .cf-kartu-label {
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 700;
                 letter-spacing: .08em;
                 text-transform: uppercase;
@@ -80,7 +88,7 @@
             }
 
             .cf-kartu .cf-kartu-nilai {
-                font-size: 20px;
+                font-size: 17px;
                 font-weight: 700;
                 line-height: 1.25;
                 color: var(--cf-navy);
@@ -90,7 +98,7 @@
             .cf-kartu.keluar .cf-kartu-nilai { color: #C82333; }
 
             .cf-kartu .cf-kartu-banding {
-                font-size: 11px;
+                font-size: 10px;
                 color: #6B7280;
                 border-top: 1px dashed var(--cf-garis);
                 margin-top: 6px;
@@ -98,6 +106,10 @@
             }
 
             /* ── Tabulator: kepala tabel tema Navy standar Cash Bank ── */
+            #tableCashFlow {
+                font-size: 12.5px;
+            }
+
             #tableCashFlow .tabulator-header,
             #tableCashFlow .tabulator-header .tabulator-col {
                 background-color: var(--cf-navy) !important;
@@ -211,7 +223,7 @@
 
             /* Indentasi uraian mengikuti kedalaman jenjang */
             .cf-indent { padding-left: 20px; display: inline-block; }
-            .cf-kode { font-family: "Consolas", "Courier New", monospace; font-size: 11px; }
+            .cf-kode { font-family: "Consolas", "Courier New", monospace; font-size: 10px; }
 
             @media print {
                 .cf-no-print { display: none !important; }

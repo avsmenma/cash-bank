@@ -94,7 +94,7 @@ class CashflowReportBuilder
                 continue;
             }
 
-            $rows[] = self::row('section', '', '', $section['roman'] . '. ' . $section['title'], self::zero($seriesKeys));
+            $rows[] = self::row('section', '', '', $section['roman'] . '. ' . $section['title'], self::zero($seriesKeys), [$prefix]);
             $sectionSum = self::zero($seriesKeys);
 
             foreach (self::SUBSECTIONS as $suffix => $meta) {
@@ -103,7 +103,7 @@ class CashflowReportBuilder
                     continue;
                 }
 
-                $rows[] = self::row('subsection', '', '', $section['roman'] . '.' . $meta['numeral'] . ' ' . $meta['label'], self::zero($seriesKeys));
+                $rows[] = self::row('subsection', '', '', $section['roman'] . '.' . $meta['numeral'] . ' ' . $meta['label'], self::zero($seriesKeys), [$prefix . $suffix]);
 
                 $subSum = self::zero($seriesKeys);
 
@@ -126,18 +126,18 @@ class CashflowReportBuilder
                         continue;
                     }
 
-                    $rows[] = self::row('group', $parentKey, '-', $group['name'], $group['values']);
+                    $rows[] = self::row('group', $parentKey, '-', $group['name'], $group['values'], [$parentKey]);
 
                     foreach ($items as $item) {
-                        $rows[] = self::row('detail', $parentKey, $item['reference_key'], $item['uraian'], $item['values']);
+                        $rows[] = self::row('detail', $parentKey, $item['reference_key'], $item['uraian'], $item['values'], [$item['reference_key']]);
                     }
                 }
 
-                $rows[] = self::row('subtotal', '', '', $meta['total'], $subSum);
+                $rows[] = self::row('subtotal', '', '', $meta['total'], $subSum, [$prefix . $suffix]);
                 $sectionSum = self::add($sectionSum, $subSum);
             }
 
-            $rows[] = self::row('total', '', '', 'JUMLAH ' . $section['title'], $sectionSum);
+            $rows[] = self::row('total', '', '', 'JUMLAH ' . $section['title'], $sectionSum, [$prefix]);
             $rows[] = self::row('spacer', '', '', '', self::zero($seriesKeys));
 
             $sectionTotals[] = $sectionSum;
@@ -150,11 +150,11 @@ class CashflowReportBuilder
         }
 
         foreach (self::flatten($tree['D'] ?? []) as $item) {
-            $rows[] = self::row('plain', $item['parent_key'], $item['reference_key'], $item['uraian'], $item['values']);
+            $rows[] = self::row('plain', $item['parent_key'], $item['reference_key'], $item['uraian'], $item['values'], [$item['reference_key']]);
             $net = self::add($net, $item['values']);
         }
 
-        $rows[] = self::row('net', '', '', 'Kenaikan (Penurunan) Arus Kas Bersih', $net);
+        $rows[] = self::row('net', '', '', 'Kenaikan (Penurunan) Arus Kas Bersih', $net, array_merge(array_column(self::SECTIONS, 'prefix'), ['D']));
         $rows[] = self::row('spacer', '', '', '', self::zero($seriesKeys));
 
         // Bank Clearing & reklasifikasi (grup E) tidak masuk arus kas bersih,
@@ -162,11 +162,11 @@ class CashflowReportBuilder
         $closing = $net;
 
         foreach (self::flatten($tree['E'] ?? []) as $item) {
-            $rows[] = self::row('plain', $item['parent_key'], $item['reference_key'], $item['uraian'], $item['values']);
+            $rows[] = self::row('plain', $item['parent_key'], $item['reference_key'], $item['uraian'], $item['values'], [$item['reference_key']]);
             $closing = self::add($closing, $item['values']);
         }
 
-        $rows[] = self::row('closing', '', '', 'Pergerakan Kas Bersih Periode Ini', $closing);
+        $rows[] = self::row('closing', '', '', 'Pergerakan Kas Bersih Periode Ini', $closing, array_merge(array_column(self::SECTIONS, 'prefix'), ['D', 'E']));
 
         return $rows;
     }
@@ -298,8 +298,12 @@ class CashflowReportBuilder
 
     /**
      * @param  array<string,array{current:float,previous:float}>  $values
+     * @param  array<int,string>  $scope  awalan reference_key yang membentuk angka
+     *         baris ini; dipakai fitur rincian (drill-down) untuk menarik kembali
+     *         transaksi penyusunnya. Reference key panjangnya selalu 8 karakter,
+     *         sehingga awalan sepanjang itu berarti pencocokan persis.
      */
-    private static function row(string $type, string $kode, string $reference, string $uraian, array $values): array
+    private static function row(string $type, string $kode, string $reference, string $uraian, array $values, array $scope = []): array
     {
         $bulat = [];
         foreach ($values as $seri => $v) {
@@ -319,6 +323,7 @@ class CashflowReportBuilder
             'current' => $global['current'],
             'previous' => $global['previous'],
             'values' => $bulat,
+            'scope' => array_values($scope),
         ];
     }
 

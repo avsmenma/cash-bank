@@ -101,6 +101,83 @@ class VADashboardController extends Controller
     }
 
     /**
+     * Rincian (drill-down ala pivot) di balik satu angka Laporan Arus Kas.
+     *
+     * Setiap baris laporan membawa daftar "cakupan" berupa awalan reference_key
+     * yang membentuk angkanya — baris detail memakai kode 8 karakter (cocok
+     * persis), baris grup memakai 5 karakter, baris bagian 1 karakter, dan baris
+     * penutup memakai seluruh awalan. Endpoint ini menarik kembali transaksi
+     * penyusunnya memakai cakupan tersebut.
+     */
+    public function cashflowDetail(Request $request)
+    {
+        $id = Auth::user()->id_bank_tujuan;
+
+        // Reference key hanya berisi huruf & angka; pembersihan ini sekaligus
+        // mencegah karakter wildcard (% dan _) menyusup ke klausa LIKE.
+        $scope = array_values(array_filter(array_map(
+            fn ($s) => preg_replace('/[^A-Z0-9]/', '', strtoupper((string) $s)),
+            (array) $request->input('scope', [])
+        )));
+
+        $tahun = (int) $request->input('tahun');
+
+        if (empty($scope) || $tahun <= 0) {
+            return response()->json(['rows' => [], 'total' => 0, 'jumlah' => 0, 'terpotong' => false]);
+        }
+
+        $bulan = (string) $request->input('bulan', '');
+
+        $query = Cashflow::query()
+            ->where('id_bank_tujuan', $id)
+            ->where('tahun', $tahun)
+            ->when(is_numeric($bulan), fn ($q) => $q->where('bulan', (int) $bulan))
+            ->where(function ($q) use ($scope) {
+                foreach ($scope as $prefix) {
+                    $q->orWhere('reference_key_1', 'like', $prefix . '%');
+                }
+            });
+
+        // Total & jumlah dihitung atas SELURUH transaksi yang cocok, sedangkan
+        // daftarnya dibatasi. Dengan begitu total di kaki tabel rincian tetap
+        // sama persis dengan angka yang diklik walau daftarnya terpotong.
+        $total = (float) (clone $query)->sum('amount');
+        $jumlah = (int) (clone $query)->count();
+
+        $batas = 1000;
+        $rows = (clone $query)
+            ->orderBy('posting_date')
+            ->orderBy('document_number')
+            ->limit($batas)
+            ->get([
+                'posting_date',
+                'document_number',
+                'reference_key_1',
+                'uraian',
+                'text',
+                'name_of_offsetting_account',
+                'amount',
+            ])
+            ->map(fn ($r) => [
+                'tanggal' => $r->posting_date ? $r->posting_date->format('Y-m-d') : null,
+                'dokumen' => $r->document_number,
+                'reference' => $r->reference_key_1,
+                'uraian' => $r->uraian,
+                'keterangan' => $r->text,
+                'lawan' => $r->name_of_offsetting_account,
+                'amount' => (float) $r->amount,
+            ]);
+
+        return response()->json([
+            'rows' => $rows,
+            'total' => round($total, 2),
+            'jumlah' => $jumlah,
+            'terpotong' => $jumlah > $batas,
+            'batas' => $batas,
+        ]);
+    }
+
+    /**
      * Gabungkan Bank Masuk & Bank Keluar milik satu VA menjadi buku pembantu
      * (urut tanggal, saldo berjalan kumulatif).
      */

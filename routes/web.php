@@ -390,6 +390,7 @@ Route::middleware(['auth'])->group(function () {
 Route::group(['middleware' => ['auth', 'check_role:va'], 'prefix' => 'va'], function () {
     Route::get('/dashboard', [VADashboardController::class, 'index'])->name('va.dashboard');
     Route::get('/cashflow', [VADashboardController::class, 'cashflow'])->name('va.cashflow');
+    Route::get('/cashflow/rincian', [VADashboardController::class, 'cashflowDetail'])->name('va.cashflow.rincian');
     Route::get('/export-excel', [VADashboardController::class, 'exportExcel'])->name('va.export-excel');
 });
 

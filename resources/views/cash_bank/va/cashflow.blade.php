@@ -9,12 +9,100 @@
                 zoom: 0.8;
             }
 
-            /* Tabulator — styling konsisten dengan tema Navy standard Cash Bank */
+            /* ===== Palet mengikuti berkas baku "Laporan Arus Kas" PTPN ===== */
+            :root {
+                --cf-navy: #1E3A5F;
+                --cf-section: #A9D18E;
+                --cf-subsection: #E2F0D9;
+                --cf-group: #F3F8EF;
+                --cf-subtotal: #C5E0B4;
+                --cf-total: #548135;
+                --cf-garis: #C9D4DF;
+            }
+
+            /* ── Kop laporan ── */
+            .cf-kop {
+                text-align: center;
+                border-bottom: 3px double var(--cf-navy);
+                padding-bottom: 10px;
+                margin-bottom: 18px;
+            }
+
+            .cf-kop .cf-perusahaan {
+                font-size: 15px;
+                font-weight: 700;
+                letter-spacing: .12em;
+                color: var(--cf-navy);
+                margin-bottom: 2px;
+            }
+
+            .cf-kop .cf-judul {
+                font-size: 21px;
+                font-weight: 700;
+                color: var(--cf-navy);
+                text-transform: uppercase;
+                letter-spacing: .05em;
+                margin-bottom: 2px;
+            }
+
+            .cf-kop .cf-unit {
+                font-size: 14px;
+                font-weight: 600;
+                color: #37506e;
+            }
+
+            .cf-kop .cf-periode {
+                font-size: 12px;
+                color: #6B7280;
+                font-style: italic;
+            }
+
+            /* ── Kartu ringkasan ── */
+            .cf-kartu {
+                border: 1px solid var(--cf-garis);
+                border-left: 5px solid var(--cf-navy);
+                border-radius: 4px;
+                background: #fff;
+                padding: 12px 14px;
+                height: 100%;
+            }
+
+            .cf-kartu.masuk { border-left-color: #1E7E34; }
+            .cf-kartu.keluar { border-left-color: #C82333; }
+            .cf-kartu.bersih { border-left-color: var(--cf-total); }
+
+            .cf-kartu .cf-kartu-label {
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: .08em;
+                text-transform: uppercase;
+                color: #6B7280;
+            }
+
+            .cf-kartu .cf-kartu-nilai {
+                font-size: 20px;
+                font-weight: 700;
+                line-height: 1.25;
+                color: var(--cf-navy);
+            }
+
+            .cf-kartu.masuk .cf-kartu-nilai { color: #1E7E34; }
+            .cf-kartu.keluar .cf-kartu-nilai { color: #C82333; }
+
+            .cf-kartu .cf-kartu-banding {
+                font-size: 11px;
+                color: #6B7280;
+                border-top: 1px dashed var(--cf-garis);
+                margin-top: 6px;
+                padding-top: 5px;
+            }
+
+            /* ── Tabulator: kepala tabel tema Navy standar Cash Bank ── */
             #tableCashFlow .tabulator-header,
             #tableCashFlow .tabulator-header .tabulator-col {
-                background-color: #1E3A5F !important;
+                background-color: var(--cf-navy) !important;
                 color: #fff !important;
-                border-color: rgba(255, 255, 255, 0.25) !important;
+                border-color: rgba(255, 255, 255, .25) !important;
             }
 
             #tableCashFlow .tabulator-header .tabulator-col .tabulator-col-title {
@@ -24,23 +112,126 @@
                 text-align: center;
             }
 
-            /* Garis pemisah kolom header: putih & tebal */
             #tableCashFlow .tabulator-header .tabulator-col {
-                border-right: 2px solid rgba(255, 255, 255, 0.9) !important;
-            }
-
-            #tableCashFlow .tabulator-row.tabulator-row-even {
-                background-color: #F5F8FB;
+                border-right: 2px solid rgba(255, 255, 255, .9) !important;
             }
 
             #tableCashFlow .tabulator-cell {
                 white-space: normal;
                 overflow-wrap: break-word;
-                border-right: 1px solid #C9D4DF !important;
+                border-right: 1px solid var(--cf-garis) !important;
+                padding-top: 5px;
+                padding-bottom: 5px;
             }
 
             #tableCashFlow .tabulator-row {
-                border-bottom: 1px solid #C9D4DF !important;
+                border-bottom: 1px solid var(--cf-garis) !important;
+            }
+
+            /* ── Pewarnaan baris menurut jenjang laporan ── */
+            #tableCashFlow .tabulator-row.cf-section .tabulator-cell {
+                background: var(--cf-section) !important;
+                font-weight: 700;
+                color: #21351A;
+                letter-spacing: .03em;
+            }
+
+            #tableCashFlow .tabulator-row.cf-subsection .tabulator-cell {
+                background: var(--cf-subsection) !important;
+                font-weight: 700;
+                color: #33502A;
+            }
+
+            #tableCashFlow .tabulator-row.cf-group .tabulator-cell {
+                background: var(--cf-group) !important;
+                font-weight: 600;
+                color: #2B3A4A;
+            }
+
+            #tableCashFlow .tabulator-row.cf-detail .tabulator-cell {
+                background: #fff !important;
+            }
+
+            #tableCashFlow .tabulator-row.cf-plain .tabulator-cell {
+                background: #FBFCFD !important;
+            }
+
+            #tableCashFlow .tabulator-row.cf-subtotal .tabulator-cell {
+                background: var(--cf-subtotal) !important;
+                font-weight: 700;
+                color: #22331A;
+            }
+
+            #tableCashFlow .tabulator-row.cf-total .tabulator-cell {
+                background: var(--cf-total) !important;
+                color: #fff !important;
+                font-weight: 700;
+                letter-spacing: .03em;
+            }
+
+            #tableCashFlow .tabulator-row.cf-net .tabulator-cell {
+                background: #375623 !important;
+                color: #fff !important;
+                font-weight: 700;
+            }
+
+            #tableCashFlow .tabulator-row.cf-closing .tabulator-cell {
+                background: var(--cf-navy) !important;
+                color: #fff !important;
+                font-weight: 700;
+                border-top: 2px solid #fff !important;
+            }
+
+            /* Baris antar-bagian: pemisah tipis tanpa isi */
+            #tableCashFlow .tabulator-row.cf-spacer .tabulator-cell {
+                background: #EEF2F6 !important;
+                padding-top: 2px !important;
+                padding-bottom: 2px !important;
+                border-right-color: #EEF2F6 !important;
+            }
+
+            /* Hover hanya untuk baris data agar blok warna tidak "berkedip" */
+            #tableCashFlow .tabulator-row.cf-detail:hover .tabulator-cell,
+            #tableCashFlow .tabulator-row.cf-plain:hover .tabulator-cell {
+                background: #EAF2FB !important;
+            }
+
+            /* ── Angka: gaya SAP, tanda minus di belakang seperti berkas Excel ── */
+            .cf-angka { font-variant-numeric: tabular-nums; }
+            .cf-negatif { color: #C82333; }
+            .cf-nol { color: #B7C0CA; }
+
+            #tableCashFlow .tabulator-row.cf-total .cf-negatif,
+            #tableCashFlow .tabulator-row.cf-net .cf-negatif,
+            #tableCashFlow .tabulator-row.cf-closing .cf-negatif { color: #FFD5D5; }
+
+            #tableCashFlow .tabulator-row.cf-total .cf-nol,
+            #tableCashFlow .tabulator-row.cf-net .cf-nol,
+            #tableCashFlow .tabulator-row.cf-closing .cf-nol { color: rgba(255, 255, 255, .6); }
+
+            /* Indentasi uraian mengikuti kedalaman jenjang */
+            .cf-indent { padding-left: 20px; display: inline-block; }
+            .cf-kode { font-family: "Consolas", "Courier New", monospace; font-size: 11px; }
+
+            /* Keterangan warna di bawah tabel */
+            .cf-legenda span {
+                display: inline-block;
+                margin-right: 14px;
+                font-size: 11px;
+                color: #55606B;
+            }
+
+            .cf-legenda i {
+                display: inline-block;
+                width: 11px;
+                height: 11px;
+                border: 1px solid var(--cf-garis);
+                margin-right: 4px;
+                vertical-align: -1px;
+            }
+
+            @media print {
+                .cf-no-print { display: none !important; }
             }
         </style>
     @endpush
@@ -67,43 +258,93 @@
                 <div class="col-12">
                     <div class="invoice p-3 mb-3">
 
-                        <!-- Header -->
+                        {{-- Kop laporan, meniru berkas baku Laporan Arus Kas --}}
+                        @php
+                            $namaBulan = [
+                                '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
+                                '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
+                                '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                            ];
+                            $labelPeriode = $selectedBulan !== ''
+                                ? ($namaBulan[str_pad($selectedBulan, 2, '0', STR_PAD_LEFT)] ?? $selectedBulan) . ' ' . $selectedYear
+                                : 'Tahun ' . $selectedYear;
+                        @endphp
+
+                        <div class="cf-kop">
+                            <div class="cf-perusahaan">PT PERKEBUNAN NUSANTARA IV &mdash; REGIONAL V</div>
+                            <div class="cf-judul">Laporan Arus Kas</div>
+                            <div class="cf-unit">{{ $va->nama_tujuan }}</div>
+                            <div class="cf-periode">Periode {{ $labelPeriode }} &nbsp;&middot;&nbsp; pembanding Tahun {{ $prevYear }}</div>
+                        </div>
+
+                        {{-- Kartu ringkasan --}}
                         <div class="row mb-3">
-                            <div class="col-12">
-                                <h4>
-                                    <i class="fas fa-money-bill-wave"></i>
-                                    Cash Flow — {{ $va->nama_tujuan }}
-                                </h4>
-                                <p class="text-muted mb-0">Laporan Cash Flow Realisasi per Reference Key</p>
+                            <div class="col-md-4 mb-2">
+                                <div class="cf-kartu masuk">
+                                    <div class="cf-kartu-label">Total Penerimaan</div>
+                                    <div class="cf-kartu-nilai" id="kartuPenerimaan">-</div>
+                                    <div class="cf-kartu-banding">{{ $prevYear }}: <span id="kartuPenerimaanLalu">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="cf-kartu keluar">
+                                    <div class="cf-kartu-label">Total Pengeluaran</div>
+                                    <div class="cf-kartu-nilai" id="kartuPengeluaran">-</div>
+                                    <div class="cf-kartu-banding">{{ $prevYear }}: <span id="kartuPengeluaranLalu">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="cf-kartu bersih">
+                                    <div class="cf-kartu-label">Kenaikan (Penurunan) Arus Kas Bersih</div>
+                                    <div class="cf-kartu-nilai" id="kartuBersih">-</div>
+                                    <div class="cf-kartu-banding">{{ $prevYear }}: <span id="kartuBersihLalu">-</span></div>
+                                </div>
                             </div>
                         </div>
 
-                        <hr>
-
-                        <!-- Filter Dropdown: Bulan dan Tahun -->
-                        <div class="row mb-3">
+                        {{-- Penyaring: bulan, tahun, kelengkapan akun --}}
+                        <div class="row mb-3 cf-no-print">
                             <div class="col-12 d-flex align-items-center flex-wrap">
                                 <label for="filterBulan" class="mr-2 mb-0 font-weight-bold">Bulan</label>
                                 <select id="filterBulan" class="form-control form-control-sm mr-3" style="width: 140px;">
                                     <option value="">Semua</option>
-                                    @foreach (['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'] as $val => $nama)
+                                    @foreach ($namaBulan as $val => $nama)
                                         <option value="{{ $val }}" {{ $selectedBulan == $val ? 'selected' : '' }}>{{ $nama }}</option>
                                     @endforeach
                                 </select>
 
                                 <label for="filterTahun" class="mr-2 mb-0 font-weight-bold">Tahun</label>
-                                <select id="filterTahun" class="form-control form-control-sm" style="width: 120px;">
+                                <select id="filterTahun" class="form-control form-control-sm mr-3" style="width: 120px;">
                                     @foreach ($years as $y)
                                         <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>{{ $y }}</option>
                                     @endforeach
                                 </select>
+
+                                <div class="custom-control custom-checkbox mr-3">
+                                    <input type="checkbox" class="custom-control-input" id="filterSemua" {{ $showEmpty ? 'checked' : '' }}>
+                                    <label class="custom-control-label" for="filterSemua">Tampilkan semua akun</label>
+                                </div>
+
+                                <button type="button" id="btnCetak" class="btn btn-sm btn-outline-secondary ml-auto">
+                                    <i class="fas fa-print mr-1"></i> Cetak
+                                </button>
                             </div>
                         </div>
 
-                        <!-- Wadah Tabel Tabulator -->
+                        {{-- Wadah tabel Tabulator --}}
                         <div class="row">
                             <div class="col-12">
                                 <div id="tableCashFlow" style="min-height: 250px;"></div>
+
+                                <div class="cf-legenda mt-2">
+                                    <span><i style="background:#A9D18E"></i> Bagian</span>
+                                    <span><i style="background:#E2F0D9"></i> Sub-bagian</span>
+                                    <span><i style="background:#F3F8EF"></i> Kelompok kode</span>
+                                    <span><i style="background:#C5E0B4"></i> Total sub-bagian</span>
+                                    <span><i style="background:#548135"></i> Jumlah bagian</span>
+                                    <span><i style="background:#1E3A5F"></i> Pergerakan kas bersih</span>
+                                    <span class="text-muted"><em>Nilai negatif ditandai minus di belakang angka (mis. 1.234-), mengikuti format baku.</em></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -116,23 +357,57 @@
         <script src="{{ asset('plugins/tabulator/tabulator.min.js') }}"></script>
         <script>
             $(document).ready(function () {
-                var selectedYear = parseInt($('#filterTahun').val()) || new Date().getFullYear();
-                var prevYear = selectedYear - 1;
-                var tableData = @json($cashflowData);
+                var selectedYear = {{ $selectedYear }};
+                var prevYear = {{ $prevYear }};
+                var tableData = @json($reportRows);
+                var summary = @json($summary);
 
-                function formatRupiah(cell) {
-                    var val = cell.getValue();
-                    if (val === null || val === undefined || val === '') return '-';
+                // Format baku laporan: pemisah ribuan titik, minus di BELAKANG angka,
+                // nilai nol ditulis sebagai tanda hubung agar tabel tidak penuh "0".
+                function tulisAngka(val) {
                     var num = Number(val);
-                    if (isNaN(num) || num === 0) return '-';
-                    var formatted = Math.abs(num).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-                    return num < 0 ? '(' + formatted + ')' : formatted;
+                    if (!isFinite(num) || num === 0) return '<span class="cf-nol">-</span>';
+                    var teks = Math.abs(num).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    return num < 0
+                        ? '<span class="cf-negatif">' + teks + '-</span>'
+                        : teks;
                 }
+
+                function formatAngka(cell) {
+                    return '<span class="cf-angka">' + tulisAngka(cell.getValue()) + '</span>';
+                }
+
+                function escapeHtml(text) {
+                    return $('<div>').text(text === null || text === undefined ? '' : text).html();
+                }
+
+                // Uraian baris detail diberi indentasi supaya jenjang terbaca.
+                function formatUraian(cell) {
+                    var data = cell.getRow().getData();
+                    var teks = escapeHtml(cell.getValue());
+                    if (data.type === 'spacer') return '';
+                    if (data.type === 'detail') return '<span class="cf-indent">' + teks + '</span>';
+                    return teks;
+                }
+
+                function formatKode(cell) {
+                    var data = cell.getRow().getData();
+                    if (data.type === 'spacer') return '';
+                    var nilai = cell.getValue();
+                    return nilai ? '<span class="cf-kode">' + escapeHtml(nilai) + '</span>' : '';
+                }
+
+                // Kartu ringkasan memakai format angka yang sama dengan tabel.
+                $('#kartuPenerimaan').html(tulisAngka(summary.penerimaan));
+                $('#kartuPenerimaanLalu').html(tulisAngka(summary.penerimaan_lalu));
+                $('#kartuPengeluaran').html(tulisAngka(summary.pengeluaran));
+                $('#kartuPengeluaranLalu').html(tulisAngka(summary.pengeluaran_lalu));
+                $('#kartuBersih').html(tulisAngka(summary.bersih));
+                $('#kartuBersihLalu').html(tulisAngka(summary.bersih_lalu));
 
                 // Cek apakah user pernah mengubah lebar kolom (tersimpan di localStorage)
                 var userSized = !!localStorage.getItem('tabulator-cb-va-cashflow-columns');
 
-                // Inisialisasi Tabel Tabulator dengan persistensi lebar kolom & tanpa arrow sort
                 var table = new Tabulator("#tableCashFlow", {
                     persistence: { columns: ['width'] },
                     persistenceID: 'cb-va-cashflow',
@@ -143,62 +418,78 @@
                     columnDefaults: { headerSort: false, minWidth: 30, variableHeight: true },
                     renderVertical: 'basic',
                     placeholder: "<div class='py-4 text-muted'><i class='fas fa-info-circle mr-1'></i> Belum ada data Cash Flow untuk periode ini.</div>",
+                    // Warna & tebal huruf tiap baris ditentukan jenjangnya (type).
+                    rowFormatter: function (row) {
+                        row.getElement().classList.add('cf-' + row.getData().type);
+                    },
                     columns: [
                         {
-                            title: "Reference Key",
-                            field: "reference_key",
-                            width: 180,
+                            title: "Kode",
+                            field: "kode",
+                            width: 86,
                             hozAlign: "center",
                             headerHozAlign: "center",
-                            headerSort: false
+                            formatter: formatKode
+                        },
+                        {
+                            title: "Reference",
+                            field: "reference",
+                            width: 104,
+                            hozAlign: "center",
+                            headerHozAlign: "center",
+                            formatter: formatKode
                         },
                         {
                             title: "Uraian",
                             field: "uraian",
-                            minWidth: 300,
+                            minWidth: 320,
                             widthGrow: 3,
                             hozAlign: "left",
                             headerHozAlign: "center",
-                            headerSort: false
+                            formatter: formatUraian
                         },
                         {
                             title: "Realisasi " + selectedYear,
-                            field: "realisasi_tahun",
-                            width: 180,
+                            field: "current",
+                            width: 190,
                             hozAlign: "right",
                             headerHozAlign: "center",
-                            formatter: formatRupiah,
-                            headerSort: false
+                            formatter: formatAngka
                         },
                         {
                             title: "Realisasi " + prevYear,
-                            field: "realisasi_tahun_lalu",
-                            width: 180,
+                            field: "previous",
+                            width: 190,
                             hozAlign: "right",
                             headerHozAlign: "center",
-                            formatter: formatRupiah,
-                            headerSort: false
+                            formatter: formatAngka
                         }
                     ]
                 });
 
-                // Perubahan filter Bulan / Tahun -> reload halaman dengan parameter query
+                // Perubahan penyaring -> muat ulang halaman dengan parameter query
                 function applyFilter() {
-                    var yr = $('#filterTahun').val();
-                    var bln = $('#filterBulan').val();
                     var url = new URL(window.location.href);
-                    url.searchParams.set('tahun', yr);
-                    if (bln) {
-                        url.searchParams.set('bulan', bln);
+                    url.searchParams.set('tahun', $('#filterTahun').val());
+
+                    var bulan = $('#filterBulan').val();
+                    if (bulan) {
+                        url.searchParams.set('bulan', bulan);
                     } else {
                         url.searchParams.delete('bulan');
                     }
+
+                    if ($('#filterSemua').is(':checked')) {
+                        url.searchParams.set('semua', 1);
+                    } else {
+                        url.searchParams.delete('semua');
+                    }
+
                     window.location.href = url.toString();
                 }
 
-                $('#filterTahun, #filterBulan').on('change', function () {
-                    applyFilter();
-                });
+                $('#filterTahun, #filterBulan, #filterSemua').on('change', applyFilter);
+                $('#btnCetak').on('click', function () { window.print(); });
             });
         </script>
     @endpush

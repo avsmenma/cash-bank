@@ -664,9 +664,9 @@
 
                         <!-- DAFTAR BANK -->
                         <li
-                            class="nav-item {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'daftarBank.*') ? 'menu-open menu-is-opening' : '' }}">
+                            class="nav-item {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'daftarBank.*', 'bank-cashflow.*') ? 'menu-open menu-is-opening' : '' }}">
                             <a href="#"
-                                class="nav-link {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'daftarBank.*') ? 'active' : '' }}">
+                                class="nav-link {{ request()->routeIs('bank-masuk.*', 'bank-keluar.*', 'daftarBank.*', 'bank-cashflow.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-university"></i>
                                 <p>
                                     Transaksi Bank
@@ -697,6 +697,12 @@
                                     <a href="{{ route('bank-keluar.report') }}"
                                         class="nav-link {{ request()->routeIs('bank-keluar.report') ? 'active' : '' }}">
                                         <p>Rekening Koran</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('bank-cashflow.index') }}"
+                                        class="nav-link {{ request()->routeIs('bank-cashflow.*') ? 'active' : '' }}">
+                                        <p>Cash Flow</p>
                                     </a>
                                 </li>
                             </ul>

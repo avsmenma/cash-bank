@@ -111,7 +111,7 @@
                     <div class="invoice p-3 mb-3">
 
                         {{-- Kop laporan, memakai komponen yang sama dengan halaman Cash Flow --}}
-                        @include('cash_bank.va.partials.kop-laporan', [
+                        @include('cash_bank.partials.kop-laporan', [
                             'judul' => 'Detail Transaksi Virtual Account',
                             'unit' => $va->nama_tujuan,
                             'periode' => 'Buku Pembantu (Ledger) — Gabungan Bank Masuk & Bank Keluar · Periode Semua',

@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserSAPController;
 use App\Http\Controllers\DroppingController;
 use App\Http\Controllers\PenerimaController;
+use App\Http\Controllers\BankCashflowController;
 use App\Http\Controllers\BankMasukController;
 use App\Http\Controllers\DaftarSPPController;
 use App\Http\Controllers\DashboardController;
@@ -31,6 +32,10 @@ Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth');
 
 Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
+    // Laporan Arus Kas seluruh unit (submenu Transaksi Bank)
+    Route::get('/bank-cashflow', [BankCashflowController::class, 'index'])
+        ->name('bank-cashflow.index');
+
     Route::get('/dashboard-cash-bank', [dashboardController::class, 'index'])
         ->name('dashboard.index');
     Route::get('/dashboard-cash-bank/data2', [dashboardController::class, 'data2'])

@@ -153,6 +153,14 @@
                 border-top: 2px solid #fff !important;
             }
 
+            /* Baris jenjang memakai sel gabungan (Kode+Reference+Uraian), jadi
+               kedalamannya ditandai lewat indentasi: bagian menempel di tepi kiri,
+               sub-bagian dan totalnya menjorok sedikit ke dalam. */
+            #tableCashFlow .tabulator-row.cf-subsection .tabulator-cell[tabulator-field="uraian"],
+            #tableCashFlow .tabulator-row.cf-subtotal .tabulator-cell[tabulator-field="uraian"] {
+                padding-left: 24px;
+            }
+
             /* Baris antar-bagian: pemisah tipis tanpa isi */
             #tableCashFlow .tabulator-row.cf-spacer .tabulator-cell {
                 background: #EEF2F6 !important;
@@ -404,6 +412,47 @@
                         }
                     ]
                 });
+
+                // Baris jenjang (bagian, sub-bagian, total, jumlah) tidak memakai
+                // kolom Kode & Reference. Ketiga kolom kiri digabung jadi satu sel
+                // supaya judulnya mulai dari tepi kiri tabel dan susunan laporan
+                // terbaca rapi. Tabulator tidak punya colspan bawaan, jadi caranya:
+                // sembunyikan dua sel pertama lalu alihkan lebarnya ke sel Uraian
+                // — pola yang sama dipakai baris TOTAL di halaman Virtual Account.
+                var MERGE_TYPES = ['section', 'subsection', 'subtotal', 'total', 'net', 'closing', 'spacer'];
+                var MERGE_FIELDS = ['kode', 'reference', 'uraian'];
+
+                function gabungSelJudul() {
+                    var lebar = 0;
+                    MERGE_FIELDS.forEach(function (f) {
+                        var col = table.getColumn(f);
+                        if (col) lebar += col.getWidth();
+                    });
+                    if (!lebar) return;
+
+                    document.querySelectorAll('#tableCashFlow .tabulator-row').forEach(function (rowEl) {
+                        var perluGabung = MERGE_TYPES.some(function (t) {
+                            return rowEl.classList.contains('cf-' + t);
+                        });
+                        if (!perluGabung) return;
+
+                        var selUraian = null;
+                        rowEl.querySelectorAll('.tabulator-cell').forEach(function (sel) {
+                            var f = sel.getAttribute('tabulator-field');
+                            if (MERGE_FIELDS.indexOf(f) === -1) return;
+                            if (f === 'uraian') selUraian = sel;
+                            else sel.style.display = 'none';
+                        });
+
+                        if (selUraian) {
+                            selUraian.style.width = lebar + 'px';
+                            selUraian.style.maxWidth = lebar + 'px';
+                        }
+                    });
+                }
+
+                table.on('renderComplete', gabungSelJudul);
+                table.on('columnResized', function () { setTimeout(gabungSelJudul, 0); });
 
                 // Perubahan penyaring -> muat ulang halaman dengan parameter query
                 function applyFilter() {

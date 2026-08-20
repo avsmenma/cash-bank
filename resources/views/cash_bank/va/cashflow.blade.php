@@ -359,6 +359,7 @@
                 var bulanAktif = @json((string) $selectedBulan);
                 var namaBulan = @json($namaBulan);
                 var tabelRincian = null;
+                var siapRincian = null; // Promise: tabel rincian selesai dibangun
 
                 // Sebuah angka bisa dirinci bila baris membawa cakupan reference key
                 // dan nilainya tidak nol — mengklik nol tidak akan menghasilkan apa pun.
@@ -367,55 +368,67 @@
                     return Number(field === 'current' ? data.current : data.previous) !== 0;
                 }
 
+                // Tabulator baru boleh menerima setData/redraw SETELAH selesai
+                // dibangun; memanggilnya lebih awal melempar error internal
+                // (verticalFillMode null). Karena itu pembangunannya dibungkus
+                // Promise dan semua pemakaian menunggu promise tersebut.
+                // Tabulator baru boleh menerima setData/redraw SETELAH selesai
+                // dibangun; memanggilnya lebih awal melempar error internal
+                // (verticalFillMode null). Karena itu pembangunannya dibungkus
+                // Promise dan semua pemakaian menunggu promise tersebut.
                 function siapkanTabelRincian() {
-                    if (tabelRincian) return tabelRincian;
+                    if (siapRincian) return siapRincian;
 
-                    tabelRincian = new Tabulator("#tabelRincian", {
-                        data: [],
-                        layout: 'fitColumns',
-                        height: '52vh',
-                        columnHeaderVertAlign: 'middle',
-                        columnDefaults: { headerSort: true, minWidth: 60, variableHeight: true },
-                        placeholder: "<div class='py-4 text-muted'>Tidak ada transaksi pada cakupan ini.</div>",
-                        columns: [
-                            {
-                                title: "Tanggal", field: "tanggal", width: 95, hozAlign: "center",
-                                headerHozAlign: "center",
-                                formatter: function (cell) {
-                                    var v = cell.getValue();
-                                    if (!v) return '<span class="cf-nol">-</span>';
-                                    var p = String(v).split('-');
-                                    return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : escapeHtml(v);
+                    siapRincian = new Promise(function (resolve) {
+                        tabelRincian = new Tabulator("#tabelRincian", {
+                            data: [],
+                            layout: 'fitColumns',
+                            height: '52vh',
+                            columnHeaderVertAlign: 'middle',
+                            columnDefaults: { headerSort: true, minWidth: 60, variableHeight: true },
+                            placeholder: "<div class='py-4 text-muted'>Tidak ada transaksi pada cakupan ini.</div>",
+                            columns: [
+                                {
+                                    title: "Tanggal", field: "tanggal", width: 95, hozAlign: "center",
+                                    headerHozAlign: "center",
+                                    formatter: function (cell) {
+                                        var v = cell.getValue();
+                                        if (!v) return '<span class="cf-nol">-</span>';
+                                        var p = String(v).split('-');
+                                        return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : escapeHtml(v);
+                                    }
+                                },
+                                {
+                                    title: "No. Dokumen", field: "dokumen", width: 115, hozAlign: "center",
+                                    headerHozAlign: "center",
+                                    formatter: function (cell) {
+                                        return '<span class="cf-kode">' + escapeHtml(cell.getValue()) + '</span>';
+                                    }
+                                },
+                                {
+                                    title: "Reference", field: "reference", width: 100, hozAlign: "center",
+                                    headerHozAlign: "center",
+                                    formatter: function (cell) {
+                                        return '<span class="cf-kode">' + escapeHtml(cell.getValue()) + '</span>';
+                                    }
+                                },
+                                { title: "Uraian", field: "uraian", minWidth: 200, widthGrow: 2, headerHozAlign: "center" },
+                                { title: "Keterangan", field: "keterangan", minWidth: 200, widthGrow: 3, headerHozAlign: "center" },
+                                { title: "Akun Lawan", field: "lawan", minWidth: 150, widthGrow: 2, headerHozAlign: "center" },
+                                {
+                                    title: "Nominal", field: "amount", width: 150, hozAlign: "right",
+                                    headerHozAlign: "center",
+                                    formatter: function (cell) {
+                                        return '<span class="cf-angka">' + tulisAngka(cell.getValue()) + '</span>';
+                                    }
                                 }
-                            },
-                            {
-                                title: "No. Dokumen", field: "dokumen", width: 115, hozAlign: "center",
-                                headerHozAlign: "center",
-                                formatter: function (cell) {
-                                    return '<span class="cf-kode">' + escapeHtml(cell.getValue()) + '</span>';
-                                }
-                            },
-                            {
-                                title: "Reference", field: "reference", width: 100, hozAlign: "center",
-                                headerHozAlign: "center",
-                                formatter: function (cell) {
-                                    return '<span class="cf-kode">' + escapeHtml(cell.getValue()) + '</span>';
-                                }
-                            },
-                            { title: "Uraian", field: "uraian", minWidth: 200, widthGrow: 2, headerHozAlign: "center" },
-                            { title: "Keterangan", field: "keterangan", minWidth: 200, widthGrow: 3, headerHozAlign: "center" },
-                            { title: "Akun Lawan", field: "lawan", minWidth: 150, widthGrow: 2, headerHozAlign: "center" },
-                            {
-                                title: "Nominal", field: "amount", width: 150, hozAlign: "right",
-                                headerHozAlign: "center",
-                                formatter: function (cell) {
-                                    return '<span class="cf-angka">' + tulisAngka(cell.getValue()) + '</span>';
-                                }
-                            }
-                        ]
+                            ]
+                        });
+
+                        tabelRincian.on("tableBuilt", function () { resolve(tabelRincian); });
                     });
 
-                    return tabelRincian;
+                    return siapRincian;
                 }
 
                 function bukaRincian(cell) {
@@ -440,48 +453,49 @@
 
                     $('#modalRincian').modal('show');
 
-                    var tabel = siapkanTabelRincian();
-                    tabel.clearData();
-
                     var params = new URLSearchParams();
                     params.set('tahun', tahun);
                     if (bulanAktif) params.set('bulan', bulanAktif);
                     data.scope.forEach(function (s) { params.append('scope[]', s); });
 
-                    $.getJSON(URL_RINCIAN + '?' + params.toString())
-                        .done(function (res) {
-                            tabel.setData(res.rows || []);
+                    siapkanTabelRincian().then(function (tabel) {
+                        tabel.setData([]);
 
-                            $('#rincianJumlahBaris').text(
-                                (res.jumlah || 0).toLocaleString('id-ID') + ' transaksi'
-                            );
+                        $.getJSON(URL_RINCIAN + '?' + params.toString())
+                            .done(function (res) {
+                                tabel.setData(res.rows || []);
 
-                            // Total dari server dihitung atas SELURUH transaksi yang
-                            // cocok, jadi harus sama dengan angka yang diklik. Selisih
-                            // apa pun berarti ada yang salah dan wajib diberitahukan.
-                            if (Math.abs(Number(res.total) - Number(nilai)) > 0.5) {
-                                $('#rincianPesan')
-                                    .removeClass('d-none')
-                                    .html('<b>Perhatian:</b> jumlah rincian (' + tulisAngka(res.total)
-                                        + ') tidak sama dengan angka pada tabel (' + tulisAngka(nilai) + ').');
-                            } else if (res.terpotong) {
-                                $('#rincianPesan')
-                                    .removeClass('d-none')
-                                    .text('Menampilkan ' + res.batas + ' transaksi pertama dari '
-                                        + res.jumlah + '. Jumlah di atas tetap dihitung dari seluruh transaksi.');
-                            }
-                        })
-                        .fail(function () {
-                            $('#rincianJumlahBaris').text('-');
-                            $('#rincianPesan').removeClass('d-none')
-                                .text('Gagal memuat rincian. Coba ulangi beberapa saat lagi.');
-                        });
+                                $('#rincianJumlahBaris').text(
+                                    (res.jumlah || 0).toLocaleString('id-ID') + ' transaksi'
+                                );
+
+                                // Total dari server dihitung atas SELURUH transaksi yang
+                                // cocok, jadi harus sama dengan angka yang diklik. Selisih
+                                // apa pun berarti ada yang salah dan wajib diberitahukan.
+                                if (Math.abs(Number(res.total) - Number(nilai)) > 0.5) {
+                                    $('#rincianPesan')
+                                        .removeClass('d-none')
+                                        .html('<b>Perhatian:</b> jumlah rincian (' + tulisAngka(res.total)
+                                            + ') tidak sama dengan angka pada tabel (' + tulisAngka(nilai) + ').');
+                                } else if (res.terpotong) {
+                                    $('#rincianPesan')
+                                        .removeClass('d-none')
+                                        .text('Menampilkan ' + res.batas + ' transaksi pertama dari '
+                                            + res.jumlah + '. Jumlah di atas tetap dihitung dari seluruh transaksi.');
+                                }
+                            })
+                            .fail(function () {
+                                $('#rincianJumlahBaris').text('-');
+                                $('#rincianPesan').removeClass('d-none')
+                                    .text('Gagal memuat rincian. Coba ulangi beberapa saat lagi.');
+                            });
+                    });
                 }
 
                 // Tabulator menghitung lebar kolom saat modal masih tersembunyi
                 // (lebar 0). Hitung ulang setelah modal benar-benar tampil.
                 $('#modalRincian').on('shown.bs.modal', function () {
-                    if (tabelRincian) tabelRincian.redraw(true);
+                    if (siapRincian) siapRincian.then(function (tabel) { tabel.redraw(true); });
                 });
 
                 // Perubahan penyaring -> muat ulang halaman dengan parameter query

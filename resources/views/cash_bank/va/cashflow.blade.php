@@ -213,23 +213,6 @@
             .cf-indent { padding-left: 20px; display: inline-block; }
             .cf-kode { font-family: "Consolas", "Courier New", monospace; font-size: 11px; }
 
-            /* Keterangan warna di bawah tabel */
-            .cf-legenda span {
-                display: inline-block;
-                margin-right: 14px;
-                font-size: 11px;
-                color: #55606B;
-            }
-
-            .cf-legenda i {
-                display: inline-block;
-                width: 11px;
-                height: 11px;
-                border: 1px solid var(--cf-garis);
-                margin-right: 4px;
-                vertical-align: -1px;
-            }
-
             @media print {
                 .cf-no-print { display: none !important; }
             }
@@ -335,16 +318,6 @@
                         <div class="row">
                             <div class="col-12">
                                 <div id="tableCashFlow" style="min-height: 250px;"></div>
-
-                                <div class="cf-legenda mt-2">
-                                    <span><i style="background:#A9D18E"></i> Bagian</span>
-                                    <span><i style="background:#E2F0D9"></i> Sub-bagian</span>
-                                    <span><i style="background:#F3F8EF"></i> Kelompok kode</span>
-                                    <span><i style="background:#C5E0B4"></i> Total sub-bagian</span>
-                                    <span><i style="background:#548135"></i> Jumlah bagian</span>
-                                    <span><i style="background:#1E3A5F"></i> Pergerakan kas bersih</span>
-                                    <span class="text-muted"><em>Nilai negatif ditandai minus di belakang angka (mis. 1.234-), mengikuti format baku.</em></span>
-                                </div>
                             </div>
                         </div>
                     </div>

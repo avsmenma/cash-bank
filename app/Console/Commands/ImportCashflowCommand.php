@@ -13,7 +13,11 @@ class ImportCashflowCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'cashflow:import {--reff= : Path ke file Standarisasi Reffkey} {--cf= : Path ke file Cashflow.xlsx} {--truncate : Kosongkan tabel sebelum import}';
+    protected $signature = 'cashflow:import
+                            {--reff= : Path ke file Standarisasi Reffkey}
+                            {--cf= : Path ke file Cashflow.xlsx}
+                            {--truncate : Kosongkan tabel cashflows sebelum import}
+                            {--append : Tambahkan ke data yang sudah ada (sadar risiko duplikat)}';
 
     /**
      * The console command description.
@@ -43,6 +47,17 @@ class ImportCashflowCommand extends Command
 
         $this->info("Memulai import Transaksi Cashflow dari: {$cfPath}");
         if (file_exists($cfPath)) {
+            // Impor transaksi bersifat INSERT murni (tanpa kunci unik), jadi
+            // menjalankannya dua kali akan menggandakan seluruh nilai realisasi.
+            // Karena itu bila tabel sudah berisi data, pilihan harus eksplisit.
+            $sudahAda = Cashflow::count();
+            if ($sudahAda > 0 && !$this->option('truncate') && !$this->option('append')) {
+                $this->error("Tabel cashflows sudah berisi {$sudahAda} baris.");
+                $this->line('Jalankan ulang dengan --truncate (ganti total) atau --append (sengaja menambah).');
+
+                return Command::FAILURE;
+            }
+
             if ($this->option('truncate')) {
                 $this->warn("Mengosongkan tabel cashflows...");
                 Cashflow::truncate();

@@ -405,28 +405,35 @@
                 $('#kartuBersih').html(tulisAngka(summary.bersih));
                 $('#kartuBersihLalu').html(tulisAngka(summary.bersih_lalu));
 
-                // Cek apakah user pernah mengubah lebar kolom (tersimpan di localStorage)
-                var userSized = !!localStorage.getItem('tabulator-cb-va-cashflow-columns');
+                // Buang lebar kolom simpanan versi lama. Persistence lebar sengaja
+                // TIDAK dipakai di halaman ini: Tabulator menyalin lebar tersimpan
+                // ke definisi setiap kolom, dan pada layout fitColumns kolom yang
+                // punya width dianggap tetap — akibatnya tabel berhenti memenuhi
+                // lebar layar begitu lebar pernah tersimpan sekali saja.
+                try {
+                    localStorage.removeItem('tabulator-cb-va-cashflow-columns');
+                } catch (e) { /* localStorage diblokir browser: abaikan */ }
 
                 var table = new Tabulator("#tableCashFlow", {
-                    persistence: { columns: ['width'] },
-                    persistenceID: 'cb-va-cashflow',
                     data: tableData,
-                    layout: userSized ? 'fitData' : 'fitColumns',
+                    // Selalu penuh selebar wadah; sisa ruang dibagi menurut widthGrow.
+                    layout: 'fitColumns',
                     columnHeaderVertAlign: 'middle',
                     movableColumns: false,
-                    columnDefaults: { headerSort: false, minWidth: 30, variableHeight: true },
+                    columnDefaults: { headerSort: false, resizable: true, minWidth: 30, variableHeight: true },
                     renderVertical: 'basic',
                     placeholder: "<div class='py-4 text-muted'><i class='fas fa-info-circle mr-1'></i> Belum ada data Cash Flow untuk periode ini.</div>",
                     // Warna & tebal huruf tiap baris ditentukan jenjangnya (type).
                     rowFormatter: function (row) {
                         row.getElement().classList.add('cf-' + row.getData().type);
                     },
+                    // Dua kolom kode dibiarkan sempit & tetap; sisa lebar layar
+                    // dibagi ke Uraian (porsi terbesar) dan dua kolom nilai.
                     columns: [
                         {
                             title: "Kode",
                             field: "kode",
-                            width: 86,
+                            width: 90,
                             hozAlign: "center",
                             headerHozAlign: "center",
                             formatter: formatKode
@@ -434,7 +441,7 @@
                         {
                             title: "Reference",
                             field: "reference",
-                            width: 104,
+                            width: 110,
                             hozAlign: "center",
                             headerHozAlign: "center",
                             formatter: formatKode
@@ -443,7 +450,7 @@
                             title: "Uraian",
                             field: "uraian",
                             minWidth: 320,
-                            widthGrow: 3,
+                            widthGrow: 4,
                             hozAlign: "left",
                             headerHozAlign: "center",
                             formatter: formatUraian
@@ -451,7 +458,8 @@
                         {
                             title: "Realisasi " + selectedYear,
                             field: "current",
-                            width: 190,
+                            minWidth: 170,
+                            widthGrow: 1,
                             hozAlign: "right",
                             headerHozAlign: "center",
                             formatter: formatAngka
@@ -459,7 +467,8 @@
                         {
                             title: "Realisasi " + prevYear,
                             field: "previous",
-                            width: 190,
+                            minWidth: 170,
+                            widthGrow: 1,
                             hozAlign: "right",
                             headerHozAlign: "center",
                             formatter: formatAngka

@@ -3,13 +3,19 @@
     @push('styles')
         <link rel="stylesheet" href="{{ asset('plugins/tabulator/tabulator_semanticui.min.css') }}">
         <style>
-            /* Tampilan kompak: setara zoom browser 80%, agar seluruh tabel
-               terlihat dalam satu layar pada web size 100% */
+            /* Tampilan kompak DISETEL LEWAT UKURAN HURUF, bukan `zoom` — sama
+               seperti halaman Cash Flow. `zoom` membuat Tabulator membaca lebar
+               wadah yang sudah terskala lalu menetapkan lebar kolom dalam CSS px,
+               sehingga tabel tidak pernah memenuhi lebar layar. */
             section.content {
-                zoom: 0.8;
+                font-size: 13px;
             }
 
             /* Tabulator — header & baris total navy, zebra, teks wrap */
+            #tableDetailVA {
+                font-size: 12.5px;
+            }
+
             #tableDetailVA .tabulator-header,
             #tableDetailVA .tabulator-header .tabulator-col {
                 background-color: #1E3A5F !important;
@@ -76,8 +82,8 @@
                 background-color: #fff;
                 border: 2px solid #dc3545;
                 font-weight: 600;
-                padding: 5px 14px;
-                font-size: 14px;
+                padding: 4px 12px;
+                font-size: 12px;
                 border-radius: 4px;
                 cursor: pointer;
                 transition: all 0.2s;
@@ -104,18 +110,12 @@
                 <div class="col-12">
                     <div class="invoice p-3 mb-3">
 
-                        <!-- Header -->
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <h4>
-                                    <i class="fas fa-university"></i>
-                                    {{ $va->nama_tujuan }}
-                                </h4>
-                                <p class="text-muted mb-0">Buku Pembantu (Ledger) — Gabungan Bank Masuk & Bank Keluar</p>
-                            </div>
-                        </div>
-
-                        <hr>
+                        {{-- Kop laporan, memakai komponen yang sama dengan halaman Cash Flow --}}
+                        @include('cash_bank.va.partials.kop-laporan', [
+                            'judul' => 'Detail Transaksi Virtual Account',
+                            'unit' => $va->nama_tujuan,
+                            'periode' => 'Buku Pembantu (Ledger) — Gabungan Bank Masuk & Bank Keluar · Periode Semua',
+                        ])
 
                         <div class="row mb-2">
                             <div class="col-12 d-flex align-items-center flex-wrap">
@@ -339,8 +339,31 @@
                 table.on('renderComplete', mergeTotalRow);
                 table.on('columnResized', function () { setTimeout(mergeTotalRow, 0); });
 
+                // Keterangan periode pada kop laporan mengikuti filter yang aktif.
+                var namaBulanKop = {
+                    '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
+                    '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
+                    '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
+                };
+
+                function perbaruiKopPeriode() {
+                    var bulan = $('#filterBulan').val();
+                    var tahun = $('#filterTahun').val();
+                    var periode;
+
+                    if (bulan && tahun) periode = namaBulanKop[bulan] + ' ' + tahun;
+                    else if (bulan) periode = namaBulanKop[bulan] + ' (semua tahun)';
+                    else if (tahun) periode = 'Tahun ' + tahun;
+                    else periode = 'Semua';
+
+                    $('#kopPeriode').text(
+                        'Buku Pembantu (Ledger) — Gabungan Bank Masuk & Bank Keluar · Periode ' + periode
+                    );
+                }
+
                 // Filter Bulan/Tahun + pencarian bebas; baris TOTAL ikut terhitung ulang otomatis
                 function applyFilters() {
+                    perbaruiKopPeriode();
                     table.setFilter(function (data) {
                         var bulan = $('#filterBulan').val();
                         var tahun = $('#filterTahun').val();

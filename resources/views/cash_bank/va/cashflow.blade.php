@@ -24,43 +24,6 @@
                 --cf-garis: #C9D4DF;
             }
 
-            /* ── Kop laporan ── */
-            .cf-kop {
-                text-align: center;
-                border-bottom: 3px double var(--cf-navy);
-                padding-bottom: 10px;
-                margin-bottom: 18px;
-            }
-
-            .cf-kop .cf-perusahaan {
-                font-size: 12px;
-                font-weight: 700;
-                letter-spacing: .12em;
-                color: var(--cf-navy);
-                margin-bottom: 2px;
-            }
-
-            .cf-kop .cf-judul {
-                font-size: 17px;
-                font-weight: 700;
-                color: var(--cf-navy);
-                text-transform: uppercase;
-                letter-spacing: .05em;
-                margin-bottom: 2px;
-            }
-
-            .cf-kop .cf-unit {
-                font-size: 12px;
-                font-weight: 600;
-                color: #37506e;
-            }
-
-            .cf-kop .cf-periode {
-                font-size: 11px;
-                color: #6B7280;
-                font-style: italic;
-            }
-
             /* ── Kartu ringkasan ── */
             .cf-kartu {
                 border: 1px solid var(--cf-garis);
@@ -247,12 +210,11 @@
                                 : 'Tahun ' . $selectedYear;
                         @endphp
 
-                        <div class="cf-kop">
-                            <div class="cf-perusahaan">PT PERKEBUNAN NUSANTARA IV &mdash; REGIONAL V</div>
-                            <div class="cf-judul">Laporan Arus Kas</div>
-                            <div class="cf-unit">{{ $va->nama_tujuan }}</div>
-                            <div class="cf-periode">Periode {{ $labelPeriode }} &nbsp;&middot;&nbsp; pembanding Tahun {{ $prevYear }}</div>
-                        </div>
+                        @include('cash_bank.va.partials.kop-laporan', [
+                            'judul' => 'Laporan Arus Kas',
+                            'unit' => $va->nama_tujuan,
+                            'periode' => 'Periode ' . $labelPeriode . ' · pembanding Tahun ' . $prevYear,
+                        ])
 
                         {{-- Kartu ringkasan --}}
                         <div class="row mb-3">

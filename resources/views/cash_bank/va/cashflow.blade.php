@@ -2,6 +2,52 @@
 @section('content')
     @include('cash_bank.partials.gaya-arus-kas')
 
+    @push('styles')
+        <style>
+            /* Sel angka yang punya isi bisa diklik untuk melihat rinciannya */
+            .cf-tabel .tabulator-cell.cf-klik {
+                cursor: pointer;
+            }
+
+            .cf-tabel .tabulator-cell.cf-klik:hover {
+                outline: 2px solid var(--cf-navy);
+                outline-offset: -2px;
+                background: #E8F1FD !important;
+            }
+
+            .cf-rincian-kop {
+                background: #F3F6FA;
+                border: 1px solid var(--cf-garis);
+                border-radius: 4px;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .cf-rincian-kop .cf-rincian-nilai {
+                font-size: 17px;
+                font-weight: 700;
+                font-variant-numeric: tabular-nums;
+            }
+
+            #tabelRincian {
+                font-size: 12px;
+            }
+
+            #tabelRincian .tabulator-header,
+            #tabelRincian .tabulator-header .tabulator-col {
+                background-color: var(--cf-navy) !important;
+                color: #fff !important;
+            }
+
+            #tabelRincian .tabulator-header .tabulator-col .tabulator-col-title {
+                color: #fff;
+                font-weight: 600;
+                text-align: center;
+                white-space: normal;
+            }
+        </style>
+    @endpush
+
     {{-- Judul halaman & breadcrumb sengaja ditiadakan: identitas laporan sudah
          tertulis pada kop tabel, dan menghapusnya menaikkan posisi tabel. --}}
     <section class="content">
@@ -94,6 +140,43 @@
         </div>
     </section>
 
+    {{-- Modal rincian: transaksi penyusun angka yang diklik --}}
+    <div class="modal fade" id="modalRincian" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #1E3A5F; color: #fff;">
+                    <h5 class="modal-title">
+                        <i class="fas fa-search-dollar mr-1"></i> Rincian Angka
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Tutup">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="cf-rincian-kop mb-2">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap">
+                            <div class="mr-3">
+                                <div class="font-weight-bold" id="rincianUraian">-</div>
+                                <div class="text-muted" id="rincianKeterangan">-</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-muted" style="font-size: 10px; letter-spacing: .08em;">JUMLAH</div>
+                                <div class="cf-rincian-nilai" id="rincianTotal">-</div>
+                                <div class="text-muted" id="rincianJumlahBaris">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="rincianPesan" class="alert alert-warning py-2 px-3 d-none" style="font-size: 12px;"></div>
+                    <div id="tabelRincian"></div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
         <script src="{{ asset('plugins/tabulator/tabulator.min.js') }}"></script>
         <script>
@@ -164,9 +247,20 @@
                     columnDefaults: { headerSort: false, resizable: true, minWidth: 30, variableHeight: true },
                     renderVertical: 'basic',
                     placeholder: "<div class='py-4 text-muted'><i class='fas fa-info-circle mr-1'></i> Belum ada data Cash Flow untuk periode ini.</div>",
-                    // Warna & tebal huruf tiap baris ditentukan jenjangnya (type).
+                    // Warna & tebal huruf tiap baris ditentukan jenjangnya (type),
+                    // sekaligus menandai sel angka yang bisa diklik untuk rincian.
                     rowFormatter: function (row) {
-                        row.getElement().classList.add('cf-' + row.getData().type);
+                        var data = row.getData();
+                        row.getElement().classList.add('cf-' + data.type);
+
+                        row.getCells().forEach(function (cell) {
+                            var field = cell.getField();
+                            if (field !== 'current' && field !== 'previous') return;
+                            if (bisaDirinci(data, field)) {
+                                cell.getElement().classList.add('cf-klik');
+                                cell.getElement().setAttribute('title', 'Klik untuk melihat rincian');
+                            }
+                        });
                     },
                     // Dua kolom kode dibiarkan sempit & tetap; sisa lebar layar
                     // dibagi ke Uraian (porsi terbesar) dan dua kolom nilai.
@@ -203,7 +297,8 @@
                             widthGrow: 1,
                             hozAlign: "right",
                             headerHozAlign: "center",
-                            formatter: formatAngka
+                            formatter: formatAngka,
+                            cellClick: function (e, cell) { bukaRincian(cell); }
                         },
                         {
                             title: "Realisasi " + prevYear,
@@ -212,7 +307,8 @@
                             widthGrow: 1,
                             hozAlign: "right",
                             headerHozAlign: "center",
-                            formatter: formatAngka
+                            formatter: formatAngka,
+                            cellClick: function (e, cell) { bukaRincian(cell); }
                         }
                     ]
                 });
@@ -257,6 +353,136 @@
 
                 table.on('renderComplete', gabungSelJudul);
                 table.on('columnResized', function () { setTimeout(gabungSelJudul, 0); });
+
+                // ============ RINCIAN ANGKA (drill-down ala pivot) ============
+                var URL_RINCIAN = @json(route('va.cashflow.rincian'));
+                var bulanAktif = @json((string) $selectedBulan);
+                var namaBulan = @json($namaBulan);
+                var tabelRincian = null;
+
+                // Sebuah angka bisa dirinci bila baris membawa cakupan reference key
+                // dan nilainya tidak nol — mengklik nol tidak akan menghasilkan apa pun.
+                function bisaDirinci(data, field) {
+                    if (!data.scope || !data.scope.length) return false;
+                    return Number(field === 'current' ? data.current : data.previous) !== 0;
+                }
+
+                function siapkanTabelRincian() {
+                    if (tabelRincian) return tabelRincian;
+
+                    tabelRincian = new Tabulator("#tabelRincian", {
+                        data: [],
+                        layout: 'fitColumns',
+                        height: '52vh',
+                        columnHeaderVertAlign: 'middle',
+                        columnDefaults: { headerSort: true, minWidth: 60, variableHeight: true },
+                        placeholder: "<div class='py-4 text-muted'>Tidak ada transaksi pada cakupan ini.</div>",
+                        columns: [
+                            {
+                                title: "Tanggal", field: "tanggal", width: 95, hozAlign: "center",
+                                headerHozAlign: "center",
+                                formatter: function (cell) {
+                                    var v = cell.getValue();
+                                    if (!v) return '<span class="cf-nol">-</span>';
+                                    var p = String(v).split('-');
+                                    return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : escapeHtml(v);
+                                }
+                            },
+                            {
+                                title: "No. Dokumen", field: "dokumen", width: 115, hozAlign: "center",
+                                headerHozAlign: "center",
+                                formatter: function (cell) {
+                                    return '<span class="cf-kode">' + escapeHtml(cell.getValue()) + '</span>';
+                                }
+                            },
+                            {
+                                title: "Reference", field: "reference", width: 100, hozAlign: "center",
+                                headerHozAlign: "center",
+                                formatter: function (cell) {
+                                    return '<span class="cf-kode">' + escapeHtml(cell.getValue()) + '</span>';
+                                }
+                            },
+                            { title: "Uraian", field: "uraian", minWidth: 200, widthGrow: 2, headerHozAlign: "center" },
+                            { title: "Keterangan", field: "keterangan", minWidth: 200, widthGrow: 3, headerHozAlign: "center" },
+                            { title: "Akun Lawan", field: "lawan", minWidth: 150, widthGrow: 2, headerHozAlign: "center" },
+                            {
+                                title: "Nominal", field: "amount", width: 150, hozAlign: "right",
+                                headerHozAlign: "center",
+                                formatter: function (cell) {
+                                    return '<span class="cf-angka">' + tulisAngka(cell.getValue()) + '</span>';
+                                }
+                            }
+                        ]
+                    });
+
+                    return tabelRincian;
+                }
+
+                function bukaRincian(cell) {
+                    var data = cell.getRow().getData();
+                    var field = cell.getField();
+                    if (!bisaDirinci(data, field)) return;
+
+                    var tahun = (field === 'current') ? selectedYear : prevYear;
+                    var nilai = (field === 'current') ? data.current : data.previous;
+
+                    var jejak = [];
+                    if (data.kode) jejak.push('Kode ' + data.kode);
+                    if (data.reference && data.reference !== '-') jejak.push('Reference ' + data.reference);
+                    jejak.push('Realisasi ' + tahun);
+                    if (bulanAktif && namaBulan[bulanAktif]) jejak.push(namaBulan[bulanAktif] + ' ' + tahun);
+
+                    $('#rincianUraian').text(data.uraian);
+                    $('#rincianKeterangan').text(jejak.join(' · '));
+                    $('#rincianTotal').html(tulisAngka(nilai));
+                    $('#rincianJumlahBaris').text('memuat…');
+                    $('#rincianPesan').addClass('d-none').text('');
+
+                    $('#modalRincian').modal('show');
+
+                    var tabel = siapkanTabelRincian();
+                    tabel.clearData();
+
+                    var params = new URLSearchParams();
+                    params.set('tahun', tahun);
+                    if (bulanAktif) params.set('bulan', bulanAktif);
+                    data.scope.forEach(function (s) { params.append('scope[]', s); });
+
+                    $.getJSON(URL_RINCIAN + '?' + params.toString())
+                        .done(function (res) {
+                            tabel.setData(res.rows || []);
+
+                            $('#rincianJumlahBaris').text(
+                                (res.jumlah || 0).toLocaleString('id-ID') + ' transaksi'
+                            );
+
+                            // Total dari server dihitung atas SELURUH transaksi yang
+                            // cocok, jadi harus sama dengan angka yang diklik. Selisih
+                            // apa pun berarti ada yang salah dan wajib diberitahukan.
+                            if (Math.abs(Number(res.total) - Number(nilai)) > 0.5) {
+                                $('#rincianPesan')
+                                    .removeClass('d-none')
+                                    .html('<b>Perhatian:</b> jumlah rincian (' + tulisAngka(res.total)
+                                        + ') tidak sama dengan angka pada tabel (' + tulisAngka(nilai) + ').');
+                            } else if (res.terpotong) {
+                                $('#rincianPesan')
+                                    .removeClass('d-none')
+                                    .text('Menampilkan ' + res.batas + ' transaksi pertama dari '
+                                        + res.jumlah + '. Jumlah di atas tetap dihitung dari seluruh transaksi.');
+                            }
+                        })
+                        .fail(function () {
+                            $('#rincianJumlahBaris').text('-');
+                            $('#rincianPesan').removeClass('d-none')
+                                .text('Gagal memuat rincian. Coba ulangi beberapa saat lagi.');
+                        });
+                }
+
+                // Tabulator menghitung lebar kolom saat modal masih tersembunyi
+                // (lebar 0). Hitung ulang setelah modal benar-benar tampil.
+                $('#modalRincian').on('shown.bs.modal', function () {
+                    if (tabelRincian) tabelRincian.redraw(true);
+                });
 
                 // Perubahan penyaring -> muat ulang halaman dengan parameter query
                 function applyFilter() {

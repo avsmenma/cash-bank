@@ -18,9 +18,17 @@ use Illuminate\Support\Collection;
  *
  * Nilai transaksi bertanda: positif = arus kas masuk, negatif = arus kas keluar,
  * sehingga seluruh total cukup dijumlah apa adanya (tanpa pembalikan tanda).
+ *
+ * Laporan dapat memuat BEBERAPA SERI angka sekaligus (mis. seri "global" untuk
+ * gabungan seluruh unit, ditambah satu seri per unit/kebun pada halaman admin).
+ * Seluruh seri dijumlah dalam satu jalur kode yang sama, sehingga total global
+ * dan total tiap unit dijamin memakai aturan penjumlahan yang identik.
  */
 class CashflowReportBuilder
 {
+    /** Nama seri utama; nilainya yang dipakai kolom Realisasi & kartu ringkasan. */
+    public const SERI_GLOBAL = 'global';
+
     /** Bagian utama laporan beserta penomoran romawi & judulnya. */
     private const SECTIONS = [
         ['prefix' => 'A', 'roman' => 'I',   'title' => 'ARUS KAS DARI AKTIVITAS PENDANAAN OPERASI'],
@@ -28,21 +36,54 @@ class CashflowReportBuilder
         ['prefix' => 'C', 'roman' => 'III', 'title' => 'ARUS KAS DARI AKTIVITAS PENDANAAN'],
     ];
 
-    /** Sub-bagian: akhiran kode 3-huruf -> penomoran, label & judul totalnya. */
+    /** Sub-bagian: akhiran kode 3-huruf -> penomoran, label & judul baris totalnya. */
     private const SUBSECTIONS = [
         '01' => ['numeral' => 'I',  'label' => 'Penerimaan',  'total' => 'Total Penerimaan'],
         '02' => ['numeral' => 'II', 'label' => 'Pengeluaran', 'total' => 'Total Pengeluaran'],
     ];
 
     /**
-     * @param  array<string,array{current:float,previous:float}>  $amounts     realisasi per reference_key
+     * Laporan satu seri (dipakai halaman unit/kebun).
+     *
+     * @param  array<string,array{current:float,previous:float}>  $amounts  realisasi per reference_key
      * @param  Collection  $references  kamus CashflowReference (ber-key reference_key)
      * @param  bool  $showEmpty  ikut tampilkan baris detail yang nol di kedua tahun
      * @return array<int,array<string,mixed>>
      */
     public static function build(array $amounts, Collection $references, bool $showEmpty = false): array
     {
-        $tree = self::buildTree($amounts, $references);
+        $rows = self::buildMulti([self::SERI_GLOBAL => $amounts], $references, $showEmpty);
+
+        // Halaman satu seri tidak butuh rincian per seri.
+        foreach ($rows as &$row) {
+            unset($row['values']);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Laporan banyak seri (dipakai halaman admin: global + tiap unit/kebun).
+     *
+     * Baris tetap membawa `current`/`previous` berisi angka seri global supaya
+     * bisa dipakai kode yang sama dengan laporan satu seri, ditambah `values`
+     * berisi angka seluruh seri.
+     *
+     * @param  array<string,array<string,array{current:float,previous:float}>>  $series
+     *         [nama seri => [reference_key => ['current' => x, 'previous' => y]]]
+     * @param  Collection  $references
+     * @param  bool  $showEmpty  ikut tampilkan baris yang nol di SEMUA seri
+     * @return array<int,array<string,mixed>>
+     */
+    public static function buildMulti(array $series, Collection $references, bool $showEmpty = false): array
+    {
+        $seriesKeys = array_keys($series);
+        if (!in_array(self::SERI_GLOBAL, $seriesKeys, true)) {
+            array_unshift($seriesKeys, self::SERI_GLOBAL);
+            $series = [self::SERI_GLOBAL => []] + $series;
+        }
+
+        $tree = self::buildTree($series, $seriesKeys, $references);
 
         $rows = [];
         $sectionTotals = [];
@@ -53,9 +94,8 @@ class CashflowReportBuilder
                 continue;
             }
 
-            $rows[] = self::row('section', '', '', $section['roman'] . '. ' . $section['title']);
-            $sectionCur = 0.0;
-            $sectionPrev = 0.0;
+            $rows[] = self::row('section', '', '', $section['roman'] . '. ' . $section['title'], self::zero($seriesKeys));
+            $sectionSum = self::zero($seriesKeys);
 
             foreach (self::SUBSECTIONS as $suffix => $meta) {
                 $groups = $tree[$prefix][$prefix . $suffix] ?? null;
@@ -63,82 +103,78 @@ class CashflowReportBuilder
                     continue;
                 }
 
-                $rows[] = self::row('subsection', '', '', $section['roman'] . '.' . $meta['numeral'] . ' ' . $meta['label']);
+                $rows[] = self::row('subsection', '', '', $section['roman'] . '.' . $meta['numeral'] . ' ' . $meta['label'], self::zero($seriesKeys));
 
-                $subCur = 0.0;
-                $subPrev = 0.0;
+                $subSum = self::zero($seriesKeys);
 
                 foreach ($groups as $parentKey => $group) {
                     // Total sub-bagian selalu ikut dijumlah, termasuk grup yang
                     // barisnya disembunyikan, supaya angka total tetap utuh.
-                    $subCur += $group['current'];
-                    $subPrev += $group['previous'];
+                    $subSum = self::add($subSum, $group['values']);
 
                     $items = $showEmpty
                         ? $group['items']
                         : array_values(array_filter(
                             $group['items'],
-                            fn ($item) => !self::isZero($item['current']) || !self::isZero($item['previous'])
+                            fn ($item) => !self::isEmpty($item['values'])
                         ));
 
-                    // Grup tanpa realisasi sama sekali disembunyikan agar laporan
-                    // tetap ringkas; centang "Tampilkan semua akun" untuk melihat
-                    // kerangka lengkap seperti pada berkas Excel baku.
-                    if (!$showEmpty && empty($items) && self::isZero($group['current']) && self::isZero($group['previous'])) {
+                    // Grup tanpa realisasi di seri mana pun disembunyikan agar
+                    // laporan tetap ringkas; centang "Tampilkan semua akun" untuk
+                    // melihat kerangka lengkap seperti pada berkas Excel baku.
+                    if (!$showEmpty && empty($items) && self::isEmpty($group['values'])) {
                         continue;
                     }
 
-                    $rows[] = self::row('group', $parentKey, '-', $group['name'], $group['current'], $group['previous']);
+                    $rows[] = self::row('group', $parentKey, '-', $group['name'], $group['values']);
 
                     foreach ($items as $item) {
-                        $rows[] = self::row('detail', $parentKey, $item['reference_key'], $item['uraian'], $item['current'], $item['previous']);
+                        $rows[] = self::row('detail', $parentKey, $item['reference_key'], $item['uraian'], $item['values']);
                     }
                 }
 
-                $rows[] = self::row('subtotal', '', '', $meta['total'], $subCur, $subPrev);
-                $sectionCur += $subCur;
-                $sectionPrev += $subPrev;
+                $rows[] = self::row('subtotal', '', '', $meta['total'], $subSum);
+                $sectionSum = self::add($sectionSum, $subSum);
             }
 
-            $rows[] = self::row('total', '', '', 'JUMLAH ' . $section['title'], $sectionCur, $sectionPrev);
-            $rows[] = self::row('spacer', '', '', '');
+            $rows[] = self::row('total', '', '', 'JUMLAH ' . $section['title'], $sectionSum);
+            $rows[] = self::row('spacer', '', '', '', self::zero($seriesKeys));
 
-            $sectionTotals[] = [$sectionCur, $sectionPrev];
+            $sectionTotals[] = $sectionSum;
         }
 
         // Dampak Perubahan Kurs (grup D) ikut menambah arus kas bersih.
-        $netCur = array_sum(array_column($sectionTotals, 0));
-        $netPrev = array_sum(array_column($sectionTotals, 1));
-
-        foreach (self::flatten($tree['D'] ?? []) as $item) {
-            $rows[] = self::row('plain', $item['parent_key'], $item['reference_key'], $item['uraian'], $item['current'], $item['previous']);
-            $netCur += $item['current'];
-            $netPrev += $item['previous'];
+        $net = self::zero($seriesKeys);
+        foreach ($sectionTotals as $total) {
+            $net = self::add($net, $total);
         }
 
-        $rows[] = self::row('net', '', '', 'Kenaikan (Penurunan) Arus Kas Bersih', $netCur, $netPrev);
-        $rows[] = self::row('spacer', '', '', '');
+        foreach (self::flatten($tree['D'] ?? []) as $item) {
+            $rows[] = self::row('plain', $item['parent_key'], $item['reference_key'], $item['uraian'], $item['values']);
+            $net = self::add($net, $item['values']);
+        }
+
+        $rows[] = self::row('net', '', '', 'Kenaikan (Penurunan) Arus Kas Bersih', $net);
+        $rows[] = self::row('spacer', '', '', '', self::zero($seriesKeys));
 
         // Bank Clearing & reklasifikasi (grup E) tidak masuk arus kas bersih,
         // tapi ikut menentukan pergerakan saldo kas periode berjalan.
-        $closingCur = $netCur;
-        $closingPrev = $netPrev;
+        $closing = $net;
 
         foreach (self::flatten($tree['E'] ?? []) as $item) {
-            $rows[] = self::row('plain', $item['parent_key'], $item['reference_key'], $item['uraian'], $item['current'], $item['previous']);
-            $closingCur += $item['current'];
-            $closingPrev += $item['previous'];
+            $rows[] = self::row('plain', $item['parent_key'], $item['reference_key'], $item['uraian'], $item['values']);
+            $closing = self::add($closing, $item['values']);
         }
 
-        $rows[] = self::row('closing', '', '', 'Pergerakan Kas Bersih Periode Ini', $closingCur, $closingPrev);
+        $rows[] = self::row('closing', '', '', 'Pergerakan Kas Bersih Periode Ini', $closing);
 
         return $rows;
     }
 
     /**
-     * Ringkasan angka untuk kartu statistik di atas tabel.
+     * Ringkasan angka seri global untuk kartu statistik di atas tabel.
      *
-     * @param  array<int,array<string,mixed>>  $rows  keluaran build()
+     * @param  array<int,array<string,mixed>>  $rows  keluaran build()/buildMulti()
      * @return array<string,float>
      */
     public static function summarize(array $rows): array
@@ -179,7 +215,7 @@ class CashflowReportBuilder
      * ikut tampil (memakai 5 huruf pertama sebagai parent) supaya tidak ada
      * nilai yang hilang diam-diam dari laporan.
      */
-    private static function buildTree(array $amounts, Collection $references): array
+    private static function buildTree(array $series, array $seriesKeys, Collection $references): array
     {
         $catalog = [];
 
@@ -192,17 +228,19 @@ class CashflowReportBuilder
             ];
         }
 
-        foreach (array_keys($amounts) as $key) {
-            if (isset($catalog[$key])) {
-                continue;
-            }
+        foreach ($series as $amounts) {
+            foreach (array_keys($amounts) as $key) {
+                if (isset($catalog[$key])) {
+                    continue;
+                }
 
-            $catalog[$key] = [
-                'reference_key' => $key,
-                'parent_key' => substr($key, 0, 5),
-                'parent_name' => $key,
-                'uraian' => $key . ' (belum terdaftar di kamus referensi)',
-            ];
+                $catalog[$key] = [
+                    'reference_key' => $key,
+                    'parent_key' => substr($key, 0, 5),
+                    'parent_name' => $key,
+                    'uraian' => $key . ' (belum terdaftar di kamus referensi)',
+                ];
+            }
         }
 
         ksort($catalog);
@@ -213,26 +251,30 @@ class CashflowReportBuilder
             $subKey = substr($key, 0, 3);
             $parentKey = $meta['parent_key'];
 
-            $current = (float) ($amounts[$key]['current'] ?? 0);
-            $previous = (float) ($amounts[$key]['previous'] ?? 0);
+            $values = [];
+            foreach ($seriesKeys as $s) {
+                $values[$s] = [
+                    'current' => (float) ($series[$s][$key]['current'] ?? 0),
+                    'previous' => (float) ($series[$s][$key]['previous'] ?? 0),
+                ];
+            }
 
             if (!isset($tree[$sectionKey][$subKey][$parentKey])) {
                 $tree[$sectionKey][$subKey][$parentKey] = [
                     'name' => $meta['parent_name'],
-                    'current' => 0.0,
-                    'previous' => 0.0,
+                    'values' => self::zero($seriesKeys),
                     'items' => [],
                 ];
             }
 
-            $tree[$sectionKey][$subKey][$parentKey]['current'] += $current;
-            $tree[$sectionKey][$subKey][$parentKey]['previous'] += $previous;
+            $tree[$sectionKey][$subKey][$parentKey]['values'] =
+                self::add($tree[$sectionKey][$subKey][$parentKey]['values'], $values);
+
             $tree[$sectionKey][$subKey][$parentKey]['items'][] = [
                 'reference_key' => $key,
                 'parent_key' => $parentKey,
                 'uraian' => $meta['uraian'],
-                'current' => $current,
-                'previous' => $previous,
+                'values' => $values,
             ];
         }
 
@@ -254,20 +296,63 @@ class CashflowReportBuilder
         return $items;
     }
 
-    private static function row(string $type, string $kode, string $reference, string $uraian, float $current = 0.0, float $previous = 0.0): array
+    /**
+     * @param  array<string,array{current:float,previous:float}>  $values
+     */
+    private static function row(string $type, string $kode, string $reference, string $uraian, array $values): array
     {
+        $bulat = [];
+        foreach ($values as $seri => $v) {
+            $bulat[$seri] = [
+                'current' => round($v['current'], 2),
+                'previous' => round($v['previous'], 2),
+            ];
+        }
+
+        $global = $bulat[self::SERI_GLOBAL] ?? ['current' => 0.0, 'previous' => 0.0];
+
         return [
             'type' => $type,
             'kode' => $kode,
             'reference' => $reference,
             'uraian' => $uraian,
-            'current' => round($current, 2),
-            'previous' => round($previous, 2),
+            'current' => $global['current'],
+            'previous' => $global['previous'],
+            'values' => $bulat,
         ];
     }
 
-    private static function isZero(float $value): bool
+    /** Vektor nol untuk seluruh seri. */
+    private static function zero(array $seriesKeys): array
     {
-        return abs($value) < 0.005;
+        $out = [];
+        foreach ($seriesKeys as $s) {
+            $out[$s] = ['current' => 0.0, 'previous' => 0.0];
+        }
+
+        return $out;
+    }
+
+    /** Jumlahkan dua vektor seri. */
+    private static function add(array $a, array $b): array
+    {
+        foreach ($b as $seri => $v) {
+            $a[$seri]['current'] = ($a[$seri]['current'] ?? 0) + $v['current'];
+            $a[$seri]['previous'] = ($a[$seri]['previous'] ?? 0) + $v['previous'];
+        }
+
+        return $a;
+    }
+
+    /** Benar bila seluruh seri bernilai nol di kedua tahun. */
+    private static function isEmpty(array $values): bool
+    {
+        foreach ($values as $v) {
+            if (abs($v['current']) >= 0.005 || abs($v['previous']) >= 0.005) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

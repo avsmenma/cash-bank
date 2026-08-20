@@ -196,11 +196,11 @@
                         frozen: true,
                         columns: [
                             {
-                                title: String(selectedYear), field: "values.global.current", width: 155,
+                                title: "Realisasi " + selectedYear, field: "values.global.current", width: 155,
                                 hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
                             },
                             {
-                                title: String(prevYear), field: "values.global.previous", width: 155,
+                                title: "Realisasi " + prevYear, field: "values.global.previous", width: 155,
                                 hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
                             }
                         ]

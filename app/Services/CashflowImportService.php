@@ -13,6 +13,12 @@ use ZipArchive;
 class CashflowImportService
 {
     /**
+     * Reference key penampung untuk baris SAP yang tidak membawa Reference Key 1
+     * maupun Reference Key 3 ("Pembayaran kas lainnya - Lainnya").
+     */
+    public const REFERENCE_KEY_LAINNYA = 'A0209029';
+
+    /**
      * Profit Center code to BankTujuan mapping.
      */
     public static function getProfitCenterMap(): array
@@ -231,6 +237,12 @@ class CashflowImportService
         foreach ($bankTujuans as $bt) {
             $name = strtoupper($bt->nama_tujuan);
             foreach ($prctrKeywordMap as $code => $alias) {
+                // Pemetaan pertama yang cocok dipertahankan. Tanpa penjagaan ini,
+                // dua VA yang namanya sama-sama memuat alias yang sama akan saling
+                // menimpa diam-diam dan transaksi masuk ke unit yang keliru.
+                if (isset($btMap[$code])) {
+                    continue;
+                }
                 if (str_contains($name, $alias)) {
                     $btMap[$code] = $bt->id_bank_tujuan;
                 }
@@ -238,6 +250,11 @@ class CashflowImportService
         }
 
         $defaultBtId = $bankTujuans->first()->id_bank_tujuan ?? 1;
+
+        // Profit center di luar daftar pemetaan tetap diimpor (agar nilainya tidak
+        // hilang), tapi WAJIB tercatat di log — transaksinya menumpang VA default
+        // sehingga saldo unit tersebut ikut terpengaruh sampai pemetaan ditambahkan.
+        $unmappedProfitCenters = [];
 
         // 2. Load References dictionary
         $refMap = CashflowReference::pluck('uraian', 'reference_key')->toArray();
@@ -323,11 +340,16 @@ class CashflowImportService
                 $refKey1 = trim($cols['AL'] ?? '');
 
                 if (empty($refKey1)) {
-                    $refKey1 = !empty($refKey3) ? $refKey3 . '000' : 'A0209029';
+                    $refKey1 = !empty($refKey3) ? $refKey3 . '000' : self::REFERENCE_KEY_LAINNYA;
                 }
 
                 $uraian = $refMap[$refKey1] ?? ($refMap[$refKey3] ?? ($offsettingAccName ?: $text));
-                $idBankTujuan = $btMap[$prctr] ?? $defaultBtId;
+
+                $idBankTujuan = $btMap[$prctr] ?? null;
+                if ($idBankTujuan === null) {
+                    $idBankTujuan = $defaultBtId;
+                    $unmappedProfitCenters[$prctr ?: '(kosong)'] = ($unmappedProfitCenters[$prctr ?: '(kosong)'] ?? 0) + 1;
+                }
 
                 $rowsToInsert[] = [
                     'id_bank_tujuan' => $idBankTujuan,
@@ -369,6 +391,12 @@ class CashflowImportService
 
         $xml->close();
         $zip->close();
+
+        if (!empty($unmappedProfitCenters)) {
+            Log::warning('Import Cashflow: profit center berikut belum ada di getProfitCenterMap() '
+                . 'sehingga transaksinya dibukukan ke VA default (id ' . $defaultBtId . '). '
+                . 'Tambahkan pemetaannya lalu impor ulang.', $unmappedProfitCenters);
+        }
 
         return $totalInserted;
     }

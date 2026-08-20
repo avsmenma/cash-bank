@@ -9,10 +9,6 @@
                terkena zoom (mis. 1263px) lalu menetapkan lebar kolom dalam satuan
                CSS px pada wadah yang sebenarnya 1582px, sehingga tabel selalu
                kurang selebar wadah x (1 - zoom) dan menyisakan ruang kosong. */
-            .content-header h1 {
-                font-size: 1.5rem;
-            }
-
             section.content {
                 font-size: 13px;
             }
@@ -231,22 +227,8 @@
         </style>
     @endpush
 
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Cash Flow</h1>
-                </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{{ route('va.dashboard') }}">Home</a></li>
-                        <li class="breadcrumb-item active">Cash Flow</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </section>
-
+    {{-- Judul halaman & breadcrumb sengaja ditiadakan: identitas laporan sudah
+         tertulis pada kop tabel, dan menghapusnya menaikkan posisi tabel. --}}
     <section class="content">
         <div class="container-fluid">
             <div class="row">

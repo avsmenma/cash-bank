@@ -5,7 +5,6 @@
         <style>
             /* Tampilan kompak: setara zoom browser 80%, agar seluruh tabel
                terlihat dalam satu layar pada web size 100% */
-            .content-header,
             section.content {
                 zoom: 0.8;
             }
@@ -97,23 +96,8 @@
         </style>
     @endpush
 
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Detail Transaksi VA</h1>
-                </div>
-
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{{ route('va.dashboard') }}">Home</a></li>
-                        <li class="breadcrumb-item active">Virtual Account</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </section>
-
+    {{-- Judul halaman & breadcrumb sengaja ditiadakan: nama VA sudah tertulis
+         pada kepala kartu, dan menghapusnya menaikkan posisi tabel. --}}
     <section class="content">
         <div class="container-fluid">
             <div class="row">

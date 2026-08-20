@@ -8,6 +8,15 @@ class Cashflow extends Model
 {
     protected $table = 'cashflows';
 
+    /** Kolom decimal/date dikembalikan sebagai string oleh MySQL tanpa cast ini. */
+    protected $casts = [
+        'amount' => 'float',
+        'posting_date' => 'date',
+        'posting_period' => 'integer',
+        'bulan' => 'integer',
+        'tahun' => 'integer',
+    ];
+
     protected $fillable = [
         'id_bank_tujuan',
         'profit_center',

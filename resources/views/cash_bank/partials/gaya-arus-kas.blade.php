@@ -192,7 +192,13 @@
 
         /* Indentasi uraian mengikuti kedalaman jenjang */
         .cf-indent { padding-left: 20px; display: inline-block; }
-        .cf-kode { font-family: "Consolas", "Courier New", monospace; font-size: 10px; }
+        /* Kode & Reference memakai huruf yang sama dengan kolom lain agar tampilan
+           seragam; hanya lebar angkanya dibuat rata supaya kode tetap sejajar. */
+        .cf-kode {
+            font-family: inherit;
+            font-size: inherit;
+            font-variant-numeric: tabular-nums;
+        }
 
         @media print {
             .cf-no-print { display: none !important; }

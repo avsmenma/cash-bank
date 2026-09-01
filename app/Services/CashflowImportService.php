@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BankTujuan;
 use App\Models\Cashflow;
+use App\Models\CashflowLock;
 use App\Models\CashflowReference;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -210,9 +211,17 @@ class CashflowImportService
 
     /**
      * Import Data Transaksi Cashflow dari Excel SAP (Cashflow.xlsx).
+     *
+     * @param string $filePath Path ke file Excel Cashflow.xlsx
+     * @param bool $truncateUnlocked Jika true, hapus data lama HANYA untuk bulan terbuka yang diimpor
+     * @param array $explicitLockedMap Peta override status lock ["{tahun}_{bulan}" => true]
+     * @return array Ringkasan hasil import
      */
-    public function importCashflowTransactions(string $filePath): int
-    {
+    public function importCashflowTransactions(
+        string $filePath,
+        bool $truncateUnlocked = true,
+        array $explicitLockedMap = []
+    ): array {
         if (!file_exists($filePath)) {
             throw new \Exception("File Cashflow.xlsx tidak ditemukan: {$filePath}");
         }
@@ -259,12 +268,22 @@ class CashflowImportService
         // 2. Load References dictionary
         $refMap = CashflowReference::pluck('uraian', 'reference_key')->toArray();
 
-        // 3. Fast streaming parse sheet1.xml
+        // 3. Load Lock map
+        $lockedMap = CashflowLock::getLockedMap();
+        if (!empty($explicitLockedMap)) {
+            $lockedMap = array_merge($lockedMap, $explicitLockedMap);
+        }
+
+        // 4. Fast streaming parse sheet1.xml
         $xml = new XMLReader();
         $xml->xml($sheetXml);
 
         $rowsToInsert = [];
         $totalInserted = 0;
+        $skippedLockedCount = 0;
+        $skippedLockedMonths = [];
+        $deletedPeriods = [];
+        $unlockedMonthsFound = [];
         $now = now();
 
         while ($xml->read()) {
@@ -324,7 +343,30 @@ class CashflowImportService
                     $bulan = (int) $parts[1];
                 }
 
-                $period = (int) ($cols['C'] ?? 0) ?: ($bulan ?: 1);
+                $bulan = $bulan ?: 1;
+                $tahun = $tahun ?: (int) date('Y');
+                $periodKey = "{$tahun}_{$bulan}";
+
+                // Cek apakah bulan pada tahun ini TERKUNCI
+                if (isset($lockedMap[$periodKey])) {
+                    $skippedLockedCount++;
+                    $skippedLockedMonths[$periodKey] = true;
+                    continue; // Lewati baris data bulan terkunci
+                }
+
+                // Catat periode terbuka yang ditemukan
+                $unlockedMonthsFound[$periodKey] = [
+                    'tahun' => $tahun,
+                    'bulan' => $bulan,
+                ];
+
+                // Jika mode replace/truncate aktif, hapus data lama di DB HANYA untuk periode ini
+                if ($truncateUnlocked && !isset($deletedPeriods[$periodKey])) {
+                    Cashflow::where('tahun', $tahun)->where('bulan', $bulan)->delete();
+                    $deletedPeriods[$periodKey] = true;
+                }
+
+                $period = (int) ($cols['C'] ?? 0) ?: $bulan;
                 $account = trim($cols['D'] ?? '');
                 $prctr = trim($cols['I'] ?? '');
                 $prctrName = trim($cols['J'] ?? '');
@@ -358,8 +400,8 @@ class CashflowImportService
                     'document_number' => $docNum,
                     'posting_date' => $postingDate,
                     'posting_period' => $period,
-                    'bulan' => $bulan ?: 1,
-                    'tahun' => $tahun ?: (int) date('Y'),
+                    'bulan' => $bulan,
+                    'tahun' => $tahun,
                     'account' => $account ?: null,
                     'offsetting_account' => $offsettingAcc ?: null,
                     'name_of_offsetting_account' => $offsettingAccName ?: null,
@@ -398,6 +440,13 @@ class CashflowImportService
                 . 'Tambahkan pemetaannya lalu impor ulang.', $unmappedProfitCenters);
         }
 
-        return $totalInserted;
+        return [
+            'inserted' => $totalInserted,
+            'skipped_locked' => $skippedLockedCount,
+            'skipped_locked_periods' => array_keys($skippedLockedMonths),
+            'replaced_periods' => array_keys($deletedPeriods),
+            'unlocked_periods' => array_values($unlockedMonthsFound),
+        ];
     }
 }
+

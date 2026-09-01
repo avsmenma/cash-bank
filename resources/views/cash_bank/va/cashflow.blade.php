@@ -31,12 +31,24 @@
 
             #tabelRincian {
                 font-size: 12px;
+                border: 1.5px solid #A0AEC0;
+                border-radius: 4px;
+                overflow: hidden;
+            }
+
+            #tabelRincian .tabulator-header {
+                border-bottom: 2px solid var(--cf-navy) !important;
             }
 
             #tabelRincian .tabulator-header,
             #tabelRincian .tabulator-header .tabulator-col {
                 background-color: var(--cf-navy) !important;
                 color: #fff !important;
+                border-right: 1.5px solid rgba(255, 255, 255, .7) !important;
+            }
+
+            #tabelRincian .tabulator-header .tabulator-col:last-child {
+                border-right: none !important;
             }
 
             #tabelRincian .tabulator-header .tabulator-col .tabulator-col-title {
@@ -52,7 +64,20 @@
                 display: none !important;
             }
 
-            /* Agar data teks panjang membungkus ke bawah (wrap) dan tampil penuh tanpa terpotong */
+            /* Garis horizontal dan vertikal yang jelas dan tegas untuk tiap baris/kolom */
+            #tabelRincian .tabulator-row {
+                min-height: 36px;
+                border-bottom: 1.5px solid #CBD5E0 !important;
+            }
+
+            #tabelRincian .tabulator-row:nth-child(even) {
+                background-color: #F8FAFC !important;
+            }
+
+            #tabelRincian .tabulator-row:hover {
+                background-color: #EDF2F7 !important;
+            }
+
             #tabelRincian .tabulator-cell {
                 white-space: normal !important;
                 word-break: break-word !important;
@@ -60,10 +85,11 @@
                 vertical-align: middle !important;
                 padding: 6px 8px !important;
                 height: auto !important;
+                border-right: 1.5px solid #CBD5E0 !important;
             }
 
-            #tabelRincian .tabulator-row {
-                min-height: 36px;
+            #tabelRincian .tabulator-cell:last-child {
+                border-right: none !important;
             }
         </style>
     @endpush

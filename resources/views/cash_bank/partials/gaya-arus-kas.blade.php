@@ -23,7 +23,7 @@
             --cf-group: #F3F8EF;
             --cf-subtotal: #C5E0B4;
             --cf-total: #548135;
-            --cf-garis: #C9D4DF;
+            --cf-garis: #B0BEC5;
         }
 
         /* ── Kartu ringkasan ── */
@@ -69,13 +69,14 @@
         /* ── Tabulator: kepala tabel tema Navy standar Cash Bank ── */
         .cf-tabel {
             font-size: 12.5px;
+            border: 1.5px solid var(--cf-garis) !important;
         }
 
         .cf-tabel .tabulator-header,
         .cf-tabel .tabulator-header .tabulator-col {
             background-color: var(--cf-navy) !important;
             color: #fff !important;
-            border-color: rgba(255, 255, 255, .25) !important;
+            border-color: rgba(255, 255, 255, .35) !important;
         }
 
         .cf-tabel .tabulator-header .tabulator-col .tabulator-col-title {
@@ -92,13 +93,13 @@
         .cf-tabel .tabulator-cell {
             white-space: normal;
             overflow-wrap: break-word;
-            border-right: 1px solid var(--cf-garis) !important;
-            padding-top: 5px;
-            padding-bottom: 5px;
+            border-right: 1.5px solid var(--cf-garis) !important;
+            padding-top: 6px;
+            padding-bottom: 6px;
         }
 
         .cf-tabel .tabulator-row {
-            border-bottom: 1px solid var(--cf-garis) !important;
+            border-bottom: 1.5px solid var(--cf-garis) !important;
         }
 
         /* ── Pewarnaan baris menurut jenjang laporan ── */

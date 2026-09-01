@@ -20,6 +20,7 @@ class BankCashflowController extends Controller
         $currentYear = (int) date('Y');
 
         $years = Cashflow::whereNotNull('tahun')
+            ->whereBetween('tahun', [2000, 2100])
             ->distinct()
             ->orderByDesc('tahun')
             ->pluck('tahun')
@@ -28,6 +29,8 @@ class BankCashflowController extends Controller
 
         if (empty($years)) {
             $years = range($currentYear, $currentYear - 4);
+        } elseif (!in_array($currentYear, $years, true)) {
+            array_unshift($years, $currentYear);
         }
 
         $selectedYear = (int) $request->get('tahun', $years[0]);

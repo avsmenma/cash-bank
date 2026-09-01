@@ -339,12 +339,18 @@ class CashflowImportService
                 $yearMonthRaw = trim($cols['V'] ?? '');
                 if (empty($tahun) && !empty($yearMonthRaw) && str_contains($yearMonthRaw, '/')) {
                     $parts = explode('/', $yearMonthRaw);
-                    $tahun = (int) $parts[0];
-                    $bulan = (int) $parts[1];
+                    $parsedYear = (int) $parts[0];
+                    $parsedMonth = (int) ($parts[1] ?? 0);
+                    if ($parsedYear >= 2000 && $parsedYear <= 2100) {
+                        $tahun = $parsedYear;
+                    }
+                    if ($parsedMonth >= 1 && $parsedMonth <= 12) {
+                        $bulan = $parsedMonth;
+                    }
                 }
 
-                $bulan = $bulan ?: 1;
-                $tahun = $tahun ?: (int) date('Y');
+                $bulan = ($bulan && $bulan >= 1 && $bulan <= 12) ? $bulan : 1;
+                $tahun = ($tahun && $tahun >= 2000 && $tahun <= 2100) ? $tahun : (int) date('Y');
                 $periodKey = "{$tahun}_{$bulan}";
 
                 // Cek apakah bulan pada tahun ini TERKUNCI

@@ -403,10 +403,13 @@ Route::middleware(['auth'])->prefix('ringkasan-pembayaran')->name('ringkasan.')-
 // PROGRAMMER PANEL — Data Management
 Route::group(['middleware' => ['auth', 'check_role:programmer'], 'prefix' => 'programmer'], function () {
     Route::get('/', [ProgrammerController::class, 'index'])->name('programmer.index');
+    Route::get('/cashflow-locks', [ProgrammerController::class, 'getCashflowLocks'])->name('programmer.cashflowLocks.get');
+    Route::post('/cashflow-locks/toggle', [ProgrammerController::class, 'toggleCashflowLock'])->name('programmer.cashflowLocks.toggle');
+    Route::post('/cashflow-locks/batch', [ProgrammerController::class, 'batchUpdateCashflowLocks'])->name('programmer.cashflowLocks.batch');
     Route::get('/data/{table}', [ProgrammerController::class, 'getData'])->name('programmer.data');
     Route::post('/keyword-preview', [ProgrammerController::class, 'keywordPreview'])->name('programmer.keywordPreview');
     Route::post('/keyword-update', [ProgrammerController::class, 'keywordUpdate'])->name('programmer.keywordUpdate');
-    Route::delete('/delete/{table}/{id}', [ProgrammerController::class, 'deleteRecord'])->name('programmer.delete');
+    Route::delete('/delete/{table}/{id}', [ProgrammerController::class, 'deleteRecord'])->name('programmer.delete')->whereNumber('id');
     Route::delete('/bulk-delete/{table}', [ProgrammerController::class, 'bulkDelete'])->name('programmer.bulkDelete');
     Route::delete('/truncate/{table}', [ProgrammerController::class, 'truncateTable'])->name('programmer.truncate');
     Route::post('/import-cashflow', [ProgrammerController::class, 'importCashflow'])->name('programmer.importCashflow');

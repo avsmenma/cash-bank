@@ -52,7 +52,7 @@
                         @include('cash_bank.partials.kop-laporan', [
                             'judul' => 'Laporan Arus Kas',
                             'unit' => 'Seluruh Unit & Kebun — ' . $unitColumns->count() . ' unit',
-                            'periode' => 'Periode ' . $labelPeriode . ' · pembanding Tahun ' . $prevYear,
+                            'periode' => 'Periode ' . $labelPeriode . ($showTahunLalu ? ' · pembanding Tahun ' . $prevYear : ''),
                         ])
 
                         {{-- Kartu ringkasan memakai angka global (gabungan seluruh unit) --}}
@@ -61,21 +61,27 @@
                                 <div class="cf-kartu masuk">
                                     <div class="cf-kartu-label">Total Penerimaan (Global)</div>
                                     <div class="cf-kartu-nilai" id="kartuPenerimaan">-</div>
-                                    <div class="cf-kartu-banding">{{ $prevYear }}: <span id="kartuPenerimaanLalu">-</span></div>
+                                    @if($showTahunLalu)
+                                        <div class="cf-kartu-banding">{{ $prevYear }}: <span id="kartuPenerimaanLalu">-</span></div>
+                                    @endif
                                 </div>
                             </div>
                             <div class="col-md-4 mb-2">
                                 <div class="cf-kartu keluar">
                                     <div class="cf-kartu-label">Total Pengeluaran (Global)</div>
                                     <div class="cf-kartu-nilai" id="kartuPengeluaran">-</div>
-                                    <div class="cf-kartu-banding">{{ $prevYear }}: <span id="kartuPengeluaranLalu">-</span></div>
+                                    @if($showTahunLalu)
+                                        <div class="cf-kartu-banding">{{ $prevYear }}: <span id="kartuPengeluaranLalu">-</span></div>
+                                    @endif
                                 </div>
                             </div>
                             <div class="col-md-4 mb-2">
                                 <div class="cf-kartu bersih">
                                     <div class="cf-kartu-label">Kenaikan (Penurunan) Arus Kas Bersih</div>
                                     <div class="cf-kartu-nilai" id="kartuBersih">-</div>
-                                    <div class="cf-kartu-banding">{{ $prevYear }}: <span id="kartuBersihLalu">-</span></div>
+                                    @if($showTahunLalu)
+                                        <div class="cf-kartu-banding">{{ $prevYear }}: <span id="kartuBersihLalu">-</span></div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -100,6 +106,11 @@
                                 <div class="custom-control custom-checkbox mr-3">
                                     <input type="checkbox" class="custom-control-input" id="filterSemua" {{ $showEmpty ? 'checked' : '' }}>
                                     <label class="custom-control-label" for="filterSemua">Tampilkan semua akun</label>
+                                </div>
+
+                                <div class="custom-control custom-checkbox mr-3">
+                                    <input type="checkbox" class="custom-control-input" id="filterTahunLalu" {{ $showTahunLalu ? 'checked' : '' }}>
+                                    <label class="custom-control-label" for="filterTahunLalu">Tampilkan Kolom Thn Lalu</label>
                                 </div>
 
                                 <button type="button" id="btnCetak" class="btn btn-sm btn-outline-secondary ml-auto">
@@ -129,6 +140,7 @@
             $(document).ready(function () {
                 var selectedYear = {{ $selectedYear }};
                 var prevYear = {{ $prevYear }};
+                var showTahunLalu = {{ $showTahunLalu ? 'true' : 'false' }};
                 var tableData = @json($reportRows);
                 var summary = @json($summary);
                 var unitColumns = @json($unitColumns);
@@ -176,7 +188,21 @@
 
                 // ── Susunan kolom ──
                 // Kiri (dibekukan): Kode | Reference | Uraian | Realisasi Global
-                // Kanan (digeser) : satu grup per unit, masing-masing 2 sub-kolom tahun
+                // Kanan (digeser) : satu grup per unit
+                var globalSubColumns = [
+                    {
+                        title: "Realisasi " + selectedYear, field: "values.global.current", width: 155,
+                        hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
+                    }
+                ];
+
+                if (showTahunLalu) {
+                    globalSubColumns.push({
+                        title: "Realisasi " + prevYear, field: "values.global.previous", width: 155,
+                        hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
+                    });
+                }
+
                 var kolom = [
                     {
                         title: "Kode", field: "kode", width: 90, frozen: true,
@@ -194,33 +220,27 @@
                         title: "Realisasi Global",
                         headerHozAlign: "center",
                         frozen: true,
-                        columns: [
-                            {
-                                title: "Realisasi " + selectedYear, field: "values.global.current", width: 155,
-                                hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
-                            },
-                            {
-                                title: "Realisasi " + prevYear, field: "values.global.previous", width: 155,
-                                hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
-                            }
-                        ]
+                        columns: globalSubColumns
                     }
                 ];
 
                 unitColumns.forEach(function (unit) {
+                    var unitSubColumns = [
+                        {
+                            title: "Realisasi " + selectedYear, field: "values." + unit.key + ".current",
+                            width: 140, hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
+                        }
+                    ];
+                    if (showTahunLalu) {
+                        unitSubColumns.push({
+                            title: "Realisasi " + prevYear, field: "values." + unit.key + ".previous",
+                            width: 140, hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
+                        });
+                    }
                     kolom.push({
                         title: unit.nama,
                         headerHozAlign: "center",
-                        columns: [
-                            {
-                                title: "Realisasi " + selectedYear, field: "values." + unit.key + ".current",
-                                width: 140, hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
-                            },
-                            {
-                                title: "Realisasi " + prevYear, field: "values." + unit.key + ".previous",
-                                width: 140, hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
-                            }
-                        ]
+                        columns: unitSubColumns
                     });
                 });
 
@@ -299,10 +319,16 @@
                         url.searchParams.delete('semua');
                     }
 
+                    if ($('#filterTahunLalu').is(':checked')) {
+                        url.searchParams.set('tahun_lalu', 1);
+                    } else {
+                        url.searchParams.delete('tahun_lalu');
+                    }
+
                     window.location.href = url.toString();
                 }
 
-                $('#filterTahun, #filterBulan, #filterSemua').on('change', applyFilter);
+                $('#filterTahun, #filterBulan, #filterSemua, #filterTahunLalu').on('change', applyFilter);
                 $('#btnCetak').on('click', function () { window.print(); });
             });
         </script>

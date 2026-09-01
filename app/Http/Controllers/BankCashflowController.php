@@ -33,6 +33,7 @@ class BankCashflowController extends Controller
         $selectedYear = (int) $request->get('tahun', $years[0]);
         $selectedBulan = (string) $request->get('bulan', '');
         $showEmpty = $request->boolean('semua');
+        $showTahunLalu = $request->boolean('tahun_lalu');
         $prevYear = $selectedYear - 1;
 
         // Daftar unit sengaja diambil TANPA menyertakan filter periode supaya
@@ -46,6 +47,9 @@ class BankCashflowController extends Controller
         $units = BankTujuan::whereIn('id_bank_tujuan', $unitIds)
             ->orderBy('nama_tujuan')
             ->get(['id_bank_tujuan', 'nama_tujuan']);
+
+        // Query tahun berjalan dan tahun lalu jika opsi tampilkan kolom tahun lalu aktif
+        $yearsToQuery = $showTahunLalu ? [$selectedYear, $prevYear] : [$selectedYear, $prevYear];
 
         // Satu query untuk semua: dua tahun x seluruh unit x seluruh reference key.
         $aggregates = Cashflow::query()
@@ -79,10 +83,14 @@ class BankCashflowController extends Controller
         $reportRows = CashflowReportBuilder::buildMulti($series, $references, $showEmpty);
         $summary = CashflowReportBuilder::summarize($reportRows);
 
-        $unitColumns = $units->map(fn ($unit) => [
-            'key' => 'u' . $unit->id_bank_tujuan,
-            'nama' => $unit->nama_tujuan,
-        ])->values();
+        $unitColumns = $units->map(function ($unit) {
+            // Hapus nomor VA dari nama unit, contoh: "81029155501 - RAREN" -> "RAREN"
+            $cleanName = trim(preg_replace('/^(?:VA\s*)?\d+\s*[-–—]\s*/i', '', $unit->nama_tujuan)) ?: $unit->nama_tujuan;
+            return [
+                'key' => 'u' . $unit->id_bank_tujuan,
+                'nama' => $cleanName,
+            ];
+        })->values();
 
         return view('cash_bank.cashflowBank', compact(
             'years',
@@ -91,6 +99,7 @@ class BankCashflowController extends Controller
             'prevYear',
             'selectedBulan',
             'showEmpty',
+            'showTahunLalu',
             'reportRows',
             'summary',
             'unitColumns'

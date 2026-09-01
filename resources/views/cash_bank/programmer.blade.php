@@ -459,6 +459,89 @@
         font-size: 0.78rem;
         margin-bottom: 0;
     }
+
+    /* ===== MONTH LOCK COMPONENT ===== */
+    .month-lock-container {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .month-lock-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+
+    .month-lock-card {
+        background: #ffffff;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.75rem;
+        text-align: center;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        position: relative;
+        user-select: none;
+    }
+
+    .month-lock-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .month-lock-card.locked {
+        background: #fff5f5;
+        border-color: #feb2b2;
+        box-shadow: 0 2px 8px rgba(229, 62, 62, 0.12);
+    }
+
+    .month-lock-card.unlocked {
+        background: #f0fff4;
+        border-color: #9ae6b4;
+        box-shadow: 0 2px 8px rgba(56, 161, 105, 0.12);
+    }
+
+    .month-lock-card .month-title {
+        font-weight: 700;
+        font-size: 0.88rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .month-lock-card.locked .month-title {
+        color: #9b2c2c;
+    }
+
+    .month-lock-card.unlocked .month-title {
+        color: #22543d;
+    }
+
+    .month-lock-card .lock-icon {
+        font-size: 1.35rem;
+        margin-bottom: 0.35rem;
+        transition: transform 0.2s ease;
+    }
+
+    .month-lock-card.locked .lock-icon {
+        color: #e53e3e;
+    }
+
+    .month-lock-card.unlocked .lock-icon {
+        color: #38a169;
+    }
+
+    .month-lock-card:hover .lock-icon {
+        transform: scale(1.2);
+    }
+
+    .month-lock-card .month-count {
+        font-size: 0.72rem;
+        color: #718096;
+        font-weight: 600;
+    }
 </style>
 @endpush
 
@@ -480,7 +563,7 @@
     <div class="keyword-panel mb-4">
         <div class="keyword-panel-header" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);">
             <h5><i class="fas fa-file-excel mr-2 text-warning"></i>Import Cash Flow & Standarisasi Reference Key (SAP)</h5>
-            <span class="badge badge-warning text-dark font-weight-bold"><i class="fas fa-magic mr-1"></i>Auto Match 33 Unit/Kebun</span>
+            <span class="badge badge-warning text-dark font-weight-bold"><i class="fas fa-shield-alt mr-1"></i>Proteksi Lock Bulan Aktif</span>
         </div>
         <div class="keyword-panel-body">
             @if(session('success'))
@@ -500,6 +583,60 @@
                 </div>
             @endif
 
+            {{-- Month Lock Controller Bar --}}
+            <div class="month-lock-container">
+                <div class="d-flex align-items-center justify-content-between flex-wrap pb-2 border-bottom mb-2" style="gap: 0.75rem;">
+                    <div class="d-flex align-items-center flex-wrap" style="gap: 0.75rem;">
+                        <h6 class="font-weight-bold mb-0 text-dark">
+                            <i class="fas fa-lock text-danger mr-1"></i> Pengaturan Lock Bulan Cash Flow
+                        </h6>
+                        <div class="d-flex align-items-center" style="gap: 0.35rem;">
+                            <label class="small mb-0 font-weight-bold text-secondary">Tahun:</label>
+                            <select class="form-control form-control-sm font-weight-bold" id="lockTahunSelect" style="width: 100px; border-radius: 6px;" onchange="loadMonthLocks(this.value)">
+                                @foreach($availableYears as $yr)
+                                    <option value="{{ $yr }}" {{ $yr == $selectedLockYear ? 'selected' : '' }}>{{ $yr }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                        <span id="lockSummaryBadge">
+                            {{-- Live summary --}}
+                        </span>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-danger font-weight-bold" onclick="batchUpdateLocks('lock_all')" title="Kunci semua bulan 1-12">
+                                <i class="fas fa-lock mr-1"></i> Kunci Semua
+                            </button>
+                            <button type="button" class="btn btn-outline-success font-weight-bold" onclick="batchUpdateLocks('unlock_all')" title="Buka semua bulan 1-12">
+                                <i class="fas fa-lock-open mr-1"></i> Buka Semua
+                            </button>
+                            <button type="button" class="btn btn-outline-primary font-weight-bold" onclick="batchUpdateLocks('lock_until', 7)" title="Kunci Januari s/d Juli">
+                                <i class="fas fa-calendar-check mr-1"></i> Kunci Jan - Jul
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Explanatory Banner --}}
+                <div class="alert alert-info py-2 px-3 mb-2 d-flex align-items-center rounded-lg" style="font-size: 0.82rem; background: #ebf8ff; border: 1px solid #bee3f8; color: #2b6cb0;">
+                    <i class="fas fa-info-circle fa-lg mr-2 flex-shrink-0 text-primary"></i>
+                    <div>
+                        <strong>Aturan Proteksi Lock Bulan:</strong> Bulan berstatus <span class="badge badge-danger"><i class="fas fa-lock"></i> Terkunci</span> <strong>tidak akan terhapus</strong> saat mencentang <em>"Timpa data lama (Truncate)"</em> dan data baris bulan tersebut pada file Excel akan <strong>dilewati</strong>. Hanya bulan yang <span class="badge badge-success"><i class="fas fa-lock-open"></i> Terbuka</span> yang akan di-replace/diimport.
+                    </div>
+                </div>
+
+                {{-- Month Grid Container --}}
+                <div class="position-relative">
+                    <div id="monthLockGrid" class="month-lock-grid">
+                        {{-- Loaded via JavaScript --}}
+                    </div>
+                    <div id="monthLockLoading" class="spinner-overlay" style="display: none; border-radius: 8px;">
+                        <div class="spinner-border spinner-border-sm text-danger" role="status"></div>
+                    </div>
+                </div>
+            </div>
+
             <form action="{{ route('programmer.importCashflow') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="row align-items-end">
@@ -514,13 +651,14 @@
                         <small class="text-muted d-block mt-1">Kosongkan jika ingin menggunakan file server: <code>docs/Standarisasi Reffkey (1).xlsx</code></small>
                     </div>
                     <div class="col-lg-3 mb-3">
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox" name="truncate_first" id="chkTruncateFirst" value="1" checked>
-                            <label class="form-check-label small font-weight-bold" for="chkTruncateFirst">
+                        <div class="form-check mb-2 bg-light p-2 rounded border">
+                            <input class="form-check-input ml-1" type="checkbox" name="truncate_first" id="chkTruncateFirst" value="1" checked>
+                            <label class="form-check-label small font-weight-bold ml-4" for="chkTruncateFirst">
                                 Timpa data lama (Truncate)
                             </label>
+                            <small class="text-muted d-block ml-4" style="font-size: 0.72rem;">Hanya menimpa bulan <strong>Terbuka (🔓)</strong>. Bulan <strong>Terkunci (🔒)</strong> aman.</small>
                         </div>
-                        <button type="submit" class="btn btn-success btn-block font-weight-bold shadow-sm" onclick="return confirm('Mulai proses import data Cash Flow? Proses ini mungkin memakan waktu beberapa detik.')">
+                        <button type="submit" class="btn btn-success btn-block font-weight-bold shadow-sm" onclick="return confirm('Mulai proses import data Cash Flow? Data bulan terkunci tidak akan terhapus.')">
                             <i class="fas fa-upload mr-1"></i> Mulai Import Cash Flow
                         </button>
                     </div>
@@ -732,6 +870,114 @@
     // ===== CSRF Setup =====
     $.ajaxSetup({
         headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+    });
+
+    // ===== MONTH LOCK CASHFLOW =====
+    let currentLockYear = {{ $selectedLockYear ?? date('Y') }};
+    let monthLockData = @json($cashflowLocks ?? []);
+
+    function renderMonthLocks(months) {
+        let container = $('#monthLockGrid');
+        container.empty();
+        let lockedCount = 0;
+
+        if (!months || Object.keys(months).length === 0) {
+            container.html('<div class="col-12 text-center text-muted py-3">Tidak ada data lock.</div>');
+            return;
+        }
+
+        Object.keys(months).forEach(m => {
+            let item = months[m];
+            let isLocked = Boolean(item.is_locked);
+            if (isLocked) lockedCount++;
+
+            let card = $(`
+                <div class="month-lock-card ${isLocked ? 'locked' : 'unlocked'}" 
+                     onclick="toggleMonthLock(${currentLockYear}, ${item.bulan}, ${isLocked})"
+                     title="Klik untuk ${isLocked ? 'membuka (Unlock)' : 'mengunci (Lock)'} ${item.nama_bulan} ${currentLockYear}">
+                    <div class="lock-icon">
+                        <i class="fas ${isLocked ? 'fa-lock' : 'fa-lock-open'}"></i>
+                    </div>
+                    <div class="month-title">${item.nama_bulan}</div>
+                    <span class="badge ${isLocked ? 'badge-danger' : 'badge-success'} px-2 py-1" style="font-size: 0.7rem; font-weight: 700;">
+                        <i class="fas ${isLocked ? 'fa-lock' : 'fa-lock-open'} mr-1"></i>${isLocked ? 'TERKUNCI' : 'TERBUKA'}
+                    </span>
+                    <div class="month-count mt-1">
+                        <i class="fas fa-database mr-1"></i>${Number(item.total_rows || 0).toLocaleString('id-ID')} baris
+                    </div>
+                </div>
+            `);
+            container.append(card);
+        });
+
+        let unlockedCount = 12 - lockedCount;
+        $('#lockSummaryBadge').html(`
+            <span class="badge badge-danger mr-1 px-2 py-1"><i class="fas fa-lock mr-1"></i>${lockedCount} Bulan Terkunci</span>
+            <span class="badge badge-success px-2 py-1"><i class="fas fa-lock-open mr-1"></i>${unlockedCount} Bulan Terbuka</span>
+        `);
+    }
+
+    function loadMonthLocks(tahun) {
+        currentLockYear = tahun;
+        $('#monthLockLoading').show();
+        $.ajax({
+            url: `/programmer/cashflow-locks?tahun=${tahun}`,
+            type: 'GET',
+            success: function(res) {
+                $('#monthLockLoading').hide();
+                monthLockData = res.months;
+                renderMonthLocks(res.months);
+            },
+            error: function() {
+                $('#monthLockLoading').hide();
+                showToast('error', 'Gagal memuat status lock bulan');
+            }
+        });
+    }
+
+    function toggleMonthLock(tahun, bulan, currentlyLocked) {
+        let newStatus = !currentlyLocked;
+        $.ajax({
+            url: '/programmer/cashflow-locks/toggle',
+            type: 'POST',
+            data: {
+                tahun: tahun,
+                bulan: bulan,
+                is_locked: newStatus ? 1 : 0
+            },
+            success: function(res) {
+                showToast('success', res.message);
+                monthLockData = res.months;
+                renderMonthLocks(res.months);
+            },
+            error: function(xhr) {
+                showToast('error', xhr.responseJSON?.message || 'Gagal mengubah status lock');
+            }
+        });
+    }
+
+    function batchUpdateLocks(action, untilMonth = null) {
+        $.ajax({
+            url: '/programmer/cashflow-locks/batch',
+            type: 'POST',
+            data: {
+                tahun: currentLockYear,
+                action: action,
+                until_month: untilMonth
+            },
+            success: function(res) {
+                showToast('success', res.message);
+                monthLockData = res.months;
+                renderMonthLocks(res.months);
+            },
+            error: function(xhr) {
+                showToast('error', xhr.responseJSON?.message || 'Gagal memperbarui lock');
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        renderMonthLocks(monthLockData);
     });
 
     $('.keyword-select').select2({ theme: 'bootstrap4', width: '100%' });

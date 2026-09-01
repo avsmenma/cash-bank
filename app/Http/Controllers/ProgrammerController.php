@@ -148,6 +148,7 @@ class ProgrammerController extends Controller
 
         $currentYear = (int) date('Y');
         $availableYears = Cashflow::whereNotNull('tahun')
+            ->whereBetween('tahun', [2000, 2100])
             ->distinct()
             ->orderByDesc('tahun')
             ->pluck('tahun')

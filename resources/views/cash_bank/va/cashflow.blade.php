@@ -57,15 +57,13 @@
                 white-space: normal !important;
                 word-break: break-word !important;
                 overflow-wrap: break-word !important;
-                line-height: 1.4 !important;
-                padding: 8px 6px !important;
-                display: flex;
-                align-items: center;
+                vertical-align: middle !important;
+                padding: 6px 8px !important;
+                height: auto !important;
             }
 
             #tabelRincian .tabulator-row {
-                min-height: 38px;
-                height: auto !important;
+                min-height: 36px;
             }
         </style>
     @endpush

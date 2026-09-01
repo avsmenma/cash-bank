@@ -17,6 +17,7 @@ use App\Models\SaldoAwal;
 use App\Models\DaftarBank;
 use App\Models\DaftarRekening;
 use App\Models\Cashflow;
+use App\Models\CashflowLock;
 use App\Models\CashflowReference;
 use App\Services\CashflowImportService;
 
@@ -145,7 +146,31 @@ class ProgrammerController extends Controller
             ];
         }
 
-        return view('cash_bank.programmer', compact('stats', 'tableMap', 'keywordReferences'));
+        $currentYear = (int) date('Y');
+        $availableYears = Cashflow::whereNotNull('tahun')
+            ->distinct()
+            ->orderByDesc('tahun')
+            ->pluck('tahun')
+            ->map(fn($t) => (int) $t)
+            ->all();
+
+        if (empty($availableYears)) {
+            $availableYears = [$currentYear];
+        } elseif (!in_array($currentYear, $availableYears, true)) {
+            array_unshift($availableYears, $currentYear);
+        }
+
+        $selectedLockYear = (int) request('lock_tahun', $availableYears[0]);
+        $cashflowLocks = CashflowLock::getStatusForYear($selectedLockYear);
+
+        return view('cash_bank.programmer', compact(
+            'stats',
+            'tableMap',
+            'keywordReferences',
+            'availableYears',
+            'selectedLockYear',
+            'cashflowLocks'
+        ));
     }
 
     /**
@@ -480,6 +505,102 @@ class ProgrammerController extends Controller
     }
 
     /**
+     * AJAX endpoint: Ambil status lock bulan untuk tahun tertentu.
+     */
+    public function getCashflowLocks(Request $request)
+    {
+        $tahun = (int) $request->input('tahun', date('Y'));
+        $data = CashflowLock::getStatusForYear($tahun);
+
+        return response()->json([
+            'success' => true,
+            'tahun' => $tahun,
+            'months' => $data,
+        ]);
+    }
+
+    /**
+     * AJAX endpoint: Toggle status lock satu bulan.
+     */
+    public function toggleCashflowLock(Request $request)
+    {
+        $validated = $request->validate([
+            'tahun' => 'required|integer',
+            'bulan' => 'required|integer|min:1|max:12',
+            'is_locked' => 'required|boolean',
+        ]);
+
+        $tahun = (int) $validated['tahun'];
+        $bulan = (int) $validated['bulan'];
+        $isLocked = (bool) $validated['is_locked'];
+
+        CashflowLock::setLock(
+            $tahun,
+            $bulan,
+            $isLocked,
+            $request->user()?->username
+        );
+
+        $data = CashflowLock::getStatusForYear($tahun);
+        $monthNames = CashflowLock::getMonthNames();
+        $monthName = $monthNames[$bulan] ?? "Bulan {$bulan}";
+        $statusText = $isLocked ? 'dikunci (Locked)' : 'dibuka (Unlocked)';
+
+        return response()->json([
+            'success' => true,
+            'message' => "Bulan {$monthName} {$tahun} berhasil {$statusText}.",
+            'tahun' => $tahun,
+            'bulan' => $bulan,
+            'is_locked' => $isLocked,
+            'months' => $data,
+        ]);
+    }
+
+    /**
+     * AJAX endpoint: Batch update lock bulan (Kunci Semua, Buka Semua, Kunci Jan-X, Custom).
+     */
+    public function batchUpdateCashflowLocks(Request $request)
+    {
+        $validated = $request->validate([
+            'tahun' => 'required|integer',
+            'action' => 'required|in:lock_all,unlock_all,lock_until,custom',
+            'locked_months' => 'nullable|array',
+            'locked_months.*' => 'integer|min:1|max:12',
+            'until_month' => 'nullable|integer|min:1|max:12',
+        ]);
+
+        $tahun = (int) $validated['tahun'];
+        $action = $validated['action'];
+        $lockedMonths = [];
+
+        if ($action === 'lock_all') {
+            $lockedMonths = range(1, 12);
+        } elseif ($action === 'unlock_all') {
+            $lockedMonths = [];
+        } elseif ($action === 'lock_until') {
+            $until = (int) ($validated['until_month'] ?? 7);
+            $lockedMonths = range(1, $until);
+        } elseif ($action === 'custom') {
+            $lockedMonths = array_map('intval', $validated['locked_months'] ?? []);
+        }
+
+        CashflowLock::batchSetLocks($tahun, $lockedMonths, $request->user()?->username);
+        $data = CashflowLock::getStatusForYear($tahun);
+
+        $monthNames = CashflowLock::getMonthNames();
+        $msg = "Pengaturan Lock Bulan tahun {$tahun} berhasil diperbarui (" . count($lockedMonths) . " bulan terkunci).";
+
+        return response()->json([
+            'success' => true,
+            'message' => $msg,
+            'tahun' => $tahun,
+            'locked_count' => count($lockedMonths),
+            'unlocked_count' => 12 - count($lockedMonths),
+            'months' => $data,
+        ]);
+    }
+
+    /**
      * Import raw Cashflow.xlsx and Standarisasi Reffkey.
      */
     public function importCashflow(Request $request, CashflowImportService $service)
@@ -489,7 +610,7 @@ class ProgrammerController extends Controller
 
         try {
             $refCount = 0;
-            $cfCount = 0;
+            $cfResult = null;
 
             // 1. Process Standarisasi Reffkey if file uploaded or exists in docs
             $refFile = null;
@@ -522,13 +643,34 @@ class ProgrammerController extends Controller
             }
 
             if ($cfFile && file_exists($cfFile)) {
-                if ($request->boolean('truncate_first', true)) {
-                    Cashflow::truncate();
-                }
-                $cfCount = $service->importCashflowTransactions($cfFile);
+                $truncateUnlocked = $request->boolean('truncate_first', true);
+                $cfResult = $service->importCashflowTransactions($cfFile, $truncateUnlocked);
             }
 
-            return redirect()->back()->with('success', "Import berhasil! {$refCount} kode referensi standarisasi dan {$cfCount} baris transaksi cashflow berhasil diimport.");
+            $cfCount = $cfResult ? ($cfResult['inserted'] ?? 0) : 0;
+            $skippedCount = $cfResult ? ($cfResult['skipped_locked'] ?? 0) : 0;
+            $replacedPeriods = $cfResult ? ($cfResult['replaced_periods'] ?? []) : [];
+
+            $monthNames = CashflowLock::getMonthNames();
+            $replacedDesc = [];
+            foreach ($replacedPeriods as $pKey) {
+                $parts = explode('_', $pKey);
+                if (count($parts) === 2) {
+                    $y = $parts[0];
+                    $m = (int) $parts[1];
+                    $replacedDesc[] = ($monthNames[$m] ?? "Bln {$m}") . " {$y}";
+                }
+            }
+
+            $msg = "Import berhasil! {$refCount} kode referensi standarisasi dan {$cfCount} baris transaksi cashflow berhasil diproses.";
+            if (!empty($replacedDesc)) {
+                $msg .= " Periode yang di-replace: " . implode(', ', $replacedDesc) . ".";
+            }
+            if ($skippedCount > 0) {
+                $msg .= " Sebanyak {$skippedCount} baris data pada bulan yang TERKUNCI dilewati (data lama tetap aman terjaga).";
+            }
+
+            return redirect()->back()->with('success', $msg);
         } catch (\Exception $e) {
             \Log::error('Import Cashflow Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return redirect()->back()->with('error', 'Gagal import cashflow: ' . $e->getMessage());

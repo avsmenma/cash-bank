@@ -45,6 +45,28 @@
                 text-align: center;
                 white-space: normal;
             }
+
+            /* Sembunyikan seluruh panah sorting pada modal rincian */
+            #tabelRincian .tabulator-col .tabulator-arrow,
+            #tabelRincian .tabulator-col-sorter {
+                display: none !important;
+            }
+
+            /* Agar data teks panjang membungkus ke bawah (wrap) dan tampil penuh tanpa terpotong */
+            #tabelRincian .tabulator-cell {
+                white-space: normal !important;
+                word-break: break-word !important;
+                overflow-wrap: break-word !important;
+                line-height: 1.4 !important;
+                padding: 8px 6px !important;
+                display: flex;
+                align-items: center;
+            }
+
+            #tabelRincian .tabulator-row {
+                min-height: 38px;
+                height: auto !important;
+            }
         </style>
     @endpush
 
@@ -368,10 +390,12 @@
                     return Number(field === 'current' ? data.current : data.previous) !== 0;
                 }
 
-                // Tabulator baru boleh menerima setData/redraw SETELAH selesai
-                // dibangun; memanggilnya lebih awal melempar error internal
-                // (verticalFillMode null). Karena itu pembangunannya dibungkus
-                // Promise dan semua pemakaian menunggu promise tersebut.
+                function formatTeksBungkus(cell) {
+                    var val = cell.getValue();
+                    if (!val) return '<span class="cf-nol">-</span>';
+                    return '<div style="white-space: normal; word-break: break-word; line-height: 1.4;">' + escapeHtml(val) + '</div>';
+                }
+
                 // Tabulator baru boleh menerima setData/redraw SETELAH selesai
                 // dibangun; memanggilnya lebih awal melempar error internal
                 // (verticalFillMode null). Karena itu pembangunannya dibungkus
@@ -385,12 +409,12 @@
                             layout: 'fitColumns',
                             height: '52vh',
                             columnHeaderVertAlign: 'middle',
-                            columnDefaults: { headerSort: true, minWidth: 60, variableHeight: true },
+                            columnDefaults: { headerSort: false, minWidth: 60, variableHeight: true },
                             placeholder: "<div class='py-4 text-muted'>Tidak ada transaksi pada cakupan ini.</div>",
                             columns: [
                                 {
                                     title: "Tanggal", field: "tanggal", width: 95, hozAlign: "center",
-                                    headerHozAlign: "center",
+                                    headerHozAlign: "center", headerSort: false,
                                     formatter: function (cell) {
                                         var v = cell.getValue();
                                         if (!v) return '<span class="cf-nol">-</span>';
@@ -400,24 +424,36 @@
                                 },
                                 {
                                     title: "No. Dokumen", field: "dokumen", width: 115, hozAlign: "center",
-                                    headerHozAlign: "center",
+                                    headerHozAlign: "center", headerSort: false,
                                     formatter: function (cell) {
-                                        return '<span class="cf-kode">' + escapeHtml(cell.getValue()) + '</span>';
+                                        return '<span class="cf-kode" style="white-space: normal; word-break: break-all;">' + escapeHtml(cell.getValue()) + '</span>';
                                     }
                                 },
                                 {
                                     title: "Reference", field: "reference", width: 100, hozAlign: "center",
-                                    headerHozAlign: "center",
+                                    headerHozAlign: "center", headerSort: false,
                                     formatter: function (cell) {
                                         return '<span class="cf-kode">' + escapeHtml(cell.getValue()) + '</span>';
                                     }
                                 },
-                                { title: "Uraian", field: "uraian", minWidth: 200, widthGrow: 2, headerHozAlign: "center" },
-                                { title: "Keterangan", field: "keterangan", minWidth: 200, widthGrow: 3, headerHozAlign: "center" },
-                                { title: "Akun Lawan", field: "lawan", minWidth: 150, widthGrow: 2, headerHozAlign: "center" },
                                 {
-                                    title: "Nominal", field: "amount", width: 150, hozAlign: "right",
-                                    headerHozAlign: "center",
+                                    title: "Uraian", field: "uraian", minWidth: 160, widthGrow: 2,
+                                    headerHozAlign: "center", headerSort: false,
+                                    formatter: formatTeksBungkus
+                                },
+                                {
+                                    title: "Keterangan", field: "keterangan", minWidth: 180, widthGrow: 3,
+                                    headerHozAlign: "center", headerSort: false,
+                                    formatter: formatTeksBungkus
+                                },
+                                {
+                                    title: "Akun Lawan", field: "lawan", minWidth: 160, widthGrow: 2,
+                                    headerHozAlign: "center", headerSort: false,
+                                    formatter: formatTeksBungkus
+                                },
+                                {
+                                    title: "Nominal", field: "amount", width: 140, hozAlign: "right",
+                                    headerHozAlign: "center", headerSort: false,
                                     formatter: function (cell) {
                                         return '<span class="cf-angka">' + tulisAngka(cell.getValue()) + '</span>';
                                     }

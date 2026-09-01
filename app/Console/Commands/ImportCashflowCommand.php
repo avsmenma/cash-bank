@@ -58,12 +58,17 @@ class ImportCashflowCommand extends Command
                 return Command::FAILURE;
             }
 
-            if ($this->option('truncate')) {
-                $this->warn("Mengosongkan tabel cashflows...");
-                Cashflow::truncate();
+            $truncate = (bool) $this->option('truncate');
+            if ($truncate) {
+                $this->warn("Mode truncate aktif: Data lama pada bulan terbuka yang diimpor akan digantikan...");
             }
-            $countCf = $service->importCashflowTransactions($cfPath);
+            $res = $service->importCashflowTransactions($cfPath, $truncate);
+            $countCf = is_array($res) ? ($res['inserted'] ?? 0) : $res;
+            $skippedLocked = is_array($res) ? ($res['skipped_locked'] ?? 0) : 0;
             $this->info("Berhasil mengimpor {$countCf} baris transaksi cashflow.");
+            if ($skippedLocked > 0) {
+                $this->warn("Sebanyak {$skippedLocked} baris dilewati karena bulan terkunci.");
+            }
         } else {
             $this->warn("File transaksi cashflow tidak ditemukan: {$cfPath}");
         }

@@ -465,8 +465,30 @@
         }
     });
 
-    // (Tabel Bank VA kini memakai Tabulator; skripnya ada di bawah pada stack
-    //  'scripts' agar dijalankan setelah jQuery & Tabulator selesai dimuat.)
+    // Otomatis sinkronisasi input Tanggal saat Tahun atau Bulan dipilih
+    (function () {
+        var selTahun = document.getElementById('filterTahun');
+        var selBulan = document.getElementById('filterBulan');
+        var inpDari = document.getElementById('filterTglDari');
+        var inpSampai = document.getElementById('filterTglSampai');
+
+        function syncDates() {
+            var y = selTahun.value || new Date().getFullYear();
+            var m = selBulan.value;
+            if (m) {
+                var mm = String(m).padStart(2, '0');
+                var lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+                inpDari.value = y + '-' + mm + '-01';
+                inpSampai.value = y + '-' + mm + '-' + String(lastDay).padStart(2, '0');
+            } else if (selTahun.value) {
+                inpDari.value = y + '-01-01';
+                inpSampai.value = y + '-12-31';
+            }
+        }
+
+        if (selTahun) selTahun.addEventListener('change', syncDates);
+        if (selBulan) selBulan.addEventListener('change', syncDates);
+    })();
 </script>
 
 {{-- ============================================================

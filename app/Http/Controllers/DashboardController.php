@@ -1071,35 +1071,74 @@ class dashboardController extends Controller
         $tglDari = $request?->get('tgl_dari');
         $tglSampai = $request?->get('tgl_sampai');
 
-        // Filter callback untuk subquery bank_masuk & bank_keluars
-        $applyDateFilter = function ($q) use ($tglDari, $tglSampai, $tahun, $bulan) {
-            if (!empty($tglDari) && !empty($tglSampai)) {
-                $q->whereBetween('tanggal', [$tglDari, $tglSampai]);
-            } elseif (!empty($tglSampai)) {
-                $q->where('tanggal', '<=', $tglSampai);
-            } elseif (!empty($tglDari)) {
-                $q->where('tanggal', '>=', $tglDari);
-            } else {
-                if (!empty($tahun)) {
-                    $q->whereYear('tanggal', $tahun);
+        $bulanList = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        // Tentukan cutoff date (as-of date) untuk perhitungan posisi saldo kumulatif rekening & VA
+        $cutoffDate = null;
+        $labelFilter = 'Semua Waktu (Seluruh Data)';
+
+        if (!empty($tglSampai)) {
+            $cutoffDate = $tglSampai;
+            if (!empty($tglDari)) {
+                try {
+                    $labelFilter = \Carbon\Carbon::parse($tglDari)->translatedFormat('d M Y') . ' s/d ' . \Carbon\Carbon::parse($tglSampai)->translatedFormat('d M Y') . ' (Posisi per ' . \Carbon\Carbon::parse($tglSampai)->translatedFormat('d M Y') . ')';
+                } catch (\Exception $e) {
+                    $labelFilter = $tglDari . ' s/d ' . $tglSampai;
                 }
-                if (!empty($bulan)) {
-                    $q->whereMonth('tanggal', (int) $bulan);
+            } else {
+                try {
+                    $labelFilter = 'Sampai dengan ' . \Carbon\Carbon::parse($tglSampai)->translatedFormat('d F Y');
+                } catch (\Exception $e) {
+                    $labelFilter = 'Sampai dengan ' . $tglSampai;
                 }
             }
-        };
+        } elseif (!empty($tglDari)) {
+            $cutoffDate = $tglDari;
+            try {
+                $labelFilter = 'Posisi Saldo per ' . \Carbon\Carbon::parse($tglDari)->translatedFormat('d F Y');
+            } catch (\Exception $e) {
+                $labelFilter = 'Per ' . $tglDari;
+            }
+        } elseif (!empty($tahun) && !empty($bulan)) {
+            try {
+                $lastDay = \Carbon\Carbon::create((int) $tahun, (int) $bulan, 1)->endOfMonth()->toDateString();
+                $cutoffDate = $lastDay;
+                $labelFilter = 'Bulan ' . ($bulanList[(int) $bulan] ?? $bulan) . ' ' . $tahun . ' (Posisi per ' . \Carbon\Carbon::parse($lastDay)->translatedFormat('d M Y') . ')';
+            } catch (\Exception $e) {
+                $cutoffDate = $tahun . '-' . str_pad($bulan, 2, '0', STR_PAD_LEFT) . '-28';
+            }
+        } elseif (!empty($tahun)) {
+            $cutoffDate = $tahun . '-12-31';
+            $labelFilter = 'Tahun ' . $tahun . ' (Posisi per 31 Des ' . $tahun . ')';
+        } elseif (!empty($bulan)) {
+            $currentY = (int) date('Y');
+            try {
+                $lastDay = \Carbon\Carbon::create($currentY, (int) $bulan, 1)->endOfMonth()->toDateString();
+                $cutoffDate = $lastDay;
+                $labelFilter = 'Bulan ' . ($bulanList[(int) $bulan] ?? $bulan) . ' ' . $currentY;
+            } catch (\Exception $e) {
+                // fallback
+            }
+        }
 
-        // Ambil semua sumber dana beserta saldo VA-nya
-        // Saldo VA = SUM(bank_masuk.debet) - SUM(bank_keluars.kredit) per sumber_dana
+        // Ambil semua sumber dana beserta saldo kumulatifnya sampai dengan cutoffDate
         $masukSubQuery = DB::table('bank_masuk')
             ->selectRaw('COALESCE(SUM(debet), 0)')
             ->whereColumn('bank_masuk.id_sumber_dana', 'sumber_dana.id_sumber_dana');
-        $applyDateFilter($masukSubQuery);
+        if ($cutoffDate !== null) {
+            $masukSubQuery->where('tanggal', '<=', $cutoffDate);
+        }
 
         $keluarSubQuery = DB::table('bank_keluars')
             ->selectRaw('COALESCE(SUM(kredit), 0)')
             ->whereColumn('bank_keluars.id_sumber_dana', 'sumber_dana.id_sumber_dana');
-        $applyDateFilter($keluarSubQuery);
+        if ($cutoffDate !== null) {
+            $keluarSubQuery->where('tanggal', '<=', $cutoffDate);
+        }
 
         $sumberDanaList = DB::table('sumber_dana')
             ->select('sumber_dana.id_sumber_dana', 'sumber_dana.nama_sumber_dana')
@@ -1114,16 +1153,20 @@ class dashboardController extends Controller
 
         $totalSaldoBank = $sumberDanaList->sum('saldo_va');
 
-        // Ambil saldo per Bank Virtual Account (bank_tujuan)
+        // Ambil saldo per Bank Virtual Account (bank_tujuan) sampai dengan cutoffDate
         $masukVaSubQuery = DB::table('bank_masuk')
             ->selectRaw('COALESCE(SUM(debet), 0)')
             ->whereColumn('bank_masuk.id_bank_tujuan', 'bank_tujuan.id_bank_tujuan');
-        $applyDateFilter($masukVaSubQuery);
+        if ($cutoffDate !== null) {
+            $masukVaSubQuery->where('tanggal', '<=', $cutoffDate);
+        }
 
         $keluarVaSubQuery = DB::table('bank_keluars')
             ->selectRaw('COALESCE(SUM(kredit), 0)')
             ->whereColumn('bank_keluars.id_bank_tujuan', 'bank_tujuan.id_bank_tujuan');
-        $applyDateFilter($keluarVaSubQuery);
+        if ($cutoffDate !== null) {
+            $keluarVaSubQuery->where('tanggal', '<=', $cutoffDate);
+        }
 
         $bankVAList = DB::table('bank_tujuan')
             ->select('bank_tujuan.id_bank_tujuan', 'bank_tujuan.nama_tujuan', 'bank_tujuan.sap')
@@ -1150,7 +1193,6 @@ class dashboardController extends Controller
         foreach ($sumberDanaList as $sd) {
             if (preg_match('/9702740/', $sd->nama_sumber_dana)) {
                 $saldoRek408 = $sd->saldo_va;
-                // Ambil no rek dari nama_sumber_dana
                 if (preg_match('/\*\s*([\d\-\/]+)\s*$/', $sd->nama_sumber_dana, $m)) {
                     $noRek408 = trim($m[1]);
                 }
@@ -1177,40 +1219,6 @@ class dashboardController extends Controller
             $tahunList = [(int) date('Y')];
         }
 
-        $bulanList = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-        ];
-
-        // Format label filter aktif
-        $labelFilter = 'Semua Waktu (Seluruh Data)';
-        if (!empty($tglDari) && !empty($tglSampai)) {
-            try {
-                $labelFilter = \Carbon\Carbon::parse($tglDari)->translatedFormat('d F Y') . ' s/d ' . \Carbon\Carbon::parse($tglSampai)->translatedFormat('d F Y');
-            } catch (\Exception $e) {
-                $labelFilter = $tglDari . ' s/d ' . $tglSampai;
-            }
-        } elseif (!empty($tglSampai)) {
-            try {
-                $labelFilter = 'Sampai dengan ' . \Carbon\Carbon::parse($tglSampai)->translatedFormat('d F Y');
-            } catch (\Exception $e) {
-                $labelFilter = 'Sampai dengan ' . $tglSampai;
-            }
-        } elseif (!empty($tglDari)) {
-            try {
-                $labelFilter = 'Mulai ' . \Carbon\Carbon::parse($tglDari)->translatedFormat('d F Y');
-            } catch (\Exception $e) {
-                $labelFilter = 'Mulai ' . $tglDari;
-            }
-        } elseif (!empty($tahun) && !empty($bulan)) {
-            $labelFilter = ($bulanList[(int) $bulan] ?? $bulan) . ' ' . $tahun;
-        } elseif (!empty($tahun)) {
-            $labelFilter = 'Tahun ' . $tahun;
-        } elseif (!empty($bulan)) {
-            $labelFilter = 'Bulan ' . ($bulanList[(int) $bulan] ?? $bulan);
-        }
-
         return compact(
             'sumberDanaList',
             'totalSaldoBank',
@@ -1227,6 +1235,7 @@ class dashboardController extends Controller
             'bulan',
             'tglDari',
             'tglSampai',
+            'cutoffDate',
             'labelFilter'
         );
     }

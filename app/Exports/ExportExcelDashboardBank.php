@@ -18,25 +18,38 @@ class ExportExcelDashboardBank implements WithEvents, ShouldAutoSize
     protected $jabatan;
     protected $sumberDanaList;
     protected $totalSaldoBank;
+    protected $labelFilter;
 
-    public function __construct($tanggal, $nama, $jabatan)
-    {
+    public function __construct(
+        $tanggal,
+        $nama,
+        $jabatan,
+        $sumberDanaList = null,
+        $totalSaldoBank = null,
+        $labelFilter = null
+    ) {
         $this->tanggal = $tanggal;
         $this->nama    = $nama;
         $this->jabatan = $jabatan;
+        $this->labelFilter = $labelFilter;
 
-        $this->sumberDanaList = DB::table('sumber_dana')
-            ->select('sumber_dana.id_sumber_dana', 'sumber_dana.nama_sumber_dana')
-            ->selectRaw('COALESCE((SELECT SUM(debet) FROM bank_masuk WHERE bank_masuk.id_sumber_dana = sumber_dana.id_sumber_dana), 0) as total_masuk')
-            ->selectRaw('COALESCE((SELECT SUM(kredit) FROM bank_keluars WHERE bank_keluars.id_sumber_dana = sumber_dana.id_sumber_dana), 0) as total_keluar')
-            ->orderBy('sumber_dana.id_sumber_dana')
-            ->get()
-            ->map(function ($sd) {
-                $sd->saldo_va = (float) $sd->total_masuk - (float) $sd->total_keluar;
-                return $sd;
-            });
+        if ($sumberDanaList !== null) {
+            $this->sumberDanaList = $sumberDanaList;
+            $this->totalSaldoBank = $totalSaldoBank ?? $sumberDanaList->sum('saldo_va');
+        } else {
+            $this->sumberDanaList = DB::table('sumber_dana')
+                ->select('sumber_dana.id_sumber_dana', 'sumber_dana.nama_sumber_dana')
+                ->selectRaw('COALESCE((SELECT SUM(debet) FROM bank_masuk WHERE bank_masuk.id_sumber_dana = sumber_dana.id_sumber_dana), 0) as total_masuk')
+                ->selectRaw('COALESCE((SELECT SUM(kredit) FROM bank_keluars WHERE bank_keluars.id_sumber_dana = sumber_dana.id_sumber_dana), 0) as total_keluar')
+                ->orderBy('sumber_dana.id_sumber_dana')
+                ->get()
+                ->map(function ($sd) {
+                    $sd->saldo_va = (float) $sd->total_masuk - (float) $sd->total_keluar;
+                    return $sd;
+                });
 
-        $this->totalSaldoBank = $this->sumberDanaList->sum('saldo_va');
+            $this->totalSaldoBank = $this->sumberDanaList->sum('saldo_va');
+        }
     }
 
     public function registerEvents(): array
@@ -54,7 +67,10 @@ class ExportExcelDashboardBank implements WithEvents, ShouldAutoSize
                 // ===================== ROW 1: HEADER UTAMA =====================
                 $sheet->mergeCells('A1:B1');
                 $sheet->setCellValue('A1', 'Saldo Kas & Bank');
-                $sheet->setCellValue('C1', 'Tanggal');
+                $tanggalHeader = (!empty($this->labelFilter) && $this->labelFilter !== 'Semua Waktu (Seluruh Data)')
+                    ? $this->labelFilter
+                    : 'Tanggal';
+                $sheet->setCellValue('C1', $tanggalHeader);
                 $sheet->setCellValue('D1', 'Nilai (Rp)');
 
                 $headerStyle = [

@@ -5,7 +5,7 @@
     @push('styles')
         <style>
             /* Tabel admin sangat lebar (satu grup kolom per unit), jadi kolom kiri
-               dibekukan agar Kode/Reference/Uraian + Realisasi Global tetap terlihat
+               dibekukan agar Kode/Reference/Uraian + Realisasi Reg5 & Regional Office tetap terlihat
                saat digeser ke kanan. */
             .cf-tabel .tabulator-col.tabulator-frozen,
             .cf-tabel .tabulator-cell.tabulator-frozen {
@@ -124,7 +124,7 @@
                                 <div class="cf-petunjuk-geser mb-1">
                                     <i class="fas fa-arrows-alt-h mr-1"></i>
                                     Geser tabel ke kanan untuk melihat rincian tiap unit/kebun.
-                                    Kolom Kode, Reference, Uraian, dan Realisasi Global tetap terlihat.
+                                    Kolom Kode, Reference, Uraian, Realisasi Reg5, dan Regional Office tetap terlihat.
                                 </div>
                                 <div id="tableCashFlowBank" class="cf-tabel"></div>
                             </div>
@@ -187,7 +187,7 @@
                 $('#kartuBersihLalu').html(tulisAngka(summary.bersih_lalu));
 
                 // ── Susunan kolom ──
-                // Kiri (dibekukan): Kode | Reference | Uraian | Realisasi Global
+                // Kiri (dibekukan): Kode | Reference | Uraian | Realisasi Reg5 | Regional Office
                 // Kanan (digeser) : satu grup per unit
                 var globalSubColumns = [
                     {
@@ -199,6 +199,20 @@
                 if (showTahunLalu) {
                     globalSubColumns.push({
                         title: "Realisasi " + prevYear, field: "values.global.previous", width: 155,
+                        hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
+                    });
+                }
+
+                var regionalOfficeSubColumns = [
+                    {
+                        title: "Realisasi " + selectedYear, field: "values.regional_office.current", width: 155,
+                        hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
+                    }
+                ];
+
+                if (showTahunLalu) {
+                    regionalOfficeSubColumns.push({
+                        title: "Realisasi " + prevYear, field: "values.regional_office.previous", width: 155,
                         hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
                     });
                 }
@@ -217,10 +231,16 @@
                         hozAlign: "left", headerHozAlign: "center", formatter: formatUraian
                     },
                     {
-                        title: "Realisasi Global",
+                        title: "Realisasi Reg5",
                         headerHozAlign: "center",
                         frozen: true,
                         columns: globalSubColumns
+                    },
+                    {
+                        title: "Regional Office",
+                        headerHozAlign: "center",
+                        frozen: true,
+                        columns: regionalOfficeSubColumns
                     }
                 ];
 

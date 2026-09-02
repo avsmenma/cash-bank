@@ -47,21 +47,15 @@
     @endpush
 
     <section class="content">
+        {{-- Flatpickr untuk format tanggal Tanggal-Bulan-Tahun (dd-mm-yyyy) --}}
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
+
         <div class="container-fluid">
             <div class="row">
                 <div class="col-12">
                     <div class="invoice p-3 mb-3">
-
-                        @php
-                            $namaBulan = [
-                                '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
-                                '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
-                                '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
-                            ];
-                            $labelPeriode = $selectedBulan !== ''
-                                ? ($namaBulan[str_pad($selectedBulan, 2, '0', STR_PAD_LEFT)] ?? $selectedBulan) . ' ' . $selectedYear
-                                : 'Tahun ' . $selectedYear;
-                        @endphp
 
                         @include('cash_bank.partials.kop-laporan', [
                             'judul' => 'Laporan Arus Kas',
@@ -100,37 +94,112 @@
                             </div>
                         </div>
 
-                        <div class="row mb-2 cf-no-print">
-                            <div class="col-12 d-flex align-items-center flex-wrap">
-                                <label for="filterBulan" class="mr-2 mb-0 font-weight-bold">Bulan</label>
-                                <select id="filterBulan" class="form-control form-control-sm mr-3" style="width: 140px;">
-                                    <option value="">Semua</option>
-                                    @foreach ($namaBulan as $val => $nama)
-                                        <option value="{{ $val }}" {{ $selectedBulan == $val ? 'selected' : '' }}>{{ $nama }}</option>
-                                    @endforeach
-                                </select>
+                        {{-- FILTER BAR --}}
+                        <div class="card shadow-sm mb-3 cf-no-print" style="border-top: 4px solid #0d3b6e; border-radius: 8px;">
+                            <div class="card-body py-2 px-3">
+                                <form action="{{ route('bank-cashflow.index') }}" method="GET" id="formFilterCashflow">
+                                    <div class="d-flex flex-wrap align-items-end" style="gap: 10px;">
+                                        
+                                        {{-- Tahun --}}
+                                        <div style="min-width: 110px;">
+                                            <label class="mb-1 small font-weight-bold text-secondary">
+                                                <i class="fas fa-calendar mr-1"></i>Tahun
+                                            </label>
+                                            <select name="tahun" id="filterTahun" class="form-control form-control-sm">
+                                                @foreach ($years as $y)
+                                                    <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>{{ $y }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
 
-                                <label for="filterTahun" class="mr-2 mb-0 font-weight-bold">Tahun</label>
-                                <select id="filterTahun" class="form-control form-control-sm mr-3" style="width: 120px;">
-                                    @foreach ($years as $y)
-                                        <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>{{ $y }}</option>
-                                    @endforeach
-                                </select>
+                                        {{-- Bulan --}}
+                                        <div style="min-width: 130px;">
+                                            <label class="mb-1 small font-weight-bold text-secondary">
+                                                <i class="fas fa-calendar-alt mr-1"></i>Bulan
+                                            </label>
+                                            <select name="bulan" id="filterBulan" class="form-control form-control-sm">
+                                                <option value="">Semua Bulan</option>
+                                                @foreach ($bulanList as $val => $nama)
+                                                    <option value="{{ (int)$val }}" {{ (string)$selectedBulan === (string)(int)$val ? 'selected' : '' }}>{{ $nama }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
 
-                                <div class="custom-control custom-checkbox mr-3">
-                                    <input type="checkbox" class="custom-control-input" id="filterSemua" {{ $showEmpty ? 'checked' : '' }}>
-                                    <label class="custom-control-label" for="filterSemua">Tampilkan semua akun</label>
-                                </div>
+                                        {{-- Dari Tanggal --}}
+                                        <div style="min-width: 145px;">
+                                            <label class="mb-1 small font-weight-bold text-secondary">
+                                                <i class="fas fa-calendar-day mr-1"></i>Dari Tanggal
+                                            </label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" name="tgl_dari" id="filterTglDari" class="form-control form-control-sm bg-white"
+                                                       placeholder="dd-mm-yyyy"
+                                                       value="{{ !empty($tglDari) ? \Carbon\Carbon::parse($tglDari)->format('d-m-Y') : '' }}"
+                                                       autocomplete="off">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text bg-light"><i class="fas fa-calendar-alt text-secondary"></i></span>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                <div class="custom-control custom-checkbox mr-3">
-                                    <input type="checkbox" class="custom-control-input" id="filterTahunLalu" {{ $showTahunLalu ? 'checked' : '' }}>
-                                    <label class="custom-control-label" for="filterTahunLalu">Tampilkan Kolom Thn Lalu</label>
-                                </div>
+                                        {{-- Sampai Dengan --}}
+                                        <div style="min-width: 145px;">
+                                            <label class="mb-1 small font-weight-bold text-secondary">
+                                                <i class="fas fa-calendar-check mr-1 text-primary"></i>Sampai Dengan (s/d)
+                                            </label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" name="tgl_sampai" id="filterTglSampai" class="form-control form-control-sm bg-white"
+                                                       placeholder="dd-mm-yyyy"
+                                                       value="{{ !empty($tglSampai) ? \Carbon\Carbon::parse($tglSampai)->format('d-m-Y') : '' }}"
+                                                       autocomplete="off">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text bg-light"><i class="fas fa-calendar-check text-primary"></i></span>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                <button type="button" id="btnCetak" class="btn btn-sm btn-outline-secondary ml-auto">
-                                    <i class="fas fa-print mr-1"></i> Cetak
-                                </button>
+                                        {{-- Checkboxes --}}
+                                        <div class="d-flex align-items-center mb-1" style="gap: 15px;">
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" name="semua" value="1" class="custom-control-input" id="filterSemua" {{ $showEmpty ? 'checked' : '' }}>
+                                                <label class="custom-control-label small font-weight-bold text-secondary" for="filterSemua">Tampilkan semua akun</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" name="tahun_lalu" value="1" class="custom-control-input" id="filterTahunLalu" {{ $showTahunLalu ? 'checked' : '' }}>
+                                                <label class="custom-control-label small font-weight-bold text-secondary" for="filterTahunLalu">Tampilkan Kolom Thn Lalu</label>
+                                            </div>
+                                        </div>
+
+                                        {{-- Action buttons --}}
+                                        <div class="d-flex align-items-center" style="gap: 6px;">
+                                            <button type="submit" class="btn btn-primary btn-sm px-3 font-weight-bold">
+                                                <i class="fas fa-filter mr-1"></i> Filter
+                                            </button>
+                                            <a href="{{ route('bank-cashflow.index') }}" class="btn btn-outline-secondary btn-sm" title="Reset filter">
+                                                <i class="fas fa-redo mr-1"></i> Reset
+                                            </a>
+                                        </div>
+
+                                        {{-- Tombol Cetak di kanan --}}
+                                        <div class="ml-auto">
+                                            <button type="button" id="btnCetak" class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-print mr-1"></i> Cetak
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
+
+                            @if(!empty($tglDari) || !empty($tglSampai) || !empty($selectedBulan) || $showEmpty || $showTahunLalu)
+                            <div class="card-footer py-1 px-3 bg-light d-flex align-items-center justify-content-between" style="font-size: 12px;">
+                                <div>
+                                    <i class="fas fa-info-circle text-primary mr-1"></i>
+                                    Menampilkan laporan arus kas: <strong class="text-dark">{{ $labelPeriode }}</strong>
+                                </div>
+                                <a href="{{ route('bank-cashflow.index') }}" class="text-danger font-weight-bold" style="text-decoration: none;">
+                                    <i class="fas fa-times-circle mr-1"></i>Hapus Filter
+                                </a>
+                            </div>
+                            @endif
                         </div>
 
                         <div class="row">
@@ -235,6 +304,8 @@
                 var summary = @json($summary);
                 var unitColumns = @json($unitColumns);
                 var selectedBulan = @json($selectedBulan);
+                var tglDariVal = @json(!empty($tglDari) ? \Carbon\Carbon::parse($tglDari)->format('d-m-Y') : '');
+                var tglSampaiVal = @json(!empty($tglSampai) ? \Carbon\Carbon::parse($tglSampai)->format('d-m-Y') : '');
                 var isAdmin = {{ auth()->check() && auth()->user()->role === 'admin' ? 'true' : 'false' }};
 
                 // Format baku laporan: pemisah ribuan titik, minus di BELAKANG angka,
@@ -322,7 +393,10 @@
                         seriesKey: seriesKey,
                         seriesTitle: seriesTitle,
                         year: year,
+                        selectedYear: selectedYear,
                         month: selectedBulan,
+                        tglDari: tglDariVal,
+                        tglSampai: tglSampaiVal,
                         scope: scope,
                         expectedAmount: num
                     });
@@ -496,7 +570,37 @@
                     window.location.href = url.toString();
                 }
 
-                $('#filterTahun, #filterBulan, #filterSemua, #filterTahunLalu').on('change', applyFilter);
+                // ── Inisialisasi Flatpickr Tanggal (dd-mm-yyyy) ──
+                var fpDari = flatpickr("#filterTglDari", {
+                    dateFormat: "d-m-Y",
+                    allowInput: true,
+                    locale: "id"
+                });
+
+                var fpSampai = flatpickr("#filterTglSampai", {
+                    dateFormat: "d-m-Y",
+                    allowInput: true,
+                    locale: "id"
+                });
+
+                function syncDates() {
+                    var thn = $('#filterTahun').val();
+                    var bln = $('#filterBulan').val();
+                    if (thn && bln) {
+                        var y = parseInt(thn);
+                        var m = parseInt(bln);
+                        var lastDay = new Date(y, m, 0).getDate();
+                        var padM = String(m).padStart(2, '0');
+                        var padLastDay = String(lastDay).padStart(2, '0');
+                        fpDari.setDate('01-' + padM + '-' + y, true);
+                        fpSampai.setDate(padLastDay + '-' + padM + '-' + y, true);
+                    } else if (thn && !bln) {
+                        fpDari.setDate('01-01-' + thn, true);
+                        fpSampai.setDate('31-12-' + thn, true);
+                    }
+                }
+
+                $('#filterTahun, #filterBulan').on('change', syncDates);
                 $('#btnCetak').on('click', function () { window.print(); });
 
                 // ── Inisialisasi & Pengambilan Data Modal Detail Transaksi Arus Kas ──
@@ -525,7 +629,13 @@
                     $('#mdlUnit').text('Unit: ' + params.seriesTitle);
 
                     var periodeStr = '';
-                    if (params.month) {
+                    if (params.tglDari && params.tglSampai) {
+                        periodeStr = params.tglDari + ' s/d ' + params.tglSampai;
+                    } else if (params.tglSampai) {
+                        periodeStr = 's/d ' + params.tglSampai;
+                    } else if (params.tglDari) {
+                        periodeStr = 'Mulai ' + params.tglDari;
+                    } else if (params.month) {
                         var mText = $('#filterBulan option[value="' + params.month + '"]').text() || params.month;
                         periodeStr = mText + ' ' + params.year;
                     } else {
@@ -551,7 +661,10 @@
                         data: {
                             series: params.seriesKey,
                             tahun: params.year,
+                            selected_year: params.selectedYear,
                             bulan: params.month,
+                            tgl_dari: params.tglDari,
+                            tgl_sampai: params.tglSampai,
                             scope: params.scope
                         },
                         dataType: "json",

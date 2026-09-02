@@ -32,14 +32,92 @@
     </section>
 
     <section class="content">
-        {{-- TOMBOL EXPORT --}}
-        <div class="mb-3 cb-fullscreen-hide">
-            <button type="button" class="btn btn-success btn-sm mr-2" onclick="openExportModal('excel')">
-                <i class="fas fa-file-excel mr-1"></i> Export Excel
-            </button>
-            <button type="button" class="btn btn-danger btn-sm" onclick="openExportModal('pdf')">
-                <i class="fas fa-file-pdf mr-1"></i> Export PDF
-            </button>
+        {{-- FILTER BAR --}}
+        <div class="card shadow-sm mb-3 cb-fullscreen-hide" style="border-top:4px solid #0d3b6e; border-radius:8px;">
+            <div class="card-body py-2 px-3">
+                <form action="{{ route('dashboard.bank.index') }}" method="GET" id="formFilterBank">
+                    <div class="d-flex flex-wrap align-items-end" style="gap:10px;">
+                        
+                        {{-- Tahun --}}
+                        <div style="min-width:110px;">
+                            <label class="mb-1 small font-weight-bold text-secondary">
+                                <i class="fas fa-calendar mr-1"></i>Tahun
+                            </label>
+                            <select name="tahun" id="filterTahun" class="form-control form-control-sm">
+                                <option value="">Semua Tahun</option>
+                                @foreach($tahunList as $t)
+                                    <option value="{{ $t }}" {{ (string) ($tahun ?? '') === (string) $t ? 'selected' : '' }}>{{ $t }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Bulan --}}
+                        <div style="min-width:130px;">
+                            <label class="mb-1 small font-weight-bold text-secondary">
+                                <i class="fas fa-calendar-alt mr-1"></i>Bulan
+                            </label>
+                            <select name="bulan" id="filterBulan" class="form-control form-control-sm">
+                                <option value="">Semua Bulan</option>
+                                @foreach($bulanList as $no => $namaBulan)
+                                    <option value="{{ $no }}" {{ (string) ($bulan ?? '') === (string) $no ? 'selected' : '' }}>
+                                        {{ $namaBulan }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Dari Tanggal --}}
+                        <div>
+                            <label class="mb-1 small font-weight-bold text-secondary">
+                                <i class="fas fa-calendar-day mr-1"></i>Dari Tanggal
+                            </label>
+                            <input type="date" name="tgl_dari" id="filterTglDari" class="form-control form-control-sm"
+                                   value="{{ $tglDari ?? '' }}">
+                        </div>
+
+                        {{-- Sampai Dengan --}}
+                        <div>
+                            <label class="mb-1 small font-weight-bold text-secondary">
+                                <i class="fas fa-calendar-check mr-1 text-primary"></i>Sampai Dengan (s/d)
+                            </label>
+                            <input type="date" name="tgl_sampai" id="filterTglSampai" class="form-control form-control-sm"
+                                   value="{{ $tglSampai ?? '' }}">
+                        </div>
+
+                        {{-- Action buttons --}}
+                        <div class="d-flex align-items-center" style="gap:6px;">
+                            <button type="submit" class="btn btn-primary btn-sm px-3 font-weight-bold">
+                                <i class="fas fa-filter mr-1"></i> Filter
+                            </button>
+                            <a href="{{ route('dashboard.bank.index') }}" class="btn btn-outline-secondary btn-sm" title="Reset filter">
+                                <i class="fas fa-redo mr-1"></i> Reset
+                            </a>
+                        </div>
+
+                        {{-- Export buttons on the right --}}
+                        <div class="ml-auto d-flex align-items-center" style="gap:6px;">
+                            <button type="button" class="btn btn-success btn-sm" onclick="openExportModal('excel')">
+                                <i class="fas fa-file-excel mr-1"></i> Export Excel
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="openExportModal('pdf')">
+                                <i class="fas fa-file-pdf mr-1"></i> Export PDF
+                            </button>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+            @if(!empty($tglDari) || !empty($tglSampai) || !empty($tahun) || !empty($bulan))
+            <div class="card-footer py-1 px-3 bg-light d-flex align-items-center justify-content-between" style="font-size:12px;">
+                <div>
+                    <i class="fas fa-info-circle text-primary mr-1"></i>
+                    Menampilkan history saldo: <strong class="text-dark">{{ $labelFilter }}</strong>
+                </div>
+                <a href="{{ route('dashboard.bank.index') }}" class="text-danger font-weight-bold" style="text-decoration:none;">
+                    <i class="fas fa-times-circle mr-1"></i>Hapus Filter
+                </a>
+            </div>
+            @endif
         </div>
 
         <style>
@@ -100,7 +178,13 @@
                         <thead>
                             <tr style="background:#bdc3c7;">
                                 <th colspan="2" class="text-center font-weight-bold" style="padding:10px 8px;">Saldo Kas &amp; Bank</th>
-                                <th class="text-center font-weight-bold" style="padding:10px 8px; min-width:150px;">Tanggal</th>
+                                <th class="text-center font-weight-bold" style="padding:10px 8px; min-width:150px;">
+                                    @if(!empty($labelFilter) && $labelFilter !== 'Semua Waktu (Seluruh Data)')
+                                        {{ $labelFilter }}
+                                    @else
+                                        Tanggal
+                                    @endif
+                                </th>
                                 <th class="text-center font-weight-bold" style="padding:10px 8px; min-width:170px;">Nilai (Rp)</th>
                             </tr>
                             <tr style="background:#ecf0f1;">
@@ -362,6 +446,14 @@
             tanggal: tanggal,
             nama: nama,
             jabatan: jabatan
+        });
+
+        // Sertakan parameter filter aktif ke export Excel / PDF
+        var urlParams = new URLSearchParams(window.location.search);
+        ['tahun', 'bulan', 'tgl_dari', 'tgl_sampai'].forEach(function(key) {
+            if (urlParams.has(key) && urlParams.get(key)) {
+                params.set(key, urlParams.get(key));
+            }
         });
 
         $('#modalExport').modal('hide');

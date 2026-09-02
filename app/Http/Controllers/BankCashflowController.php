@@ -54,15 +54,18 @@ class BankCashflowController extends Controller
         // Query tahun berjalan dan tahun lalu jika opsi tampilkan kolom tahun lalu aktif
         $yearsToQuery = $showTahunLalu ? [$selectedYear, $prevYear] : [$selectedYear, $prevYear];
 
-        // Satu query untuk semua: dua tahun x seluruh unit x seluruh reference key.
+        // Satu query untuk semua: dua tahun x seluruh unit x profit center x seluruh reference key.
         $aggregates = Cashflow::query()
             ->whereIn('tahun', [$selectedYear, $prevYear])
             ->when(is_numeric($selectedBulan), fn ($q) => $q->where('bulan', (int) $selectedBulan))
-            ->groupBy('reference_key_1', 'tahun', 'id_bank_tujuan')
-            ->selectRaw('reference_key_1, tahun, id_bank_tujuan, SUM(amount) AS total')
+            ->groupBy('reference_key_1', 'tahun', 'id_bank_tujuan', 'profit_center')
+            ->selectRaw('reference_key_1, tahun, id_bank_tujuan, profit_center, SUM(amount) AS total')
             ->get();
 
-        $series = [CashflowReportBuilder::SERI_GLOBAL => []];
+        $series = [
+            CashflowReportBuilder::SERI_GLOBAL => [],
+            CashflowReportBuilder::SERI_REGIONAL_OFFICE => [],
+        ];
         foreach ($units as $unit) {
             $series['u' . $unit->id_bank_tujuan] = [];
         }
@@ -76,7 +79,12 @@ class BankCashflowController extends Controller
             $series[CashflowReportBuilder::SERI_GLOBAL][$key] ??= ['current' => 0.0, 'previous' => 0.0];
             $series[CashflowReportBuilder::SERI_GLOBAL][$key][$bucket] += $nilai;
 
-            if (isset($series[$unitKey])) {
+            if ((string) $row->profit_center === '5R00000001') {
+                $series[CashflowReportBuilder::SERI_REGIONAL_OFFICE][$key] ??= ['current' => 0.0, 'previous' => 0.0];
+                $series[CashflowReportBuilder::SERI_REGIONAL_OFFICE][$key][$bucket] += $nilai;
+            }
+
+            if ($row->id_bank_tujuan && isset($series[$unitKey])) {
                 $series[$unitKey][$key] ??= ['current' => 0.0, 'previous' => 0.0];
                 $series[$unitKey][$key][$bucket] += $nilai;
             }

@@ -32,6 +32,11 @@
     </section>
 
     <section class="content">
+        {{-- Flatpickr untuk format tanggal Tanggal-Bulan-Tahun (dd-mm-yyyy) --}}
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
+
         {{-- FILTER BAR --}}
         <div class="card shadow-sm mb-3 cb-fullscreen-hide" style="border-top:4px solid #0d3b6e; border-radius:8px;">
             <div class="card-body py-2 px-3">
@@ -67,21 +72,35 @@
                         </div>
 
                         {{-- Dari Tanggal --}}
-                        <div>
+                        <div style="min-width:145px;">
                             <label class="mb-1 small font-weight-bold text-secondary">
                                 <i class="fas fa-calendar-day mr-1"></i>Dari Tanggal
                             </label>
-                            <input type="date" name="tgl_dari" id="filterTglDari" class="form-control form-control-sm"
-                                   value="{{ $tglDari ?? '' }}">
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="tgl_dari" id="filterTglDari" class="form-control form-control-sm bg-white"
+                                       placeholder="dd-mm-yyyy"
+                                       value="{{ !empty($tglDari) ? \Carbon\Carbon::parse($tglDari)->format('d-m-Y') : '' }}"
+                                       autocomplete="off">
+                                <div class="input-group-append">
+                                    <span class="input-group-text bg-light"><i class="fas fa-calendar-alt text-secondary"></i></span>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Sampai Dengan --}}
-                        <div>
+                        <div style="min-width:145px;">
                             <label class="mb-1 small font-weight-bold text-secondary">
                                 <i class="fas fa-calendar-check mr-1 text-primary"></i>Sampai Dengan (s/d)
                             </label>
-                            <input type="date" name="tgl_sampai" id="filterTglSampai" class="form-control form-control-sm"
-                                   value="{{ $tglSampai ?? '' }}">
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="tgl_sampai" id="filterTglSampai" class="form-control form-control-sm bg-white"
+                                       placeholder="dd-mm-yyyy"
+                                       value="{{ !empty($tglSampai) ? \Carbon\Carbon::parse($tglSampai)->format('d-m-Y') : '' }}"
+                                       autocomplete="off">
+                                <div class="input-group-append">
+                                    <span class="input-group-text bg-light"><i class="fas fa-calendar-check text-primary"></i></span>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Action buttons --}}
@@ -465,12 +484,26 @@
         }
     });
 
-    // Otomatis sinkronisasi input Tanggal saat Tahun atau Bulan dipilih
+    // Otomatis sinkronisasi input Tanggal saat Tahun atau Bulan dipilih & Inisialisasi Flatpickr
     (function () {
         var selTahun = document.getElementById('filterTahun');
         var selBulan = document.getElementById('filterBulan');
         var inpDari = document.getElementById('filterTglDari');
         var inpSampai = document.getElementById('filterTglSampai');
+
+        var fpDari, fpSampai;
+        if (typeof flatpickr !== 'undefined') {
+            fpDari = flatpickr("#filterTglDari", {
+                dateFormat: "d-m-Y",
+                allowInput: true,
+                locale: "id"
+            });
+            fpSampai = flatpickr("#filterTglSampai", {
+                dateFormat: "d-m-Y",
+                allowInput: true,
+                locale: "id"
+            });
+        }
 
         function syncDates() {
             var y = selTahun.value || new Date().getFullYear();
@@ -478,11 +511,15 @@
             if (m) {
                 var mm = String(m).padStart(2, '0');
                 var lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
-                inpDari.value = y + '-' + mm + '-01';
-                inpSampai.value = y + '-' + mm + '-' + String(lastDay).padStart(2, '0');
+                var d1 = '01-' + mm + '-' + y;
+                var d2 = String(lastDay).padStart(2, '0') + '-' + mm + '-' + y;
+                if (fpDari) { fpDari.setDate(d1); } else { inpDari.value = d1; }
+                if (fpSampai) { fpSampai.setDate(d2); } else { inpSampai.value = d2; }
             } else if (selTahun.value) {
-                inpDari.value = y + '-01-01';
-                inpSampai.value = y + '-12-31';
+                var d1 = '01-01-' + y;
+                var d2 = '31-12-' + y;
+                if (fpDari) { fpDari.setDate(d1); } else { inpDari.value = d1; }
+                if (fpSampai) { fpSampai.setDate(d2); } else { inpSampai.value = d2; }
             }
         }
 

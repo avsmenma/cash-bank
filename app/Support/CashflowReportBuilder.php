@@ -29,6 +29,9 @@ class CashflowReportBuilder
     /** Nama seri utama; nilainya yang dipakai kolom Realisasi & kartu ringkasan. */
     public const SERI_GLOBAL = 'global';
 
+    /** Nama seri Regional Office (Profit Center 5R00000001). */
+    public const SERI_REGIONAL_OFFICE = 'regional_office';
+
     /** Bagian utama laporan beserta penomoran romawi & judulnya. */
     private const SECTIONS = [
         ['prefix' => 'A', 'roman' => 'I',   'title' => 'ARUS KAS DARI AKTIVITAS PENDANAAN OPERASI'],

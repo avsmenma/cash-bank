@@ -1077,6 +1077,40 @@ class dashboardController extends Controller
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ];
 
+        // Helper untuk parse input tanggal dalam format d-m-Y, d/m/Y, atau Y-m-d
+        $parseDateInput = function ($val) {
+            if (empty($val)) return null;
+            $val = trim($val);
+            if (preg_match('/^(\d{2})-(\d{2})-(\d{4})$/', $val, $m)) {
+                return $m[3] . '-' . $m[2] . '-' . $m[1];
+            }
+            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $val, $m)) {
+                return $m[3] . '-' . $m[2] . '-' . $m[1];
+            }
+            try {
+                return \Carbon\Carbon::parse($val)->toDateString();
+            } catch (\Exception $e) {
+                return $val;
+            }
+        };
+
+        $tglDari = $parseDateInput($request?->get('tgl_dari'));
+        $tglSampai = $parseDateInput($request?->get('tgl_sampai'));
+
+        // Helper format tanggal Indonesia (Tanggal-Bulan-Tahun)
+        $formatTanggalIndo = function ($dateStr) use ($bulanList) {
+            if (empty($dateStr)) return '';
+            try {
+                $c = \Carbon\Carbon::parse($dateStr);
+                $d = $c->format('d');
+                $m = $bulanList[(int) $c->format('n')] ?? $c->format('m');
+                $y = $c->format('Y');
+                return $d . ' ' . $m . ' ' . $y;
+            } catch (\Exception $e) {
+                return $dateStr;
+            }
+        };
+
         // Tentukan cutoff date (as-of date) untuk perhitungan posisi saldo kumulatif rekening & VA
         $cutoffDate = null;
         $labelFilter = 'Semua Waktu (Seluruh Data)';
@@ -1084,36 +1118,24 @@ class dashboardController extends Controller
         if (!empty($tglSampai)) {
             $cutoffDate = $tglSampai;
             if (!empty($tglDari)) {
-                try {
-                    $labelFilter = \Carbon\Carbon::parse($tglDari)->translatedFormat('d M Y') . ' s/d ' . \Carbon\Carbon::parse($tglSampai)->translatedFormat('d M Y') . ' (Posisi per ' . \Carbon\Carbon::parse($tglSampai)->translatedFormat('d M Y') . ')';
-                } catch (\Exception $e) {
-                    $labelFilter = $tglDari . ' s/d ' . $tglSampai;
-                }
+                $labelFilter = $formatTanggalIndo($tglDari) . ' s/d ' . $formatTanggalIndo($tglSampai) . ' (Posisi per ' . $formatTanggalIndo($tglSampai) . ')';
             } else {
-                try {
-                    $labelFilter = 'Sampai dengan ' . \Carbon\Carbon::parse($tglSampai)->translatedFormat('d F Y');
-                } catch (\Exception $e) {
-                    $labelFilter = 'Sampai dengan ' . $tglSampai;
-                }
+                $labelFilter = 'Sampai dengan ' . $formatTanggalIndo($tglSampai);
             }
         } elseif (!empty($tglDari)) {
             $cutoffDate = $tglDari;
-            try {
-                $labelFilter = 'Posisi Saldo per ' . \Carbon\Carbon::parse($tglDari)->translatedFormat('d F Y');
-            } catch (\Exception $e) {
-                $labelFilter = 'Per ' . $tglDari;
-            }
+            $labelFilter = 'Posisi Saldo per ' . $formatTanggalIndo($tglDari);
         } elseif (!empty($tahun) && !empty($bulan)) {
             try {
                 $lastDay = \Carbon\Carbon::create((int) $tahun, (int) $bulan, 1)->endOfMonth()->toDateString();
                 $cutoffDate = $lastDay;
-                $labelFilter = 'Bulan ' . ($bulanList[(int) $bulan] ?? $bulan) . ' ' . $tahun . ' (Posisi per ' . \Carbon\Carbon::parse($lastDay)->translatedFormat('d M Y') . ')';
+                $labelFilter = 'Bulan ' . ($bulanList[(int) $bulan] ?? $bulan) . ' ' . $tahun . ' (Posisi per ' . $formatTanggalIndo($lastDay) . ')';
             } catch (\Exception $e) {
                 $cutoffDate = $tahun . '-' . str_pad($bulan, 2, '0', STR_PAD_LEFT) . '-28';
             }
         } elseif (!empty($tahun)) {
             $cutoffDate = $tahun . '-12-31';
-            $labelFilter = 'Tahun ' . $tahun . ' (Posisi per 31 Des ' . $tahun . ')';
+            $labelFilter = 'Tahun ' . $tahun . ' (Posisi per 31 Desember ' . $tahun . ')';
         } elseif (!empty($bulan)) {
             $currentY = (int) date('Y');
             try {

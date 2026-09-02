@@ -29,6 +29,20 @@
                 color: #6B7280;
                 font-style: italic;
             }
+
+            /* Sel angka yang dapat diklik (drilldown) khusus admin */
+            .cf-tabel .cf-clickable-angka {
+                cursor: pointer;
+                padding: 1px 4px;
+                border-radius: 4px;
+                transition: all 0.15s ease-in-out;
+            }
+            .cf-tabel .cf-clickable-angka:hover {
+                background-color: rgba(13, 59, 110, 0.15);
+                color: #0d3b6e !important;
+                text-decoration: underline;
+                font-weight: 700;
+            }
         </style>
     @endpush
 
@@ -135,6 +149,82 @@
         </div>
     </section>
 
+    {{-- MODAL DETAIL TRANSAKSI ARUS KAS (DRILLDOWN) KHUSUS ADMIN --}}
+    <div class="modal fade" id="modalDetailCashflow" tabindex="-1" role="dialog" aria-labelledby="modalDetailCashflowLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered" role="document" style="max-width: 95%;">
+            <div class="modal-content shadow-lg border-0" style="border-radius: 10px; overflow: hidden;">
+                <div class="modal-header text-white py-2 px-3 align-items-center" style="background: #0d3b6e !important;">
+                    <h5 class="modal-title font-weight-bold mb-0" id="modalDetailCashflowLabel" style="font-size: 15px;">
+                        <i class="fas fa-file-invoice-dollar mr-2 text-warning"></i> Rincian Transaksi Arus Kas
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; outline: none;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-3">
+                    {{-- Header Badges & Summary --}}
+                    <div class="card mb-3 shadow-none border" style="background: #f8fafc; border-radius: 8px;">
+                        <div class="card-body py-2 px-3">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap: 10px;">
+                                <div>
+                                    <div class="small text-muted font-weight-bold">Akun / Uraian:</div>
+                                    <h6 class="mb-0 font-weight-bold text-dark" id="mdlUraian">-</h6>
+                                </div>
+                                <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                                    <span class="badge badge-secondary px-2 py-1" id="mdlKodeRef">Kode: -</span>
+                                    <span class="badge badge-info px-2 py-1" id="mdlUnit">Unit: -</span>
+                                    <span class="badge badge-primary px-2 py-1" id="mdlPeriode">Periode: -</span>
+                                    <span class="badge badge-success px-2 py-1 font-weight-bold" style="font-size: 13px;" id="mdlTotalNilai">Total: Rp 0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Loading state --}}
+                    <div id="mdlLoading" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                        <div class="mt-2 text-muted font-weight-bold small">Memuat data transaksi...</div>
+                    </div>
+
+                    {{-- Table wrapper --}}
+                    <div id="mdlTableWrapper" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped table-hover table-sm w-100" id="tblDetailCashflow" style="font-size: 12px;">
+                                <thead class="bg-light text-dark">
+                                    <tr class="text-center">
+                                        <th style="width: 35px;">No.</th>
+                                        <th style="min-width: 85px;">Tgl Posting</th>
+                                        <th style="min-width: 90px;">No. Dokumen</th>
+                                        <th style="min-width: 110px;">Unit / Profit Ctr</th>
+                                        <th style="min-width: 130px;">G/L Account</th>
+                                        <th style="min-width: 140px;">Offsetting Account</th>
+                                        <th style="min-width: 180px;">Keterangan / Text</th>
+                                        <th class="text-right" style="min-width: 120px;">Nilai (Rp)</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                                <tfoot>
+                                    <tr class="font-weight-bold text-dark" style="background: #e2e8f0;">
+                                        <td colspan="7" class="text-right">TOTAL TRANSAKSI :</td>
+                                        <td class="text-right font-weight-bold" id="tblTotalFooter">Rp 0</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2 px-3 bg-light d-flex justify-content-between">
+                    <span class="small text-muted font-weight-bold" id="mdlRowCount">0 transaksi ditemukan</span>
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i> Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
         <script>
             $(document).ready(function () {
@@ -144,6 +234,8 @@
                 var tableData = @json($reportRows);
                 var summary = @json($summary);
                 var unitColumns = @json($unitColumns);
+                var selectedBulan = @json($selectedBulan);
+                var isAdmin = {{ auth()->check() && auth()->user()->role === 'admin' ? 'true' : 'false' }};
 
                 // Format baku laporan: pemisah ribuan titik, minus di BELAKANG angka,
                 // nilai nol ditulis sebagai tanda hubung agar tabel tidak penuh "0".
@@ -157,7 +249,13 @@
                 }
 
                 function formatAngka(cell) {
-                    return '<span class="cf-angka">' + tulisAngka(cell.getValue()) + '</span>';
+                    var val = cell.getValue();
+                    var formatted = tulisAngka(val);
+                    var num = Number(val);
+                    if (isAdmin && isFinite(num) && num !== 0) {
+                        return '<span class="cf-angka cf-clickable-angka" title="Klik untuk melihat rincian data transaksi">' + formatted + '</span>';
+                    }
+                    return '<span class="cf-angka">' + formatted + '</span>';
                 }
 
                 function escapeHtml(text) {
@@ -186,34 +284,82 @@
                 $('#kartuBersih').html(tulisAngka(summary.bersih));
                 $('#kartuBersihLalu').html(tulisAngka(summary.bersih_lalu));
 
+                // ── Handler Klik Sel Angka untuk Drilldown Detail Transaksi ──
+                function handleCellClick(e, cell) {
+                    if (!isAdmin) return;
+                    var val = cell.getValue();
+                    var num = Number(val);
+                    if (!isFinite(num) || num === 0) return;
+
+                    var rowData = cell.getRow().getData();
+                    if (!rowData || rowData.type === 'spacer') return;
+
+                    var field = cell.getField();
+                    if (!field || !field.startsWith('values.')) return;
+
+                    var parts = field.split('.');
+                    var seriesKey = parts[1]; // 'global', 'regional_office', 'u1', etc.
+                    var bucket = parts[2]; // 'current' or 'previous'
+                    var year = (bucket === 'current') ? selectedYear : prevYear;
+
+                    var seriesTitle = "Realisasi Reg5 (Global)";
+                    if (seriesKey === 'regional_office') {
+                        seriesTitle = "Regional Office";
+                    } else if (seriesKey.startsWith('u')) {
+                        var uFound = unitColumns.find(function (u) { return u.key === seriesKey; });
+                        seriesTitle = uFound ? uFound.nama : ("Unit " + seriesKey);
+                    }
+
+                    var scope = rowData.scope || [];
+                    if (!scope.length && rowData.reference && rowData.reference !== '-') {
+                        scope = [rowData.reference];
+                    }
+
+                    openDetailModal({
+                        uraian: rowData.uraian,
+                        kode: rowData.kode || '-',
+                        reference: rowData.reference || '-',
+                        seriesKey: seriesKey,
+                        seriesTitle: seriesTitle,
+                        year: year,
+                        month: selectedBulan,
+                        scope: scope,
+                        expectedAmount: num
+                    });
+                }
+
                 // ── Susunan kolom ──
                 // Kiri (dibekukan): Kode | Reference | Uraian | Realisasi Reg5 | Regional Office
                 // Kanan (digeser) : satu grup per unit
                 var globalSubColumns = [
                     {
                         title: "Realisasi " + selectedYear, field: "values.global.current", width: 155,
-                        hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
+                        hozAlign: "right", headerHozAlign: "center", formatter: formatAngka,
+                        cellClick: handleCellClick
                     }
                 ];
 
                 if (showTahunLalu) {
                     globalSubColumns.push({
                         title: "Realisasi " + prevYear, field: "values.global.previous", width: 155,
-                        hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
+                        hozAlign: "right", headerHozAlign: "center", formatter: formatAngka,
+                        cellClick: handleCellClick
                     });
                 }
 
                 var regionalOfficeSubColumns = [
                     {
                         title: "Realisasi " + selectedYear, field: "values.regional_office.current", width: 155,
-                        hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
+                        hozAlign: "right", headerHozAlign: "center", formatter: formatAngka,
+                        cellClick: handleCellClick
                     }
                 ];
 
                 if (showTahunLalu) {
                     regionalOfficeSubColumns.push({
                         title: "Realisasi " + prevYear, field: "values.regional_office.previous", width: 155,
-                        hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
+                        hozAlign: "right", headerHozAlign: "center", formatter: formatAngka,
+                        cellClick: handleCellClick
                     });
                 }
 
@@ -248,13 +394,15 @@
                     var unitSubColumns = [
                         {
                             title: "Realisasi " + selectedYear, field: "values." + unit.key + ".current",
-                            width: 140, hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
+                            width: 140, hozAlign: "right", headerHozAlign: "center", formatter: formatAngka,
+                            cellClick: handleCellClick
                         }
                     ];
                     if (showTahunLalu) {
                         unitSubColumns.push({
                             title: "Realisasi " + prevYear, field: "values." + unit.key + ".previous",
-                            width: 140, hozAlign: "right", headerHozAlign: "center", formatter: formatAngka
+                            width: 140, hozAlign: "right", headerHozAlign: "center", formatter: formatAngka,
+                            cellClick: handleCellClick
                         });
                     }
                     kolom.push({
@@ -350,6 +498,128 @@
 
                 $('#filterTahun, #filterBulan, #filterSemua, #filterTahunLalu').on('change', applyFilter);
                 $('#btnCetak').on('click', function () { window.print(); });
+
+                // ── Inisialisasi & Pengambilan Data Modal Detail Transaksi Arus Kas ──
+                var dtDetail = null;
+
+                function formatRupiah(num) {
+                    var n = Number(num);
+                    if (!isFinite(n)) return 'Rp 0';
+                    var abs = Math.abs(n).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    return (n < 0 ? 'Rp -' : 'Rp ') + abs;
+                }
+
+                function openDetailModal(params) {
+                    $('#mdlUraian').text(params.uraian || '-');
+                    var kodeRef = '';
+                    if (params.kode && params.kode !== '-') kodeRef += 'Kode: ' + params.kode;
+                    if (params.reference && params.reference !== '-') {
+                        kodeRef += (kodeRef ? ' | ' : '') + 'Ref: ' + params.reference;
+                    }
+                    if (kodeRef) {
+                        $('#mdlKodeRef').text(kodeRef).show();
+                    } else {
+                        $('#mdlKodeRef').hide();
+                    }
+
+                    $('#mdlUnit').text('Unit: ' + params.seriesTitle);
+
+                    var periodeStr = '';
+                    if (params.month) {
+                        var mText = $('#filterBulan option[value="' + params.month + '"]').text() || params.month;
+                        periodeStr = mText + ' ' + params.year;
+                    } else {
+                        periodeStr = 'Tahun ' + params.year;
+                    }
+                    $('#mdlPeriode').text('Periode: ' + periodeStr);
+                    $('#mdlTotalNilai').text('Total: ' + formatRupiah(params.expectedAmount));
+
+                    $('#mdlLoading').show();
+                    $('#mdlTableWrapper').hide();
+                    $('#mdlRowCount').text('Memuat data transaksi...');
+                    $('#modalDetailCashflow').modal('show');
+
+                    if (dtDetail) {
+                        dtDetail.destroy();
+                        dtDetail = null;
+                    }
+                    $('#tblDetailCashflow tbody').empty();
+
+                    $.ajax({
+                        url: "{{ route('bank-cashflow.detail') }}",
+                        type: "GET",
+                        data: {
+                            series: params.seriesKey,
+                            tahun: params.year,
+                            bulan: params.month,
+                            scope: params.scope
+                        },
+                        dataType: "json",
+                        success: function (res) {
+                            $('#mdlLoading').hide();
+                            $('#mdlTableWrapper').show();
+
+                            if (res.success && res.data && res.data.length > 0) {
+                                var rowsHtml = '';
+                                var totalSum = 0;
+                                res.data.forEach(function (item, idx) {
+                                    totalSum += item.amount;
+                                    var valRupiah = Number(item.amount).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                                    var amountHtml = item.amount < 0
+                                        ? '<span class="text-danger font-weight-bold">(' + valRupiah + ')</span>'
+                                        : '<span class="text-dark">' + valRupiah + '</span>';
+
+                                    rowsHtml += '<tr>' +
+                                        '<td class="text-center">' + (idx + 1) + '</td>' +
+                                        '<td class="text-center">' + escapeHtml(item.posting_date) + '</td>' +
+                                        '<td class="text-center font-weight-bold">' + escapeHtml(item.document_number) + '</td>' +
+                                        '<td>' + escapeHtml(item.unit) + '</td>' +
+                                        '<td>' + escapeHtml(item.account) + '<br><small class="text-muted">' + escapeHtml(item.gl_account_desc) + '</small></td>' +
+                                        '<td>' + escapeHtml(item.offsetting_account) + '<br><small class="text-muted">' + escapeHtml(item.name_of_offsetting_account) + '</small></td>' +
+                                        '<td>' + escapeHtml(item.text !== '-' ? item.text : item.uraian) + '</td>' +
+                                        '<td class="text-right font-weight-bold">' + amountHtml + '</td>' +
+                                        '</tr>';
+                                });
+
+                                $('#tblDetailCashflow tbody').html(rowsHtml);
+                                $('#tblTotalFooter').html(formatRupiah(totalSum));
+                                $('#mdlRowCount').text(res.data.length + ' transaksi ditemukan');
+
+                                dtDetail = $('#tblDetailCashflow').DataTable({
+                                    paging: true,
+                                    pageLength: 15,
+                                    lengthMenu: [10, 15, 25, 50, 100],
+                                    searching: true,
+                                    ordering: true,
+                                    order: [[1, 'asc']],
+                                    language: {
+                                        search: "Cari:",
+                                        lengthMenu: "Tampilkan _MENU_ data",
+                                        zeroRecords: "Tidak ada transaksi yang cocok",
+                                        info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ transaksi",
+                                        infoEmpty: "Menampilkan 0 sampai 0 dari 0 transaksi",
+                                        paginate: {
+                                            first: "Awal",
+                                            last: "Akhir",
+                                            next: "›",
+                                            previous: "‹"
+                                        }
+                                    }
+                                });
+                            } else {
+                                $('#tblDetailCashflow tbody').html('<tr><td colspan="8" class="text-center py-4 text-muted">Tidak ada transaksi ditemukan untuk rincian ini.</td></tr>');
+                                $('#tblTotalFooter').text('Rp 0');
+                                $('#mdlRowCount').text('0 transaksi ditemukan');
+                            }
+                        },
+                        error: function (xhr) {
+                            $('#mdlLoading').hide();
+                            $('#mdlTableWrapper').show();
+                            $('#tblDetailCashflow tbody').html('<tr><td colspan="8" class="text-center py-4 text-danger font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Gagal memuat data transaksi. Silakan coba lagi.</td></tr>');
+                            $('#mdlRowCount').text('Gagal memuat');
+                        }
+                    });
+                }
             });
         </script>
     @endpush

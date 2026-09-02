@@ -33,6 +33,8 @@ Route::post('/logout', [AuthController::class, 'logout'])
 
 Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
     // Laporan Arus Kas seluruh unit (submenu Transaksi Bank)
+    Route::get('/bank-cashflow/detail', [BankCashflowController::class, 'detail'])
+        ->name('bank-cashflow.detail');
     Route::get('/bank-cashflow', [BankCashflowController::class, 'index'])
         ->name('bank-cashflow.index');
 

@@ -1064,14 +1064,47 @@ class dashboardController extends Controller
      * Data bersama dashboard Saldo Kas & Bank — dipakai halaman web DAN export
      * PDF agar isi keduanya selalu identik (saldo bank, Informasi Saldo, saldo VA).
      */
-    private function buildBankDashboardData(): array
+    private function buildBankDashboardData(?Request $request = null): array
     {
+        $tahun = $request?->get('tahun');
+        $bulan = $request?->get('bulan');
+        $tglDari = $request?->get('tgl_dari');
+        $tglSampai = $request?->get('tgl_sampai');
+
+        // Filter callback untuk subquery bank_masuk & bank_keluars
+        $applyDateFilter = function ($q) use ($tglDari, $tglSampai, $tahun, $bulan) {
+            if (!empty($tglDari) && !empty($tglSampai)) {
+                $q->whereBetween('tanggal', [$tglDari, $tglSampai]);
+            } elseif (!empty($tglSampai)) {
+                $q->where('tanggal', '<=', $tglSampai);
+            } elseif (!empty($tglDari)) {
+                $q->where('tanggal', '>=', $tglDari);
+            } else {
+                if (!empty($tahun)) {
+                    $q->whereYear('tanggal', $tahun);
+                }
+                if (!empty($bulan)) {
+                    $q->whereMonth('tanggal', (int) $bulan);
+                }
+            }
+        };
+
         // Ambil semua sumber dana beserta saldo VA-nya
         // Saldo VA = SUM(bank_masuk.debet) - SUM(bank_keluars.kredit) per sumber_dana
+        $masukSubQuery = DB::table('bank_masuk')
+            ->selectRaw('COALESCE(SUM(debet), 0)')
+            ->whereColumn('bank_masuk.id_sumber_dana', 'sumber_dana.id_sumber_dana');
+        $applyDateFilter($masukSubQuery);
+
+        $keluarSubQuery = DB::table('bank_keluars')
+            ->selectRaw('COALESCE(SUM(kredit), 0)')
+            ->whereColumn('bank_keluars.id_sumber_dana', 'sumber_dana.id_sumber_dana');
+        $applyDateFilter($keluarSubQuery);
+
         $sumberDanaList = DB::table('sumber_dana')
             ->select('sumber_dana.id_sumber_dana', 'sumber_dana.nama_sumber_dana')
-            ->selectRaw('COALESCE((SELECT SUM(debet) FROM bank_masuk WHERE bank_masuk.id_sumber_dana = sumber_dana.id_sumber_dana), 0) as total_masuk')
-            ->selectRaw('COALESCE((SELECT SUM(kredit) FROM bank_keluars WHERE bank_keluars.id_sumber_dana = sumber_dana.id_sumber_dana), 0) as total_keluar')
+            ->selectSub($masukSubQuery, 'total_masuk')
+            ->selectSub($keluarSubQuery, 'total_keluar')
             ->orderBy('sumber_dana.id_sumber_dana')
             ->get()
             ->map(function ($sd) {
@@ -1082,20 +1115,27 @@ class dashboardController extends Controller
         $totalSaldoBank = $sumberDanaList->sum('saldo_va');
 
         // Ambil saldo per Bank Virtual Account (bank_tujuan)
-        // Kolom `sap` = saldo versi SAP (diinput manual di halaman Daftar VA),
-        // disimpan sebagai string berformat ribuan mis. "26.750".
+        $masukVaSubQuery = DB::table('bank_masuk')
+            ->selectRaw('COALESCE(SUM(debet), 0)')
+            ->whereColumn('bank_masuk.id_bank_tujuan', 'bank_tujuan.id_bank_tujuan');
+        $applyDateFilter($masukVaSubQuery);
+
+        $keluarVaSubQuery = DB::table('bank_keluars')
+            ->selectRaw('COALESCE(SUM(kredit), 0)')
+            ->whereColumn('bank_keluars.id_bank_tujuan', 'bank_tujuan.id_bank_tujuan');
+        $applyDateFilter($keluarVaSubQuery);
+
         $bankVAList = DB::table('bank_tujuan')
             ->select('bank_tujuan.id_bank_tujuan', 'bank_tujuan.nama_tujuan', 'bank_tujuan.sap')
-            ->selectRaw('COALESCE((SELECT SUM(debet) FROM bank_masuk WHERE bank_masuk.id_bank_tujuan = bank_tujuan.id_bank_tujuan), 0) as total_masuk')
-            ->selectRaw('COALESCE((SELECT SUM(kredit) FROM bank_keluars WHERE bank_keluars.id_bank_tujuan = bank_tujuan.id_bank_tujuan), 0) as total_keluar')
+            ->selectSub($masukVaSubQuery, 'total_masuk')
+            ->selectSub($keluarVaSubQuery, 'total_keluar')
             ->orderBy('bank_tujuan.nama_tujuan')
             ->get()
             ->map(function ($va) {
                 $va->saldo = (float) $va->total_masuk - (float) $va->total_keluar;
                 // Nilai numerik SAP untuk penjumlahan total (buang pemisah titik).
                 $va->sap_nilai = (float) preg_replace('/\D+/', '', (string) $va->sap);
-                // Selisih = Saldo Akhir - Saldo SAP (dihitung ulang di sisi klien
-                // setiap kali SAP diedit; ini nilai awal saat halaman dimuat).
+                // Selisih = Saldo Akhir - Saldo SAP
                 $va->selisih = $va->saldo - $va->sap_nilai;
                 return $va;
             });
@@ -1129,6 +1169,48 @@ class dashboardController extends Controller
         // Saldo Rek 408 yang digunakan region = Saldo Rek 408 - Total Saldo VA
         $saldoRegion = $saldoRek408 - $totalSaldoVA;
 
+        // List tahun untuk dropdown filter
+        $yearsMasuk = DB::table('bank_masuk')->whereNotNull('tanggal')->selectRaw('DISTINCT YEAR(tanggal) as y')->pluck('y');
+        $yearsKeluar = DB::table('bank_keluars')->whereNotNull('tanggal')->selectRaw('DISTINCT YEAR(tanggal) as y')->pluck('y');
+        $tahunList = $yearsMasuk->merge($yearsKeluar)->filter()->unique()->sortDesc()->values()->all();
+        if (empty($tahunList)) {
+            $tahunList = [(int) date('Y')];
+        }
+
+        $bulanList = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        // Format label filter aktif
+        $labelFilter = 'Semua Waktu (Seluruh Data)';
+        if (!empty($tglDari) && !empty($tglSampai)) {
+            try {
+                $labelFilter = \Carbon\Carbon::parse($tglDari)->translatedFormat('d F Y') . ' s/d ' . \Carbon\Carbon::parse($tglSampai)->translatedFormat('d F Y');
+            } catch (\Exception $e) {
+                $labelFilter = $tglDari . ' s/d ' . $tglSampai;
+            }
+        } elseif (!empty($tglSampai)) {
+            try {
+                $labelFilter = 'Sampai dengan ' . \Carbon\Carbon::parse($tglSampai)->translatedFormat('d F Y');
+            } catch (\Exception $e) {
+                $labelFilter = 'Sampai dengan ' . $tglSampai;
+            }
+        } elseif (!empty($tglDari)) {
+            try {
+                $labelFilter = 'Mulai ' . \Carbon\Carbon::parse($tglDari)->translatedFormat('d F Y');
+            } catch (\Exception $e) {
+                $labelFilter = 'Mulai ' . $tglDari;
+            }
+        } elseif (!empty($tahun) && !empty($bulan)) {
+            $labelFilter = ($bulanList[(int) $bulan] ?? $bulan) . ' ' . $tahun;
+        } elseif (!empty($tahun)) {
+            $labelFilter = 'Tahun ' . $tahun;
+        } elseif (!empty($bulan)) {
+            $labelFilter = 'Bulan ' . ($bulanList[(int) $bulan] ?? $bulan);
+        }
+
         return compact(
             'sumberDanaList',
             'totalSaldoBank',
@@ -1138,22 +1220,39 @@ class dashboardController extends Controller
             'saldoRek408',
             'noRek408',
             'digitAkhirRek',
-            'saldoRegion'
+            'saldoRegion',
+            'tahunList',
+            'bulanList',
+            'tahun',
+            'bulan',
+            'tglDari',
+            'tglSampai',
+            'labelFilter'
         );
     }
 
     public function bank(Request $request)
     {
-        return view('cash_bank.dashboardBank', $this->buildBankDashboardData());
+        return view('cash_bank.dashboardBank', $this->buildBankDashboardData($request));
     }
+
     public function bankExportExcel(Request $request)
     {
         $tanggal = $request->tanggal ?? 'Pontianak, ' . \Carbon\Carbon::now()->translatedFormat('d F Y');
         $nama    = $request->nama    ?? 'Herry Wahyudi';
         $jabatan = $request->jabatan ?? 'Kepala Bagian Akuntansi & Keuangan';
 
+        $data = $this->buildBankDashboardData($request);
+
         return Excel::download(
-            new ExportExcelDashboardBank($tanggal, $nama, $jabatan),
+            new ExportExcelDashboardBank(
+                $tanggal,
+                $nama,
+                $jabatan,
+                $data['sumberDanaList'],
+                $data['totalSaldoBank'],
+                $data['labelFilter']
+            ),
             'Saldo-Kas-Bank.xlsx'
         );
     }
@@ -1165,7 +1264,7 @@ class dashboardController extends Controller
         $jabatan = $request->jabatan ?? 'Kepala Bagian Akuntansi & Keuangan';
 
         return view('cash_bank.exportPDF.pdfDashboardBank', array_merge(
-            $this->buildBankDashboardData(),
+            $this->buildBankDashboardData($request),
             compact('tanggal', 'nama', 'jabatan')
         ));
     }

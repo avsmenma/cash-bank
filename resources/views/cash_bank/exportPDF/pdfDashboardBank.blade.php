@@ -77,7 +77,13 @@
     <thead>
         <tr>
             <th class="bg-header" colspan="2">Saldo Kas &amp; Bank</th>
-            <th class="bg-header" style="min-width:140px;">Tanggal</th>
+            <th class="bg-header" style="min-width:140px;">
+                @if(!empty($labelFilter) && $labelFilter !== 'Semua Waktu (Seluruh Data)')
+                    {{ $labelFilter }}
+                @else
+                    Tanggal
+                @endif
+            </th>
             <th class="bg-header" style="min-width:140px;">Nilai (Rp)</th>
         </tr>
         <tr>

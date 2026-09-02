@@ -33,15 +33,66 @@ class BankCashflowController extends Controller
             array_unshift($years, $currentYear);
         }
 
-        $selectedYear = (int) $request->get('tahun', $years[0]);
+        $bulanList = [
+            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
+            '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
+            '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+        ];
+
+        // Helper untuk parse input tanggal format d-m-Y, d/m/Y, atau Y-m-d
+        $parseDateInput = function ($val) {
+            if (empty($val)) return null;
+            $val = trim($val);
+            if (preg_match('/^(\d{2})-(\d{2})-(\d{4})$/', $val, $m)) {
+                return $m[3] . '-' . $m[2] . '-' . $m[1];
+            }
+            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $val, $m)) {
+                return $m[3] . '-' . $m[2] . '-' . $m[1];
+            }
+            try {
+                return \Carbon\Carbon::parse($val)->toDateString();
+            } catch (\Exception $e) {
+                return $val;
+            }
+        };
+
+        $tglDari = $parseDateInput($request->get('tgl_dari'));
+        $tglSampai = $parseDateInput($request->get('tgl_sampai'));
+
+        $defaultYear = !empty($tglSampai) ? (int) \Carbon\Carbon::parse($tglSampai)->year : $years[0];
+        $selectedYear = (int) $request->get('tahun', $defaultYear);
         $selectedBulan = (string) $request->get('bulan', '');
         $showEmpty = $request->boolean('semua');
         $showTahunLalu = $request->boolean('tahun_lalu');
         $prevYear = $selectedYear - 1;
 
-        // Daftar unit sengaja diambil TANPA menyertakan filter periode supaya
-        // susunan kolom tetap sama saat bulan/tahun diganti — kolom unit tidak
-        // muncul-hilang dan posisi geser horizontal pengguna tidak melompat.
+        // Format label periode untuk tampilan kop laporan & banner filter
+        $formatTanggalIndo = function ($dateStr) use ($bulanList) {
+            if (empty($dateStr)) return '';
+            try {
+                $c = \Carbon\Carbon::parse($dateStr);
+                $d = $c->format('d');
+                $m = $bulanList[str_pad($c->format('n'), 2, '0', STR_PAD_LEFT)] ?? $c->format('m');
+                $y = $c->format('Y');
+                return $d . ' ' . $m . ' ' . $y;
+            } catch (\Exception $e) {
+                return $dateStr;
+            }
+        };
+
+        if (!empty($tglDari) && !empty($tglSampai)) {
+            $labelPeriode = $formatTanggalIndo($tglDari) . ' s/d ' . $formatTanggalIndo($tglSampai);
+        } elseif (!empty($tglSampai)) {
+            $labelPeriode = 'Sampai dengan ' . $formatTanggalIndo($tglSampai);
+        } elseif (!empty($tglDari)) {
+            $labelPeriode = 'Mulai ' . $formatTanggalIndo($tglDari);
+        } elseif ($selectedBulan !== '') {
+            $labelPeriode = ($bulanList[str_pad($selectedBulan, 2, '0', STR_PAD_LEFT)] ?? $selectedBulan) . ' ' . $selectedYear;
+        } else {
+            $labelPeriode = 'Tahun ' . $selectedYear;
+        }
+
+        // Daftar unit diambil tanpa filter periode agar struktur kolom tabel konsisten
         $unitIds = Cashflow::whereNotNull('id_bank_tujuan')
             ->distinct()
             ->pluck('id_bank_tujuan')
@@ -51,13 +102,43 @@ class BankCashflowController extends Controller
             ->orderBy('nama_tujuan')
             ->get(['id_bank_tujuan', 'nama_tujuan']);
 
-        // Query tahun berjalan dan tahun lalu jika opsi tampilkan kolom tahun lalu aktif
-        $yearsToQuery = $showTahunLalu ? [$selectedYear, $prevYear] : [$selectedYear, $prevYear];
+        // Query agregasi arus kas dengan filter tanggal / periode
+        $query = Cashflow::query();
 
-        // Satu query untuk semua: dua tahun x seluruh unit x profit center x seluruh reference key.
-        $aggregates = Cashflow::query()
-            ->whereIn('tahun', [$selectedYear, $prevYear])
-            ->when(is_numeric($selectedBulan), fn ($q) => $q->where('bulan', (int) $selectedBulan))
+        if (!empty($tglDari) && !empty($tglSampai)) {
+            $prevTglDari = \Carbon\Carbon::parse($tglDari)->subYear()->toDateString();
+            $prevTglSampai = \Carbon\Carbon::parse($tglSampai)->subYear()->toDateString();
+
+            $query->where(function ($q) use ($tglDari, $tglSampai, $prevTglDari, $prevTglSampai) {
+                $q->whereBetween('posting_date', [$tglDari, $tglSampai])
+                  ->orWhereBetween('posting_date', [$prevTglDari, $prevTglSampai]);
+            });
+        } elseif (!empty($tglSampai)) {
+            $prevTglSampai = \Carbon\Carbon::parse($tglSampai)->subYear()->toDateString();
+
+            $query->where(function ($q) use ($selectedYear, $prevYear, $tglSampai, $prevTglSampai) {
+                $q->where(function ($q1) use ($selectedYear, $tglSampai) {
+                    $q1->where('tahun', $selectedYear)->where('posting_date', '<=', $tglSampai);
+                })->orWhere(function ($q2) use ($prevYear, $prevTglSampai) {
+                    $q2->where('tahun', $prevYear)->where('posting_date', '<=', $prevTglSampai);
+                });
+            });
+        } elseif (!empty($tglDari)) {
+            $prevTglDari = \Carbon\Carbon::parse($tglDari)->subYear()->toDateString();
+
+            $query->where(function ($q) use ($selectedYear, $prevYear, $tglDari, $prevTglDari) {
+                $q->where(function ($q1) use ($selectedYear, $tglDari) {
+                    $q1->where('tahun', $selectedYear)->where('posting_date', '>=', $tglDari);
+                })->orWhere(function ($q2) use ($prevYear, $prevTglDari) {
+                    $q2->where('tahun', $prevYear)->where('posting_date', '>=', $prevTglDari);
+                });
+            });
+        } else {
+            $query->whereIn('tahun', [$selectedYear, $prevYear])
+                  ->when(is_numeric($selectedBulan), fn ($q) => $q->where('bulan', (int) $selectedBulan));
+        }
+
+        $aggregates = $query
             ->groupBy('reference_key_1', 'tahun', 'id_bank_tujuan', 'profit_center')
             ->selectRaw('reference_key_1, tahun, id_bank_tujuan, profit_center, SUM(amount) AS total')
             ->get();
@@ -105,10 +186,14 @@ class BankCashflowController extends Controller
 
         return view('cash_bank.cashflowBank', compact(
             'years',
+            'bulanList',
             'currentYear',
             'selectedYear',
             'prevYear',
             'selectedBulan',
+            'tglDari',
+            'tglSampai',
+            'labelPeriode',
             'showEmpty',
             'showTahunLalu',
             'reportRows',
@@ -127,12 +212,47 @@ class BankCashflowController extends Controller
         $tahun = (int) $request->get('tahun', date('Y'));
         $bulan = $request->get('bulan');
 
+        $parseDateInput = function ($val) {
+            if (empty($val)) return null;
+            $val = trim($val);
+            if (preg_match('/^(\d{2})-(\d{2})-(\d{4})$/', $val, $m)) {
+                return $m[3] . '-' . $m[2] . '-' . $m[1];
+            }
+            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $val, $m)) {
+                return $m[3] . '-' . $m[2] . '-' . $m[1];
+            }
+            try {
+                return \Carbon\Carbon::parse($val)->toDateString();
+            } catch (\Exception $e) {
+                return $val;
+            }
+        };
+
+        $tglDari = $parseDateInput($request->get('tgl_dari'));
+        $tglSampai = $parseDateInput($request->get('tgl_sampai'));
+        $baseYear = (int) ($request->get('selected_year') ?: (!empty($tglSampai) ? \Carbon\Carbon::parse($tglSampai)->year : $tahun));
+
         $query = Cashflow::query()
-            ->where('tahun', $tahun)
             ->where('amount', '!=', 0);
 
-        if ($bulan !== null && $bulan !== '' && is_numeric($bulan)) {
-            $query->where('bulan', (int) $bulan);
+        if (!empty($tglDari) && !empty($tglSampai)) {
+            $diff = $baseYear - $tahun;
+            $tglDariEff = ($diff != 0) ? \Carbon\Carbon::parse($tglDari)->subYears($diff)->toDateString() : $tglDari;
+            $tglSampaiEff = ($diff != 0) ? \Carbon\Carbon::parse($tglSampai)->subYears($diff)->toDateString() : $tglSampai;
+            $query->whereBetween('posting_date', [$tglDariEff, $tglSampaiEff]);
+        } elseif (!empty($tglSampai)) {
+            $diff = $baseYear - $tahun;
+            $tglSampaiEff = ($diff != 0) ? \Carbon\Carbon::parse($tglSampai)->subYears($diff)->toDateString() : $tglSampai;
+            $query->where('tahun', $tahun)->where('posting_date', '<=', $tglSampaiEff);
+        } elseif (!empty($tglDari)) {
+            $diff = $baseYear - $tahun;
+            $tglDariEff = ($diff != 0) ? \Carbon\Carbon::parse($tglDari)->subYears($diff)->toDateString() : $tglDari;
+            $query->where('tahun', $tahun)->where('posting_date', '>=', $tglDariEff);
+        } else {
+            $query->where('tahun', $tahun);
+            if ($bulan !== null && $bulan !== '' && is_numeric($bulan)) {
+                $query->where('bulan', (int) $bulan);
+            }
         }
 
         // Filter seri/unit

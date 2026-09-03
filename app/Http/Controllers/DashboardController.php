@@ -215,9 +215,9 @@ class dashboardController extends Controller
             9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'
         ];
         
-        $tahun = $request->tahunPvd ?? date('Y');
-        $bulanDari = $request->bulan_dariPvd ?? 1;
-        $bulanSampai = $request->bulan_sampaiPvd ?? 12;
+        $tahun = $request->tahunPvd ?? $request->tahun ?? date('Y');
+        $bulanDari = $request->bulan_dariPvd ?? $request->bulan_dari ?? 1;
+        $bulanSampai = $request->bulan_sampaiPvd ?? $request->bulan_sampai ?? 12;
 
         // ========== PERMINTAAN ==========
         $permintaan = Permintaan::with(['kategori', 'subKriteria', 'itemSubKriteria'])
@@ -406,22 +406,28 @@ class dashboardController extends Controller
     }
 
     public function export_excel(Request $request){
+        $tahun = $request->tahun ?? $request->tahunPD ?? date('Y');
+        $bulanDari = $request->bulan_dari ?? $request->bulan_dariPD ?? 1;
+        $bulanSampai = $request->bulan_sampai ?? $request->bulan_sampaiPD ?? 12;
         return Excel::download(
             new ExcelPd(
-                $request->tahun,
-                $request->bulan_dari,
-                $request->bulan_sampai
+                $tahun,
+                $bulanDari,
+                $bulanSampai
             ),
             'Rekapan-PD .xlsx'
         );
     }
-   public function export_excelPvd(Request $request)
+    public function export_excelPvd(Request $request)
     {
+        $tahun = $request->tahunPvd ?? $request->tahun ?? date('Y');
+        $bulanDari = $request->bulan_dariPvd ?? $request->bulan_dari ?? 1;
+        $bulanSampai = $request->bulan_sampaiPvd ?? $request->bulan_sampai ?? 12;
         return Excel::download(
             new ExcelPvd(
-                $request->tahunPvd,
-                $request->bulan_dariPvd,
-                $request->bulan_sampaiPvd
+                $tahun,
+                $bulanDari,
+                $bulanSampai
             ),
             'Rekapan-PVD.xlsx'
         );

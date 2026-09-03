@@ -92,16 +92,121 @@ class ExcelPvd implements FromView
 
         /* ================= FILTER BULAN ================= */
         $bulanListFiltered = [];
-        foreach ($bulanList as $no => $nama) {
-            if ($no >= $bulanDari && $no <= $bulanSampai && isset($bulanAktif[$no])) {
-                $bulanListFiltered[$no] = $nama;
+        for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+            if (isset($bulanList[$b])) {
+                $bulanListFiltered[$b] = $bulanList[$b];
+            }
+        }
+        if (empty($bulanListFiltered)) {
+            $bulanListFiltered = $bulanList;
+        }
+
+        $organizedData = [];
+        foreach (['dropping', 'permintaan', 'pembayaran'] as $sumber) {
+            if (!isset($result[$sumber])) continue;
+            foreach ($result[$sumber] as $item) {
+                $kategori = $item['kategori'];
+                $subKriteria = $item['sub_kriteria'];
+                $itemKriteria = $item['item_kriteria'];
+
+                if (!isset($organizedData[$kategori][$subKriteria][$itemKriteria])) {
+                    $organizedData[$kategori][$subKriteria][$itemKriteria] = [
+                        'permintaan' => [],
+                        'dropping' => [],
+                        'pembayaran' => []
+                    ];
+                }
+                $organizedData[$kategori][$subKriteria][$itemKriteria][$sumber] = $item['data'];
             }
         }
 
-        return view('cash_bank.dashbordKedua', compact(
-            'result',
+        $organizedData = \App\Support\DashboardKriteriaHierarchy::sortNested($organizedData);
+
+        $pvdRows = [];
+        $pvdPush = function ($type, $no, $uraian, $perBulan = null, $tot = null, $pct = null) use (&$pvdRows, $bulanListFiltered) {
+            $row = ['type' => $type, 'no' => $no, 'uraian' => $uraian];
+            foreach ($bulanListFiltered as $noBulan => $nm) {
+                $row['m' . $noBulan . '_p'] = $perBulan[$noBulan]['p'] ?? null;
+                $row['m' . $noBulan . '_d'] = $perBulan[$noBulan]['d'] ?? null;
+                $row['m' . $noBulan . '_b'] = $perBulan[$noBulan]['b'] ?? null;
+            }
+            $row['tot_p'] = $tot['p'] ?? null;
+            $row['tot_d'] = $tot['d'] ?? null;
+            $row['tot_b'] = $tot['b'] ?? null;
+            $row['pct_p'] = $pct['p'] ?? null;
+            $row['pct_d'] = $pct['d'] ?? null;
+            $pvdRows[] = $row;
+        };
+
+        $grandTotal = [];
+        foreach ($bulanListFiltered as $b => $n) $grandTotal[$b] = ['p' => 0, 'd' => 0, 'b' => 0];
+        $grandAll = ['p' => 0, 'd' => 0, 'b' => 0];
+
+        $rowNumber = 1;
+        foreach ($organizedData as $kategori => $subKriterias) {
+            $katTotal = [];
+            foreach ($bulanListFiltered as $b => $n) $katTotal[$b] = ['p' => 0, 'd' => 0, 'b' => 0];
+            $katAll = ['p' => 0, 'd' => 0, 'b' => 0];
+
+            $pvdPush('kat', '', $kategori);
+
+            foreach ($subKriterias as $subKriteria => $items) {
+                $subTotal = [];
+                foreach ($bulanListFiltered as $b => $n) $subTotal[$b] = ['p' => 0, 'd' => 0, 'b' => 0];
+                $subAll = ['p' => 0, 'd' => 0, 'b' => 0];
+
+                $pvdPush('sub', '', $subKriteria);
+
+                foreach ($items as $itemKriteria => $sumberData) {
+                    $itemPerBulan = [];
+                    $totPerm = 0; $totDrop = 0; $totPay = 0;
+
+                    foreach ($bulanListFiltered as $noBulan => $namaBulan) {
+                        $p = $sumberData['permintaan'][$noBulan] ?? 0;
+                        $d = $sumberData['dropping'][$noBulan] ?? 0;
+                        $b = $sumberData['pembayaran'][$noBulan] ?? 0;
+
+                        $totPerm += $p; $totDrop += $d; $totPay += $b;
+                        $subTotal[$noBulan]['p'] += $p; $subTotal[$noBulan]['d'] += $d; $subTotal[$noBulan]['b'] += $b;
+                        $katTotal[$noBulan]['p'] += $p; $katTotal[$noBulan]['d'] += $d; $katTotal[$noBulan]['b'] += $b;
+                        $grandTotal[$noBulan]['p'] += $p; $grandTotal[$noBulan]['d'] += $d; $grandTotal[$noBulan]['b'] += $b;
+
+                        $itemPerBulan[$noBulan] = ['p' => $p, 'd' => $d, 'b' => $b];
+                    }
+
+                    $subAll['p'] += $totPerm; $subAll['d'] += $totDrop; $subAll['b'] += $totPay;
+                    $katAll['p'] += $totPerm; $katAll['d'] += $totDrop; $katAll['b'] += $totPay;
+                    $grandAll['p'] += $totPerm; $grandAll['d'] += $totDrop; $grandAll['b'] += $totPay;
+
+                    $pctP = $totPerm > 0 ? ($totPay / $totPerm) * 100 : 0;
+                    $pctD = $totDrop > 0 ? ($totPay / $totDrop) * 100 : 0;
+
+                    $pvdPush('item', $rowNumber++, '- ' . $itemKriteria, $itemPerBulan,
+                        ['p' => $totPerm, 'd' => $totDrop, 'b' => $totPay],
+                        ['p' => $pctP, 'd' => $pctD]
+                    );
+                }
+
+                $subPctP = $subAll['p'] > 0 ? ($subAll['b'] / $subAll['p']) * 100 : 0;
+                $subPctD = $subAll['d'] > 0 ? ($subAll['b'] / $subAll['d']) * 100 : 0;
+                $pvdPush('subtotal', '', 'Jumlah ' . $subKriteria, $subTotal, $subAll, ['p' => $subPctP, 'd' => $subPctD]);
+            }
+
+            $katPctP = $katAll['p'] > 0 ? ($katAll['b'] / $katAll['p']) * 100 : 0;
+            $katPctD = $katAll['d'] > 0 ? ($katAll['b'] / $katAll['d']) * 100 : 0;
+            $pvdPush('kattotal', '', 'Total ' . $kategori, $katTotal, $katAll, ['p' => $katPctP, 'd' => $katPctD]);
+        }
+
+        $grandPctP = $grandAll['p'] > 0 ? ($grandAll['b'] / $grandAll['p']) * 100 : 0;
+        $grandPctD = $grandAll['d'] > 0 ? ($grandAll['b'] / $grandAll['d']) * 100 : 0;
+        $pvdPush('grand', '', 'GRAND TOTAL', $grandTotal, $grandAll, ['p' => $grandPctP, 'd' => $grandPctD]);
+
+        return view('cash_bank.exportExcel.excelPvd', compact(
+            'pvdRows',
             'bulanListFiltered',
-            'tahun'
+            'tahun',
+            'bulanDari',
+            'bulanSampai'
         ));
     }
 

@@ -118,6 +118,19 @@
         padding: 16px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
+    .cf-loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.75);
+        z-index: 50;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+    }
 </style>
 
 <div class="container-fluid pt-3 px-3">
@@ -189,8 +202,8 @@
                 <div id="table-wrapper">
                     @include('cash_bank.pembayaran.dashboardPembayaran')
                 </div>
-                <div class="overlay" id="loading" style="display: none; background: rgba(255,255,255,0.7); position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 50; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
-                    <i class="fas fa-2x fa-sync fa-spin text-primary"></i>
+                <div class="cf-loading-overlay" id="loading">
+                    <i class="fas fa-2x fa-spinner fa-spin text-primary"></i>
                 </div>
             </div>
         </div>

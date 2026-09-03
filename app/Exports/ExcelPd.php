@@ -186,22 +186,167 @@ class ExcelPd implements FromView
         }
 
         // Filter bulan
-        if (empty($bulanAktif)) {
-            $bulanListFiltered = array_filter($bulanList, function($namaBulan, $noBulan) use ($bulanDari, $bulanSampai) {
-                return $noBulan >= $bulanDari && $noBulan <= $bulanSampai;
-            }, ARRAY_FILTER_USE_BOTH);
-        } else {
-            $bulanListFiltered = array_filter($bulanList, function($namaBulan, $noBulan) use ($bulanAktif, $bulanDari, $bulanSampai) {
-                return $noBulan >= $bulanDari 
-                    && $noBulan <= $bulanSampai 
-                    && isset($bulanAktif[$noBulan]);
-            }, ARRAY_FILTER_USE_BOTH);
+        $bulanListFiltered = [];
+        for ($b = $bulanDari; $b <= $bulanSampai; $b++) {
+            if (isset($bulanList[$b])) {
+                $bulanListFiltered[$b] = $bulanList[$b];
+            }
         }
-
         if (empty($bulanListFiltered)) {
             $bulanListFiltered = $bulanList;
         }
 
-        return view('cash_bank.dashbordPertama', compact('result', 'bulanListFiltered', 'tahun', 'bulanDari', 'bulanSampai'));
+        // Aggregate Permintaan, Dropping & Pembayaran
+        $permAgg = [];
+        foreach (($result['permintaan'] ?? []) as $item) {
+            $kat = $item['kategori']; $sub = $item['sub_kriteria'];
+            foreach ($bulanListFiltered as $b => $n) {
+                $permAgg[$kat][$sub][$b] = ($permAgg[$kat][$sub][$b] ?? 0) + ($item['data'][$b] ?? 0);
+            }
+        }
+
+        $dropAgg = [];
+        foreach ($result['dropping'] as $item) {
+            $kat = $item['kategori']; $sub = $item['sub_kriteria'];
+            foreach ($bulanListFiltered as $b => $n) {
+                $dropAgg[$kat][$sub][$b] = ($dropAgg[$kat][$sub][$b] ?? 0) + ($item['data'][$b] ?? 0);
+            }
+        }
+
+        $payAgg = [];
+        foreach ($result['pembayaran'] as $item) {
+            $kat = $item['kategori']; $sub = $item['sub_kriteria'];
+            foreach ($bulanListFiltered as $b => $n) {
+                $payAgg[$kat][$sub][$b] = ($payAgg[$kat][$sub][$b] ?? 0) + ($item['data'][$b] ?? 0);
+            }
+        }
+
+        $permAgg = \App\Support\DashboardKriteriaHierarchy::sortCategorySub($permAgg);
+        $dropAgg = \App\Support\DashboardKriteriaHierarchy::sortCategorySub($dropAgg);
+        $payAgg = \App\Support\DashboardKriteriaHierarchy::sortCategorySub($payAgg);
+
+        $totalPenerima  = []; foreach ($bulanListFiltered as $b => $n) $totalPenerima[$b] = 0;
+        foreach ($result['penerima'] as $kat => $bData) {
+            foreach ($bulanListFiltered as $b => $n) $totalPenerima[$b] += ($bData[$b] ?? 0);
+        }
+        $totalPermAll   = []; foreach ($bulanListFiltered as $b => $n) $totalPermAll[$b] = 0;
+        foreach ($permAgg as $kat => $subs) {
+            foreach ($subs as $sub => $bData) {
+                foreach ($bulanListFiltered as $b => $n) $totalPermAll[$b] += ($bData[$b] ?? 0);
+            }
+        }
+        $totalDropAll   = []; foreach ($bulanListFiltered as $b => $n) $totalDropAll[$b] = 0;
+        foreach ($dropAgg as $kat => $subs) {
+            foreach ($subs as $sub => $bData) {
+                foreach ($bulanListFiltered as $b => $n) $totalDropAll[$b] += ($bData[$b] ?? 0);
+            }
+        }
+        $totalPayAll    = []; foreach ($bulanListFiltered as $b => $n) $totalPayAll[$b] = 0;
+        foreach ($payAgg as $kat => $subs) {
+            foreach ($subs as $sub => $bData) {
+                foreach ($bulanListFiltered as $b => $n) $totalPayAll[$b] += ($bData[$b] ?? 0);
+            }
+        }
+
+        $cpnKernel = []; foreach ($bulanListFiltered as $b => $n) $cpnKernel[$b] = 0;
+        foreach (['Penjualan CPO (Minyak Sawit)', 'Penjualan Kernel (Inti Sawit)', 'Penjualan CPO', 'Penjualan Kernel'] as $cpk) {
+            if (isset($result['penerima'][$cpk])) {
+                foreach ($bulanListFiltered as $b => $n) {
+                    $cpnKernel[$b] += ($result['penerima'][$cpk][$b] ?? 0);
+                }
+            }
+        }
+
+        $dropTBS = []; $payTBS = [];
+        foreach ($bulanListFiltered as $b => $n) { $dropTBS[$b] = 0; $payTBS[$b] = 0; }
+        foreach ($dropAgg as $kat => $subs) {
+            foreach ($subs as $sub => $bData) {
+                if (stripos($sub, 'TBS') !== false || $sub === 'Pembelian TBS') {
+                    foreach ($bulanListFiltered as $b => $n) $dropTBS[$b] += ($bData[$b] ?? 0);
+                }
+            }
+        }
+        foreach ($payAgg as $kat => $subs) {
+            foreach ($subs as $sub => $bData) {
+                if (stripos($sub, 'TBS') !== false || $sub === 'Pembelian TBS') {
+                    foreach ($bulanListFiltered as $b => $n) $payTBS[$b] += ($bData[$b] ?? 0);
+                }
+            }
+        }
+
+        $cfRows = [];
+        $cfPush = function ($section, $type, $uraian, $vals = null, $total = null) use (&$cfRows, $bulanListFiltered) {
+            $row = ['section' => $section, 'type' => $type, 'uraian' => $uraian, 'total' => $total];
+            foreach ($bulanListFiltered as $b => $n) {
+                $row['m' . $b] = $vals === null ? null : ($vals[$b] ?? 0);
+            }
+            $cfRows[] = $row;
+        };
+
+        $cfBagian = function ($agg, $sectionKey) use ($cfPush, $bulanListFiltered) {
+            foreach ($agg as $kat => $subs) {
+                $cfPush($sectionKey, 'kat', $kat);
+                $subTotB = [];
+                foreach ($bulanListFiltered as $b => $n) $subTotB[$b] = 0;
+                $subAll = 0;
+                foreach ($subs as $sub => $bData) {
+                    $vals = [];
+                    $rt = 0;
+                    foreach ($bulanListFiltered as $b => $n) {
+                        $v = $bData[$b] ?? 0;
+                        $vals[$b] = $v;
+                        $rt += $v;
+                        $subTotB[$b] += $v;
+                    }
+                    $subAll += $rt;
+                    $cfPush($sectionKey, 'item', '- ' . $sub, $vals, $rt);
+                }
+                $cfPush($sectionKey, 'subtotal', 'Jumlah ' . $kat, $subTotB, $subAll);
+            }
+        };
+
+        // PENERIMAAN
+        $cfPush('penerimaan', 'section', 'PENERIMAAN');
+        foreach ($result['penerima'] as $kat => $bData) {
+            $vals = [];
+            $rowTotal = 0;
+            foreach ($bulanListFiltered as $b => $n) { $v = $bData[$b] ?? 0; $vals[$b] = $v; $rowTotal += $v; }
+            $cfPush('penerimaan', 'item', '- ' . $kat, $vals, $rowTotal);
+        }
+        $cfPush('penerimaan', 'total', 'TOTAL PENERIMAAN', $totalPenerima, array_sum($totalPenerima));
+
+        // PERMINTAAN
+        $cfPush('permintaan', 'section', 'PERMINTAAN');
+        $cfBagian($permAgg, 'permintaan');
+        $cfPush('permintaan', 'total', 'TOTAL PERMINTAAN', $totalPermAll, array_sum($totalPermAll));
+
+        // DROPPING HO
+        $cfPush('dropping', 'section', 'DROPPING HO');
+        $cfBagian($dropAgg, 'dropping');
+        $cfPush('dropping', 'total', 'TOTAL DROPPING HO', $totalDropAll, array_sum($totalDropAll));
+
+        // SELISIH
+        $selPD = [];
+        foreach ($bulanListFiltered as $b => $n) $selPD[$b] = $totalPenerima[$b] - $totalDropAll[$b];
+        $cfPush('semua-only', 'selisih', 'SELISIH PENERIMAAN TERHADAP DROPPING', $selPD, array_sum($selPD));
+
+        // PEMBAYARAN
+        $cfPush('pembayaran', 'section', 'PEMBAYARAN');
+        $cfBagian($payAgg, 'pembayaran');
+        $cfPush('pembayaran', 'total', 'TOTAL PEMBAYARAN', $totalPayAll, array_sum($totalPayAll));
+
+        $selPP = [];
+        foreach ($bulanListFiltered as $b => $n) $selPP[$b] = $totalPenerima[$b] - $totalPayAll[$b];
+        $cfPush('semua-only', 'selisih', 'SELISIH PEMBAYARAN TERHADAP PENERIMAAN', $selPP, array_sum($selPP));
+
+        $selDP = [];
+        foreach ($bulanListFiltered as $b => $n) $selDP[$b] = $totalDropAll[$b] - $totalPayAll[$b];
+        $cfPush('semua-only', 'selisih', 'SELISIH PEMBAYARAN TERHADAP DROPPING', $selDP, array_sum($selDP));
+
+        $cfPush('semua-only', 'summary', 'PENERIMAAN PENJUALAN CPO & KERNEL', $cpnKernel, array_sum($cpnKernel));
+        $cfPush('semua-only', 'summary', 'DROPPING TBS', $dropTBS, array_sum($dropTBS));
+        $cfPush('semua-only', 'summary', 'PEMBAYARAN TBS', $payTBS, array_sum($payTBS));
+
+        return view('cash_bank.exportExcel.excelPd', compact('cfRows', 'bulanListFiltered', 'tahun', 'bulanDari', 'bulanSampai'));
     }
 }

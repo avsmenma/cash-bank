@@ -238,7 +238,76 @@ class CashflowImportService
             throw new \Exception("Lembar kerja sheet1.xml tidak ditemukan pada file {$filePath}");
         }
 
-        // 1. Load BankTujuan lookup
+        // 1. Pre-validation scan: pastikan kolom Reference Key 1 ada dan memiliki data
+        $preXml = new XMLReader();
+        $preXml->xml($sheetXml);
+
+        $refKey1Col = null;
+        $refKey3Col = null;
+        $docNumCol = 'A';
+        $hasRefKey1Data = false;
+        $totalDataRows = 0;
+        $countRefKey1 = 0;
+
+        while ($preXml->read()) {
+            if ($preXml->nodeType === XMLReader::ELEMENT && $preXml->name === 'row') {
+                $rNum = (int) $preXml->getAttribute('r');
+                $rowXml = $preXml->readOuterXml();
+                $rowEl = simplexml_load_string($rowXml);
+
+                $cols = [];
+                foreach ($rowEl->c as $c) {
+                    $ref = (string) $c['r'];
+                    $colLetter = preg_replace('/[0-9]/', '', $ref);
+                    $t = (string) $c['t'];
+                    $val = (string) $c->v;
+                    if ($t === 's' && isset($sharedStrings[(int) $val])) {
+                        $val = $sharedStrings[(int) $val];
+                    }
+                    $cols[$colLetter] = $val;
+                }
+
+                if ($rNum === 1) {
+                    // Cari posisi kolom berdasarkan header
+                    foreach ($cols as $colLetter => $headerName) {
+                        $h = trim(strtolower((string) $headerName));
+                        if (str_contains($h, 'reference key 1') || $h === 'refkey 1' || $h === 'reff key 1') {
+                            $refKey1Col = $colLetter;
+                        } elseif (str_contains($h, 'reference key 3') || $h === 'refkey 3' || $h === 'reff key 3') {
+                            $refKey3Col = $colLetter;
+                        } elseif (str_contains($h, 'document number')) {
+                            $docNumCol = $colLetter;
+                        }
+                    }
+                    $refKey1Col = $refKey1Col ?: 'AL';
+                    $refKey3Col = $refKey3Col ?: 'AE';
+                } else {
+                    $docNum = trim($cols[$docNumCol] ?? '');
+                    if (empty($docNum)) {
+                        continue;
+                    }
+                    $totalDataRows++;
+                    $val1 = trim($cols[$refKey1Col] ?? '');
+                    if (!empty($val1)) {
+                        $hasRefKey1Data = true;
+                        $countRefKey1++;
+                    }
+                }
+            }
+        }
+        $preXml->close();
+
+        if ($totalDataRows === 0) {
+            $zip->close();
+            throw new \Exception("File Excel tidak memuat baris data transaksi.");
+        }
+
+        if (!$hasRefKey1Data || $countRefKey1 === 0) {
+            $zip->close();
+            throw new \Exception("Import ditolak: File Excel tidak memiliki data pada kolom 'Reference Key 1' (Kolom {$refKey1Col}). Kolom Reference Key 1 (kode rincian 8 karakter) wajib terisi agar transaksi dapat dipetakan secara akurat ke pos Arus Kas.");
+        }
+
+        // 2. Load BankTujuan lookup
         $btMap = [];
         $bankTujuans = BankTujuan::all();
         $prctrKeywordMap = self::getProfitCenterMap();
@@ -265,16 +334,16 @@ class CashflowImportService
         // sehingga saldo unit tersebut ikut terpengaruh sampai pemetaan ditambahkan.
         $unmappedProfitCenters = [];
 
-        // 2. Load References dictionary
+        // 3. Load References dictionary
         $refMap = CashflowReference::pluck('uraian', 'reference_key')->toArray();
 
-        // 3. Load Lock map
+        // 4. Load Lock map
         $lockedMap = CashflowLock::getLockedMap();
         if (!empty($explicitLockedMap)) {
             $lockedMap = array_merge($lockedMap, $explicitLockedMap);
         }
 
-        // 4. Fast streaming parse sheet1.xml
+        // 5. Fast streaming parse sheet1.xml & insert
         $xml = new XMLReader();
         $xml->xml($sheetXml);
 
@@ -308,7 +377,7 @@ class CashflowImportService
                     $cols[$colLetter] = $val;
                 }
 
-                $docNum = trim($cols['A'] ?? '');
+                $docNum = trim($cols[$docNumCol] ?? '');
                 if (empty($docNum)) {
                     continue;
                 }
@@ -384,14 +453,14 @@ class CashflowImportService
                 $glDesc = trim($cols['S'] ?? '');
                 $refKeyRaw = trim($cols['W'] ?? '');
                 $costCenter = trim($cols['AC'] ?? '');
-                $refKey3 = trim($cols['AE'] ?? '');
-                $refKey1 = trim($cols['AL'] ?? '');
+                $refKey3 = trim($cols[$refKey3Col] ?? '');
+                $refKey1 = trim($cols[$refKey1Col] ?? '');
 
                 if (empty($refKey1)) {
-                    $refKey1 = !empty($refKey3) ? $refKey3 . '000' : self::REFERENCE_KEY_LAINNYA;
+                    $refKey1 = self::REFERENCE_KEY_LAINNYA;
                 }
 
-                $uraian = $refMap[$refKey1] ?? ($refMap[$refKey3] ?? ($offsettingAccName ?: $text));
+                $uraian = $refMap[$refKey1] ?? ($offsettingAccName ?: ($text ?: 'Transaksi Cash Flow'));
 
                 $idBankTujuan = $btMap[$prctr] ?? null;
                 if ($idBankTujuan === null) {

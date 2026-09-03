@@ -37,6 +37,23 @@ class DashboardPembayaranController extends Controller
         ));
     }
 
+    public function data(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+        $bulanDari = $request->bulan_dari ?? 1;
+        $bulanSampai = $request->bulan_sampai ?? 12;
+
+        $kategoriList = KategoriKriteria::whereIn('tipe', ['keluar', 'Penerima'])
+            ->pluck('nama_kriteria', 'id_kategori_kriteria');
+
+        $data = $this->getData($tahun, $bulanDari, $bulanSampai);
+
+        return view('cash_bank.pembayaran.dashboardPembayaran', array_merge(
+            compact('kategoriList', 'tahun', 'bulanDari', 'bulanSampai'),
+            $data
+        ));
+    }
+
     public function getData($tahun, $bulanDari = 1, $bulanSampai = 12)
     {
         // ===== BULAN =====

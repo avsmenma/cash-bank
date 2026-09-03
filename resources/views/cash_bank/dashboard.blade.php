@@ -173,24 +173,7 @@
     }
 </style>
 
-<div class="container-fluid m-3">
-    <!-- Content Header -->
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Dashboard Pembayaran</h1>
-                </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item active">Dashboard Pembayaran</li>
-                        <li class="breadcrumb-item"><a href="{{ route('dashboard.pembayaran.index') }}">Dashboard Versi 2</a></li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </section>
-    
+<div class="container-fluid pt-3 px-3">
     <!-- Filter & Tab Section -->
     <section class="content">
         <div class="cf-filter-panel cb-fullscreen-hide">

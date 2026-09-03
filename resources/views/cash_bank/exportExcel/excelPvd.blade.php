@@ -1,15 +1,21 @@
-﻿<table>
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+<body>
+<table>
     <tr>
-        <th colspan="{{ count($bulanListFiltered) * 3 + 4 }}" style="font-size:14px; font-weight:bold; text-align:center;">
+        <th colspan="{{ count($bulanListFiltered) * 3 + 6 }}" style="font-size:14px; font-weight:bold; text-align:center;">
             REKAPAN CASHFLOW PVD TAHUN {{ $tahun }}
         </th>
     </tr>
     <tr>
-        <th colspan="{{ count($bulanListFiltered) * 3 + 4 }}" style="font-size:11px; text-align:center;">
+        <th colspan="{{ count($bulanListFiltered) * 3 + 6 }}" style="font-size:11px; text-align:center;">
             Periode: Bulan {{ reset($bulanListFiltered) }} s/d {{ end($bulanListFiltered) }} {{ $tahun }}
         </th>
     </tr>
-    <tr><td colspan="{{ count($bulanListFiltered) * 3 + 4 }}"></td></tr>
+    <tr><td colspan="{{ count($bulanListFiltered) * 3 + 6 }}"></td></tr>
     <thead>
         <tr>
             <th rowspan="2" style="font-weight:bold; background-color:#1e3a5f; color:#ffffff; border:1px solid #000000; text-align:center; vertical-align:middle;">No.</th>
@@ -90,3 +96,5 @@
         @endforeach
     </tbody>
 </table>
+</body>
+</html>

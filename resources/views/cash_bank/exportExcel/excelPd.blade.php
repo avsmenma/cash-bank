@@ -1,4 +1,10 @@
-﻿<table>
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+<body>
+<table>
     <tr>
         <th colspan="{{ count($bulanListFiltered) + 2 }}" style="font-size:14px; font-weight:bold; text-align:center;">
             REKAPAN CASHFLOW PD TAHUN {{ $tahun }}
@@ -65,3 +71,5 @@
         @endforeach
     </tbody>
 </table>
+</body>
+</html>

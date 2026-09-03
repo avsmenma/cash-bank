@@ -201,15 +201,13 @@
 
         <!-- Table Content Card -->
         <div class="card cf-content-card">
-            <div class="card-body p-0 position-relative">
-                <div id="mk-content">
-                    <div class="text-center p-4">
-                        <i class="fas fa-spinner fa-spin fa-2x"></i>
-                        <p class="mt-2">Memuat data...</p>
-                    </div>
-                </div>
+            <div class="card-body p-0 position-relative" style="min-height: 250px;">
+                <div id="mk-content"></div>
                 <div class="cf-loading-overlay" id="mk-loading">
-                    <i class="fas fa-2x fa-spinner fa-spin text-primary"></i>
+                    <div class="text-center">
+                        <i class="fas fa-2x fa-spinner fa-spin text-primary"></i>
+                        <p class="mt-2 text-muted" style="font-size: 13px; font-weight: 500;">Memuat data modal kerja...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -291,7 +289,6 @@ $(document).ready(function () {
     // ================================================================
     function loadMK() {
         $('#mk-loading').css('display', 'flex');
-        $('#mk-content').html('<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Memuat data...</p></div>');
 
         $.ajax({
             url: '{{ route("dashboard.modal-kerja.data") }}',

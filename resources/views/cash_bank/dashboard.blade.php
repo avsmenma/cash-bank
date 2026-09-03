@@ -1,6 +1,178 @@
 @extends('layouts.index')
 
 @section('content')
+<style>
+    /* ===== MODERN DASHBOARD FILTER BAR & TABS ===== */
+    .cf-filter-panel {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 16px 22px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        margin-bottom: 20px;
+    }
+
+    .cf-filter-wrapper {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .cf-filter-left {
+        display: flex;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    /* Segmented Control / Tab Switcher */
+    .cf-segmented-tab {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 4px;
+        display: inline-flex;
+        align-items: center;
+        height: 44px;
+    }
+
+    .cf-tab-btn {
+        background: transparent;
+        border: none;
+        outline: none !important;
+        padding: 0 18px;
+        border-radius: 9px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
+    .cf-tab-btn:hover {
+        color: #1e293b;
+    }
+
+    .cf-tab-btn.active {
+        background: #ffffff;
+        color: #0f172a;
+        font-weight: 700;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Filter Input Item */
+    .cf-filter-item {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 0;
+    }
+
+    .cf-filter-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+    }
+
+    .cf-filter-select {
+        border-radius: 10px;
+        border: 1.5px solid #cbd5e1;
+        height: 44px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #1e293b;
+        background-color: #ffffff;
+        min-width: 120px;
+        padding-left: 14px;
+        padding-right: 32px;
+        cursor: pointer;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .cf-filter-select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        outline: none;
+    }
+
+    /* Right Action Buttons */
+    .cf-filter-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-left: auto;
+    }
+
+    .btn-cf-action {
+        height: 44px;
+        padding: 0 22px;
+        border-radius: 10px;
+        font-size: 13.5px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none !important;
+        border: none;
+    }
+
+    .btn-cf-primary {
+        background: #1d68f0;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(29, 104, 240, 0.25);
+    }
+
+    .btn-cf-primary:hover {
+        background: #1754c5;
+        box-shadow: 0 4px 10px rgba(29, 104, 240, 0.35);
+        transform: translateY(-1px);
+    }
+
+    .btn-cf-secondary {
+        background: #ffffff;
+        color: #334155 !important;
+        border: 1.5px solid #cbd5e1;
+    }
+
+    .btn-cf-secondary:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+        color: #0f172a !important;
+    }
+
+    .btn-cf-excel {
+        background: #ffffff;
+        color: #059669 !important;
+        border: 1.5px solid #059669;
+    }
+
+    .btn-cf-excel:hover {
+        background: #ecfdf5;
+        border-color: #047857;
+        color: #047857 !important;
+    }
+
+    .cf-content-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+</style>
+
 <div class="container-fluid m-3">
     <!-- Content Header -->
     <section class="content-header">
@@ -19,174 +191,95 @@
         </div>
     </section>
     
-    <!-- Filter & Content Section -->
+    <!-- Filter & Tab Section -->
     <section class="content">
+        <div class="cf-filter-panel cb-fullscreen-hide">
+            <div class="cf-filter-wrapper">
+                <div class="cf-filter-left">
+                    <!-- Segmented Tab Switcher -->
+                    <div class="cf-segmented-tab">
+                        <button type="button" class="cf-tab-btn active" id="tabBtnPD" data-tab="pd">CashFlow PD</button>
+                        <button type="button" class="cf-tab-btn" id="tabBtnPvD" data-tab="pvd">CashFlow PvD</button>
+                    </div>
+
+                    <!-- TAHUN -->
+                    <div class="cf-filter-item">
+                        <label class="cf-filter-label">TAHUN</label>
+                        <select name="tahun" id="filterTahun" class="custom-select cf-filter-select" style="min-width: 110px;">
+                            @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
+                                <option value="{{ $t }}" {{ $t == ($tahun ?? date('Y')) ? 'selected' : '' }}>
+                                    {{ $t }}
+                                </option>
+                            @endfor
+                        </select>
+                    </div>
+                    
+                    <!-- DARI BULAN -->
+                    <div class="cf-filter-item">
+                        <label class="cf-filter-label">DARI BULAN</label>
+                        <select name="bulan_dari" id="filterBulanDari" class="custom-select cf-filter-select" style="min-width: 140px;">
+                            @foreach([
+                                1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 
+                                4 => 'April', 5 => 'Mei', 6 => 'Juni',
+                                7 => 'Juli', 8 => 'Agustus', 9 => 'September',
+                                10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                            ] as $noBulan => $namaBulan)
+                                <option value="{{ $noBulan }}" {{ $noBulan == ($bulanDari ?? 1) ? 'selected' : '' }}>
+                                    {{ $namaBulan }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <!-- SAMPAI BULAN -->
+                    <div class="cf-filter-item">
+                        <label class="cf-filter-label">SAMPAI BULAN</label>
+                        <select name="bulan_sampai" id="filterBulanSampai" class="custom-select cf-filter-select" style="min-width: 140px;">
+                            @foreach([
+                                1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 
+                                4 => 'April', 5 => 'Mei', 6 => 'Juni',
+                                7 => 'Juli', 8 => 'Agustus', 9 => 'September',
+                                10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                            ] as $noBulan => $namaBulan)
+                                <option value="{{ $noBulan }}" {{ $noBulan == ($bulanSampai ?? 12) ? 'selected' : '' }}>
+                                    {{ $namaBulan }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Right Action Buttons -->
+                <div class="cf-filter-right">
+                    <button type="button" id="btnFilter" class="btn-cf-action btn-cf-primary">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <button type="button" id="btnReset" class="btn-cf-action btn-cf-secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                    <a id="btnExcel" href="{{ route('dashboard.excel') }}" class="btn-cf-action btn-cf-excel">
+                        <i class="far fa-file-excel"></i> Excel
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
         <div class="row">
             <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header p-2 cb-fullscreen-tabs">
-                        <ul class="nav nav-pills">
-                            <li class="nav-item">
-                                <a class="nav-link active" id="pd-tab" href="#activity" data-toggle="tab">CashFlow PD</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" id="pvd-tab" href="#timeline" data-toggle="tab">CashFlow PvD</a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="card-body">
-                        <div class="tab-content">
-                            <!-- TAB 1: CashFlow PD -->
-                            <div class="active tab-pane cb-fullscreen-table" id="activity">
-                                <div class="row align-items-end mb-3 cb-fullscreen-hide">
-                                    <div class="form-group mb-0 ml-1">
-                                        <label>Tahun:</label>
-                                        <select name="tahun" id="tahunPD" class="form-control select2">
-                                            @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
-                                                <option value="{{ $t }}" {{ $t == date('Y') ? 'selected' : '' }}>
-                                                    {{ $t }}
-                                                </option>
-                                            @endfor
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="form-group mb-0 ml-1">
-                                        <label>Dari Bulan:</label>
-                                        <select name="bulan_dari" id="bulanDariPD" class="form-control">
-                                            @foreach([
-                                                1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 
-                                                4 => 'April', 5 => 'Mei', 6 => 'Juni',
-                                                7 => 'Juli', 8 => 'Agustus', 9 => 'September',
-                                                10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-                                            ] as $noBulan => $namaBulan)
-                                                <option value="{{ $noBulan }}" {{ $noBulan == 1 ? 'selected' : '' }}>
-                                                    {{ $namaBulan }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="form-group mb-0 ml-1">
-                                        <label>Sampai Bulan:</label>
-                                        <select name="bulan_sampai" id="bulanSampaiPD" class="form-control">
-                                            @foreach([
-                                                1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 
-                                                4 => 'April', 5 => 'Mei', 6 => 'Juni',
-                                                7 => 'Juli', 8 => 'Agustus', 9 => 'September',
-                                                10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-                                            ] as $noBulan => $namaBulan)
-                                                <option value="{{ $noBulan }}" {{ $noBulan == 12 ? 'selected' : '' }}>
-                                                    {{ $namaBulan }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="form-group mb-0 ml-1">
-                                        <button type="button" id="filterPD" class="btn btn-primary btn-block">
-                                            <i class="fas fa-filter"></i> Filter
-                                        </button>
-                                    </div>
-
-                                    <div class="form-group mb-0 ml-1">
-                                        <button type="button" id="resetPD" class="btn btn-secondary btn-block">
-                                            <i class="fas fa-redo"></i> Reset
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="form-group mb-0 ml-1">
-                                        <a href="{{route('dashboard.excel')}}">
-                                            <button type="button" class="btn btn-outline-primary btn-block">
-                                                <i class="fas fa-file-excel"></i> EXCEL
-                                            </button>
-                                        </a>    
-                                    </div>
-                                </div>
-                                
-                                <hr class="cb-fullscreen-hide">
-                                
-                                <!-- Content for CashFlow PD -->
-                                <div id="pd-content">
-                                    <div class="text-center p-3">
-                                        <i class="fas fa-spinner fa-spin"></i> Memuat data...
-                                    </div>
+                <div class="card cf-content-card">
+                    <div class="card-body p-0">
+                        <div id="tabPanePD" class="cb-fullscreen-table">
+                            <div id="pd-content">
+                                <div class="text-center p-3">
+                                    <i class="fas fa-spinner fa-spin"></i> Memuat data...
                                 </div>
                             </div>
-                            
-                            <!-- TAB 2: CashFlow PvD -->
-                            <div class="tab-pane cb-fullscreen-table" id="timeline">
-                                <div class="row align-items-end mb-3 cb-fullscreen-hide">
-                                    <div class="form-group mb-0 ml-1">
-                                        <label>Tahun:</label>
-                                        <select name="tahunPvd" id="tahunPvD" class="form-control select2">
-                                            @for($t = date('Y') - 5; $t <= date('Y') + 5; $t++)
-                                                <option value="{{ $t }}" {{ $t == date('Y') ? 'selected' : '' }}>
-                                                    {{ $t }}
-                                                </option>
-                                            @endfor
-                                        </select>
-                                    </div>
-                                    <div class="form-group mb-0 ml-1">
-                                        <label>Dari Bulan:</label>
-                                        <select name="bulan_dariPvd" id="bulanDariPvD" class="form-control">
-                                            @foreach([
-                                                1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 
-                                                4 => 'April', 5 => 'Mei', 6 => 'Juni',
-                                                7 => 'Juli', 8 => 'Agustus', 9 => 'September',
-                                                10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-                                            ] as $noBulan => $namaBulan)
-                                                <option value="{{ $noBulan }}" {{ $noBulan == 1 ? 'selected' : '' }}>
-                                                    {{ $namaBulan }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="form-group mb-0 ml-1">
-                                        <label>Sampai Bulan:</label>
-                                        <select name="bulan_sampaiPvd" id="bulanSampaiPvD" class="form-control">
-                                            @foreach([
-                                                1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 
-                                                4 => 'April', 5 => 'Mei', 6 => 'Juni',
-                                                7 => 'Juli', 8 => 'Agustus', 9 => 'September',
-                                                10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-                                            ] as $noBulan => $namaBulan)
-                                                <option value="{{ $noBulan }}" {{ $noBulan == 12 ? 'selected' : '' }}>
-                                                    {{ $namaBulan }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="form-group mb-0 ml-1">
-                                        <button type="button" id="filterPvD" class="btn btn-primary btn-block">
-                                            <i class="fas fa-filter"></i> Filter
-                                        </button>
-                                    </div>
-
-                                    <div class="form-group mb-0 ml-1">
-                                        <button type="button" id="resetPvD" class="btn btn-secondary btn-block">
-                                            <i class="fas fa-redo"></i> Reset
-                                        </button>
-                                    </div>
-
-                        
-                                    
-                                    <div class="form-group mb-0 ml-1">
-                                        <a href="{{route('dashboard.excelPvd')}}">
-                                            <button type="button" class="btn btn-outline-primary btn-block">
-                                                <i class="fas fa-file-excel"></i> EXCEL
-                                            </button>
-                                        </a>    
-                                    </div>
-                                </div>
-                                <hr class="cb-fullscreen-hide">
-                                
-                                <!-- Content for CashFlow PvD -->
-                                <div id="pvd-content">
-                                    <div class="text-center p-3">
-                                        <i class="fas fa-spinner fa-spin"></i> Memuat data...
-                                    </div>
+                        </div>
+                        <div id="tabPanePvD" class="cb-fullscreen-table" style="display: none;">
+                            <div id="pvd-content">
+                                <div class="text-center p-3">
+                                    <i class="fas fa-spinner fa-spin"></i> Memuat data...
                                 </div>
                             </div>
                         </div>
@@ -202,48 +295,84 @@
 $(document).ready(function() {
     console.log('=== Dashboard Script Loaded ===');
     
-    // Initialize select2
-    $('.select2').select2({
-        theme: 'bootstrap4',
-        width: '100%'
-    });
+    var activeTab = 'pd';
 
-    // ===== TAB PD (CashFlow PD) =====
-    // Load pertama kali saat halaman dibuka
-    loadPD();
-    
-    // Load saat tab diklik
-    $('#pd-tab').on('shown.bs.tab', function () {
-        console.log('Tab PD shown');
+    function updateExcelLink() {
+        var tahun = $('#filterTahun').val();
+        var bulanDari = $('#filterBulanDari').val();
+        var bulanSampai = $('#filterBulanSampai').val();
+        
+        if (activeTab === 'pd') {
+            var url = '{{ route("dashboard.excel") }}' + '?tahun=' + encodeURIComponent(tahun) + '&bulan_dari=' + encodeURIComponent(bulanDari) + '&bulan_sampai=' + encodeURIComponent(bulanSampai);
+            $('#btnExcel').attr('href', url);
+        } else {
+            var url = '{{ route("dashboard.excelPvd") }}' + '?tahunPvd=' + encodeURIComponent(tahun) + '&bulan_dariPvd=' + encodeURIComponent(bulanDari) + '&bulan_sampaiPvd=' + encodeURIComponent(bulanSampai);
+            $('#btnExcel').attr('href', url);
+        }
+    }
+
+    // Tab Switching
+    $('#tabBtnPD').on('click', function() {
+        if (activeTab === 'pd') return;
+        activeTab = 'pd';
+        $('#tabBtnPD').addClass('active');
+        $('#tabBtnPvD').removeClass('active');
+        $('#tabPanePD').show();
+        $('#tabPanePvD').hide();
+        updateExcelLink();
         loadPD();
     });
 
-    // Filter button PD
-    $('#filterPD').click(function() {
-        var bulanDari = parseInt($('#bulanDariPD').val());
-        var bulanSampai = parseInt($('#bulanSampaiPD').val());
+    $('#tabBtnPvD').on('click', function() {
+        if (activeTab === 'pvd') return;
+        activeTab = 'pvd';
+        $('#tabBtnPvD').addClass('active');
+        $('#tabBtnPD').removeClass('active');
+        $('#tabPanePvD').show();
+        $('#tabPanePD').hide();
+        updateExcelLink();
+        loadPvD();
+    });
+
+    // Filter Button Click
+    $('#btnFilter').on('click', function() {
+        var bulanDari = parseInt($('#filterBulanDari').val());
+        var bulanSampai = parseInt($('#filterBulanSampai').val());
         
         if (bulanDari > bulanSampai) {
-            alert('Bulan dari tidak boleh lebih besar dari bulan sampai');
+            alert('Bulan Dari tidak boleh lebih besar dari Bulan Sampai');
             return false;
         }
-        loadPD();
+        
+        updateExcelLink();
+        if (activeTab === 'pd') {
+            loadPD();
+        } else {
+            loadPvD();
+        }
     });
 
-    // Reset button PD
-    $('#resetPD').click(function() {
-        $('#tahunPD').val({{ date('Y') }}).trigger('change');
-        $('#bulanDariPD').val(1);
-        $('#bulanSampaiPD').val(12);
-        loadPD();
+    // Reset Button Click
+    $('#btnReset').on('click', function() {
+        $('#filterTahun').val({{ date('Y') }});
+        $('#filterBulanDari').val(1);
+        $('#filterBulanSampai').val(12);
+        updateExcelLink();
+        if (activeTab === 'pd') {
+            loadPD();
+        } else {
+            loadPvD();
+        }
+    });
+
+    $('#filterTahun, #filterBulanDari, #filterBulanSampai').on('change', function() {
+        updateExcelLink();
     });
 
     function loadPD() {
-        var tahun = $('#tahunPD').val();
-        var bulanDari = $('#bulanDariPD').val();
-        var bulanSampai = $('#bulanSampaiPD').val();
-        
-        console.log('Loading PD:', {tahun, bulanDari, bulanSampai});
+        var tahun = $('#filterTahun').val();
+        var bulanDari = $('#filterBulanDari').val();
+        var bulanSampai = $('#filterBulanSampai').val();
         
         $('#pd-content').html('<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>');
         
@@ -254,52 +383,22 @@ $(document).ready(function() {
                 tahun: tahun,
                 bulan_dari: bulanDari,
                 bulan_sampai: bulanSampai,
-                ajax: 1  // Flag untuk request AJAX
+                ajax: 1
             },
             success: function(response) {
-                console.log('PD data loaded successfully');
                 $('#pd-content').html(response);
             },
             error: function(xhr) {
                 console.error('PD load error:', xhr);
-                $('#pd-content').html('<div class="alert alert-danger">Gagal memuat data CashFlow PD</div>');
+                $('#pd-content').html('<div class="alert alert-danger p-3">Gagal memuat data CashFlow PD</div>');
             }
         });
     }
 
-    // ===== TAB PVD (CashFlow PvD) =====
-    // Load saat tab diklik
-    $('#pvd-tab').on('shown.bs.tab', function () {
-        console.log('Tab PvD shown');
-        loadPvD();
-    });
-
-    // Filter button PvD
-    $('#filterPvD').click(function() {
-        var bulanDari = parseInt($('#bulanDariPvD').val());
-        var bulanSampai = parseInt($('#bulanSampaiPvD').val());
-        
-        if (bulanDari > bulanSampai) {
-            alert('Bulan dari tidak boleh lebih besar dari bulan sampai');
-            return false;
-        }
-        loadPvD();
-    });
-
-    // Reset button PvD
-    $('#resetPvD').click(function() {
-        $('#tahunPvD').val({{ date('Y') }}).trigger('change');
-        $('#bulanDariPvD').val(1);
-        $('#bulanSampaiPvD').val(12);
-        loadPvD();
-    });
-
     function loadPvD() {
-        var tahun = $('#tahunPvD').val();
-        var bulanDari = $('#bulanDariPvD').val();
-        var bulanSampai = $('#bulanSampaiPvD').val();
-        
-        console.log('Loading PvD:', {tahun, bulanDari, bulanSampai});
+        var tahun = $('#filterTahun').val();
+        var bulanDari = $('#filterBulanDari').val();
+        var bulanSampai = $('#filterBulanSampai').val();
         
         $('#pvd-content').html('<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>');
         
@@ -310,18 +409,21 @@ $(document).ready(function() {
                 tahunPvd: tahun,
                 bulan_dariPvd: bulanDari,
                 bulan_sampaiPvd: bulanSampai,
-                ajax: 1  // Flag untuk request AJAX
+                ajax: 1
             },
             success: function(response) {
-                console.log('PvD data loaded successfully');
                 $('#pvd-content').html(response);
             },
             error: function(xhr) {
                 console.error('PvD load error:', xhr);
-                $('#pvd-content').html('<div class="alert alert-danger">Gagal memuat data CashFlow PvD</div>');
+                $('#pvd-content').html('<div class="alert alert-danger p-3">Gagal memuat data CashFlow PvD</div>');
             }
         });
     }
+
+    // Initial load
+    updateExcelLink();
+    loadPD();
 });
 </script>
 
@@ -331,6 +433,8 @@ $(document).ready(function() {
     .no-print,
     .breadcrumb,
     .btn,
+    .btn-cf-action,
+    .cf-filter-panel,
     form,
     .card-header,
     .nav-pills,
@@ -339,7 +443,7 @@ $(document).ready(function() {
         display: none !important;
     }
     
-    .card {
+    .card, .cf-content-card {
         border: none !important;
         box-shadow: none !important;
     }
@@ -352,7 +456,7 @@ $(document).ready(function() {
         font-size: 9px !important;
     }
     
-    .tab-pane {
+    .tab-pane, #tabPanePD, #tabPanePvD {
         display: block !important;
         opacity: 1 !important;
     }

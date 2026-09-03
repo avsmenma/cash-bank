@@ -1,22 +1,21 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 </head>
 <body>
 <table>
-    <tr>
-        <th colspan="{{ count($bulanListFiltered) + 2 }}" style="font-size:14px; font-weight:bold; text-align:center;">
-            REKAPAN CASHFLOW PD TAHUN {{ $tahun }}
-        </th>
-    </tr>
-    <tr>
-        <th colspan="{{ count($bulanListFiltered) + 2 }}" style="font-size:11px; text-align:center;">
-            Periode: Bulan {{ reset($bulanListFiltered) }} s/d {{ end($bulanListFiltered) }} {{ $tahun }}
-        </th>
-    </tr>
-    <tr><td colspan="{{ count($bulanListFiltered) + 2 }}"></td></tr>
     <thead>
+        <tr>
+            <th colspan="{{ count($bulanListFiltered) + 2 }}" style="font-size:14px; font-weight:bold; text-align:center;">
+                REKAPAN CASHFLOW PD TAHUN {{ $tahun }}
+            </th>
+        </tr>
+        <tr>
+            <th colspan="{{ count($bulanListFiltered) + 2 }}" style="font-size:11px; text-align:center;">
+                Periode: Bulan {{ reset($bulanListFiltered) }} s/d {{ end($bulanListFiltered) }} {{ $tahun }}
+            </th>
+        </tr>
         <tr>
             <th style="font-weight:bold; background-color:#1e3a5f; color:#ffffff; border:1px solid #000000; text-align:center;">URAIAN</th>
             @foreach($bulanListFiltered as $noBulan => $namaBulan)

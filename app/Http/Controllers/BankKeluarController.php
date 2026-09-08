@@ -3191,6 +3191,9 @@ class BankKeluarController extends Controller
                 $syncPayload['dibayar'] = $bankKeluar->kredit;
                 $syncPayload['dibayar_kepada'] = $bankKeluar->penerima;
                 $syncPayload['tanggal_dibayar'] = $bankKeluar->tanggal;
+                if (!empty($bankKeluar->tanggal)) {
+                    $syncPayload['status_pembayaran'] = 'sudah_dibayar';
+                }
 
                 // Jika user reset kategori dengan "-", set semua ke "-"
                 if ($kategoriReset) {

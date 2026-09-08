@@ -18,8 +18,8 @@ use Illuminate\Support\Facades\Log;
  * - hanya MENGISI yang masih kosong — tanggal yang sudah ada di Agenda tidak
  *   pernah ditimpa, jadi aman diulang berapa kali pun;
  * - bila satu nomor agenda punya beberapa transaksi, dipakai tanggal TERAWAL;
- * - `status_pembayaran` TIDAK disentuh, supaya alur dokumen dan auto-forward
- *   ke Pembayaran tetap ditentukan operator.
+ * - `status_pembayaran` otomatis diset menjadi 'sudah_dibayar' berdasarkan
+ *   keberadaan tanggal transaksi Bank Keluar Cash Bank;
  *
  * Kunci pencocokan: `bank_keluars.agenda_tahun` dibandingkan LANGSUNG dengan
  * `dokumens.nomor_agenda` — keduanya sama-sama komposit '{urut}_{tahun}'
@@ -125,9 +125,10 @@ class AgendaTanggalBayarSync
         $ikatan = array_merge($ikatan, $nomorAgendaList);
 
         $sql = "UPDATE dokumens
-                   SET tanggal_dibayar = CASE nomor_agenda{$kasus} END
-                 WHERE tanggal_dibayar IS NULL
-                   AND nomor_agenda IN ({$isian})";
+                   SET tanggal_dibayar = COALESCE(tanggal_dibayar, CASE nomor_agenda{$kasus} END),
+                       status_pembayaran = 'sudah_dibayar'
+                 WHERE nomor_agenda IN ({$isian})
+                   AND (tanggal_dibayar IS NULL OR status_pembayaran IS NULL OR status_pembayaran != 'sudah_dibayar')";
 
         return DB::connection('mysql_agenda_online')->update($sql, $ikatan);
     }

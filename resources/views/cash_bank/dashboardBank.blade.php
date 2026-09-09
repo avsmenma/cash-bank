@@ -457,27 +457,33 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body px-4 py-3">
-                <p class="text-muted small mb-3">
-                    <i class="fas fa-info-circle mr-1 text-primary"></i>
-                    Pilih file spreadsheet Saldo SAP (.xlsx / .csv) untuk diimpor ke data Bank Virtual Account.
-                </p>
-                <div class="form-group mb-2">
-                    <label class="small font-weight-bold text-dark mb-1">
-                        <i class="fas fa-upload mr-1 text-primary"></i>Upload File Saldo SAP
-                    </label>
-                    <input type="file" id="fileSaldoSap" class="form-control-file border p-2 rounded" accept=".xlsx,.xls,.csv" style="font-size:12px; width:100%;">
+            <form id="formImportSap" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body px-4 py-3">
+                    <div id="alertImportSap" style="display:none;" class="alert alert-dismissible fade show p-2 mb-3 small font-weight-bold" role="alert">
+                        <span id="alertImportSapText"></span>
+                    </div>
+                    <p class="text-muted small mb-3">
+                        <i class="fas fa-info-circle mr-1 text-primary"></i>
+                        Pilih file spreadsheet Saldo SAP (sheet <strong>UP</strong> atau file <strong>.csv / .xlsx / .xls</strong>) untuk menghitung dan memperbarui saldo SAP Bank Virtual Account.
+                    </p>
+                    <div class="form-group mb-2">
+                        <label class="small font-weight-bold text-dark mb-1">
+                            <i class="fas fa-upload mr-1 text-primary"></i>Upload File Saldo SAP
+                        </label>
+                        <input type="file" id="fileSaldoSap" name="file" class="form-control-file border p-2 rounded" accept=".xlsx,.xls,.csv,.txt" style="font-size:12px; width:100%;" required>
+                    </div>
+                    <small class="text-muted">Format file yang didukung: <strong>.xlsx, .xls, .csv, .txt</strong> (Maks. 50 MB)</small>
                 </div>
-                <small class="text-muted">Format file yang didukung: <strong>.xlsx, .xls, .csv</strong></small>
-            </div>
-            <div class="modal-footer py-2" style="background:#f8f9fa;">
-                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
-                    <i class="fas fa-times mr-1"></i>Batal
-                </button>
-                <button type="button" class="btn btn-primary btn-sm font-weight-bold" id="btnDoImportSap" onclick="alert('Fitur import Saldo SAP akan segera aktif.');">
-                    <i class="fas fa-upload mr-1"></i>Import Sekarang
-                </button>
-            </div>
+                <div class="modal-footer py-2" style="background:#f8f9fa;">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" id="btnCancelImportSap">
+                        <i class="fas fa-times mr-1"></i>Batal
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-sm font-weight-bold" id="btnDoImportSap">
+                        <i class="fas fa-upload mr-1"></i>Import Sekarang
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -502,9 +508,71 @@
         $('#modalExport').modal('show');
     }
 
+    function showAlertImport(message, type) {
+        var alertBox = $('#alertImportSap');
+        alertBox.removeClass('alert-success alert-danger alert-warning alert-info')
+                .addClass('alert-' + type)
+                .find('#alertImportSapText').text(message);
+        alertBox.fadeIn();
+    }
+
     function openImportSapModal() {
+        $('#alertImportSap').hide();
+        $('#fileSaldoSap').val('');
+        $('#btnDoImportSap').prop('disabled', false).html('<i class="fas fa-upload mr-1"></i>Import Sekarang');
+        $('#btnCancelImportSap').prop('disabled', false);
         $('#modalImportSap').modal('show');
     }
+
+    $('#formImportSap').on('submit', function (e) {
+        e.preventDefault();
+        var fileInput = document.getElementById('fileSaldoSap');
+        if (!fileInput.files || !fileInput.files[0]) {
+            showAlertImport('Silakan pilih file terlebih dahulu.', 'warning');
+            return;
+        }
+
+        var formData = new FormData(this);
+        var btn = $('#btnDoImportSap');
+        var btnCancel = $('#btnCancelImportSap');
+
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Mengimpor data...');
+        btnCancel.prop('disabled', true);
+        $('#alertImportSap').hide();
+
+        $.ajax({
+            url: '{{ route("dashboard.bank.import-sap") }}',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (res) {
+                if (res && res.success) {
+                    btn.html('<i class="fas fa-check mr-1"></i> Berhasil!');
+                    showAlertImport(res.message + ' Halaman akan disegarkan...', 'success');
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 1200);
+                } else {
+                    btn.prop('disabled', false).html('<i class="fas fa-upload mr-1"></i>Import Sekarang');
+                    btnCancel.prop('disabled', false);
+                    showAlertImport(res.message || 'Terjadi kesalahan saat mengimpor.', 'danger');
+                }
+            },
+            error: function (xhr) {
+                btn.prop('disabled', false).html('<i class="fas fa-upload mr-1"></i>Import Sekarang');
+                btnCancel.prop('disabled', false);
+                var errMsg = 'Gagal mengimpor file. Silakan periksa format file Anda.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errMsg = xhr.responseJSON.message;
+                }
+                showAlertImport(errMsg, 'danger');
+            }
+        });
+    });
 
     document.getElementById('btnDoExport').addEventListener('click', function () {
         var hari    = document.getElementById('selHari').value;

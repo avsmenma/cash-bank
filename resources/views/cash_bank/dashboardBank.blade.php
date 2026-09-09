@@ -492,7 +492,15 @@
 <script>
     var _exportType = 'excel';
 
-    function openExportModal(type) {
+    function showAlertImport(message, type) {
+        var alertBox = $('#alertImportSap');
+        alertBox.removeClass('alert-success alert-danger alert-warning alert-info')
+                .addClass('alert-' + type)
+                .find('#alertImportSapText').text(message);
+        alertBox.fadeIn();
+    }
+
+    window.openExportModal = function (type) {
         _exportType = type;
         if (type === 'excel') {
             document.getElementById('modalExportTitle').textContent = 'Export Excel';
@@ -506,108 +514,101 @@
             document.getElementById('btnDoExport').querySelector('i').className = 'fas fa-file-pdf mr-1';
         }
         $('#modalExport').modal('show');
-    }
+    };
 
-    function showAlertImport(message, type) {
-        var alertBox = $('#alertImportSap');
-        alertBox.removeClass('alert-success alert-danger alert-warning alert-info')
-                .addClass('alert-' + type)
-                .find('#alertImportSapText').text(message);
-        alertBox.fadeIn();
-    }
-
-    function openImportSapModal() {
+    window.openImportSapModal = function () {
         $('#alertImportSap').hide();
         $('#fileSaldoSap').val('');
         $('#btnDoImportSap').prop('disabled', false).html('<i class="fas fa-upload mr-1"></i>Import Sekarang');
         $('#btnCancelImportSap').prop('disabled', false);
         $('#modalImportSap').modal('show');
-    }
+    };
 
-    $('#formImportSap').on('submit', function (e) {
-        e.preventDefault();
-        var fileInput = document.getElementById('fileSaldoSap');
-        if (!fileInput.files || !fileInput.files[0]) {
-            showAlertImport('Silakan pilih file terlebih dahulu.', 'warning');
-            return;
-        }
+    document.addEventListener('DOMContentLoaded', function () {
+        $('#formImportSap').on('submit', function (e) {
+            e.preventDefault();
+            var fileInput = document.getElementById('fileSaldoSap');
+            if (!fileInput.files || !fileInput.files[0]) {
+                showAlertImport('Silakan pilih file terlebih dahulu.', 'warning');
+                return;
+            }
 
-        var formData = new FormData(this);
-        var btn = $('#btnDoImportSap');
-        var btnCancel = $('#btnCancelImportSap');
+            var formData = new FormData(this);
+            var btn = $('#btnDoImportSap');
+            var btnCancel = $('#btnCancelImportSap');
 
-        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Mengimpor data...');
-        btnCancel.prop('disabled', true);
-        $('#alertImportSap').hide();
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Mengimpor data...');
+            btnCancel.prop('disabled', true);
+            $('#alertImportSap').hide();
 
-        $.ajax({
-            url: '{{ route("dashboard.bank.import-sap") }}',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function (res) {
-                if (res && res.success) {
-                    btn.html('<i class="fas fa-check mr-1"></i> Berhasil!');
-                    showAlertImport(res.message + ' Halaman akan disegarkan...', 'success');
-                    setTimeout(function () {
-                        window.location.reload();
-                    }, 1200);
-                } else {
+            $.ajax({
+                url: '{{ route("dashboard.bank.import-sap") }}',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function (res) {
+                    if (res && res.success) {
+                        btn.html('<i class="fas fa-check mr-1"></i> Berhasil!');
+                        showAlertImport(res.message + ' Halaman akan disegarkan...', 'success');
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 1200);
+                    } else {
+                        btn.prop('disabled', false).html('<i class="fas fa-upload mr-1"></i>Import Sekarang');
+                        btnCancel.prop('disabled', false);
+                        showAlertImport(res.message || 'Terjadi kesalahan saat mengimpor.', 'danger');
+                    }
+                },
+                error: function (xhr) {
                     btn.prop('disabled', false).html('<i class="fas fa-upload mr-1"></i>Import Sekarang');
                     btnCancel.prop('disabled', false);
-                    showAlertImport(res.message || 'Terjadi kesalahan saat mengimpor.', 'danger');
+                    var errMsg = 'Gagal mengimpor file. Silakan periksa format file Anda.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errMsg = xhr.responseJSON.message;
+                    }
+                    showAlertImport(errMsg, 'danger');
                 }
-            },
-            error: function (xhr) {
-                btn.prop('disabled', false).html('<i class="fas fa-upload mr-1"></i>Import Sekarang');
-                btnCancel.prop('disabled', false);
-                var errMsg = 'Gagal mengimpor file. Silakan periksa format file Anda.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errMsg = xhr.responseJSON.message;
+            });
+        });
+
+        var btnDoExport = document.getElementById('btnDoExport');
+        if (btnDoExport) {
+            btnDoExport.addEventListener('click', function () {
+                var hari    = document.getElementById('selHari').value;
+                var bulan   = document.getElementById('selBulan').value;
+                var tahun   = document.getElementById('selTahun').value;
+                var nama    = document.getElementById('inpNama').value;
+                var jabatan = document.getElementById('inpJabatan').value;
+
+                var tanggal = 'Pontianak, ' + hari + ' ' + bulan + ' ' + tahun;
+
+                var params = new URLSearchParams({
+                    tanggal: tanggal,
+                    nama: nama,
+                    jabatan: jabatan
+                });
+
+                var urlParams = new URLSearchParams(window.location.search);
+                ['tahun', 'bulan', 'tgl_dari', 'tgl_sampai'].forEach(function(key) {
+                    if (urlParams.has(key) && urlParams.get(key)) {
+                        params.set(key, urlParams.get(key));
+                    }
+                });
+
+                $('#modalExport').modal('hide');
+
+                if (_exportType === 'excel') {
+                    window.location.href = '{{ route("dashboard.bank.excel") }}?' + params.toString();
+                } else {
+                    window.open('{{ route("dashboard.bank.pdf") }}?' + params.toString(), '_blank');
                 }
-                showAlertImport(errMsg, 'danger');
-            }
-        });
-    });
-
-    document.getElementById('btnDoExport').addEventListener('click', function () {
-        var hari    = document.getElementById('selHari').value;
-        var bulan   = document.getElementById('selBulan').value;
-        var tahun   = document.getElementById('selTahun').value;
-        var nama    = document.getElementById('inpNama').value;
-        var jabatan = document.getElementById('inpJabatan').value;
-
-        var tanggal = 'Pontianak, ' + hari + ' ' + bulan + ' ' + tahun;
-
-        var params = new URLSearchParams({
-            tanggal: tanggal,
-            nama: nama,
-            jabatan: jabatan
-        });
-
-        // Sertakan parameter filter aktif ke export Excel / PDF
-        var urlParams = new URLSearchParams(window.location.search);
-        ['tahun', 'bulan', 'tgl_dari', 'tgl_sampai'].forEach(function(key) {
-            if (urlParams.has(key) && urlParams.get(key)) {
-                params.set(key, urlParams.get(key));
-            }
-        });
-
-        $('#modalExport').modal('hide');
-
-        if (_exportType === 'excel') {
-            window.location.href = '{{ route("dashboard.bank.excel") }}?' + params.toString();
-        } else {
-            window.open('{{ route("dashboard.bank.pdf") }}?' + params.toString(), '_blank');
+            });
         }
-    });
 
-    // Otomatis sinkronisasi input Tanggal saat Tahun atau Bulan dipilih & Inisialisasi Flatpickr
-    (function () {
         var selTahun = document.getElementById('filterTahun');
         var selBulan = document.getElementById('filterBulan');
         var inpDari = document.getElementById('filterTglDari');
@@ -647,7 +648,7 @@
 
         if (selTahun) selTahun.addEventListener('change', syncDates);
         if (selBulan) selBulan.addEventListener('change', syncDates);
-    })();
+    });
 </script>
 
 {{-- ============================================================

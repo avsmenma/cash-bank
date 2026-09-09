@@ -64,6 +64,9 @@ Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
     Route::get('/dashboard-bank/export-pdf', [dashboardController::class, 'bankExportPdf'])
         ->name('dashboard.bank.pdf');
 
+    Route::post('/dashboard-bank/import-sap', [dashboardController::class, 'bankImportSap'])
+        ->name('dashboard.bank.import-sap');
+
 });
 
 Route::group(['middleware' => ['auth', 'check_role:vendor']], function () {

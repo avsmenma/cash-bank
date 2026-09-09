@@ -13,7 +13,9 @@ use Illuminate\Http\Request;
 use App\Models\KategoriKriteria;
 use App\Support\DashboardKriteriaHierarchy;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\GabunganMasukKeluar;
+use App\Services\SapImportService;
 use Maatwebsite\Excel\Facades\Excel;
 
 class dashboardController extends Controller
@@ -1304,5 +1306,31 @@ class dashboardController extends Controller
             $this->buildBankDashboardData($request),
             compact('tanggal', 'nama', 'jabatan')
         ));
+    }
+
+    public function bankImportSap(Request $request, SapImportService $sapService)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:51200',
+        ], [
+            'file.required' => 'Silakan pilih file yang akan diimpor.',
+            'file.mimes'    => 'Format file harus berupa .xlsx, .xls, .csv, atau .txt.',
+            'file.max'      => 'Ukuran file maksimal 50 MB.',
+        ]);
+
+        try {
+            $result = $sapService->import($request->file('file'));
+
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            Log::error('Import Saldo SAP gagal: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengimpor Saldo SAP: ' . $e->getMessage(),
+            ], 422);
+        }
     }
 }

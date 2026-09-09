@@ -113,14 +113,25 @@
                             </a>
                         </div>
 
-                        {{-- Export buttons on the right --}}
+                        {{-- Export & Import dropdown on the right --}}
                         <div class="ml-auto d-flex align-items-center" style="gap:6px;">
-                            <button type="button" class="btn btn-success btn-sm" onclick="openExportModal('excel')">
-                                <i class="fas fa-file-excel mr-1"></i> Export Excel
-                            </button>
-                            <button type="button" class="btn btn-danger btn-sm" onclick="openExportModal('pdf')">
-                                <i class="fas fa-file-pdf mr-1"></i> Export PDF
-                            </button>
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-success btn-sm dropdown-toggle font-weight-bold" id="dropdownMenuExport" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fas fa-file-export mr-1"></i> Export
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right shadow-sm" aria-labelledby="dropdownMenuExport" style="font-size:13px; min-width:180px;">
+                                    <a class="dropdown-item py-2" href="javascript:void(0)" onclick="openExportModal('excel')">
+                                        <i class="fas fa-file-excel text-success mr-2"></i> Export Excel
+                                    </a>
+                                    <a class="dropdown-item py-2" href="javascript:void(0)" onclick="openExportModal('pdf')">
+                                        <i class="fas fa-file-pdf text-danger mr-2"></i> Export PDF
+                                    </a>
+                                    <div class="dropdown-divider my-1"></div>
+                                    <a class="dropdown-item py-2" href="javascript:void(0)" id="itemImportSap" onclick="openImportSapModal()">
+                                        <i class="fas fa-file-import text-primary mr-2"></i> Import Saldo SAP
+                                    </a>
+                                </div>
+                            </div>
                         </div>
 
                     </div>
@@ -433,6 +444,45 @@
 </div>
 {{-- ======================================================= --}}
 
+{{-- ===================== MODAL IMPORT SALDO SAP ===================== --}}
+<div class="modal fade" id="modalImportSap" tabindex="-1" role="dialog" aria-labelledby="modalImportSapLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:480px;">
+        <div class="modal-content" style="border-top:4px solid #1a5276; border-radius:8px;">
+            <div class="modal-header py-3" style="background:#f8f9fa; border-bottom:1px solid #dee2e6;">
+                <h6 class="modal-title font-weight-bold text-dark mb-0" id="modalImportSapLabel">
+                    <i class="fas fa-file-import mr-2 text-primary"></i>
+                    <span>Import Saldo SAP</span>
+                </h6>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle mr-1 text-primary"></i>
+                    Pilih file spreadsheet Saldo SAP (.xlsx / .csv) untuk diimpor ke data Bank Virtual Account.
+                </p>
+                <div class="form-group mb-2">
+                    <label class="small font-weight-bold text-dark mb-1">
+                        <i class="fas fa-upload mr-1 text-primary"></i>Upload File Saldo SAP
+                    </label>
+                    <input type="file" id="fileSaldoSap" class="form-control-file border p-2 rounded" accept=".xlsx,.xls,.csv" style="font-size:12px; width:100%;">
+                </div>
+                <small class="text-muted">Format file yang didukung: <strong>.xlsx, .xls, .csv</strong></small>
+            </div>
+            <div class="modal-footer py-2" style="background:#f8f9fa;">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i>Batal
+                </button>
+                <button type="button" class="btn btn-primary btn-sm font-weight-bold" id="btnDoImportSap" onclick="alert('Fitur import Saldo SAP akan segera aktif.');">
+                    <i class="fas fa-upload mr-1"></i>Import Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{{-- ======================================================= --}}
+
 <script>
     var _exportType = 'excel';
 
@@ -450,6 +500,10 @@
             document.getElementById('btnDoExport').querySelector('i').className = 'fas fa-file-pdf mr-1';
         }
         $('#modalExport').modal('show');
+    }
+
+    function openImportSapModal() {
+        $('#modalImportSap').modal('show');
     }
 
     document.getElementById('btnDoExport').addEventListener('click', function () {

@@ -141,7 +141,7 @@
 
         <style>
             /* ===== Tabel Bank VA — Tabulator (spreadsheet ala Bank Masuk/Keluar) ===== */
-            #tblSaldoVA { font-size: 12.5px; border: 1px solid #cdd9e5; }
+            #tblSaldoVA { font-size: 12.5px; border: 1px solid #cdd9e5; border-top: none; margin: 0; }
             #tblSaldoVA:focus { outline: none; }
             #tblSaldoVA .tabulator-header { background: #1a5276; border-bottom: 2px solid #0e3a56; }
             #tblSaldoVA .tabulator-header .tabulator-col {
@@ -340,7 +340,7 @@
             </div>{{-- end kolom kiri --}}
 
             {{-- ====== TABEL BANK VIRTUAL ACCOUNT (KANAN) — Tabulator spreadsheet ====== --}}
-            <div id="cbVACard" class="card shadow mb-0" style="border-top:4px solid #1a5276; flex:1; min-width:380px; align-self:flex-start;">
+            <div id="cbVACard" class="card shadow mb-0" style="border-top:4px solid #1a5276; flex:1; min-width:380px; align-self:flex-start; overflow:hidden;">
                 <div class="card-body p-0">
                     {{-- Klik sel = pilih; dobel-klik/Enter SALDO SAP = edit (tersimpan otomatis);
                          panah = navigasi; drag/Shift = blok + jumlah; Ctrl+C = salin. --}}

@@ -201,7 +201,7 @@
 
             {{-- ====== KOLOM KIRI (TABEL + INFO) ====== --}}
             <div id="cbLeftCol" style="flex:1; min-width:380px; align-self:flex-start;">
-            <div class="card shadow" style="border-top:4px solid #0d3b6e;">
+            <div class="card shadow">
                 <div class="card-body p-0">
                     <table class="table table-bordered mb-0" id="tblSaldoBank" style="font-size:12.5px;">
                         {{-- HEADER UTAMA --}}
@@ -351,7 +351,7 @@
             </div>{{-- end kolom kiri --}}
 
             {{-- ====== TABEL BANK VIRTUAL ACCOUNT (KANAN) — Tabulator spreadsheet ====== --}}
-            <div id="cbVACard" class="card shadow mb-0" style="border-top:4px solid #1a5276; flex:1; min-width:380px; align-self:flex-start; overflow:hidden;">
+            <div id="cbVACard" class="card shadow mb-0" style="flex:1; min-width:380px; align-self:flex-start; overflow:hidden;">
                 <div class="card-body p-0">
                     {{-- Klik sel = pilih; dobel-klik/Enter SALDO SAP = edit (tersimpan otomatis);
                          panah = navigasi; drag/Shift = blok + jumlah; Ctrl+C = salin. --}}

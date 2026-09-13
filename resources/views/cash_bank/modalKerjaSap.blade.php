@@ -173,7 +173,7 @@
                     <div class="cf-filter-item">
                         <label class="cf-filter-label"><i class="fas fa-building mr-1"></i> UNIT / KEBUN</label>
                         <select id="unitMKSap" class="custom-select cf-filter-select" style="min-width: 220px;">
-                            <option value="all" {{ $unitSelected === 'all' ? 'selected' : '' }}>Semua Unit (Konsolidasi Global)</option>
+                            <option value="all" {{ $unitSelected === 'all' ? 'selected' : '' }}>Semua Unit (Global)</option>
                             <option value="ro" {{ $unitSelected === 'ro' ? 'selected' : '' }}>Regional Office (Kantor Direksi)</option>
                             <optgroup label="Unit / Kebun">
                                 @foreach($units as $u)

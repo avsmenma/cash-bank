@@ -107,10 +107,11 @@
     .mk-c-total-month { background-color: rgba(30, 64, 175, 0.06); font-weight: 700; }
     .mk-c-grand-total { background-color: rgba(234, 179, 8, 0.12); font-weight: 700; }
 
-    #mk-sap-table .mk-c-kode {
-        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-        font-weight: 600;
-        font-size: 10.5px;
+    #mk-sap-table .mk-c-kode,
+    #mk-sap-table .cf-kode {
+        font-family: inherit;
+        font-size: inherit;
+        font-variant-numeric: tabular-nums;
     }
     #mk-sap-table .tabulator-row.mk-r-item .tabulator-cell.mk-c-kode,
     #mk-sap-table .tabulator-row.mk-r-sub .tabulator-cell.mk-c-kode {
@@ -310,11 +311,11 @@
         return Math.round(num).toLocaleString('id-ID');
     }
 
-    // Formatter kode SAP
+    // Formatter kode SAP (identik dengan Laporan Arus Kas / cashflow)
     function formatKodeSap(cell) {
         var val = cell.getValue();
         if (!val || val === '-') return '-';
-        return val;
+        return '<span class="cf-kode">' + val + '</span>';
     }
 
     // Pasang formatter pada seluruh kolom nilai

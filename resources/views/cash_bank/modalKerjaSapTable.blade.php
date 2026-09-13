@@ -112,8 +112,9 @@
         font-weight: 600;
         font-size: 10.5px;
     }
-    #mk-sap-table .tabulator-row.mk-r-item .tabulator-cell.mk-c-kode {
-        color: #1d4ed8;
+    #mk-sap-table .tabulator-row.mk-r-item .tabulator-cell.mk-c-kode,
+    #mk-sap-table .tabulator-row.mk-r-sub .tabulator-cell.mk-c-kode {
+        color: #000000 !important;
     }
 
     @media print {

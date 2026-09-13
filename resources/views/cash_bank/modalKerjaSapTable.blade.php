@@ -232,35 +232,35 @@
             [
                 'title' => $bNama . '-W1 (1-7)',
                 'field' => "m{$bNo}_w1",
-                'width' => 105,
+                'width' => 115,
                 'hozAlign' => 'right',
                 'headerHozAlign' => 'center'
             ],
             [
                 'title' => $bNama . '-W2 (8-14)',
                 'field' => "m{$bNo}_w2",
-                'width' => 105,
+                'width' => 115,
                 'hozAlign' => 'right',
                 'headerHozAlign' => 'center'
             ],
             [
                 'title' => $bNama . '-W3 (15-21)',
                 'field' => "m{$bNo}_w3",
-                'width' => 105,
+                'width' => 115,
                 'hozAlign' => 'right',
                 'headerHozAlign' => 'center'
             ],
             [
                 'title' => $bNama . '-W4 (22-31)',
                 'field' => "m{$bNo}_w4",
-                'width' => 105,
+                'width' => 115,
                 'hozAlign' => 'right',
                 'headerHozAlign' => 'center'
             ],
             [
                 'title' => 'Total ' . $bNama,
                 'field' => "m{$bNo}_total",
-                'width' => 125,
+                'width' => 145,
                 'hozAlign' => 'right',
                 'headerHozAlign' => 'center',
                 'cssClass' => 'mk-c-total-month'
@@ -268,7 +268,7 @@
         ];
 
         $columns[] = [
-            'title' => strtoupper($bNama) . ' ' . $tahun . ' (Rp Ribuan)',
+            'title' => strtoupper($bNama) . ' ' . $tahun,
             'cssClass' => 'mk-sap-h-month',
             'columns' => $monthSubCols
         ];
@@ -281,9 +281,9 @@
             'cssClass' => 'mk-sap-h-total',
             'columns' => [
                 [
-                    'title' => 'Grand Total (Rp \'000)',
+                    'title' => 'Grand Total',
                     'field' => 'periode_total',
-                    'width' => 140,
+                    'width' => 160,
                     'hozAlign' => 'right',
                     'headerHozAlign' => 'center',
                     'cssClass' => 'mk-c-grand-total'

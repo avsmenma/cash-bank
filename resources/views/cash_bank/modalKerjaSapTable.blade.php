@@ -300,7 +300,7 @@
     var rawRows = @json($tableRows);
     var rawCols = @json($columns);
 
-    // Formatter angka ribuan Rupiah
+    // Formatter angka nominal Rupiah (identik dengan cashflow: minus di belakang, nol '-')
     function formatNumberSap(cell) {
         var val = cell.getValue();
         if (val === null || val === undefined || val === '' || val === 0) {
@@ -310,7 +310,10 @@
         if (isNaN(num) || num === 0) {
             return '-';
         }
-        return Math.round(num).toLocaleString('id-ID');
+        var rounded = Math.round(num);
+        if (rounded === 0) return '-';
+        var teks = Math.abs(rounded).toLocaleString('id-ID');
+        return rounded < 0 ? '<span style="color:#dc2626; font-weight:600;">' + teks + '-</span>' : teks;
     }
 
     // Formatter kode SAP (identik dengan Laporan Arus Kas / cashflow)

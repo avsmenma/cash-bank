@@ -612,6 +612,12 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
+                                    <a href="{{ route('dashboard.modal-kerja-sap.index') }}"
+                                        class="nav-link {{ request()->routeIs('dashboard.modal-kerja-sap.*') ? 'active' : ''}}">
+                                        <p>Modal Kerja (SAP)</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a href="{{ route('dashboard.bank.index') }}"
                                         class="nav-link {{ request()->routeIs('dashboard.bank.index') ? 'active' : ''}}">
                                         <p>Bank</p>

@@ -73,16 +73,17 @@ class SapModalKerjaController extends Controller
             $bulanAktif[$b] = $bulanMap[$b];
         }
 
-        // Query pengeluaran kas SAP
+        // Query pengeluaran kas SAP (Modal Kerja riil: Operasional A02, Investasi B02, Pendanaan C02)
+        // Mengecualikan mutasi transit Bank Clearing (E0101000) agar sinkron dengan Cashflow
         $query = Cashflow::with('reference')
             ->where('tahun', $tahun)
             ->whereBetween('bulan', [$bulanDari, $bulanSampai])
             ->where(function ($q) {
-                // Pengeluaran kas bertanda negatif atau berada di grup akun pengeluaran/investasi
-                $q->where('amount', '<', 0)
-                  ->orWhere('reference_key_1', 'like', 'A02%')
-                  ->orWhere('reference_key_1', 'like', 'B02%');
-            });
+                $q->where('reference_key_1', 'like', 'A02%')
+                  ->orWhere('reference_key_1', 'like', 'B02%')
+                  ->orWhere('reference_key_1', 'like', 'C02%');
+            })
+            ->where('reference_key_1', 'not like', 'E%');
 
         // Filter unit
         if ($unit === 'ro') {
@@ -134,7 +135,9 @@ class SapModalKerjaController extends Controller
                 $refKey, $uraian, $parentKey, $parentName
             );
 
-            $nilai = abs((float) $row->amount); // nilai nominal penuh (Rupiah normal, tidak dibagi per seribu)
+            // Pada pembukuan SAP, pengeluaran kas bertanda minus (-).
+            // Konversi ke nilai pengeluaran positif agar selaras dengan Laporan Cashflow.
+            $nilai = - (float) $row->amount;
 
             // Inisialisasi sel item jika belum ada
             if (!isset($matrix[$kategori][$subKriteria][$itemKriteria])) {

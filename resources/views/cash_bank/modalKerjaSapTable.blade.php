@@ -107,6 +107,15 @@
     .mk-c-total-month { background-color: rgba(30, 64, 175, 0.06); font-weight: 700; }
     .mk-c-grand-total { background-color: rgba(234, 179, 8, 0.12); font-weight: 700; }
 
+    #mk-sap-table .mk-c-kode {
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-weight: 600;
+        font-size: 10.5px;
+    }
+    #mk-sap-table .tabulator-row.mk-r-item .tabulator-cell.mk-c-kode {
+        color: #1d4ed8;
+    }
+
     @media print {
         #mk-sap-table .tabulator-tableholder {
             overflow: visible !important;
@@ -123,8 +132,8 @@
 
 @php
     $tableRows = [];
-    $pushRow = function ($type, $no, $uraian, $cells = []) use (&$tableRows) {
-        $tableRows[] = array_merge(['type' => $type, 'no' => $no, 'uraian' => $uraian], $cells);
+    $pushRow = function ($type, $no, $kode, $uraian, $cells = []) use (&$tableRows) {
+        $tableRows[] = array_merge(['type' => $type, 'no' => $no, 'kode' => $kode, 'uraian' => $uraian], $cells);
     };
 
     $formatCells = function ($bulanDataMap) use ($bulanAktif) {
@@ -147,29 +156,40 @@
     foreach ($sortedMatrix as $kategori => $subGroups) {
         // Baris Kategori Header
         $catData = $catTotals[$kategori] ?? [];
-        $pushRow('kategori', $catNumber++, $kategori, $formatCells($catData));
+        $catCode = match ($kategori) {
+            \App\Support\SapModalKerjaMapper::KAT_GAJI, \App\Support\SapModalKerjaMapper::KAT_OPS => 'A02',
+            \App\Support\SapModalKerjaMapper::KAT_INV => 'B02',
+            default => '-'
+        };
+        $pushRow('kategori', $catNumber++, $catCode, $kategori, $formatCells($catData));
 
         foreach ($subGroups as $sub => $items) {
             // Baris Sub-Kategori
-            $pushRow('sub', '', $sub);
+            $subCode = \App\Support\SapModalKerjaMapper::getSubParentCode($sub) ?? '-';
+            $pushRow('sub', '', $subCode, $sub);
 
             // Baris Item-Item Detail
             foreach ($items as $item => $itemData) {
                 $itemLabel = $item === '' ? $sub : ('- ' . $item);
-                $pushRow('item', '', $itemLabel, $formatCells($itemData));
+                $foundCodes = isset($itemCodes[$kategori][$sub][$item]) ? array_keys($itemCodes[$kategori][$sub][$item]) : [];
+                $itemCode = !empty($foundCodes)
+                    ? implode(', ', $foundCodes)
+                    : (\App\Support\SapModalKerjaMapper::getStandardCode($kategori, $sub, $item) ?? '-');
+
+                $pushRow('item', '', $itemCode, $itemLabel, $formatCells($itemData));
             }
 
             // Sub Total Sub-Kategori
             $subData = $subtotals[$kategori][$sub] ?? [];
-            $pushRow('subtotal', '', 'Sub Total ' . $sub, $formatCells($subData));
+            $pushRow('subtotal', '', '-', 'Sub Total ' . $sub, $formatCells($subData));
         }
 
         // Total Kategori
-        $pushRow('kattotal', '', 'Total ' . $kategori, $formatCells($catData));
+        $pushRow('kattotal', '', '-', 'Total ' . $kategori, $formatCells($catData));
     }
 
     // GRAND TOTAL
-    $pushRow('grandtotal', '', 'TOTAL REALISASI PENGELUARAN KAS (SAP)', $formatCells($grandTotal));
+    $pushRow('grandtotal', '', '-', 'TOTAL REALISASI PENGELUARAN KAS (SAP)', $formatCells($grandTotal));
 
     // ================================================================
     // DEFINISI KOLOM TABULATOR
@@ -179,16 +199,25 @@
             'title' => 'No.',
             'field' => 'no',
             'frozen' => true,
-            'width' => 50,
+            'width' => 46,
             'hozAlign' => 'center',
             'headerHozAlign' => 'center'
+        ],
+        [
+            'title' => 'Kode SAP',
+            'field' => 'kode',
+            'frozen' => true,
+            'width' => 105,
+            'hozAlign' => 'center',
+            'headerHozAlign' => 'center',
+            'cssClass' => 'mk-c-kode'
         ],
         [
             'title' => 'Akun Pengeluaran Kas (SAP) - Modal Kerja',
             'field' => 'uraian',
             'frozen' => true,
-            'width' => 360,
-            'minWidth' => 260,
+            'width' => 330,
+            'minWidth' => 240,
             'hozAlign' => 'left',
             'headerHozAlign' => 'left'
         ]

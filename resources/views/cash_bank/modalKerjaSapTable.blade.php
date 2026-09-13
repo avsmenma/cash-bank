@@ -309,6 +309,13 @@
         return Math.round(num).toLocaleString('id-ID');
     }
 
+    // Formatter kode SAP
+    function formatKodeSap(cell) {
+        var val = cell.getValue();
+        if (!val || val === '-') return '-';
+        return val;
+    }
+
     // Pasang formatter pada seluruh kolom nilai
     function decorateCols(cols) {
         cols.forEach(function (c) {
@@ -316,7 +323,9 @@
                 decorateCols(c.columns);
                 return;
             }
-            if (c.field && c.field !== 'no' && c.field !== 'uraian') {
+            if (c.field === 'kode') {
+                c.formatter = formatKodeSap;
+            } else if (c.field && c.field !== 'no' && c.field !== 'uraian') {
                 c.formatter = formatNumberSap;
             }
         });

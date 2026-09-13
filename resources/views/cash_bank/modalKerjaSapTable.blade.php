@@ -201,32 +201,28 @@
                 'field' => "m{$bNo}_w1",
                 'width' => 105,
                 'hozAlign' => 'right',
-                'headerHozAlign' => 'center',
-                'formatter' => 'sapNum'
+                'headerHozAlign' => 'center'
             ],
             [
                 'title' => $bNama . '-W2 (8-14)',
                 'field' => "m{$bNo}_w2",
                 'width' => 105,
                 'hozAlign' => 'right',
-                'headerHozAlign' => 'center',
-                'formatter' => 'sapNum'
+                'headerHozAlign' => 'center'
             ],
             [
                 'title' => $bNama . '-W3 (15-21)',
                 'field' => "m{$bNo}_w3",
                 'width' => 105,
                 'hozAlign' => 'right',
-                'headerHozAlign' => 'center',
-                'formatter' => 'sapNum'
+                'headerHozAlign' => 'center'
             ],
             [
                 'title' => $bNama . '-W4 (22-31)',
                 'field' => "m{$bNo}_w4",
                 'width' => 105,
                 'hozAlign' => 'right',
-                'headerHozAlign' => 'center',
-                'formatter' => 'sapNum'
+                'headerHozAlign' => 'center'
             ],
             [
                 'title' => 'Total ' . $bNama,
@@ -234,8 +230,7 @@
                 'width' => 125,
                 'hozAlign' => 'right',
                 'headerHozAlign' => 'center',
-                'cssClass' => 'mk-c-total-month',
-                'formatter' => 'sapNum'
+                'cssClass' => 'mk-c-total-month'
             ],
         ];
 
@@ -258,8 +253,7 @@
                     'width' => 140,
                     'hozAlign' => 'right',
                     'headerHozAlign' => 'center',
-                    'cssClass' => 'mk-c-grand-total',
-                    'formatter' => 'sapNum'
+                    'cssClass' => 'mk-c-grand-total'
                 ]
             ]
         ];
@@ -286,12 +280,19 @@
         return Math.round(num).toLocaleString('id-ID');
     }
 
-    // Registrasi formatter custom ke Tabulator
-    if (window.Tabulator) {
-        Tabulator.prototype.extendModule("format", "formatters", {
-            "sapNum": formatNumberSap
+    // Pasang formatter pada seluruh kolom nilai
+    function decorateCols(cols) {
+        cols.forEach(function (c) {
+            if (c.columns) {
+                decorateCols(c.columns);
+                return;
+            }
+            if (c.field && c.field !== 'no' && c.field !== 'uraian') {
+                c.formatter = formatNumberSap;
+            }
         });
     }
+    decorateCols(rawCols);
 
     var rowTypes = ['kategori', 'sub', 'item', 'subtotal', 'kattotal', 'grandtotal'];
 

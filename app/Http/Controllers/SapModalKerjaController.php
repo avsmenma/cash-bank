@@ -134,7 +134,7 @@ class SapModalKerjaController extends Controller
                 $refKey, $uraian, $parentKey, $parentName
             );
 
-            $nilai = abs((float) $row->amount) / 1000; // konversi ke satuan ribuan Rupiah
+            $nilai = abs((float) $row->amount); // nilai nominal penuh (Rupiah normal, tidak dibagi per seribu)
 
             // Inisialisasi sel item jika belum ada
             if (!isset($matrix[$kategori][$subKriteria][$itemKriteria])) {

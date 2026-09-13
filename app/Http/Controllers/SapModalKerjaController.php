@@ -176,24 +176,69 @@ class SapModalKerjaController extends Controller
             $grandTotal[$b]['total'] += $nilai;
         }
 
-        // Urutkan kategori agar susunan baku: Gaji -> Eksploitasi -> Investasi -> Lainnya
+        // Urutkan kategori dan sub-kategori agar susunan baku dan terstandarisasi
         $orderedCategories = [
             SapModalKerjaMapper::KAT_GAJI,
             SapModalKerjaMapper::KAT_OPS,
             SapModalKerjaMapper::KAT_INV,
+            SapModalKerjaMapper::KAT_FIN,
             SapModalKerjaMapper::KAT_LAIN,
         ];
 
+        $orderedSubs = [
+            SapModalKerjaMapper::KAT_GAJI => [
+                'Karyawan Pimpinan',
+                'Karyawan Pelaksana',
+                'Karyawan PKWT',
+                'Gaji Honor',
+            ],
+            SapModalKerjaMapper::KAT_OPS => [
+                'TBS (FFB)',
+                'Operasional Produksi',
+                'Biaya Usaha dan lainnya',
+                'Pajak',
+            ],
+            SapModalKerjaMapper::KAT_INV => [
+                'Investasi On Farm',
+                'Investasi Off Farm',
+                'Pembayaran investasi lainnya',
+            ],
+            SapModalKerjaMapper::KAT_FIN => [
+                'Pembayaran Bunga Pinjaman',
+                'Pembayaran Pokok Pinjaman',
+            ],
+        ];
+
         $sortedMatrix = [];
-        foreach ($orderedCategories as $kat) {
-            if (isset($matrix[$kat])) {
-                $sortedMatrix[$kat] = $matrix[$kat];
+        $allCategories = array_unique(array_merge($orderedCategories, array_keys($matrix)));
+
+        foreach ($allCategories as $kat) {
+            if (!isset($matrix[$kat])) {
+                continue;
             }
-        }
-        foreach ($matrix as $kat => $val) {
-            if (!isset($sortedMatrix[$kat])) {
-                $sortedMatrix[$kat] = $val;
+
+            $subs = $matrix[$kat];
+            $definedSubs = $orderedSubs[$kat] ?? [];
+            $allSubs = array_unique(array_merge($definedSubs, array_keys($subs)));
+
+            $sortedSubs = [];
+            foreach ($allSubs as $sub) {
+                if (!isset($subs[$sub])) {
+                    continue;
+                }
+
+                $items = $subs[$sub];
+                // Urutkan item berdasarkan kode SAP standar jika ada, atau alfabetis
+                uksort($items, function ($a, $b) use ($kat, $sub) {
+                    $codeA = SapModalKerjaMapper::getStandardCode($kat, $sub, $a) ?? 'Z9999999';
+                    $codeB = SapModalKerjaMapper::getStandardCode($kat, $sub, $b) ?? 'Z9999999';
+                    return strcmp($codeA, $codeB) ?: strcmp($a, $b);
+                });
+
+                $sortedSubs[$sub] = $items;
             }
+
+            $sortedMatrix[$kat] = $sortedSubs;
         }
 
         return view('cash_bank.modalKerjaSapTable', compact(

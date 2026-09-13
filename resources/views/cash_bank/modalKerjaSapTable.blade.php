@@ -161,6 +161,7 @@
         $catCode = match ($kategori) {
             \App\Support\SapModalKerjaMapper::KAT_GAJI, \App\Support\SapModalKerjaMapper::KAT_OPS => 'A02',
             \App\Support\SapModalKerjaMapper::KAT_INV => 'B02',
+            \App\Support\SapModalKerjaMapper::KAT_FIN => 'A0206',
             default => '-'
         };
         $pushRow('kategori', $catNumber++, $catCode, $kategori, $formatCells($catData));
@@ -174,6 +175,7 @@
             foreach ($items as $item => $itemData) {
                 $itemLabel = $item === '' ? $sub : ('- ' . $item);
                 $foundCodes = isset($itemCodes[$kategori][$sub][$item]) ? array_keys($itemCodes[$kategori][$sub][$item]) : [];
+                sort($foundCodes);
                 $itemCode = !empty($foundCodes)
                     ? implode(', ', $foundCodes)
                     : (\App\Support\SapModalKerjaMapper::getStandardCode($kategori, $sub, $item) ?? '-');

@@ -23,6 +23,7 @@ use App\Http\Controllers\DetaiControllerCashFlowController;
 use App\Http\Controllers\VADashboardController;
 use App\Http\Controllers\RingkasanPembayaranController;
 use App\Http\Controllers\ProgrammerController;
+use App\Http\Controllers\SapModalKerjaController;
 
 Route::get('/', fn() => view('auth.login'));
 Route::get('/login', fn() => view('auth.login'))->name('login');
@@ -54,6 +55,12 @@ Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
 
     Route::get('/dashboard-modal-kerja/data', [dashboardController::class, 'modalKerjaData'])
         ->name('dashboard.modal-kerja.data');
+
+    Route::get('/dashboard-modal-kerja-sap', [SapModalKerjaController::class, 'index'])
+        ->name('dashboard.modal-kerja-sap.index');
+
+    Route::get('/dashboard-modal-kerja-sap/data', [SapModalKerjaController::class, 'data'])
+        ->name('dashboard.modal-kerja-sap.data');
 
     Route::get('/dashboard-bank', [dashboardController::class, 'bank'])
         ->name('dashboard.bank.index');

@@ -97,6 +97,7 @@ class SapModalKerjaController extends Controller
         $initWeek = fn () => ['w1' => 0.0, 'w2' => 0.0, 'w3' => 0.0, 'w4' => 0.0, 'total' => 0.0];
 
         $matrix = [];     // [kategori][sub][item][bulan] = ['w1'=>0, ... , 'total'=>0]
+        $itemCodes = [];  // [kategori][sub][item][refKey] = true
         $subtotals = [];  // [kategori][sub][bulan] = ['w1'=>0, ... , 'total'=>0]
         $catTotals = [];  // [kategori][bulan] = ['w1'=>0, ... , 'total'=>0]
         $grandTotal = []; // [bulan] = ['w1'=>0, ... , 'total'=>0]
@@ -160,6 +161,11 @@ class SapModalKerjaController extends Controller
             $matrix[$kategori][$subKriteria][$itemKriteria][$b][$week] += $nilai;
             $matrix[$kategori][$subKriteria][$itemKriteria][$b]['total'] += $nilai;
 
+            // Catat kode referensi SAP aktual yang muncul
+            if (!empty($refKey)) {
+                $itemCodes[$kategori][$subKriteria][$itemKriteria][$refKey] = true;
+            }
+
             $subtotals[$kategori][$subKriteria][$b][$week] += $nilai;
             $subtotals[$kategori][$subKriteria][$b]['total'] += $nilai;
 
@@ -192,7 +198,7 @@ class SapModalKerjaController extends Controller
 
         return view('cash_bank.modalKerjaSapTable', compact(
             'sortedMatrix', 'subtotals', 'catTotals', 'grandTotal',
-            'bulanAktif', 'tahun', 'unit'
+            'bulanAktif', 'tahun', 'unit', 'itemCodes'
         ));
     }
 }

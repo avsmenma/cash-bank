@@ -216,4 +216,35 @@ class SapModalKerjaMapper
 
         return [self::KAT_LAIN, $fallbackSub, $fallbackItem];
     }
+
+    /**
+     * Mendapatkan kode SAP standar (reference_key_1) untuk item tertentu
+     */
+    public static function getStandardCode(string $kategori, string $sub, string $item): ?string
+    {
+        static $reverseMap = null;
+        if ($reverseMap === null) {
+            $reverseMap = [];
+            foreach (self::$directMap as $k => $v) {
+                $combo = $v[0] . '|' . $v[1] . '|' . $v[2];
+                $reverseMap[$combo] ??= $k;
+            }
+        }
+        return $reverseMap[$kategori . '|' . $sub . '|' . $item] ?? null;
+    }
+
+    /**
+     * Mendapatkan kode grup / parent SAP untuk sub-kategori
+     */
+    public static function getSubParentCode(string $sub): ?string
+    {
+        return match ($sub) {
+            'Karyawan Pimpinan', 'Karyawan Pelaksana' => 'A0202',
+            'TBS (FFB)', 'Operasional Produksi', 'Biaya Usaha dan lainnya' => 'A0201',
+            'Pajak' => 'A0204',
+            'Investasi On Farm' => 'B0205',
+            'Investasi Off Farm', 'Pembayaran investasi lainnya' => 'B0203',
+            default => null,
+        };
+    }
 }

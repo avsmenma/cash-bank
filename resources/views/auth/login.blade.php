@@ -318,6 +318,30 @@
     box-shadow: 0 6px 24px rgba(40, 167, 69, 0.65) !important;
     transform: translateY(-1px);
   }
+
+  /* Checkbox Jangan Tampilkan Lagi */
+  #domainAnnouncementModal .custom-control-label {
+    cursor: pointer;
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.85);
+    user-select: none;
+    transition: color 0.2s ease;
+  }
+
+  #domainAnnouncementModal .custom-control-label:hover {
+    color: #ffffff;
+  }
+
+  #domainAnnouncementModal .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #28a745 !important;
+    border-color: #5bda7d !important;
+  }
+
+  #domainAnnouncementModal .custom-control-label::before {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 4px;
+  }
 </style>
 
 <body class="hold-transition login-page">
@@ -436,8 +460,16 @@
           <i class="fas fa-bookmark text-warning mr-1"></i> Mohon bookmark / simpan alamat domain <strong>cashbankreg5.my.id</strong> ini pada browser Anda untuk memudahkan akses login selanjutnya.
         </p>
       </div>
-      <div class="modal-footer border-0 px-4 pb-4 pt-2 justify-content-center">
-        <button type="button" class="btn btn-dismiss btn-block text-white" data-dismiss="modal">
+      <div class="modal-footer border-0 px-4 pb-4 pt-1 flex-column">
+        <div class="d-flex justify-content-center w-100 mb-3">
+          <div class="custom-control custom-checkbox">
+            <input type="checkbox" class="custom-control-input" id="dontShowDomainAgain">
+            <label class="custom-control-label" for="dontShowDomainAgain">
+              Jangan tampilkan lagi
+            </label>
+          </div>
+        </div>
+        <button type="button" class="btn btn-dismiss btn-block text-white mt-0" data-dismiss="modal">
           <i class="fas fa-check-circle mr-1"></i> Mengerti &amp; Lanjutkan Login
         </button>
       </div>
@@ -456,13 +488,34 @@
 <script>
     // ===== Popup Pengumuman Domain Baru =====
     $(document).ready(function() {
-        $('#domainAnnouncementModal').appendTo('body').modal({
-            backdrop: true,
-            keyboard: true,
-            show: true
+        var hideDomainNotice = localStorage.getItem('cb_hide_domain_notice');
+
+        if (hideDomainNotice !== 'true') {
+            $('#domainAnnouncementModal').appendTo('body').modal({
+                backdrop: true,
+                keyboard: true,
+                show: true
+            });
+        }
+
+        function saveDontShowPref() {
+            if ($('#dontShowDomainAgain').is(':checked')) {
+                localStorage.setItem('cb_hide_domain_notice', 'true');
+            } else {
+                localStorage.removeItem('cb_hide_domain_notice');
+            }
+        }
+
+        $('#dontShowDomainAgain').on('change', function() {
+            saveDontShowPref();
+        });
+
+        $('#domainAnnouncementModal').on('hide.bs.modal', function () {
+            saveDontShowPref();
         });
 
         $('#domainAnnouncementModal').on('hidden.bs.modal', function () {
+            saveDontShowPref();
             $('input[name="username"]').focus();
         });
 

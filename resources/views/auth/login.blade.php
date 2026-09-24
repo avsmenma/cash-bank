@@ -198,6 +198,14 @@
   }
 
   /* ===== DOMAIN ANNOUNCEMENT MODAL ===== */
+  #domainAnnouncementModal {
+    z-index: 1060 !important;
+  }
+
+  .modal-backdrop {
+    z-index: 1050 !important;
+  }
+
   #domainAnnouncementModal .modal-content {
     background: rgba(18, 26, 36, 0.94) !important;
     backdrop-filter: blur(24px) saturate(180%) !important;
@@ -389,12 +397,11 @@
         <a href="register.html') }} class="text-center">Register a new membership</a>
       </p>
     </div> -->
+    </div>
     <!-- /.card-body -->
   </div>
-   
   <!-- /.card -->
 </div>
-
 <!-- /.login-box -->
 
 <!-- Modal Informasi Domain Baru -->
@@ -449,7 +456,11 @@
 <script>
     // ===== Popup Pengumuman Domain Baru =====
     $(document).ready(function() {
-        $('#domainAnnouncementModal').modal('show');
+        $('#domainAnnouncementModal').appendTo('body').modal({
+            backdrop: true,
+            keyboard: true,
+            show: true
+        });
 
         $('#domainAnnouncementModal').on('hidden.bs.modal', function () {
             $('input[name="username"]').focus();

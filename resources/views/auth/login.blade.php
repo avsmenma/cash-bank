@@ -196,6 +196,120 @@
       padding: 0 12px;
     }
   }
+
+  /* ===== DOMAIN ANNOUNCEMENT MODAL ===== */
+  #domainAnnouncementModal .modal-content {
+    background: rgba(18, 26, 36, 0.94) !important;
+    backdrop-filter: blur(24px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+    border: 1px solid rgba(91, 218, 125, 0.45) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7) !important;
+    color: #ffffff;
+    overflow: hidden;
+  }
+
+  #domainAnnouncementModal .modal-header {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+    padding: 1.15rem 1.5rem !important;
+  }
+
+  #domainAnnouncementModal .modal-title {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.2px;
+  }
+
+  #domainAnnouncementModal .close {
+    color: rgba(255, 255, 255, 0.7);
+    text-shadow: none;
+    opacity: 0.8;
+    transition: all 0.2s ease;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0.5rem;
+  }
+
+  #domainAnnouncementModal .close:hover {
+    color: #ffffff;
+    opacity: 1;
+    transform: scale(1.15);
+  }
+
+  .domain-box {
+    background: rgba(40, 167, 69, 0.12);
+    border: 1.5px dashed rgba(91, 218, 125, 0.55);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    margin: 1.1rem 0;
+    text-align: center;
+    position: relative;
+    box-shadow: inset 0 0 20px rgba(40, 167, 69, 0.08);
+  }
+
+  .domain-box .domain-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.65);
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+  }
+
+  .domain-box .domain-url {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: clamp(1rem, 3.8vw, 1.25rem);
+    font-weight: 700;
+    color: #5bda7d;
+    letter-spacing: 0.5px;
+    word-break: break-all;
+    display: block;
+    margin-bottom: 0.65rem;
+    text-shadow: 0 0 12px rgba(91, 218, 125, 0.35);
+  }
+
+  .domain-box .btn-copy-domain {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.35rem 0.95rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .domain-box .btn-copy-domain:hover {
+    background: rgba(40, 167, 69, 0.4);
+    border-color: #5bda7d;
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  #domainAnnouncementModal .btn-dismiss {
+    background: linear-gradient(135deg, #28a745, #218838) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+    padding: 0.65rem 1.5rem !important;
+    box-shadow: 0 4px 18px rgba(40, 167, 69, 0.45) !important;
+    transition: all 0.25s ease;
+  }
+
+  #domainAnnouncementModal .btn-dismiss:hover {
+    background: linear-gradient(135deg, #2ecc71, #28a745) !important;
+    box-shadow: 0 6px 24px rgba(40, 167, 69, 0.65) !important;
+    transform: translateY(-1px);
+  }
 </style>
 
 <body class="hold-transition login-page">
@@ -283,6 +397,47 @@
 
 <!-- /.login-box -->
 
+<!-- Modal Informasi Domain Baru -->
+<div class="modal fade" id="domainAnnouncementModal" tabindex="-1" role="dialog" aria-labelledby="domainAnnouncementModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 480px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="domainAnnouncementModalLabel">
+          <i class="fas fa-globe text-success mr-2"></i> Informasi Domain Resmi
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center px-4 pt-3 pb-2">
+        <div class="mb-3">
+          <span class="badge badge-success px-3 py-1 font-weight-bold" style="font-size: 0.78rem; letter-spacing: 0.5px;">
+            <i class="fas fa-bullhorn mr-1"></i> PENGUMUMAN RESMI
+          </span>
+        </div>
+        <p style="font-size: 0.95rem; line-height: 1.5; color: rgba(255,255,255,0.9);">
+          Sistem aplikasi <strong>Cash &amp; Bank</strong> kini telah aktif menggunakan domain resmi tersendiri:
+        </p>
+        <div class="domain-box">
+          <div class="domain-label"><i class="fas fa-link mr-1"></i> Alamat Website Baru</div>
+          <span class="domain-url" id="domainTargetText">https://cashbankreg5.my.id/</span>
+          <button type="button" class="btn btn-copy-domain" id="btnCopyDomain" title="Salin ke papan klip">
+            <i class="far fa-copy" id="copyIcon"></i> <span id="copyBtnText">Salin Alamat</span>
+          </button>
+        </div>
+        <p class="mb-2 text-white-50" style="font-size: 0.85rem; line-height: 1.4;">
+          <i class="fas fa-bookmark text-warning mr-1"></i> Mohon bookmark / simpan alamat domain <strong>cashbankreg5.my.id</strong> ini pada browser Anda untuk memudahkan akses login selanjutnya.
+        </p>
+      </div>
+      <div class="modal-footer border-0 px-4 pb-4 pt-2 justify-content-center">
+        <button type="button" class="btn btn-dismiss btn-block text-white" data-dismiss="modal">
+          <i class="fas fa-check-circle mr-1"></i> Mengerti &amp; Lanjutkan Login
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- jQuery -->
 <script src="{{ asset('adminLTE/plugins/jquery/jquery.min.js') }}"></script>
 <!-- Bootstrap 4 -->
@@ -292,6 +447,46 @@
 
 
 <script>
+    // ===== Popup Pengumuman Domain Baru =====
+    $(document).ready(function() {
+        $('#domainAnnouncementModal').modal('show');
+
+        $('#domainAnnouncementModal').on('hidden.bs.modal', function () {
+            $('input[name="username"]').focus();
+        });
+
+        $('#btnCopyDomain').on('click', function() {
+            var url = $('#domainTargetText').text().trim();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(showCopied, fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
+
+            function showCopied() {
+                $('#copyBtnText').text('Tersalin!');
+                $('#copyIcon').attr('class', 'fas fa-check text-success');
+                $('#btnCopyDomain').css('border-color', '#5bda7d');
+                setTimeout(function() {
+                    $('#copyBtnText').text('Salin Alamat');
+                    $('#copyIcon').attr('class', 'far fa-copy');
+                    $('#btnCopyDomain').css('border-color', '');
+                }, 2000);
+            }
+
+            function fallbackCopy() {
+                var $temp = $('<input>');
+                $('body').append($temp);
+                $temp.val(url).select();
+                try {
+                    document.execCommand('copy');
+                } catch (e) {}
+                $temp.remove();
+                showCopied();
+            }
+        });
+    });
+
     // ===== Ingat username & password (Remember Me) =====
     // Disimpan di localStorage browser saat login dengan Remember Me dicentang,
     // supaya form terisi otomatis lagi setelah logout.

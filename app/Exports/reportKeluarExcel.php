@@ -39,7 +39,7 @@ class reportKeluarExcel implements FromCollection, WithHeadings, WithStyles, Wit
         $bulan           = $this->request->bulan;
         $tanggalDipilih  = $this->request->tanggal;
         $bankTujuanId    = $this->request->bank_tujuan;
-        $sumberDanaIds   = $this->request->sumber_dana;
+        $sumberDanaIds   = array_values(array_filter((array) $this->request->input('sumber_dana', []), fn($value) => $value !== null && $value !== ''));
         $kategoriIds     = $this->request->kategori;
         $idJenisPembayaran = $this->request->id_jenis_pembayaran;
         $rekapanVA       = $this->request->rekapanVA;

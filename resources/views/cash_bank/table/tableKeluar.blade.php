@@ -27,6 +27,8 @@
         }
         #example3 .tabulator-header .tabulator-col-resize-handle:hover { background: rgba(255,255,255,.35); }
         #example3 .tabulator-tableholder { scrollbar-gutter: stable; }
+        /* Tabulator positions the placeholder content within the visible scroll area. */
+        #example3 .tabulator-placeholder { justify-content: flex-start; }
         #example3 .tabulator-cell { border-right: 1px solid #c3d2e0; border-color: #c3d2e0; padding: 6px 8px; }
         #example3 .tabulator-row { border-bottom: 1px solid #c3d2e0; }
         #example3 .tabulator-row.tabulator-row-even { background: #fbfdff; }

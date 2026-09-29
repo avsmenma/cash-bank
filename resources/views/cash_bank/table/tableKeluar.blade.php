@@ -102,7 +102,7 @@
 @endpush
 
 <div class="active-filters-bar" id="active-filters-bar"></div>
-<div id="bkInfo" class="small text-secondary">Memuat data...</div>
+<div id="bkInfo" class="small text-secondary" role="status" aria-live="polite">Memuat data...</div>
 <div id="example3"></div>
 
 {{-- Popup filter generik (dipakai semua kolom) --}}
@@ -310,6 +310,20 @@
                 return ta;
             }
 
+            var emptyState = document.createElement('div');
+            emptyState.className = 'text-center text-secondary p-3';
+            emptyState.style.cssText = 'font-size:14px;font-weight:400;white-space:normal;';
+            var emptyMessage = document.createElement('div');
+            emptyMessage.textContent = 'Belum ada data Bank Keluar.';
+            var emptyReset = document.createElement('button');
+            emptyReset.type = 'button';
+            emptyReset.className = 'btn btn-sm btn-outline-secondary mt-2';
+            emptyReset.textContent = 'Hapus filter';
+            emptyReset.hidden = true;
+            emptyReset.addEventListener('click', clearAllFilters);
+            emptyState.appendChild(emptyMessage);
+            emptyState.appendChild(emptyReset);
+
             var table = new Tabulator(el, {
                 index: 'id_bank_keluar',
                 height: '62vh',
@@ -319,7 +333,7 @@
                 movableColumns: false,
                 editTriggerEvent: 'dblclick',
                 columnHeaderVertAlign: 'middle',
-                placeholder: 'Belum ada data Bank Keluar.',
+                placeholder: emptyState,
                 columnDefaults: { resizable: true, headerSort: false, minWidth: 40, variableHeight: true },
                 columns: [
                     { title: '', titleFormatter: fmtSelectAll, field: '_cb', width: 40, hozAlign: 'center', resizable: false, formatter: fmtCheckbox },
@@ -997,11 +1011,16 @@
                 usp.append('draw', 1); usp.append('start', 0); usp.append('length', 1000000);
                 return BK_URL + '?' + usp.toString();
             }
-            function updateInfo() {
+            function updateInfo(filteredCount) {
                 var info = document.getElementById('bkInfo'); if (!info || bkTotal === null) return;
-                var shown = table.getDataCount(true);
-                if (bkTotal === 0) { info.textContent = 'Tidak ada data.'; return; }
+                var shown = typeof filteredCount === 'number' ? filteredCount : table.getDataCount('active');
                 var filtered = Object.keys(activeFilters).length > 0;
+                var noMatches = bkTotal > 0 && filtered && shown === 0;
+                emptyMessage.textContent = noMatches
+                    ? '0 hasil sesuai filter. Ubah atau hapus filter untuk melihat data.'
+                    : 'Belum ada data Bank Keluar.';
+                emptyReset.hidden = !noMatches;
+                if (bkTotal === 0) { info.textContent = 'Belum ada data Bank Keluar.'; return; }
                 info.textContent = filtered
                     ? ('Menampilkan ' + shown.toLocaleString('id-ID') + ' dari ' + bkTotal.toLocaleString('id-ID') + ' data (terfilter).')
                     : ('Menampilkan ' + bkTotal.toLocaleString('id-ID') + ' data.');
@@ -1021,7 +1040,9 @@
             window.bkReload = function () { bkClearRange(); bkActive = null; return loadData(); };
 
             var realigned = false;
+            table.on('dataFiltered', function (filters, rows) { updateInfo(rows.length); });
             table.on('dataProcessed', function () {
+                updateInfo();
                 if (realigned) return; realigned = true;
                 window.requestAnimationFrame(function () { table.redraw(true); });
             });
@@ -1062,7 +1083,6 @@
                     }
                 });
                 table.setFilter(filters);
-                updateInfo();
             }
 
             function updateFilterBar() {
@@ -1133,6 +1153,7 @@
                 bkApplyClientFilters(); updateFilterBar(); closeAllPopups();
             }
             function clearFilter(key) { delete activeFilters[key]; bkApplyClientFilters(); updateFilterBar(); }
+            function clearAllFilters() { activeFilters = {}; bkApplyClientFilters(); updateFilterBar(); closeAllPopups(); }
 
             $(document).on('click', '#example3 .th-filter-link', function (e) {
                 e.stopPropagation();
@@ -1149,7 +1170,7 @@
             $('#btn-reset-generic-filter').on('click', function () { if (currentFilterKey) clearFilter(currentFilterKey); closeAllPopups(); });
             $('#btn-close-generic-filter').on('click', closeAllPopups);
             $(document).on('click', '.remove-filter', function () { clearFilter($(this).data('filter')); });
-            $(document).on('click', '#btn-clear-all-filters', function () { activeFilters = {}; bkApplyClientFilters(); updateFilterBar(); });
+            $(document).on('click', '#btn-clear-all-filters', clearAllFilters);
         })();
     </script>
 @endpush

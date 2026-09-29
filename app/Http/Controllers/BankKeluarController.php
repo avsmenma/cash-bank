@@ -3389,7 +3389,7 @@ class BankKeluarController extends Controller
         $bulan = $request->bulan;
         $tanggalDipilih = $request->tanggal;
         $bankTujuanId = $request->bank_tujuan;
-        $sumberDanaIds = $request->sumber_dana;
+        $sumberDanaIds = array_values(array_filter((array) $request->input('sumber_dana', []), fn($value) => $value !== null && $value !== ''));
         $kategoriIds = $request->kategori;
         $rekapanVA = $request->rekapanVA;
         $idJenisPembayaran = $request->id_jenis_pembayaran;

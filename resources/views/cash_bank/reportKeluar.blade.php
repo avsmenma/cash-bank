@@ -422,8 +422,13 @@ function resetFilter() {
             var usp = new URLSearchParams();
             Object.keys(reportParams).forEach(function (k) {
                 var v = reportParams[k];
-                if (Array.isArray(v)) { v.forEach(function (x) { usp.append(k + '[]', x); }); }
-                else if (v !== null && v !== undefined) { usp.append(k, v); }
+                if (Array.isArray(v)) {
+                    v.forEach(function (x) {
+                        // Laravel converts empty filter values to null; do not serialize them as "null".
+                        if (x !== null && x !== undefined && x !== '') { usp.append(k + '[]', x); }
+                    });
+                }
+                else if (v !== null && v !== undefined && v !== '') { usp.append(k, v); }
             });
             usp.append('draw', 1);
             usp.append('start', start);

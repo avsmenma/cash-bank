@@ -670,6 +670,18 @@
     // Data VA sudah dirender server-side — tak perlu AJAX terpisah.
     var VA_DATA = @json($bankVAList->values());
     var BASE = "{{ url('/daftarBank') }}";
+    var detailPeriod = @json(['tahun' => $tahun, 'bulan' => $bulan, 'tgl_dari' => $tglDari, 'tgl_sampai' => $tglSampai]);
+    var detailQuery = new URLSearchParams({from: 'dashboard-bank'});
+    Object.keys(detailPeriod).forEach(function (key) {
+        detailQuery.set('return_' + key, detailPeriod[key] || '');
+        if (detailPeriod[key]) detailQuery.set(key, detailPeriod[key]);
+    });
+    // Dashboard saldo memakai tanggal tunggal sebagai posisi saldo pada tanggal itu.
+    if (detailPeriod.tgl_dari && !detailPeriod.tgl_sampai) {
+        detailQuery.delete('tgl_dari');
+        detailQuery.set('tgl_sampai', detailPeriod.tgl_dari);
+    }
+    if (detailPeriod.bulan && !detailPeriod.tahun) detailQuery.set('tahun', @json((int) date('Y')));
     function csrf() { return $('meta[name="csrf-token"]').attr('content'); }
 
     function esc(s) {
@@ -698,7 +710,7 @@
     }
     function fmtNama(cell) {
         var d = cell.getRow().getData();
-        var url = BASE + '/' + d.id_bank_tujuan + '/detail';
+        var url = BASE + '/' + d.id_bank_tujuan + '/detail?' + detailQuery.toString();
         return '<a href="' + url + '" class="va-name-link" '
             + 'title="Lihat detail transaksi VA ini">' + esc(d.nama_tujuan) + '</a>';
     }

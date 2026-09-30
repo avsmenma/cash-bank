@@ -294,12 +294,15 @@
     }
 @endphp
 
+@include('cash_bank.partials.report-scan')
 <div id="mk-sap-table"></div>
 
 <script>
 (function () {
     var rawRows = @json($tableRows);
     var rawCols = @json($columns);
+
+    var monthNames = @json($bulanAktif);
 
     // Formatter angka nominal Rupiah (identik dengan cashflow: minus di belakang, nol '-')
     function formatNumberSap(cell) {
@@ -335,6 +338,9 @@
                 c.formatter = formatKodeSap;
             } else if (c.field && c.field !== 'no' && c.field !== 'uraian') {
                 c.formatter = formatNumberSap;
+                c.minWidth = 130;
+                c.width = Math.max(c.width || 130, 130);
+                c.visible = !/^m\d+_w[1-4]$/.test(c.field);
             }
         });
     }
@@ -362,7 +368,7 @@
             data: rawRows,
             columns: rawCols,
             layout: userSized ? 'fitData' : 'fitColumns',
-            height: 'calc(100vh - 200px)',
+            height: '60vh',
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
             columnDefaults: {
@@ -375,6 +381,7 @@
         });
 
         table.on('tableBuilt', function () {
+            window.cbReportScan(table, {months: Object.keys(monthNames).map(function (id) { return {id:id, label:monthNames[id]}; }), weekPattern: /^m\d+_w[1-4]$/});
             var holder = el.querySelector('.tabulator-tableholder');
             if (holder) holder.classList.add('drag-scroll');
         });

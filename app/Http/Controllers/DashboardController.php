@@ -640,6 +640,7 @@ class dashboardController extends Controller
         }
         $weekCuts = [];
         foreach ($bulanAktif as $bNo => $_bNama) {
+            $monthEnd = \Carbon\Carbon::create((int) $tahun, (int) $bNo, 1)->daysInMonth;
             $raw = $weekRangesRaw[$bNo] ?? [];
             $w1e = max(1, min(28, (int)($raw['w1_end'] ?? 7)));
             $w2e = max($w1e+1, min(28, (int)($raw['w2_end'] ?? 14)));
@@ -648,7 +649,7 @@ class dashboardController extends Controller
                 'w1_start' => 1,    'w1_end' => $w1e,
                 'w2_start' => $w1e+1, 'w2_end' => $w2e,
                 'w3_start' => $w2e+1, 'w3_end' => $w3e,
-                'w4_start' => $w3e+1, 'w4_end' => 31,
+                'w4_start' => $w3e+1, 'w4_end' => $monthEnd,
             ];
         }
 

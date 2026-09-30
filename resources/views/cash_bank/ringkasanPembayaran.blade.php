@@ -295,6 +295,8 @@
                   'tahun' => $tahun,
                   'dari_bulan' => $bulan ?? $dariBulan,
                   'sampai_bulan' => $bulan ?? $sampaiBulan,
+                  'return_dari_bulan' => $dariBulan,
+                  'return_sampai_bulan' => $sampaiBulan,
               ];
 
               return route('ringkasan.detail', array_merge($period, $params));

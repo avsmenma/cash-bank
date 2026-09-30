@@ -68,10 +68,20 @@
         margin-bottom: 10px;
         display: block;
     }
+    .penerima-scroll { max-height:60vh; overflow:auto; }
+    .penerima-scroll .row-month-title td { position:sticky; top:0; z-index:4; height:38px; }
+    .penerima-scroll .row-header th { position:sticky; top:38px; z-index:3; }
+    .penerima-group-toggle { border:0; background:transparent; color:inherit; font:inherit; text-align:left; padding:4px 0; }
+    .penerima-grouped-table .row-data[hidden] { display:none; }
 </style>
 
 @if(isset($grouped) && count($grouped) > 0)
-    <div class="table-responsive">
+    <div class="d-flex flex-wrap align-items-center mb-2" style="gap:8px;">
+        <button type="button" class="btn btn-sm btn-outline-primary" id="pn-expand-all">Buka semua rincian</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="pn-collapse-all">Ringkas semua rincian</button>
+        <span class="text-muted small">Subtotal dan total tetap mencakup seluruh transaksi.</span>
+    </div>
+    <div class="table-responsive penerima-scroll" tabindex="0" role="region" aria-label="Penerimaan per bulan, dapat digulir">
         <table class="penerima-grouped-table">
 
 
@@ -114,7 +124,10 @@
                         {{-- Kategori header row --}}
                         <tr class="row-kategori-header">
                             <td colspan="14">
-                                <i class="fas fa-layer-group mr-1"></i>{{ strtoupper($kategoriName) }}
+                                <button type="button" class="penerima-group-toggle" aria-expanded="false">
+                                    <span class="pn-toggle-icon" aria-hidden="true">+</span> {{ strtoupper($kategoriName) }}
+                                    <span class="font-weight-normal">({{ count($rows) }} transaksi)</span>
+                                </button>
                             </td>
                         </tr>
 
@@ -136,7 +149,7 @@
                                 $subPotppn += $row->potppn;
                                 $subInc += $nilaiIncPpn;
                             @endphp
-                            <tr class="row-data">
+                            <tr class="row-data" hidden>
                                 <td class="text-center">
                                     <input type="checkbox" class="checkbox_ids" name="ids[]" value="{{ $row->id_penerima }}">
                                 </td>
@@ -221,6 +234,17 @@
     </div>
 
     <script>
+        function togglePenerimaGroup(button, expanded) {
+            $(button).attr('aria-expanded', String(expanded)).find('.pn-toggle-icon').text(expanded ? '−' : '+');
+            $(button).closest('tr').nextUntil('.row-subtotal').filter('.row-data').prop('hidden', !expanded);
+        }
+        $(document).off('click.f07', '.penerima-group-toggle').on('click.f07', '.penerima-group-toggle', function () {
+            togglePenerimaGroup(this, $(this).attr('aria-expanded') !== 'true');
+        });
+        $(document).off('click.f07', '#pn-expand-all, #pn-collapse-all').on('click.f07', '#pn-expand-all, #pn-collapse-all', function () {
+            var expanded = this.id === 'pn-expand-all';
+            $('.penerima-group-toggle').each(function () { togglePenerimaGroup(this, expanded); });
+        });
         // Select all checkboxes within a month
         $(document).off('click', '.select-all-month').on('click', '.select-all-month', function () {
             var isChecked = $(this).prop('checked');

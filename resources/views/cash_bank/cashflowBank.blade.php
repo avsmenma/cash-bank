@@ -209,6 +209,7 @@
                                     Geser tabel ke kanan untuk melihat rincian tiap unit/kebun.
                                     Kolom Kode, Reference, Uraian, Realisasi Reg5, dan Regional Office tetap terlihat.
                                 </div>
+                                @include('cash_bank.partials.report-scan')
                                 <div id="tableCashFlowBank" class="cf-tabel"></div>
                             </div>
                         </div>
@@ -491,7 +492,7 @@
                     // fitData (bukan fitColumns): kolom mempertahankan lebarnya sehingga
                     // tabel melebihi layar dan bisa digeser ke kanan.
                     layout: 'fitData',
-                    height: '68vh',
+                    height: '60vh',
                     columnHeaderVertAlign: 'middle',
                     movableColumns: false,
                     columnDefaults: { headerSort: false, resizable: true, minWidth: 30, variableHeight: true },
@@ -501,6 +502,8 @@
                     },
                     columns: kolom
                 });
+
+                table.on('tableBuilt', function () { window.cbReportScan(table, {detailTypes: ['detail', 'spacer']}); });
 
                 // Baris jenjang tidak memakai kolom Kode & Reference, jadi ketiga kolom
                 // kiri digabung (ala colspan). Karena kolomnya dibekukan, sel gabungan

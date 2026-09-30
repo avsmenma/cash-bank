@@ -253,9 +253,9 @@
 
     $colIdx = 1;
     foreach ($bulanAktif as $bNo => $bNama) {
-        $wc = $weekCuts[$bNo] ?? ['w1_start'=>1,'w1_end'=>7,'w2_start'=>8,'w2_end'=>14,'w3_start'=>15,'w3_end'=>21,'w4_start'=>22,'w4_end'=>31];
-
         $currentMonthDate = \Carbon\Carbon::create((int) $tahun, (int) $bNo, 1);
+        $monthEnd = $currentMonthDate->daysInMonth;
+        $wc = $weekCuts[$bNo] ?? ['w1_start'=>1,'w1_end'=>7,'w2_start'=>8,'w2_end'=>14,'w3_start'=>15,'w3_end'=>21,'w4_start'=>22,'w4_end'=>$monthEnd];
         $previousMonthDate = $currentMonthDate->copy()->subMonth();
         $prevShort = $bulanShort[(int) $previousMonthDate->month] ?? strtoupper($previousMonthDate->format('M'));
         $currentShort = $bulanShort[(int) $currentMonthDate->month] ?? strtoupper($currentMonthDate->format('M'));
@@ -263,14 +263,17 @@
         $currentYearShort = $currentMonthDate->format('y');
 
         $weekLeaf = function ($prefix, $i) use ($bNama, $bNo, $wc, &$colIdx) {
+            $rangeLabel = $wc['w' . $i . '_start'] <= $wc['w' . $i . '_end']
+                ? $wc['w' . $i . '_start'] . '-' . $wc['w' . $i . '_end']
+                : 'Tidak ada hari';
             $title = $bNama . '-W' . $i
                 . '<br><small class="mk-week-label" data-bulan="' . $bNo . '" data-week="w' . $i . '" title="Klik untuk ubah tanggal">'
-                . '(' . $wc['w' . $i . '_start'] . '-' . $wc['w' . $i . '_end'] . ')</small>'
+                . '(' . $rangeLabel . ')</small>'
                 . '<span class="mk-colnum">' . $colIdx++ . '</span>';
             return ['title' => $title, 'titleFormatter' => 'html', 'field' => $prefix . $i, 'width' => 84];
         };
-        $totalLeaf = function ($field) use ($bNama, &$colIdx) {
-            $title = 'Weekly-' . $bNama . '<br><small>(1-31)</small><span class="mk-colnum">' . $colIdx++ . '</span>';
+        $totalLeaf = function ($field) use ($bNama, $monthEnd, &$colIdx) {
+            $title = 'Weekly-' . $bNama . '<br><small>(1-' . $monthEnd . ')</small><span class="mk-colnum">' . $colIdx++ . '</span>';
             return ['title' => $title, 'titleFormatter' => 'html', 'field' => $field, 'width' => 92, 'cssClass' => 'mk-c-bold'];
         };
 

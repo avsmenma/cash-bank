@@ -228,6 +228,7 @@
     ];
 
     foreach ($bulanAktif as $bNo => $bNama) {
+        $monthEnd = \Carbon\Carbon::create((int) $tahun, (int) $bNo, 1)->daysInMonth;
         $monthSubCols = [
             [
                 'title' => $bNama . '-W1 (1-7)',
@@ -251,7 +252,7 @@
                 'headerHozAlign' => 'center'
             ],
             [
-                'title' => $bNama . '-W4 (22-31)',
+                'title' => $bNama . '-W4 (22-' . $monthEnd . ')',
                 'field' => "m{$bNo}_w4",
                 'width' => 115,
                 'hozAlign' => 'right',

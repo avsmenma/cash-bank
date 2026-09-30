@@ -59,17 +59,31 @@ window.cbReportScan = window.cbReportScan || function (table, options) {
     scroller.appendChild(spacer);
     el.before(scroller);
     var holder = el.querySelector('.tabulator-tableholder');
+    var ignoredTopScroll = null;
+    function syncPosition() {
+        if (scroller.scrollLeft !== holder.scrollLeft) {
+            ignoredTopScroll = holder.scrollLeft;
+            scroller.scrollLeft = holder.scrollLeft;
+        }
+    }
     function syncWidth() {
         if (!el.isConnected) {
             if (observer) observer.disconnect();
             return;
         }
-        spacer.style.width = holder.scrollWidth + 'px';
         scroller.hidden = holder.scrollWidth <= holder.clientWidth;
-        scroller.scrollLeft = holder.scrollLeft;
+        spacer.style.width = (holder.scrollWidth + scroller.clientWidth - holder.clientWidth) + 'px';
+        syncPosition();
     }
-    scroller.addEventListener('scroll', function () { holder.scrollLeft = scroller.scrollLeft; });
-    holder.addEventListener('scroll', function () { scroller.scrollLeft = holder.scrollLeft; });
+    scroller.addEventListener('scroll', function () {
+        if (ignoredTopScroll !== null && scroller.scrollLeft === ignoredTopScroll) {
+            ignoredTopScroll = null;
+            return;
+        }
+        ignoredTopScroll = null;
+        holder.scrollLeft = scroller.scrollLeft;
+    });
+    holder.addEventListener('scroll', syncPosition);
     table.on('renderComplete', syncWidth);
     table.on('columnResized', syncWidth);
     var observer = new ResizeObserver(syncWidth);

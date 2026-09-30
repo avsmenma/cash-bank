@@ -17,12 +17,7 @@
     @endphp
     @push('styles')
         <style>
-            /* Tampilan kompak: setara zoom browser 80%, agar seluruh tabel
-               terlihat dalam satu layar pada web size 100% (samakan dgn VA Dashboard) */
-            .content-header,
-            section.content {
-                zoom: 0.8;
-            }
+            #tableDetailVA { font-size: 13px; }
 
             /* Tabulator — header & baris total navy, zebra, teks wrap */
             #tableDetailVA .tabulator-header,
@@ -51,6 +46,12 @@
                 white-space: normal;
                 overflow-wrap: break-word;
                 border-right: 1px solid #C9D4DF !important;
+            }
+            #tableDetailVA .va-description {
+                white-space: normal;
+                word-break: normal;
+                overflow-wrap: anywhere;
+                line-height: 1.45;
             }
 
             #tableDetailVA .tabulator-row {
@@ -273,13 +274,11 @@
                 function fmtRupiah(v) { return Math.round(v || 0).toLocaleString('id-ID'); }
                 function moneyCalcFormatter(cell) { return fmtRupiah(cell.getValue()); }
 
-                var userSized = !!localStorage.getItem('tabulator-cb-va-detail-columns');
-
                 var table = new Tabulator('#tableDetailVA', {
-                    persistence: { columns: ['width'] },
-                    persistenceID: 'cb-va-detail',
                     data: vaRows,
-                    layout: userSized ? 'fitData' : 'fitColumns',
+                    // Recalculate available space on every visit; old persisted widths
+                    // could leave Uraian narrow and unused space on wider screens.
+                    layout: 'fitColumns',
                     columnHeaderVertAlign: 'middle',
                     movableColumns: false,
                     columnDefaults: { headerSort: false, minWidth: 30, variableHeight: true },
@@ -300,13 +299,14 @@
                             title: 'Tanggal', field: 'tanggal', width: 135, hozAlign: 'center',
                             formatter: function (cell) { return fmtTanggal(cell.getValue()); }
                         },
-                        { title: 'Bank Tujuan', field: 'bank', width: 190 },
+                        { title: 'Bank Tujuan', field: 'bank', width: 160 },
                         {
                             title: 'Penerima/Dari', field: 'penerima', width: 150,
                             formatter: function (cell) { return cell.getValue() || '-'; }
                         },
                         {
-                            title: 'Uraian', field: 'uraian', widthGrow: 3,
+                            title: 'Uraian', field: 'uraian', minWidth: 280, widthGrow: 3,
+                            cssClass: 'va-description',
                             formatter: function (cell) { return cell.getValue() || '-'; }
                         },
                         {

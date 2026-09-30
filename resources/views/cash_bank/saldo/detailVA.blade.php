@@ -5,7 +5,9 @@
         $fromDashboard = request('from') === 'dashboard-bank';
         $returnPeriod = [];
         foreach (['tahun', 'bulan', 'tgl_dari', 'tgl_sampai'] as $key) {
-            $returnPeriod[$key] = request('return_' . $key, $initialPeriod[$key] ?? '');
+            $returnPeriod[$key] = request()->has('return_' . $key)
+                ? (request('return_' . $key) ?? '')
+                : ($initialPeriod[$key] ?? '');
         }
         $backUrl = $fromDashboard ? route('dashboard.bank.index', $returnPeriod) : route('daftarBank.index');
         $backLabel = $fromDashboard ? 'Saldo Kas & Bank' : 'Daftar VA';

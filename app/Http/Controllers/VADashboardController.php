@@ -272,9 +272,16 @@ class VADashboardController extends Controller
         // Filter bulan/tahun — saldo tetap kumulatif sejak awal (dihitung sebelum filter)
         $bulan = $request->input('bulan'); // '01'..'12'
         $tahun = $request->input('tahun'); // '2026'
-        if ($bulan || $tahun) {
-            $transactions = $transactions->filter(function ($t) use ($bulan, $tahun) {
+        $dates = $request->validate(['tgl_dari' => 'nullable|date_format:Y-m-d', 'tgl_sampai' => 'nullable|date_format:Y-m-d']);
+        $dari = $dates['tgl_dari'] ?? null;
+        $sampai = $dates['tgl_sampai'] ?? null;
+        if ($bulan || $tahun || $dari || $sampai) {
+            $transactions = $transactions->filter(function ($t) use ($bulan, $tahun, $dari, $sampai) {
                 $tgl = (string) $t['tanggal'];
+                if ($dari || $sampai) {
+                    $date = substr($tgl, 0, 10);
+                    return $date !== '' && (!$dari || $date >= $dari) && (!$sampai || $date <= $sampai);
+                }
                 if ($tahun && substr($tgl, 0, 4) !== $tahun) return false;
                 if ($bulan && substr($tgl, 5, 2) !== $bulan) return false;
                 return true;
@@ -286,7 +293,9 @@ class VADashboardController extends Controller
             '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
             '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
         ];
-        if ($bulan && $tahun) {
+        if ($dari || $sampai) {
+            $periode = 'Periode: ' . ($dari ? date('d-m-Y', strtotime($dari)) : 'Awal transaksi') . ' s/d ' . ($sampai ? date('d-m-Y', strtotime($sampai)) : 'Terakhir');
+        } elseif ($bulan && $tahun) {
             $periode = 'Periode: ' . ($bulanNama[$bulan] ?? $bulan) . ' ' . $tahun;
         } elseif ($bulan) {
             $periode = 'Periode: ' . ($bulanNama[$bulan] ?? $bulan) . ' (semua tahun)';

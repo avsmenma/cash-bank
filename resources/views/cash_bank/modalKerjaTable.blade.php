@@ -312,12 +312,15 @@
     }
 @endphp
 
+@include('cash_bank.partials.report-scan')
 <div id="mk-table"></div>
 
 <script>
 (function () {
     var mkRows = @json($mkRows);
     var mkCols = @json($mkCols);
+
+    var monthNames = @json($bulanAktif);
 
     // Format ala fmtMK: item 0 -> '-', lainnya 0 -> '0'; negatif -> (x);
     // saldo negatif diberi warna merah; string ('-') diteruskan apa adanya.
@@ -345,6 +348,9 @@
                 c.hozAlign = 'right';
                 c.headerHozAlign = 'center';
                 c.widthGrow = 1;
+                c.minWidth = 130;
+                c.width = Math.max(c.width || 130, 130);
+                c.visible = !/^m\d+_[pdb][1-4]$/.test(c.field);
             }
         });
     }
@@ -375,7 +381,7 @@
             data: mkRows,
             columns: mkCols,
             layout: userSized ? 'fitData' : 'fitColumns',
-            height: 'calc(100vh - 185px)',
+            height: '60vh',
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
             columnDefaults: { headerSort: false, minWidth: 30, variableHeight: true },   // bebas dikecilkan; teks wrap, tinggi baris menyesuaikan
@@ -385,6 +391,7 @@
 
         // Aktifkan tahan-klik geser horizontal (handler global layouts/index)
         table.on('tableBuilt', function () {
+            window.cbReportScan(table, {months: Object.keys(monthNames).map(function (id) { return {id:id, label:monthNames[id]}; }), weekPattern: /^m\d+_[pdb][1-4]$/});
             var holder = el.querySelector('.tabulator-tableholder');
             if (holder) holder.classList.add('drag-scroll');
         });

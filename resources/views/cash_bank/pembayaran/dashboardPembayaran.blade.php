@@ -207,6 +207,7 @@
     foreach ($dpMonths as $i => $b) $dpMonthTitles[] = ['i' => $i, 'title' => ucfirst($b)];
 @endphp
 
+@include('cash_bank.partials.report-scan')
 <div class="table-responsive">
     <div id="dp-table"></div>
 </div>
@@ -235,7 +236,8 @@
             title: title,
             field: field,
             hozAlign: 'right',
-            width: minW || 100,
+            width: minW || 130,
+            minWidth: minW || 130,
             widthGrow: 1,
             formatter: dpFmt,
             headerHozAlign: 'center'
@@ -281,18 +283,21 @@
         // adanya (fitData); bila belum, kolom otomatis mengisi lebar wadah.
         var userSized = !!localStorage.getItem('tabulator-cb-dashboard-pembayaran-columns');
 
-        new Tabulator(el, {
+        var table = new Tabulator(el, {
             persistence: { columns: ['width'] },   // lebar kolom tarikan user tersimpan permanen (localStorage)
             persistenceID: 'cb-dashboard-pembayaran',
             data: dpRows,
             columns: buildColumns(),
             layout: userSized ? 'fitData' : 'fitColumns',
-            height: '68vh',
+            height: '60vh',
             columnHeaderVertAlign: 'middle',
             movableColumns: false,
             columnDefaults: { headerSort: false, minWidth: 30, variableHeight: true },   // bebas dikecilkan; teks wrap, tinggi baris menyesuaikan
             rowFormatter: dpRowFormatter,
             placeholder: 'Tidak ada data'
+        });
+        table.on('tableBuilt', function () {
+            window.cbReportScan(table, {months: dpMonths.map(function (m) { return {id:m.i, label:m.title}; })});
         });
     }
 

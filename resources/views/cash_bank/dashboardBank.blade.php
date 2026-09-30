@@ -670,7 +670,10 @@
     // Data VA sudah dirender server-side — tak perlu AJAX terpisah.
     var VA_DATA = @json($bankVAList->values());
     var BASE = "{{ url('/daftarBank') }}";
-    var detailPeriod = @json(['tahun' => $tahun, 'bulan' => $bulan, 'tgl_dari' => $tglDari, 'tgl_sampai' => $tglSampai]);
+    @php
+        $detailPeriod = ['tahun' => $tahun, 'bulan' => $bulan, 'tgl_dari' => $tglDari, 'tgl_sampai' => $tglSampai];
+    @endphp
+    var detailPeriod = @json($detailPeriod);
     var detailQuery = new URLSearchParams({from: 'dashboard-bank'});
     Object.keys(detailPeriod).forEach(function (key) {
         detailQuery.set('return_' + key, detailPeriod[key] || '');
@@ -681,7 +684,7 @@
         detailQuery.delete('tgl_dari');
         detailQuery.set('tgl_sampai', detailPeriod.tgl_dari);
     }
-    if (detailPeriod.bulan && !detailPeriod.tahun) detailQuery.set('tahun', @json((int) date('Y')));
+    if (detailPeriod.bulan && !detailPeriod.tahun) detailQuery.set('tahun', @json($tahunIni));
     function csrf() { return $('meta[name="csrf-token"]').attr('content'); }
 
     function esc(s) {

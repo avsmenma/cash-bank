@@ -1,5 +1,18 @@
 @extends("layouts/index")
 @section('content')
+    @php
+        $initialPeriod = request()->only(['tahun', 'bulan', 'tgl_dari', 'tgl_sampai']);
+        $fromDashboard = request('from') === 'dashboard-bank';
+        $returnPeriod = [];
+        foreach (['tahun', 'bulan', 'tgl_dari', 'tgl_sampai'] as $key) {
+            $returnPeriod[$key] = request('return_' . $key, $initialPeriod[$key] ?? '');
+        }
+        $backUrl = $fromDashboard ? route('dashboard.bank.index', $returnPeriod) : route('daftarBank.index');
+        $backLabel = $fromDashboard ? 'Saldo Kas & Bank' : 'Daftar VA';
+        if (!empty($initialPeriod['tahun']) && is_scalar($initialPeriod['tahun'])) {
+            $years = $years->push((string) $initialPeriod['tahun'])->unique()->sortDesc()->values();
+        }
+    @endphp
     @push('styles')
         <style>
             /* Tampilan kompak: setara zoom browser 80%, agar seluruh tabel
@@ -87,7 +100,7 @@
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
                         <li class="breadcrumb-item"><a href="{{ route('dashboard.index') }}">Home</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('daftarBank.index') }}">Daftar VA</a></li>
+                        <li class="breadcrumb-item"><a href="{{ $backUrl }}">{{ $backLabel }}</a></li>
                         <li class="breadcrumb-item active">Detail</li>
                     </ol>
                 </div>
@@ -111,7 +124,7 @@
                                     </h4>
                                     <p class="text-muted mb-0">Buku Pembantu (Ledger) — Gabungan Bank Masuk & Bank Keluar</p>
                                 </div>
-                                <a href="{{ route('daftarBank.index') }}" class="btn btn-secondary">
+                                <a href="{{ $backUrl }}" class="btn btn-secondary">
                                     <i class="fas fa-arrow-left"></i> Kembali
                                 </a>
                             </div>
@@ -148,6 +161,17 @@
                             </div>
                         </div>
 
+                        <div class="d-flex align-items-end flex-wrap mb-2">
+                            <div class="mr-3 mb-2">
+                                <label for="filterDari" class="small mb-1">Dari tanggal</label>
+                                <input type="date" id="filterDari" class="form-control form-control-sm">
+                            </div>
+                            <div class="mr-3 mb-2">
+                                <label for="filterSampai" class="small mb-1">Sampai tanggal</label>
+                                <input type="date" id="filterSampai" class="form-control form-control-sm">
+                            </div>
+                        </div>
+                        <p id="vaPeriodLabel" class="small text-muted" role="status"></p>
                         <div class="row">
                             <div class="col-12">
                                 <div id="tableDetailVA"></div>
@@ -193,6 +217,16 @@
                             </select>
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="exportDari">Dari tanggal</label>
+                            <input type="date" id="exportDari" class="form-control">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="exportSampai">Sampai tanggal</label>
+                            <input type="date" id="exportSampai" class="form-control">
+                        </div>
+                    </div>
                     <div class="alert alert-info py-2 mb-0" id="exportCountInfo">
                         <i class="fas fa-info-circle mr-1"></i>
                         <span id="exportCountText">-</span>
@@ -213,6 +247,11 @@
             $(function () {
                 var vaName = @json($va->nama_tujuan);
                 var vaRows = @json($transactions->values());
+                var initialPeriod = @json($initialPeriod);
+                $('#filterTahun').val(initialPeriod.tahun || '');
+                $('#filterBulan').val(initialPeriod.bulan ? String(initialPeriod.bulan).padStart(2, '0') : '');
+                $('#filterDari').val(initialPeriod.tgl_dari || '');
+                $('#filterSampai').val(initialPeriod.tgl_sampai || '');
                 vaRows.forEach(function (r, i) {
                     r.no = i + 1;
                     r.bank = vaName;
@@ -321,13 +360,10 @@
                 table.on('columnResized', function () { setTimeout(mergeTotalRow, 0); });
 
                 function applyFilters() {
+                    $('#vaPeriodLabel').text('Periode transaksi: ' + periodLabel('filter') + '. Saldo berjalan dihitung kumulatif sejak awal transaksi.');
                     table.setFilter(function (data) {
-                        var bulan = $('#filterBulan').val();
-                        var tahun = $('#filterTahun').val();
                         var q = ($('#searchVA').val() || '').toLowerCase();
-                        var t = String(data.tanggal || '');
-                        if (bulan && t.substr(5, 2) !== bulan) return false;
-                        if (tahun && t.substr(0, 4) !== tahun) return false;
+                        if (!matchesPeriod(data, 'filter')) return false;
                         if (q) {
                             var hay = [
                                 fmtTanggal(data.tanggal), data.penerima || '', data.uraian || '', vaName,
@@ -338,23 +374,31 @@
                         return true;
                     });
                 }
-                $('#filterBulan, #filterTahun').on('change', applyFilters);
+                function matchesPeriod(data, prefix) {
+                    var t = String(data.tanggal || '').substr(0, 10);
+                    var dari = $('#' + prefix + 'Dari').val(), sampai = $('#' + prefix + 'Sampai').val();
+                    if (dari || sampai) return !!t && (!dari || t >= dari) && (!sampai || t <= sampai);
+                    var bulan = $('#' + prefix + 'Bulan').val(), tahun = $('#' + prefix + 'Tahun').val();
+                    return (!bulan || t.substr(5, 2) === bulan) && (!tahun || t.substr(0, 4) === tahun);
+                }
+                function periodLabel(prefix) {
+                    var dari = $('#' + prefix + 'Dari').val(), sampai = $('#' + prefix + 'Sampai').val();
+                    if (dari || sampai) return (dari ? fmtTanggal(dari) : 'Awal transaksi') + ' s/d ' + (sampai ? fmtTanggal(sampai) : 'Terakhir');
+                    var bulan = $('#' + prefix + 'Bulan').val(), tahun = $('#' + prefix + 'Tahun').val();
+                    return [bulan ? BULAN_NAMA[bulan] : '', tahun].filter(Boolean).join(' ') || 'Semua periode';
+                }
+                table.on('tableBuilt', applyFilters);
+                $('#filterBulan, #filterTahun').on('change', function () { $('#filterDari, #filterSampai').val(''); applyFilters(); });
+                $('#filterDari, #filterSampai').on('change', function () { $('#filterBulan, #filterTahun').val(''); applyFilters(); });
                 $('#searchVA').on('keyup', applyFilters);
 
                 function updateExportCount() {
-                    var bulan = $('#exportBulan').val();
-                    var tahun = $('#exportTahun').val();
                     var count = 0;
                     vaRows.forEach(function (r) {
-                        var t = String(r.tanggal || '');
-                        if (bulan && t.substr(5, 2) !== bulan) return;
-                        if (tahun && t.substr(0, 4) !== tahun) return;
+                        if (!matchesPeriod(r, 'export')) return;
                         count++;
                     });
-                    var label = [];
-                    if (bulan) label.push($('#exportBulan option:selected').text());
-                    if (tahun) label.push(tahun);
-                    var periode = label.length ? label.join(' ') : 'semua periode';
+                    var periode = periodLabel('export');
                     $('#exportCountText').text(count.toLocaleString('id-ID') + ' transaksi (' + periode + ') akan diexport.');
                     $('#btnConfirmExportVA').prop('disabled', count === 0);
                     $('#exportCountInfo').toggleClass('alert-info', count > 0).toggleClass('alert-warning', count === 0);
@@ -364,10 +408,13 @@
                 $(document).on('click', '#btnDownloadExcel', function () {
                     $('#exportBulan').val($('#filterBulan').val());
                     $('#exportTahun').val($('#filterTahun').val());
+                    $('#exportDari').val($('#filterDari').val());
+                    $('#exportSampai').val($('#filterSampai').val());
                     updateExportCount();
                     $('#modalExportVA').modal('show');
                 });
-                $('#exportBulan, #exportTahun').on('change', updateExportCount);
+                $('#exportBulan, #exportTahun').on('change', function () { $('#exportDari, #exportSampai').val(''); updateExportCount(); });
+                $('#exportDari, #exportSampai').on('change', function () { $('#exportBulan, #exportTahun').val(''); updateExportCount(); });
 
                 $('#btnConfirmExportVA').on('click', function () {
                     var params = new URLSearchParams();
@@ -375,6 +422,8 @@
                     var tahun = $('#exportTahun').val();
                     if (bulan) params.set('bulan', bulan);
                     if (tahun) params.set('tahun', tahun);
+                    if ($('#exportDari').val()) params.set('tgl_dari', $('#exportDari').val());
+                    if ($('#exportSampai').val()) params.set('tgl_sampai', $('#exportSampai').val());
                     var qs = params.toString();
                     window.location.href = '{{ route('daftarBank.exportDetail', $va->id_bank_tujuan) }}' + (qs ? '?' + qs : '');
                     $('#modalExportVA').modal('hide');

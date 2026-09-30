@@ -109,7 +109,7 @@
         flex-shrink: 0;
     }
     .rk-level1.collapsed .collapse-icon {
-        transform: rotate(-90deg);
+        transform: none;
     }
 
     /* Level 2 — Sub Kategori */
@@ -202,7 +202,15 @@
 
     /* Table scroll */
     .tbl-scroll-rk {
-        overflow-x: auto;
+        overflow: auto;
+        max-height: 60vh;
+    }
+    .tbl-ringkasan td, .tbl-ringkasan thead th { font-size: 13px; }
+    .tbl-ringkasan tr > :first-child { position: sticky; left: 0; background-color: inherit; z-index: 2; }
+    .tbl-ringkasan thead th:first-child { z-index: 11; }
+    .rk-group-toggle { border: 0; background: transparent; color: inherit; font: inherit; text-align: left; padding: 4px 0; }
+    @media (max-width: 767px) {
+        .tbl-ringkasan tr > :first-child { min-width:180px !important; width:180px; max-width:180px; white-space:normal; }
     }
 
     /* Empty state */
@@ -287,7 +295,12 @@
         </span>
       </div>
 
-      <div class="tbl-scroll-rk">
+      <div class="px-3 pb-2 d-flex flex-wrap align-items-center" style="gap:8px;">
+        <button type="button" class="btn btn-sm btn-outline-primary" id="rk-expand-all">Buka semua kelompok</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="rk-collapse-all">Ringkas semua kelompok</button>
+        <span class="text-muted small">Total tetap mencakup seluruh rincian periode terpilih.</span>
+      </div>
+      <div class="tbl-scroll-rk" tabindex="0" role="region" aria-label="Ringkasan pembayaran, dapat digulir">
         @if(count($hierarki) > 0)
         @php
           $detailUrl = function (array $params = [], $bulan = null) use ($tahun, $dariBulan, $sampaiBulan) {
@@ -318,10 +331,12 @@
               @php $katIndex++; @endphp
 
               {{-- LEVEL 1: Kategori --}}
-              <tr class="rk-level1" data-toggle-group="kat-{{ $katId }}">
+              <tr class="rk-level1 collapsed" data-toggle-group="kat-{{ $katId }}">
                 <td>
-                  <span class="collapse-icon"><i class="fas fa-chevron-down" style="font-size:8px;"></i></span>
+                  <button type="button" class="rk-group-toggle" aria-expanded="false">
+                  <span class="collapse-icon"><i class="fas fa-chevron-right" style="font-size:8px;"></i></span>
                   {{ $katIndex }}.&nbsp;&nbsp;{{ $kat['nama'] }}
+                  </button>
                 </td>
                 @foreach($bulanAktif as $bNum => $bName)
                   <td class="rk-nilai" style="color:#0d3b6e;">
@@ -482,17 +497,28 @@
 <script>
 $(document).ready(function() {
     // COLLAPSE / EXPAND per Kriteria
-    $(document).on('click', '.rk-level1', function() {
-        const group = $(this).data('toggle-group');
+    $('.rk-child').addClass('rk-hidden');
+    $('#rk-expand-all, #rk-collapse-all').on('click', function () {
+        const collapsed = this.id === 'rk-collapse-all';
+        $('.rk-level1').toggleClass('collapsed', collapsed);
+        $('.rk-child').toggleClass('rk-hidden', collapsed);
+        $('.rk-group-toggle').attr('aria-expanded', String(!collapsed));
+        $('.collapse-icon i').toggleClass('fa-chevron-right', collapsed).toggleClass('fa-chevron-down', !collapsed);
+    });
+    $(document).on('click', '.rk-group-toggle', function() {
+        const $group = $(this).closest('.rk-level1');
+        const group = $group.data('toggle-group');
         const $children = $('[data-parent="' + group + '"]');
         const $icon = $(this).find('.collapse-icon i');
 
-        if ($(this).hasClass('collapsed')) {
-            $(this).removeClass('collapsed');
+        if ($group.hasClass('collapsed')) {
+            $group.removeClass('collapsed');
+            $(this).attr('aria-expanded', 'true');
             $children.removeClass('rk-hidden');
             $icon.removeClass('fa-chevron-right').addClass('fa-chevron-down');
         } else {
-            $(this).addClass('collapsed');
+            $group.addClass('collapsed');
+            $(this).attr('aria-expanded', 'false');
             $children.addClass('rk-hidden');
             $icon.removeClass('fa-chevron-down').addClass('fa-chevron-right');
         }

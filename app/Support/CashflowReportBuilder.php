@@ -175,12 +175,13 @@ class CashflowReportBuilder
     }
 
     /**
-     * Ringkasan angka seri global untuk kartu statistik di atas tabel.
+     * Ringkasan angka seri global atau unit tertentu untuk kartu statistik di atas tabel.
      *
      * @param  array<int,array<string,mixed>>  $rows  keluaran build()/buildMulti()
+     * @param  string  $seriesKey  kunci seri ('global', 'regional_office', 'u12', dsb.)
      * @return array<string,float>
      */
-    public static function summarize(array $rows): array
+    public static function summarize(array $rows, string $seriesKey = self::SERI_GLOBAL): array
     {
         $penerimaan = 0.0;
         $penerimaanLalu = 0.0;
@@ -190,15 +191,23 @@ class CashflowReportBuilder
         $bersihLalu = 0.0;
 
         foreach ($rows as $r) {
+            $curr = isset($r['values'][$seriesKey]['current'])
+                ? (float) $r['values'][$seriesKey]['current']
+                : ($seriesKey === self::SERI_GLOBAL ? (float) ($r['current'] ?? 0) : 0.0);
+
+            $prev = isset($r['values'][$seriesKey]['previous'])
+                ? (float) $r['values'][$seriesKey]['previous']
+                : ($seriesKey === self::SERI_GLOBAL ? (float) ($r['previous'] ?? 0) : 0.0);
+
             if ($r['type'] === 'subtotal' && $r['uraian'] === 'Total Penerimaan') {
-                $penerimaan += $r['current'];
-                $penerimaanLalu += $r['previous'];
+                $penerimaan += $curr;
+                $penerimaanLalu += $prev;
             } elseif ($r['type'] === 'subtotal' && $r['uraian'] === 'Total Pengeluaran') {
-                $pengeluaran += $r['current'];
-                $pengeluaranLalu += $r['previous'];
+                $pengeluaran += $curr;
+                $pengeluaranLalu += $prev;
             } elseif ($r['type'] === 'net') {
-                $bersih = $r['current'];
-                $bersihLalu = $r['previous'];
+                $bersih = $curr;
+                $bersihLalu = $prev;
             }
         }
 

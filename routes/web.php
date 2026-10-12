@@ -74,6 +74,8 @@ Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
     Route::post('/dashboard-bank/import-sap', [dashboardController::class, 'bankImportSap'])
         ->name('dashboard.bank.import-sap');
 
+    Route::get('/dashboard-bank-v2', [dashboardController::class, 'bankV2'])
+        ->name('dashboard.bank-v2.index');
 });
 
 Route::group(['middleware' => ['auth', 'check_role:vendor']], function () {

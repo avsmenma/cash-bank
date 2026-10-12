@@ -59,15 +59,15 @@
 
                         @include('cash_bank.partials.kop-laporan', [
                             'judul' => 'Laporan Arus Kas',
-                            'unit' => 'Seluruh Unit & Kebun — ' . $unitColumns->count() . ' unit',
+                            'unit' => $selectedUnitName ? 'Unit: ' . $selectedUnitName : ('Seluruh Unit & Kebun — ' . $allUnits->count() . ' unit'),
                             'periode' => 'Periode ' . $labelPeriode . ($showTahunLalu ? ' · pembanding Tahun ' . $prevYear : ''),
                         ])
 
-                        {{-- Kartu ringkasan memakai angka global (gabungan seluruh unit) --}}
+                        {{-- Kartu ringkasan memakai angka global atau unit yang dipilih --}}
                         <div class="row mb-3">
                             <div class="col-md-4 mb-2">
                                 <div class="cf-kartu masuk">
-                                    <div class="cf-kartu-label">Total Penerimaan (Global)</div>
+                                    <div class="cf-kartu-label">Total Penerimaan ({{ $selectedUnitName ?: 'Global' }})</div>
                                     <div class="cf-kartu-nilai" id="kartuPenerimaan">-</div>
                                     @if($showTahunLalu)
                                         <div class="cf-kartu-banding">{{ $prevYear }}: <span id="kartuPenerimaanLalu">-</span></div>
@@ -76,7 +76,7 @@
                             </div>
                             <div class="col-md-4 mb-2">
                                 <div class="cf-kartu keluar">
-                                    <div class="cf-kartu-label">Total Pengeluaran (Global)</div>
+                                    <div class="cf-kartu-label">Total Pengeluaran ({{ $selectedUnitName ?: 'Global' }})</div>
                                     <div class="cf-kartu-nilai" id="kartuPengeluaran">-</div>
                                     @if($showTahunLalu)
                                         <div class="cf-kartu-banding">{{ $prevYear }}: <span id="kartuPengeluaranLalu">-</span></div>
@@ -85,7 +85,7 @@
                             </div>
                             <div class="col-md-4 mb-2">
                                 <div class="cf-kartu bersih">
-                                    <div class="cf-kartu-label">Kenaikan (Penurunan) Arus Kas Bersih</div>
+                                    <div class="cf-kartu-label">Kenaikan (Penurunan) Arus Kas Bersih ({{ $selectedUnitName ?: 'Global' }})</div>
                                     <div class="cf-kartu-nilai" id="kartuBersih">-</div>
                                     @if($showTahunLalu)
                                         <div class="cf-kartu-banding">{{ $prevYear }}: <span id="kartuBersihLalu">-</span></div>
@@ -125,36 +125,40 @@
                                             </select>
                                         </div>
 
-                                        {{-- Dari Tanggal --}}
-                                        <div style="min-width: 145px;">
+                                        {{-- Rentang Tanggal (Fitur Tanggal dijadikan 1 dengan Range) --}}
+                                        <div style="min-width: 220px;">
                                             <label class="mb-1 small font-weight-bold text-secondary">
-                                                <i class="fas fa-calendar-day mr-1"></i>Dari Tanggal
+                                                <i class="fas fa-calendar-day mr-1 text-primary"></i>Rentang Tanggal
                                             </label>
                                             <div class="input-group input-group-sm">
-                                                <input type="text" name="tgl_dari" id="filterTglDari" class="form-control form-control-sm bg-white"
-                                                       placeholder="dd-mm-yyyy"
-                                                       value="{{ !empty($tglDari) ? \Carbon\Carbon::parse($tglDari)->format('d-m-Y') : '' }}"
+                                                <input type="text" name="tanggal_range" id="filterTanggalRange" class="form-control form-control-sm bg-white"
+                                                       placeholder="dd-mm-yyyy s/d dd-mm-yyyy"
+                                                       value="{{ $tanggalRangeVal }}"
                                                        autocomplete="off">
                                                 <div class="input-group-append">
-                                                    <span class="input-group-text bg-light"><i class="fas fa-calendar-alt text-secondary"></i></span>
+                                                    <span class="input-group-text bg-light"><i class="fas fa-calendar-alt text-primary"></i></span>
                                                 </div>
                                             </div>
+                                            <input type="hidden" name="tgl_dari" id="filterTglDari" value="{{ !empty($tglDari) ? \Carbon\Carbon::parse($tglDari)->format('d-m-Y') : '' }}">
+                                            <input type="hidden" name="tgl_sampai" id="filterTglSampai" value="{{ !empty($tglSampai) ? \Carbon\Carbon::parse($tglSampai)->format('d-m-Y') : '' }}">
                                         </div>
 
-                                        {{-- Sampai Dengan --}}
-                                        <div style="min-width: 145px;">
+                                        {{-- Filter Unit --}}
+                                        <div style="min-width: 190px;">
                                             <label class="mb-1 small font-weight-bold text-secondary">
-                                                <i class="fas fa-calendar-check mr-1 text-primary"></i>Sampai Dengan (s/d)
+                                                <i class="fas fa-building mr-1"></i>Unit
                                             </label>
-                                            <div class="input-group input-group-sm">
-                                                <input type="text" name="tgl_sampai" id="filterTglSampai" class="form-control form-control-sm bg-white"
-                                                       placeholder="dd-mm-yyyy"
-                                                       value="{{ !empty($tglSampai) ? \Carbon\Carbon::parse($tglSampai)->format('d-m-Y') : '' }}"
-                                                       autocomplete="off">
-                                                <div class="input-group-append">
-                                                    <span class="input-group-text bg-light"><i class="fas fa-calendar-check text-primary"></i></span>
-                                                </div>
-                                            </div>
+                                            <select name="unit" id="filterUnit" class="form-control form-control-sm">
+                                                <option value="all" {{ ($selectedUnit === 'all' || empty($selectedUnit)) ? 'selected' : '' }}>Semua Unit (Global)</option>
+                                                <option value="ro" {{ $selectedUnit === 'ro' ? 'selected' : '' }}>Regional Office (Kantor Direksi)</option>
+                                                <optgroup label="Unit / Kebun">
+                                                    @foreach ($allUnits as $u)
+                                                        <option value="{{ $u['id'] }}" {{ (string)$selectedUnit === (string)$u['id'] ? 'selected' : '' }}>
+                                                            {{ $u['nama'] }}
+                                                        </option>
+                                                    @endforeach
+                                                </optgroup>
+                                            </select>
                                         </div>
 
                                         {{-- Checkboxes --}}
@@ -189,11 +193,14 @@
                                 </form>
                             </div>
 
-                            @if(!empty($tglDari) || !empty($tglSampai) || !empty($selectedBulan) || $showEmpty || $showTahunLalu)
+                            @if(!empty($tglDari) || !empty($tglSampai) || !empty($selectedBulan) || ($selectedUnit !== 'all' && !empty($selectedUnit)) || $showEmpty || $showTahunLalu)
                             <div class="card-footer py-1 px-3 bg-light d-flex align-items-center justify-content-between" style="font-size: 12px;">
                                 <div>
                                     <i class="fas fa-info-circle text-primary mr-1"></i>
                                     Menampilkan laporan arus kas: <strong class="text-dark">{{ $labelPeriode }}</strong>
+                                    @if($selectedUnitName)
+                                        · Unit: <strong class="text-dark">{{ $selectedUnitName }}</strong>
+                                    @endif
                                 </div>
                                 <a href="{{ route('bank-cashflow.index') }}" class="text-danger font-weight-bold" style="text-decoration: none;">
                                     <i class="fas fa-times-circle mr-1"></i>Hapus Filter
@@ -204,11 +211,18 @@
 
                         <div class="row">
                             <div class="col-12">
+                                @if($unitColumns->count() > 1)
                                 <div class="cf-petunjuk-geser mb-1">
                                     <i class="fas fa-arrows-alt-h mr-1"></i>
                                     Geser tabel ke kanan untuk melihat rincian tiap unit/kebun.
                                     Kolom Kode, Reference, Uraian, Realisasi Reg5, dan Regional Office tetap terlihat.
                                 </div>
+                                @else
+                                <div class="cf-petunjuk-geser mb-1">
+                                    <i class="fas fa-info-circle mr-1 text-primary"></i>
+                                    Menampilkan arus kas untuk <strong>{{ $selectedUnitName ?? 'Unit Terpilih' }}</strong>. Kolom Realisasi Reg5 disertakan sebagai pembanding konsolidasi.
+                                </div>
+                                @endif
                                 @include('cash_bank.partials.report-scan')
                                 <div id="tableCashFlowBank" class="cf-tabel"></div>
                             </div>
@@ -307,6 +321,8 @@
                 var selectedBulan = @json($selectedBulan);
                 var tglDariVal = @json(!empty($tglDari) ? \Carbon\Carbon::parse($tglDari)->format('d-m-Y') : '');
                 var tglSampaiVal = @json(!empty($tglSampai) ? \Carbon\Carbon::parse($tglSampai)->format('d-m-Y') : '');
+                var selectedUnit = @json($selectedUnit ?? 'all');
+                var allUnits = @json($allUnits ?? []);
                 var isAdmin = {{ auth()->check() && auth()->user()->role === 'admin' ? 'true' : 'false' }};
 
                 // Format baku laporan: pemisah ribuan titik, minus di BELAKANG angka,
@@ -378,7 +394,7 @@
                     if (seriesKey === 'regional_office') {
                         seriesTitle = "Regional Office";
                     } else if (seriesKey.startsWith('u')) {
-                        var uFound = unitColumns.find(function (u) { return u.key === seriesKey; });
+                        var uFound = allUnits.find(function (u) { return u.key === seriesKey; });
                         seriesTitle = uFound ? uFound.nama : ("Unit " + seriesKey);
                     }
 
@@ -456,14 +472,17 @@
                         headerHozAlign: "center",
                         frozen: true,
                         columns: globalSubColumns
-                    },
-                    {
-                        title: "Regional Office",
-                        headerHozAlign: "center",
-                        frozen: true,
-                        columns: regionalOfficeSubColumns
                     }
                 ];
+
+                if (selectedUnit === 'all' || selectedUnit === 'ro' || !selectedUnit) {
+                    kolom.push({
+                        title: "Regional Office",
+                        headerHozAlign: "center",
+                        frozen: (selectedUnit === 'all' || !selectedUnit),
+                        columns: regionalOfficeSubColumns
+                    });
+                }
 
                 unitColumns.forEach(function (unit) {
                     var unitSubColumns = [
@@ -558,6 +577,34 @@
                         url.searchParams.delete('bulan');
                     }
 
+                    var tglRange = $('#filterTanggalRange').val();
+                    if (tglRange) {
+                        url.searchParams.set('tanggal_range', tglRange);
+                    } else {
+                        url.searchParams.delete('tanggal_range');
+                    }
+
+                    var tglDari = $('#filterTglDari').val();
+                    if (tglDari) {
+                        url.searchParams.set('tgl_dari', tglDari);
+                    } else {
+                        url.searchParams.delete('tgl_dari');
+                    }
+
+                    var tglSampai = $('#filterTglSampai').val();
+                    if (tglSampai) {
+                        url.searchParams.set('tgl_sampai', tglSampai);
+                    } else {
+                        url.searchParams.delete('tgl_sampai');
+                    }
+
+                    var unit = $('#filterUnit').val();
+                    if (unit && unit !== 'all') {
+                        url.searchParams.set('unit', unit);
+                    } else {
+                        url.searchParams.delete('unit');
+                    }
+
                     if ($('#filterSemua').is(':checked')) {
                         url.searchParams.set('semua', 1);
                     } else {
@@ -573,17 +620,39 @@
                     window.location.href = url.toString();
                 }
 
-                // ── Inisialisasi Flatpickr Tanggal (dd-mm-yyyy) ──
-                var fpDari = flatpickr("#filterTglDari", {
+                // ── Inisialisasi Flatpickr Rentang Tanggal (dd-mm-yyyy s/d dd-mm-yyyy) ──
+                var fpRange = flatpickr("#filterTanggalRange", {
+                    mode: "range",
                     dateFormat: "d-m-Y",
+                    conjunction: " s/d ",
                     allowInput: true,
-                    locale: "id"
-                });
-
-                var fpSampai = flatpickr("#filterTglSampai", {
-                    dateFormat: "d-m-Y",
-                    allowInput: true,
-                    locale: "id"
+                    locale: {
+                        firstDayOfWeek: 1,
+                        rangeSeparator: " s/d ",
+                        weekdays: {
+                            shorthand: ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"],
+                            longhand: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
+                        },
+                        months: {
+                            shorthand: ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"],
+                            longhand: ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+                        }
+                    },
+                    onChange: function (selectedDates, dateStr, instance) {
+                        if (selectedDates.length === 2) {
+                            var d1 = instance.formatDate(selectedDates[0], "d-m-Y");
+                            var d2 = instance.formatDate(selectedDates[1], "d-m-Y");
+                            $('#filterTglDari').val(d1);
+                            $('#filterTglSampai').val(d2);
+                        } else if (selectedDates.length === 1) {
+                            var d1 = instance.formatDate(selectedDates[0], "d-m-Y");
+                            $('#filterTglDari').val(d1);
+                            $('#filterTglSampai').val('');
+                        } else {
+                            $('#filterTglDari').val('');
+                            $('#filterTglSampai').val('');
+                        }
+                    }
                 });
 
                 function syncDates() {
@@ -595,11 +664,17 @@
                         var lastDay = new Date(y, m, 0).getDate();
                         var padM = String(m).padStart(2, '0');
                         var padLastDay = String(lastDay).padStart(2, '0');
-                        fpDari.setDate('01-' + padM + '-' + y, true);
-                        fpSampai.setDate(padLastDay + '-' + padM + '-' + y, true);
+                        var d1 = '01-' + padM + '-' + y;
+                        var d2 = padLastDay + '-' + padM + '-' + y;
+                        fpRange.setDate([d1, d2], true);
+                        $('#filterTglDari').val(d1);
+                        $('#filterTglSampai').val(d2);
                     } else if (thn && !bln) {
-                        fpDari.setDate('01-01-' + thn, true);
-                        fpSampai.setDate('31-12-' + thn, true);
+                        var d1 = '01-01-' + thn;
+                        var d2 = '31-12-' + thn;
+                        fpRange.setDate([d1, d2], true);
+                        $('#filterTglDari').val(d1);
+                        $('#filterTglSampai').val(d2);
                     }
                 }
 

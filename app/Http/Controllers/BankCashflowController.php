@@ -59,9 +59,31 @@ class BankCashflowController extends Controller
         $tglDari = $parseDateInput($request->get('tgl_dari'));
         $tglSampai = $parseDateInput($request->get('tgl_sampai'));
 
+        $tanggalRange = $request->get('tanggal_range');
+        if (empty($tglDari) && empty($tglSampai) && !empty($tanggalRange)) {
+            $parts = preg_split('/\s+(?:s\/d|to|ke|-)\s+/i', trim($tanggalRange));
+            if (count($parts) >= 2) {
+                $tglDari = $parseDateInput($parts[0]);
+                $tglSampai = $parseDateInput($parts[1]);
+            } elseif (count($parts) === 1) {
+                $tglDari = $parseDateInput($parts[0]);
+                $tglSampai = $tglDari;
+            }
+        }
+
+        $tanggalRangeVal = '';
+        if (!empty($tglDari) && !empty($tglSampai)) {
+            $tanggalRangeVal = \Carbon\Carbon::parse($tglDari)->format('d-m-Y') . ' s/d ' . \Carbon\Carbon::parse($tglSampai)->format('d-m-Y');
+        } elseif (!empty($tglDari)) {
+            $tanggalRangeVal = \Carbon\Carbon::parse($tglDari)->format('d-m-Y');
+        } elseif (!empty($tglSampai)) {
+            $tanggalRangeVal = \Carbon\Carbon::parse($tglSampai)->format('d-m-Y');
+        }
+
         $defaultYear = !empty($tglSampai) ? (int) \Carbon\Carbon::parse($tglSampai)->year : $years[0];
         $selectedYear = (int) $request->get('tahun', $defaultYear);
         $selectedBulan = (string) $request->get('bulan', '');
+        $selectedUnit = (string) $request->get('unit', 'all');
         $showEmpty = $request->boolean('semua');
         $showTahunLalu = $request->boolean('tahun_lalu');
         $prevYear = $selectedYear - 1;
@@ -101,6 +123,29 @@ class BankCashflowController extends Controller
         $units = BankTujuan::whereIn('id_bank_tujuan', $unitIds)
             ->orderBy('nama_tujuan')
             ->get(['id_bank_tujuan', 'nama_tujuan']);
+
+        $allUnits = $units->map(function ($unit) {
+            // Hapus nomor VA dari nama unit, contoh: "81029155501 - RAREN" -> "RAREN"
+            $cleanName = trim(preg_replace('/^(?:VA\s*)?\d+\s*[-–—]\s*/i', '', $unit->nama_tujuan)) ?: $unit->nama_tujuan;
+            return [
+                'id' => (string) $unit->id_bank_tujuan,
+                'key' => 'u' . $unit->id_bank_tujuan,
+                'nama' => $cleanName,
+            ];
+        })->sortBy('nama')->values();
+
+        $selectedUnitName = null;
+        $selectedSeriesKey = CashflowReportBuilder::SERI_GLOBAL;
+        if ($selectedUnit === 'ro') {
+            $selectedUnitName = 'Regional Office';
+            $selectedSeriesKey = CashflowReportBuilder::SERI_REGIONAL_OFFICE;
+        } elseif ($selectedUnit !== 'all' && !empty($selectedUnit)) {
+            $unitFound = $allUnits->firstWhere('id', (string) $selectedUnit);
+            if ($unitFound) {
+                $selectedUnitName = $unitFound['nama'];
+                $selectedSeriesKey = $unitFound['key'];
+            }
+        }
 
         // Query agregasi arus kas dengan filter tanggal / periode
         $query = Cashflow::query();
@@ -173,16 +218,16 @@ class BankCashflowController extends Controller
 
         $references = CashflowReference::all()->keyBy('reference_key');
         $reportRows = CashflowReportBuilder::buildMulti($series, $references, $showEmpty);
-        $summary = CashflowReportBuilder::summarize($reportRows);
+        $summary = CashflowReportBuilder::summarize($reportRows, $selectedSeriesKey);
 
-        $unitColumns = $units->map(function ($unit) {
-            // Hapus nomor VA dari nama unit, contoh: "81029155501 - RAREN" -> "RAREN"
-            $cleanName = trim(preg_replace('/^(?:VA\s*)?\d+\s*[-–—]\s*/i', '', $unit->nama_tujuan)) ?: $unit->nama_tujuan;
-            return [
-                'key' => 'u' . $unit->id_bank_tujuan,
-                'nama' => $cleanName,
-            ];
-        })->values();
+        if ($selectedUnit === 'ro') {
+            $unitColumns = collect([]);
+        } elseif ($selectedUnit !== 'all' && !empty($selectedUnit)) {
+            $unitFound = $allUnits->firstWhere('id', (string) $selectedUnit);
+            $unitColumns = $unitFound ? collect([$unitFound]) : $allUnits;
+        } else {
+            $unitColumns = $allUnits;
+        }
 
         return view('cash_bank.cashflowBank', compact(
             'years',
@@ -193,6 +238,10 @@ class BankCashflowController extends Controller
             'selectedBulan',
             'tglDari',
             'tglSampai',
+            'tanggalRangeVal',
+            'selectedUnit',
+            'selectedUnitName',
+            'allUnits',
             'labelPeriode',
             'showEmpty',
             'showTahunLalu',
@@ -230,6 +279,19 @@ class BankCashflowController extends Controller
 
         $tglDari = $parseDateInput($request->get('tgl_dari'));
         $tglSampai = $parseDateInput($request->get('tgl_sampai'));
+
+        $tanggalRange = $request->get('tanggal_range');
+        if (empty($tglDari) && empty($tglSampai) && !empty($tanggalRange)) {
+            $parts = preg_split('/\s+(?:s\/d|to|ke|-)\s+/i', trim($tanggalRange));
+            if (count($parts) >= 2) {
+                $tglDari = $parseDateInput($parts[0]);
+                $tglSampai = $parseDateInput($parts[1]);
+            } elseif (count($parts) === 1) {
+                $tglDari = $parseDateInput($parts[0]);
+                $tglSampai = $tglDari;
+            }
+        }
+
         $baseYear = (int) ($request->get('selected_year') ?: (!empty($tglSampai) ? \Carbon\Carbon::parse($tglSampai)->year : $tahun));
 
         $query = Cashflow::query()

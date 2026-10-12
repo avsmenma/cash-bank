@@ -1199,11 +1199,60 @@ class dashboardController extends Controller
             $keluarVaSubQuery->where('tanggal', '<=', $cutoffDate);
         }
 
+        // Urutan prioritas tampilan Akun VA (Virtual Account) sesuai instruksi
+        $vaOrderList = [
+            '81029155533 - PPPBB',
+            '81029155531 - UGKB',
+            '81029155529 - UGKT',
+            '81029155530 - UGKST',
+            '81029155528 - GUNME',
+            '81029155526 - GUMAS',
+            '81029155502 - DEKAN',
+            '81029155525 - RIMBA',
+            '81029155523 - SINTANG',
+            '81029155522 - NGABANG',
+            '81029155520 - PARINDU',
+            '81029155518 - BAYAN',
+            '81029155516 - DASAL',
+            '81029155509 - KUMAI',
+            '81029155512 - BALIN',
+            '81029155514 - PAMUKAN',
+            '81029155511 - PELAIHARI',
+            '81029155508 - TABARA',
+            '81029155507 - TAJATI',
+            '81029155506 - PANDAWA',
+            '81029155503 - LONGKALI',
+            '81029155501 - RAREN',
+            '81029155527 - PAGUN',
+            '81029155524 - PARBA',
+            '81029155521 - PANGA',
+            '81029155519 - PAPAR',
+            '81029155517 - PAKEM',
+            '81029155532 - PRYBB',
+            '81029155513 - PAPAM',
+            '81029155510 - PALAI',
+            '81029155515 - TAMBA',
+            '81029155504 - PASAM',
+            '81029155505 - PALPI',
+            '8102910000000000002 - KPJ',
+            '8102910000000000001 - KPB',
+        ];
+
+        $vaOrderMap = [];
+        foreach ($vaOrderList as $idx => $item) {
+            $vaOrderMap[strtoupper(trim($item))] = $idx;
+            if (preg_match('/^(\d+)/', $item, $m)) {
+                $vaOrderMap[$m[1]] = $idx;
+            }
+            if (preg_match('/-\s*([A-Za-z0-9]+)$/', $item, $m)) {
+                $vaOrderMap[strtoupper(trim($m[1]))] = $idx;
+            }
+        }
+
         $bankVAList = DB::table('bank_tujuan')
             ->select('bank_tujuan.id_bank_tujuan', 'bank_tujuan.nama_tujuan', 'bank_tujuan.sap')
             ->selectSub($masukVaSubQuery, 'total_masuk')
             ->selectSub($keluarVaSubQuery, 'total_keluar')
-            ->orderBy('bank_tujuan.nama_tujuan')
             ->get()
             ->map(function ($va) {
                 $va->saldo = (float) $va->total_masuk - (float) $va->total_keluar;
@@ -1212,7 +1261,21 @@ class dashboardController extends Controller
                 // Selisih = Saldo Akhir - Saldo SAP
                 $va->selisih = $va->saldo - $va->sap_nilai;
                 return $va;
-            });
+            })
+            ->sortBy(function ($va) use ($vaOrderMap) {
+                $nama = strtoupper(trim((string) $va->nama_tujuan));
+                if (isset($vaOrderMap[$nama])) {
+                    return $vaOrderMap[$nama];
+                }
+                if (preg_match('/^(\d+)/', $nama, $m) && isset($vaOrderMap[$m[1]])) {
+                    return $vaOrderMap[$m[1]];
+                }
+                if (preg_match('/-\s*([A-Za-z0-9]+)$/', $nama, $m) && isset($vaOrderMap[strtoupper(trim($m[1]))])) {
+                    return $vaOrderMap[strtoupper(trim($m[1]))];
+                }
+                return 999999;
+            })
+            ->values();
 
         $totalSaldoVA = $bankVAList->sum('saldo');
         $totalSaldoSap = $bankVAList->sum('sap_nilai');

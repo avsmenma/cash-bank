@@ -1339,6 +1339,11 @@ class dashboardController extends Controller
         return view('cash_bank.dashboardBank', $this->buildBankDashboardData($request));
     }
 
+    public function bankV2(Request $request)
+    {
+        return view('cash_bank.dashboardBankV2', $this->buildBankDashboardData($request));
+    }
+
     public function bankExportExcel(Request $request)
     {
         $tanggal = $request->tanggal ?? 'Pontianak, ' . \Carbon\Carbon::now()->translatedFormat('d F Y');

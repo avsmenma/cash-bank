@@ -107,6 +107,9 @@
       <a href="javascript:void(0)" class="btn btn-success btn-sm" data-toggle="modal" data-target="#ModalCreateKeluar">
         <i class="fas fa-plus mr-1"></i>Tambah Data
       </a>
+      <button type="button" class="btn btn-primary btn-sm btnSyncGoogleSheets">
+        <i class="fas fa-cloud-download-alt mr-1"></i>Sync Google Sheets
+      </button>
       <button type="button" class="btn btn-info btn-sm" id="btnRefreshTable" onclick="window.bkReload && window.bkReload();">
         <i class="fas fa-sync-alt mr-1"></i>Refresh
       </button>
@@ -463,6 +466,38 @@
             },
             error: function (xhr) {
                 var msg = (xhr.responseJSON && xhr.responseJSON.error) ? xhr.responseJSON.error : 'Gagal menghapus data.';
+                $('#modalInfoTitle').text('Gagal');
+                $('#modalInfoIcon').attr('class', 'fas fa-times-circle text-danger mr-2');
+                $('#modalInfoMsg').text(msg);
+                $('#modalInfo').modal('show');
+            }
+        });
+    });
+
+    $(document).on('click', '.btnSyncGoogleSheets', function (e) {
+        e.preventDefault();
+        if (!confirm('Apakah Anda yakin ingin menyinkronkan data Bank Masuk & Bank Keluar terbaru langsung dari Google Sheets sekarang?')) {
+            return;
+        }
+        var $btn = $(this);
+        var origHtml = $btn.html();
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Menyinkronkan...');
+
+        $.ajax({
+            url: "{{ route('bank.sync-sheets') }}",
+            type: "POST",
+            data: { _token: "{{ csrf_token() }}" },
+            success: function (res) {
+                $btn.prop('disabled', false).html(origHtml);
+                $('#modalInfoTitle').text('Berhasil');
+                $('#modalInfoIcon').attr('class', 'fas fa-check-circle text-success mr-2');
+                $('#modalInfoMsg').text(res.message || 'Sinkronisasi Google Sheets berhasil!');
+                $('#modalInfo').modal('show');
+                if (window.bkReload) window.bkReload();
+            },
+            error: function (xhr) {
+                $btn.prop('disabled', false).html(origHtml);
+                var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Gagal sinkronisasi Google Sheets.';
                 $('#modalInfoTitle').text('Gagal');
                 $('#modalInfoIcon').attr('class', 'fas fa-times-circle text-danger mr-2');
                 $('#modalInfoMsg').text(msg);

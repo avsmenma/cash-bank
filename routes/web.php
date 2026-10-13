@@ -24,6 +24,7 @@ use App\Http\Controllers\VADashboardController;
 use App\Http\Controllers\RingkasanPembayaranController;
 use App\Http\Controllers\ProgrammerController;
 use App\Http\Controllers\SapModalKerjaController;
+use App\Http\Controllers\GoogleSheetsSyncController;
 
 Route::get('/', fn() => view('auth.login'));
 Route::get('/login', fn() => view('auth.login'))->name('login');
@@ -96,6 +97,9 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth'])->group(function () {
+
+    Route::post('/bank/sync-sheets', [GoogleSheetsSyncController::class, 'sync'])
+        ->name('bank.sync-sheets');
 
     Route::prefix('bank-keluar')->name('bank-keluar.')->group(function () {
 

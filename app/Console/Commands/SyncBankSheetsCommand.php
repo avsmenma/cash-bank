@@ -123,13 +123,30 @@ class SyncBankSheetsCommand extends Command
             return false;
         }
 
-        $cmd = [$phpBinary, $artisanFile, 'agenda:sync-sheets'];
+        if (PHP_OS_FAMILY === 'Windows') {
+            $cmd = [$phpBinary, $artisanFile, 'agenda:sync-sheets'];
+        } else {
+            $pathEnv = getenv('PATH') ?: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
+            $cmd = ['env', '-i', 'PATH=' . $pathEnv, 'HOME=' . (getenv('HOME') ?: '/var/www'), $phpBinary, $artisanFile, 'agenda:sync-sheets'];
+        }
+
         if ($isDryRun) {
             $cmd[] = '--dry-run';
         }
 
         try {
-            $process = new Process($cmd, $agendaPath);
+            $cleanEnv = [
+                'DB_CONNECTION' => false,
+                'DB_DATABASE' => false,
+                'DB_USERNAME' => false,
+                'DB_PASSWORD' => false,
+                'DB_HOST' => false,
+                'DB_PORT' => false,
+                'APP_KEY' => false,
+                'APP_NAME' => false,
+                'APP_URL' => false,
+            ];
+            $process = new Process($cmd, $agendaPath, $cleanEnv);
             $process->setTimeout(600);
             $process->run(function ($type, $buffer) {
                 $this->output->write($buffer);

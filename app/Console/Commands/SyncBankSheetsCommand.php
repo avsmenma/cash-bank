@@ -135,7 +135,7 @@ class SyncBankSheetsCommand extends Command
                 $this->output->write($buffer);
             });
 
-            if (!$process->successful()) {
+            if (!$process->isSuccessful()) {
                 $this->warn("Peringatan: Sinkronisasi Agenda Online keluar dengan kode " . $process->getExitCode());
                 Log::warning("[BankSheetsSync] Agenda Online sync warning: " . $process->getErrorOutput());
                 return false;

@@ -476,7 +476,7 @@
 
     $(document).on('click', '.btnSyncGoogleSheets', function (e) {
         e.preventDefault();
-        if (!confirm('Apakah Anda yakin ingin menyinkronkan data Bank Masuk & Bank Keluar terbaru langsung dari Google Sheets sekarang?')) {
+        if (!confirm('Apakah Anda yakin ingin menyinkronkan data Agenda Online dan Cash & Bank terbaru langsung dari Google Sheets sekarang?')) {
             return;
         }
         var $btn = $(this);
@@ -492,7 +492,7 @@
                 $btn.prop('disabled', false).html(origHtml);
                 $('#modalInfoTitle').text('Berhasil');
                 $('#modalInfoIcon').attr('class', 'fas fa-check-circle text-success mr-2');
-                $('#modalInfoMsg').text(res.message || 'Sinkronisasi Google Sheets berhasil!');
+                $('#modalInfoMsg').text(res.message || 'Sinkronisasi Agenda Online & Cash Bank berhasil!');
                 $('#modalInfo').modal('show');
                 if (window.bkReload) window.bkReload();
             },

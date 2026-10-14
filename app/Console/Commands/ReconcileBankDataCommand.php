@@ -32,6 +32,7 @@ class ReconcileBankDataCommand extends Command
     private $subKriteriaCache = [];
     private $itemSubKriteriaCache = [];
     private $jenisPembayaranCache = [];
+    private $findInCacheMemo = [];
 
     public function handle()
     {
@@ -123,32 +124,49 @@ class ReconcileBankDataCommand extends Command
 
     private function extractReferenceNumbers(?string $value): array
     {
+        if (empty($value)) return [];
         preg_match_all('/\b\d[\d\-\/\s]{5,}\d\b/', (string) $value, $matches);
-        return collect($matches[0] ?? [])
-            ->map(fn($number) => preg_replace('/\D+/', '', $number))
-            ->filter(fn($number) => strlen($number) >= 6)
-            ->unique()
-            ->values()
-            ->all();
+        if (empty($matches[0])) return [];
+
+        $res = [];
+        foreach ($matches[0] as $num) {
+            $digits = preg_replace('/\D+/', '', $num);
+            if (strlen($digits) >= 6) {
+                $res[$digits] = true;
+            }
+        }
+        return array_keys($res);
     }
 
-    private function findInCache($cache, $search)
+    private function findInCache($cache, $search, string $cacheType = '')
     {
         if (empty($search)) return null;
+
+        if ($cacheType === '') {
+            if ($cache === $this->sumberDanaCache) $cacheType = 'sumber_dana';
+            elseif ($cache === $this->bankTujuanCache) $cacheType = 'bank_tujuan';
+            elseif ($cache === $this->kategoriCache) $cacheType = 'kategori';
+            else $cacheType = 'misc_' . count($cache);
+        }
+
+        $memoKey = $cacheType . '::' . $search;
+        if (array_key_exists($memoKey, $this->findInCacheMemo)) {
+            return $this->findInCacheMemo[$memoKey];
+        }
 
         $searchText = $this->normalizeReferenceText($search);
         $searchNumbers = $this->extractReferenceNumbers($search);
 
         foreach ($cache as $entry) {
             if ($entry['normalized'] === $searchText) {
-                return $entry['id'];
+                return $this->findInCacheMemo[$memoKey] = $entry['id'];
             }
         }
 
         if (!empty($searchNumbers)) {
             foreach ($cache as $entry) {
                 if (array_intersect($searchNumbers, $entry['numbers'])) {
-                    return $entry['id'];
+                    return $this->findInCacheMemo[$memoKey] = $entry['id'];
                 }
             }
         }
@@ -158,17 +176,17 @@ class ReconcileBankDataCommand extends Command
             if ($nameText === '' || $searchText === '') continue;
 
             if (str_contains($nameText, $searchText) || str_contains($searchText, $nameText)) {
-                return $entry['id'];
+                return $this->findInCacheMemo[$memoKey] = $entry['id'];
             }
 
             $searchTokens = array_filter(explode(' ', $searchText), fn($token) => strlen($token) >= 3);
             $nameTokens = array_filter(explode(' ', $nameText), fn($token) => strlen($token) >= 3);
             if (!empty($searchTokens) && count(array_intersect($searchTokens, $nameTokens)) >= min(2, count($searchTokens))) {
-                return $entry['id'];
+                return $this->findInCacheMemo[$memoKey] = $entry['id'];
             }
         }
 
-        return null;
+        return $this->findInCacheMemo[$memoKey] = null;
     }
 
     private function cleanText($text)
@@ -314,13 +332,23 @@ class ReconcileBankDataCommand extends Command
         }
 
         // Pass 3: (debet, uraian) for date shift (e.g. ID 2554)
+        $dbByDebetUraian = [];
+        foreach ($dbAvailable as $dbId => $cand) {
+            $k = sprintf('%.2f', (float)$cand->debet) . '|' . strtolower($this->cleanText($cand->uraian));
+            $dbByDebetUraian[$k][$dbId] = $cand;
+        }
+
         foreach ($csvRows as $idx => $cm) {
             if (isset($matched[$idx])) continue;
-            foreach ($dbAvailable as $dbId => $cand) {
-                if (abs((float)$cand->debet - $cm['debet']) < 0.01 && strtolower($this->cleanText($cand->uraian)) === strtolower($cm['uraian'])) {
-                    $matched[$idx] = $dbId;
-                    unset($dbAvailable[$dbId]);
-                    break;
+            $k = sprintf('%.2f', $cm['debet']) . '|' . strtolower($this->cleanText($cm['uraian']));
+            if (isset($dbByDebetUraian[$k])) {
+                foreach ($dbByDebetUraian[$k] as $dbId => $cand) {
+                    if (isset($dbAvailable[$dbId])) {
+                        $matched[$idx] = $dbId;
+                        unset($dbAvailable[$dbId]);
+                        unset($dbByDebetUraian[$k][$dbId]);
+                        break;
+                    }
                 }
             }
         }
@@ -545,13 +573,23 @@ class ReconcileBankDataCommand extends Command
         }
 
         // Pass 4: date shift match (e.g. ID 11411 Ground Checking 5056_2026 on 2026-07-16 -> 2026-07-15)
+        $dbByAgenda = [];
+        foreach ($dbAvailable as $dbId => $cand) {
+            if (!empty($cand->agenda_tahun)) {
+                $dbByAgenda[$cand->agenda_tahun][$dbId] = $cand;
+            }
+        }
+
         foreach ($csvRows as $idx => $ck) {
             if (isset($matched[$idx])) continue;
-            foreach ($dbAvailable as $dbId => $cand) {
-                if (abs((float)$cand->kredit - $ck['kredit']) < 0.01 && !empty($ck['agenda_tahun']) && $cand->agenda_tahun === $ck['agenda_tahun']) {
-                    $matched[$idx] = $dbId;
-                    unset($dbAvailable[$dbId]);
-                    break;
+            if (!empty($ck['agenda_tahun']) && isset($dbByAgenda[$ck['agenda_tahun']])) {
+                foreach ($dbByAgenda[$ck['agenda_tahun']] as $dbId => $cand) {
+                    if (isset($dbAvailable[$dbId]) && abs((float)$cand->kredit - $ck['kredit']) < 0.01) {
+                        $matched[$idx] = $dbId;
+                        unset($dbAvailable[$dbId]);
+                        unset($dbByAgenda[$ck['agenda_tahun']][$dbId]);
+                        break;
+                    }
                 }
             }
         }

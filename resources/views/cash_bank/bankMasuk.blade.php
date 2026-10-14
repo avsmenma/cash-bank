@@ -261,6 +261,7 @@
             url: "{{ route('bank.sync-sheets') }}",
             type: "POST",
             data: { _token: "{{ csrf_token() }}" },
+            timeout: 600000,
             success: function (res) {
                 $btn.prop('disabled', false).html(origHtml);
                 $('#modalInfoTitle').text('Berhasil');
@@ -271,7 +272,9 @@
             },
             error: function (xhr) {
                 $btn.prop('disabled', false).html(origHtml);
-                var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Gagal sinkronisasi Google Sheets.';
+                var msg = (xhr.responseJSON && xhr.responseJSON.message) 
+                    ? xhr.responseJSON.message 
+                    : (xhr.statusText === 'timeout' ? 'Permintaan waktu habis (timeout). Proses mungkin masih berjalan di server.' : 'Gagal sinkronisasi Google Sheets.');
                 $('#modalInfoTitle').text('Gagal');
                 $('#modalInfoIcon').attr('class', 'fas fa-times-circle text-danger mr-2');
                 $('#modalInfoMsg').text(msg);

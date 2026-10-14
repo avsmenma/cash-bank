@@ -14,7 +14,7 @@ class GoogleSheetsSyncController extends Controller
      */
     public function sync(Request $request)
     {
-        $lock = Cache::lock('google_sheets_sync_cash_bank', 300);
+        $lock = Cache::lock('google_sheets_sync_cash_bank', 600);
 
         if (!$lock->get()) {
             return response()->json([
@@ -27,12 +27,12 @@ class GoogleSheetsSyncController extends Controller
             @set_time_limit(1800);
             ini_set('memory_limit', '2048M');
 
-            Artisan::call('bank:sync-sheets');
+            Artisan::call('bank:sync-sheets', ['--with-agenda' => true]);
             $output = Artisan::output();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sinkronisasi dengan Google Sheets berhasil dijalankan.',
+                'message' => 'Sinkronisasi data Agenda Online dan Cash & Bank berhasil dijalankan.',
                 'output'  => $output,
             ]);
         } catch (\Throwable $e) {

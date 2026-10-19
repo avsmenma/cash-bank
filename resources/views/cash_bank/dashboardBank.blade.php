@@ -500,16 +500,6 @@
 <script>
     var _exportType = 'excel';
 
-    $('#btnFixSelisih').on('click', function(e) {
-        e.preventDefault();
-        window.openSmartSyncModal({ fix_selisih: true });
-    });
-
-    $('#btnSyncDashboard').on('click', function(e) {
-        e.preventDefault();
-        window.openSmartSyncModal();
-    });
-
     function showAlertImport(message, type) {
         var alertBox = $('#alertImportSap');
         alertBox.removeClass('alert-success alert-danger alert-warning alert-info')
@@ -678,6 +668,18 @@
      ============================================================ --}}
 @push('scripts')
 <script>
+$(function() {
+    $('#btnFixSelisih').on('click', function(e) {
+        e.preventDefault();
+        window.openSmartSyncModal({ fix_selisih: true });
+    });
+
+    $('#btnSyncDashboard').on('click', function(e) {
+        e.preventDefault();
+        window.openSmartSyncModal();
+    });
+});
+
 (function () {
     'use strict';
 

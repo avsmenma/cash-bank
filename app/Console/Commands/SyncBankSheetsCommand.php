@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 
@@ -14,6 +15,9 @@ class SyncBankSheetsCommand extends Command
                             {--keluar-url= : Google Sheets Bank Keluar CSV URL}
                             {--with-agenda : Synchronize Agenda Online documents first}
                             {--skip-agenda : Skip Agenda Online synchronization}
+                            {--only-masuk : Only synchronize Bank Masuk}
+                            {--only-keluar : Only synchronize Bank Keluar}
+                            {--fix-selisih : Enable nominal discrepancy correction}
                             {--dry-run : Only simulate changes without writing to database}';
 
     protected $description = 'Automated synchronization of Bank Masuk and Bank Keluar directly from Google Sheets CSV';
@@ -26,20 +30,25 @@ class SyncBankSheetsCommand extends Command
         @set_time_limit(1800);
         ini_set('memory_limit', '2048M');
 
-        $isDryRun = $this->option('dry-run');
-        $withAgenda = $this->option('with-agenda') || !$this->option('skip-agenda');
+        $isDryRun = (bool) $this->option('dry-run');
+        $isFixSelisih = (bool) $this->option('fix-selisih');
+        $withAgenda = $this->option('with-agenda') || (!$this->option('skip-agenda') && !$this->option('only-masuk') && !$this->option('only-keluar'));
+        $syncMasuk = !$this->option('only-keluar');
+        $syncKeluar = !$this->option('only-masuk');
+
         $masukUrl = $this->option('masuk-url') ?: env('GOOGLE_SHEETS_MASUK_URL', self::DEFAULT_MASUK_URL);
         $keluarUrl = $this->option('keluar-url') ?: env('GOOGLE_SHEETS_KELUAR_URL', self::DEFAULT_KELUAR_URL);
 
-        // 1. Sinkronisasi Agenda Online terlebih dahulu jika tidak diskip
+        // 1. Sinkronisasi Agenda Online terlebih dahulu jika diminta
         if ($withAgenda) {
             $this->syncAgendaOnline($isDryRun);
         }
 
         $this->info("==================================================================");
         $this->info("MEMULAI AUTO-SYNC CASH & BANK DARI GOOGLE SHEETS");
-        $this->info("Masuk URL : {$masukUrl}");
-        $this->info("Keluar URL: {$keluarUrl}");
+        if ($syncMasuk) $this->info("Masuk URL : {$masukUrl}");
+        if ($syncKeluar) $this->info("Keluar URL: {$keluarUrl}");
+        if ($isFixSelisih) $this->info("Koreksi Selisih: AKTIF");
         if ($isDryRun) {
             $this->warn("MODE: DRY RUN (SIMULASI). Data TIDAK akan diubah di database.");
         }
@@ -49,38 +58,51 @@ class SyncBankSheetsCommand extends Command
         $tempKeluar = storage_path('app/temp_keluar_sync_' . uniqid() . '.csv');
 
         try {
-            // 2. Download Bank Masuk
-            $this->line("Mengunduh data Bank Masuk dari Google Sheets...");
-            $codeMasuk = $this->downloadFile($masukUrl, $tempMasuk);
-            if ($codeMasuk !== 200 || !file_exists($tempMasuk) || filesize($tempMasuk) < 50) {
-                $this->error("Gagal mengunduh CSV Bank Masuk (HTTP Status: {$codeMasuk})");
-                return Command::FAILURE;
-            }
-            $this->info("Unduhan Bank Masuk selesai: " . number_format(filesize($tempMasuk) / 1024, 2) . " KB.");
+            $params = [];
 
-            // 3. Download Bank Keluar
-            $this->line("Mengunduh data Bank Keluar dari Google Sheets...");
-            $codeKeluar = $this->downloadFile($keluarUrl, $tempKeluar);
-            if ($codeKeluar !== 200 || !file_exists($tempKeluar) || filesize($tempKeluar) < 50) {
-                $this->error("Gagal mengunduh CSV Bank Keluar (HTTP Status: {$codeKeluar})");
-                return Command::FAILURE;
+            // 2. Download Bank Masuk jika diperlukan
+            if ($syncMasuk) {
+                $this->line("Mengunduh data Bank Masuk dari Google Sheets...");
+                $codeMasuk = $this->downloadFile($masukUrl, $tempMasuk);
+                if ($codeMasuk !== 200 || !file_exists($tempMasuk) || filesize($tempMasuk) < 50) {
+                    $this->error("Gagal mengunduh CSV Bank Masuk (HTTP Status: {$codeMasuk})");
+                    return Command::FAILURE;
+                }
+                $this->info("Unduhan Bank Masuk selesai: " . number_format(filesize($tempMasuk) / 1024, 2) . " KB.");
+                $params['--masuk'] = $tempMasuk;
             }
-            $this->info("Unduhan Bank Keluar selesai: " . number_format(filesize($tempKeluar) / 1024, 2) . " KB.");
+
+            // 3. Download Bank Keluar jika diperlukan
+            if ($syncKeluar) {
+                $this->line("Mengunduh data Bank Keluar dari Google Sheets...");
+                $codeKeluar = $this->downloadFile($keluarUrl, $tempKeluar);
+                if ($codeKeluar !== 200 || !file_exists($tempKeluar) || filesize($tempKeluar) < 50) {
+                    $this->error("Gagal mengunduh CSV Bank Keluar (HTTP Status: {$codeKeluar})");
+                    return Command::FAILURE;
+                }
+                $this->info("Unduhan Bank Keluar selesai: " . number_format(filesize($tempKeluar) / 1024, 2) . " KB.");
+                $params['--keluar'] = $tempKeluar;
+            }
 
             // 4. Eksekusi Rekonsiliasi
-            $params = [
-                '--masuk' => $tempMasuk,
-                '--keluar' => $tempKeluar,
-            ];
-
             if ($isDryRun) {
                 $params['--dry-run'] = true;
             } else {
                 $params['--force'] = true;
             }
 
+            if ($isFixSelisih) {
+                $params['--fix-selisih'] = true;
+            }
+
             $this->line("Menjalankan rekonsiliasi dan sinkronisasi database...");
             Artisan::call('bank:reconcile', $params, $this->output);
+
+            if (!$isDryRun) {
+                $nowIso = now()->toISOString();
+                if ($syncMasuk) Cache::put('sync_last_masuk_at', $nowIso, now()->addDays(30));
+                if ($syncKeluar) Cache::put('sync_last_keluar_at', $nowIso, now()->addDays(30));
+            }
 
             $this->info("Sinkronisasi Google Sheets Cash & Bank selesai dengan sukses.");
             return Command::SUCCESS;
@@ -156,6 +178,10 @@ class SyncBankSheetsCommand extends Command
                 $this->warn("Peringatan: Sinkronisasi Agenda Online keluar dengan kode " . $process->getExitCode());
                 Log::warning("[BankSheetsSync] Agenda Online sync warning: " . $process->getErrorOutput());
                 return false;
+            }
+
+            if (!$isDryRun) {
+                Cache::put('sync_last_agenda_at', now()->toISOString(), now()->addDays(30));
             }
 
             $this->info("Sinkronisasi Agenda Online selesai dengan sukses.");

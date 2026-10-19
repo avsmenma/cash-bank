@@ -133,7 +133,7 @@ class SyncBankSheetsCommand extends Command
         }
 
         $this->info("==================================================================");
-        $this->info("MEMULAI AUTO-SYNC AGENDA ONLINE (PRASYARAT CASH & BANK)");
+        $this->info("MEMULAI AUTO-SYNC AGENDA ONLINE (OPSIONAL CASH & BANK)");
         $this->info("Direktori: {$agendaPath}");
         $this->info("==================================================================");
 

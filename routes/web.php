@@ -95,6 +95,10 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth'])->group(function () {
 
+    Route::get('/bank/sync-sheets/status', [GoogleSheetsSyncController::class, 'status'])
+        ->name('bank.sync-sheets.status');
+    Route::get('/bank/sync-sheets/stream', [GoogleSheetsSyncController::class, 'stream'])
+        ->name('bank.sync-sheets.stream');
     Route::post('/bank/sync-sheets', [GoogleSheetsSyncController::class, 'sync'])
         ->name('bank.sync-sheets');
 

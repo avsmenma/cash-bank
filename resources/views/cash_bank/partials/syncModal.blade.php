@@ -227,8 +227,9 @@
     </div>
 </div>
 
+@push('scripts')
 <script>
-(function() {
+$(function() {
     var eventSource = null;
 
     // Helper: switch modal stage
@@ -460,5 +461,6 @@
         }
     });
 
-})();
+});
 </script>
+@endpush

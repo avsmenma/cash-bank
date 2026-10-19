@@ -582,9 +582,9 @@
                         </li>
                         @else
                         <li
-                            class="nav-item {{ request()->routeIs('dashboard.*', 'dashboard-pembayaran.*', 'dashboard.bank.*', 'dashboard.bank-v2.*') ? 'menu-open menu-is-opening' : '' }}">
+                            class="nav-item {{ request()->routeIs('dashboard.*', 'dashboard-pembayaran.*', 'dashboard.bank.*') ? 'menu-open menu-is-opening' : '' }}">
                             <a href="#"
-                                class="nav-link {{ request()->routeIs('dashboard.*', 'dashboard-pembayaran.*', 'dashboard.bank.*', 'dashboard.bank-v2.*') ? 'active' : '' }}">
+                                class="nav-link {{ request()->routeIs('dashboard.*', 'dashboard-pembayaran.*', 'dashboard.bank.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>
                                     Dashboard
@@ -621,12 +621,6 @@
                                     <a href="{{ route('dashboard.bank.index') }}"
                                         class="nav-link {{ request()->routeIs('dashboard.bank.index') ? 'active' : ''}}">
                                         <p>Bank</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('dashboard.bank-v2.index') }}"
-                                        class="nav-link {{ request()->routeIs('dashboard.bank-v2.*') ? 'active' : ''}}">
-                                        <p>bank-v2</p>
                                     </a>
                                 </li>
                             </ul>

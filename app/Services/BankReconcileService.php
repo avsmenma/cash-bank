@@ -463,12 +463,46 @@ class BankReconcileService
             }
         }
 
+        // Purge orphan phantom records on Fix Selisih
+        $deletedPhantomCount = 0;
+        $deletedPhantomDetails = [];
+        if ($isFixSelisih && !empty($dbAvailable)) {
+            $csvSumberDanaIds = [];
+            foreach ($csvRows as $cm) {
+                $sid = $this->findInCache($this->sumberDanaCache, $cm['sumber_dana']);
+                if ($sid) $csvSumberDanaIds[$sid] = true;
+            }
+
+            $phantomIds = [];
+            foreach ($dbAvailable as $dbId => $cand) {
+                if ($cand->id_sumber_dana && isset($csvSumberDanaIds[$cand->id_sumber_dana])) {
+                    if (empty($cand->agenda_tahun) && empty($cand->no_bukti)) {
+                        $phantomIds[] = $dbId;
+                        $deletedPhantomDetails[] = [
+                            'id' => $dbId,
+                            'tanggal' => $cand->tanggal,
+                            'uraian' => substr((string) $cand->uraian, 0, 40),
+                            'nominal' => (float) $cand->debet,
+                            'action' => 'deleted_phantom',
+                        ];
+                    }
+                }
+            }
+
+            if (!empty($phantomIds)) {
+                $deletedPhantomCount = count($phantomIds);
+            }
+        }
+
         if ($onProgress) $onProgress(80, "Menyimpan perubahan Bank Masuk ke database...");
 
         // Apply changes
         if (!$isDryRun) {
             DB::beginTransaction();
             try {
+                if (!empty($phantomIds)) {
+                    BankMasuk::whereIn('id_bank_masuk', $phantomIds)->delete();
+                }
                 foreach ($updateList as $u) {
                     $u['diffs']['updated_at'] = now();
                     BankMasuk::where('id_bank_masuk', $u['id'])->update($u['diffs']);
@@ -494,8 +528,8 @@ class BankReconcileService
             'matched' => count($matched),
             'updated' => count($updateList),
             'inserted' => count($insertList),
-            'fixed_selisih' => $fixedSelisihCount,
-            'fixed_details' => $fixedSelisihDetails,
+            'fixed_selisih' => $fixedSelisihCount + $deletedPhantomCount,
+            'fixed_details' => array_merge($fixedSelisihDetails, $deletedPhantomDetails),
         ];
     }
 
@@ -827,6 +861,37 @@ class BankReconcileService
             }
         }
 
+        // Purge orphan phantom records on Fix Selisih
+        $deletedPhantomCount = 0;
+        $deletedPhantomDetails = [];
+        if ($isFixSelisih && !empty($dbAvailable)) {
+            $csvSumberDanaIds = [];
+            foreach ($csvRows as $ck) {
+                $sid = $this->findInCache($this->sumberDanaCache, $ck['sumber_dana']);
+                if ($sid) $csvSumberDanaIds[$sid] = true;
+            }
+
+            $phantomIds = [];
+            foreach ($dbAvailable as $dbId => $cand) {
+                if ($cand->id_sumber_dana && isset($csvSumberDanaIds[$cand->id_sumber_dana])) {
+                    if (empty($cand->agenda_tahun) && empty($cand->no_bukti) && empty($cand->dokumen_id)) {
+                        $phantomIds[] = $dbId;
+                        $deletedPhantomDetails[] = [
+                            'id' => $dbId,
+                            'tanggal' => $cand->tanggal,
+                            'uraian' => substr((string) $cand->uraian, 0, 40),
+                            'nominal' => (float) $cand->kredit,
+                            'action' => 'deleted_phantom',
+                        ];
+                    }
+                }
+            }
+
+            if (!empty($phantomIds)) {
+                $deletedPhantomCount = count($phantomIds);
+            }
+        }
+
         if ($onProgress) $onProgress(80, "Menyimpan perubahan Bank Keluar ke database...");
 
         $agendaBayarCount = 0;
@@ -834,6 +899,9 @@ class BankReconcileService
         if (!$isDryRun) {
             DB::beginTransaction();
             try {
+                if (!empty($phantomIds)) {
+                    BankKeluar::whereIn('id_bank_keluar', $phantomIds)->delete();
+                }
                 foreach ($updateList as $u) {
                     $u['diffs']['updated_at'] = now();
                     BankKeluar::where('id_bank_keluar', $u['id'])->update($u['diffs']);
@@ -865,8 +933,8 @@ class BankReconcileService
             'matched' => count($matched),
             'updated' => count($updateList),
             'inserted' => count($insertList),
-            'fixed_selisih' => $fixedSelisihCount,
-            'fixed_details' => $fixedSelisihDetails,
+            'fixed_selisih' => $fixedSelisihCount + $deletedPhantomCount,
+            'fixed_details' => array_merge($fixedSelisihDetails, $deletedPhantomDetails),
             'agenda_bayar_synced' => $agendaBayarCount,
         ];
     }

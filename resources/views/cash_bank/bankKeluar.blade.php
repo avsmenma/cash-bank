@@ -138,6 +138,7 @@
 @if (auth()->user()->role === 'programmer')
     @include('cash_bank.modal.importExcel')
 @endif
+@include('cash_bank.partials.syncModal')
 
 {{-- Modal Konfirmasi Hapus --}}
 <div class="modal fade" id="modalConfirmHapus" tabindex="-1" role="dialog" aria-hidden="true">
@@ -476,37 +477,7 @@
 
     $(document).on('click', '.btnSyncGoogleSheets', function (e) {
         e.preventDefault();
-        if (!confirm('Apakah Anda yakin ingin menyinkronkan data Agenda Online dan Cash & Bank terbaru langsung dari Google Sheets sekarang?')) {
-            return;
-        }
-        var $btn = $(this);
-        var origHtml = $btn.html();
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Menyinkronkan...');
-
-        $.ajax({
-            url: "{{ route('bank.sync-sheets') }}",
-            type: "POST",
-            data: { _token: "{{ csrf_token() }}" },
-            timeout: 600000,
-            success: function (res) {
-                $btn.prop('disabled', false).html(origHtml);
-                $('#modalInfoTitle').text('Berhasil');
-                $('#modalInfoIcon').attr('class', 'fas fa-check-circle text-success mr-2');
-                $('#modalInfoMsg').text(res.message || 'Sinkronisasi Agenda Online & Cash Bank berhasil!');
-                $('#modalInfo').modal('show');
-                if (window.bkReload) window.bkReload();
-            },
-            error: function (xhr) {
-                $btn.prop('disabled', false).html(origHtml);
-                var msg = (xhr.responseJSON && xhr.responseJSON.message) 
-                    ? xhr.responseJSON.message 
-                    : (xhr.statusText === 'timeout' ? 'Permintaan waktu habis (timeout). Proses mungkin masih berjalan di server.' : 'Gagal sinkronisasi Google Sheets.');
-                $('#modalInfoTitle').text('Gagal');
-                $('#modalInfoIcon').attr('class', 'fas fa-times-circle text-danger mr-2');
-                $('#modalInfoMsg').text(msg);
-                $('#modalInfo').modal('show');
-            }
-        });
+        window.openSmartSyncModal({ target: 'keluar' });
     });
 </script>
 @endpush

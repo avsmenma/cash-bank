@@ -115,6 +115,12 @@
 
                         {{-- Export & Import dropdown on the right --}}
                         <div class="ml-auto d-flex align-items-center" style="gap:6px;">
+                            <button type="button" class="btn btn-warning btn-sm font-weight-bold" id="btnFixSelisih" title="Koreksi selisih saldo akibat perubahan nominal di spreadsheet">
+                                <i class="fas fa-tools mr-1"></i> Fix Selisih Saldo
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm font-weight-bold" id="btnSyncDashboard" title="Sinkronkan data Cash &amp; Bank dari Google Sheets">
+                                <i class="fas fa-sync-alt mr-1"></i> Sync Sheets
+                            </button>
                             <div class="dropdown">
                                 <button type="button" class="btn btn-success btn-sm dropdown-toggle font-weight-bold" id="dropdownMenuExport" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     <i class="fas fa-file-export mr-1"></i> Export
@@ -487,10 +493,22 @@
         </div>
     </div>
 </div>
+@include('cash_bank.partials.syncModal')
+
 {{-- ======================================================= --}}
 
 <script>
     var _exportType = 'excel';
+
+    $('#btnFixSelisih').on('click', function(e) {
+        e.preventDefault();
+        window.openSmartSyncModal({ fix_selisih: true });
+    });
+
+    $('#btnSyncDashboard').on('click', function(e) {
+        e.preventDefault();
+        window.openSmartSyncModal();
+    });
 
     function showAlertImport(message, type) {
         var alertBox = $('#alertImportSap');

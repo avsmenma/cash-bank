@@ -20,7 +20,7 @@
                     <div class="alert alert-light border mb-3 py-2 px-3 d-flex align-items-center" style="border-radius: 8px; background-color: #f8f9fa;">
                         <i class="fas fa-info-circle text-primary mr-2 fa-lg"></i>
                         <span class="small text-muted" id="smartSyncSubtitle">
-                            Pilih data yang ingin Anda perbarui langsung dari Google Sheets. Sistem cerdas akan mendeteksi prasyarat data untuk menghemat waktu.
+                            Pilih data yang ingin Anda perbarui langsung dari Google Sheets.
                         </span>
                     </div>
 
@@ -73,10 +73,10 @@
                                     <div class="custom-control custom-checkbox">
                                         <input type="checkbox" class="custom-control-input" id="chkSyncAgenda">
                                         <label class="custom-control-label font-weight-bold text-dark cursor-pointer" for="chkSyncAgenda">
-                                            Agenda Online <span class="text-muted font-weight-normal">(Prasyarat)</span>
+                                            Agenda Online <span class="text-muted font-weight-normal">(Opsional)</span>
                                         </label>
                                         <div class="small text-muted mt-1" id="descSyncAgenda">
-                                            Sinkronisasi dokumen SPP Agenda Online.
+                                            Sinkronisasi dokumen SPP Agenda Online (opsional).
                                         </div>
                                     </div>
                                     <div class="text-right pl-3" style="min-width: 170px;">
@@ -283,11 +283,11 @@ $(function() {
                         if (s.agenda.is_fresh) {
                             $('#badgeFreshAgenda').removeClass('d-none');
                             $('#chkSyncAgenda').prop('checked', false);
-                            $('#descSyncAgenda').html('<span class="text-success"><i class="fas fa-check-circle mr-1"></i>Data Agenda masih baru (&lt; 30 mnt). Dilewati secara otomatis untuk mempercepat.</span>');
+                            $('#descSyncAgenda').html('<span class="text-success"><i class="fas fa-check-circle mr-1"></i>Data Agenda masih baru (&lt; 30 mnt).</span>');
                         } else {
                             $('#badgeFreshAgenda').addClass('d-none');
-                            $('#chkSyncAgenda').prop('checked', true);
-                            $('#descSyncAgenda').text('Data Agenda perlu diperbarui sebelum sinkronisasi bank.');
+                            $('#chkSyncAgenda').prop('checked', false);
+                            $('#descSyncAgenda').text('Pembaruan data dokumen Agenda Online (opsional).');
                         }
                     }
                 }
@@ -317,7 +317,7 @@ $(function() {
             $('#smartSyncTitleIcon').attr('class', 'fas fa-sync-alt mr-2');
             $('#smartSyncTitleText').text('Sinkronisasi Google Sheets');
             $('#chkFixSelisih').prop('checked', false);
-            $('#smartSyncSubtitle').text('Pilih data yang ingin Anda perbarui langsung dari Google Sheets. Sistem cerdas akan mendeteksi prasyarat data untuk menghemat waktu.');
+            $('#smartSyncSubtitle').text('Pilih data yang ingin Anda perbarui langsung dari Google Sheets.');
         }
 
         // Target selections

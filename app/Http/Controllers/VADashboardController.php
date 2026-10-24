@@ -182,16 +182,17 @@ class VADashboardController extends Controller
 
     /**
      * Gabungkan Bank Masuk & Bank Keluar milik satu VA menjadi buku pembantu
-     * (urut tanggal, saldo berjalan kumulatif).
+     * (urut tanggal, tipe: debet duluan baru kredit, saldo berjalan kumulatif).
      */
-    private function buildLedger(int $id)
+    public function buildLedger(int $id)
     {
         // Get Bank Masuk transactions for this VA
         $masuk = BankMasuk::where('id_bank_tujuan', $id)
-            ->select('tanggal', 'penerima', 'uraian', 'debet', 'kredit', 'created_at')
+            ->select('id_bank_masuk', 'tanggal', 'penerima', 'uraian', 'debet', 'kredit', 'created_at')
             ->get()
             ->map(function ($item) {
                 return [
+                    'id' => $item->id_bank_masuk,
                     'tanggal' => $item->tanggal,
                     'created_at' => $item->created_at,
                     'penerima' => $item->penerima,
@@ -199,15 +200,17 @@ class VADashboardController extends Controller
                     'debet' => (float) $item->debet,
                     'kredit' => 0,
                     'tipe' => 'masuk',
+                    'tipe_order' => 0,
                 ];
             });
 
         // Get Bank Keluar transactions for this VA
         $keluar = BankKeluar::where('id_bank_tujuan', $id)
-            ->select('tanggal', 'penerima', 'uraian', 'debet', 'kredit', 'created_at')
+            ->select('id_bank_keluar', 'tanggal', 'penerima', 'uraian', 'debet', 'kredit', 'created_at')
             ->get()
             ->map(function ($item) {
                 return [
+                    'id' => $item->id_bank_keluar,
                     'tanggal' => $item->tanggal,
                     'created_at' => $item->created_at,
                     'penerima' => $item->penerima,
@@ -215,12 +218,22 @@ class VADashboardController extends Controller
                     'debet' => 0,
                     'kredit' => (float) $item->kredit,
                     'tipe' => 'keluar',
+                    'tipe_order' => 1,
                 ];
             });
 
-        // Merge and sort by date ascending
+        // Merge and sort:
+        // 1. Tanggal ascending
+        // 2. tipe_order ascending (Debet/Masuk [0] diproses duluan sebelum Kredit/Keluar [1] agar saldo berjalan tidak minus)
+        // 3. created_at ascending
+        // 4. id ascending
         $transactions = $masuk->toBase()->merge($keluar->toBase())
-            ->sortBy(['tanggal', 'created_at'])
+            ->sortBy([
+                ['tanggal', 'asc'],
+                ['tipe_order', 'asc'],
+                ['created_at', 'asc'],
+                ['id', 'asc'],
+            ])
             ->values();
 
         // Compute running total (saldo akhir)

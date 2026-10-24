@@ -190,50 +190,7 @@ class daftarBankController extends Controller
 
         $va = BankTujuan::findOrFail($id);
 
-        // Get Bank Masuk transactions for this VA
-        $masuk = BankMasuk::where('id_bank_tujuan', $id)
-            ->select('tanggal', 'penerima', 'uraian', 'debet', 'kredit', 'created_at')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'tanggal' => $item->tanggal,
-                    'created_at' => $item->created_at,
-                    'penerima' => $item->penerima,
-                    'uraian' => $item->uraian,
-                    'debet' => (float) $item->debet,
-                    'kredit' => 0,
-                    'tipe' => 'masuk',
-                ];
-            });
-
-        // Get Bank Keluar transactions for this VA
-        $keluar = BankKeluar::where('id_bank_tujuan', $id)
-            ->select('tanggal', 'penerima', 'uraian', 'debet', 'kredit', 'created_at')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'tanggal' => $item->tanggal,
-                    'created_at' => $item->created_at,
-                    'penerima' => $item->penerima,
-                    'uraian' => $item->uraian,
-                    'debet' => 0,
-                    'kredit' => (float) $item->kredit,
-                    'tipe' => 'keluar',
-                ];
-            });
-
-        // Merge and sort by date ascending, then by created_at for same-date entries
-        $transactions = $masuk->toBase()->merge($keluar->toBase())
-            ->sortBy(['tanggal', 'created_at'])
-            ->values();
-
-        // Compute running total (saldo akhir)
-        $saldo = 0;
-        $transactions = $transactions->map(function ($item) use (&$saldo) {
-            $saldo = $saldo + $item['debet'] - $item['kredit'];
-            $item['saldo'] = $saldo;
-            return $item;
-        });
+        $transactions = app(VADashboardController::class)->buildLedger((int) $id);
 
         // Daftar tahun untuk dropdown filter (samakan dengan halaman VA Dashboard)
         $years = $transactions->pluck('tanggal')

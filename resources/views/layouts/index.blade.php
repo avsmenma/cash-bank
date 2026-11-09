@@ -559,25 +559,23 @@
                         @if($isProgrammer)
                         <li class="nav-item">
                             <a href="{{ route('programmer.index') }}"
-                                class="nav-link {{ request()->routeIs('programmer.*') ? 'active' : '' }}">
-                                <i class="nav-icon fas fa-terminal"></i>
-                                <p>Programmer Panel</p>
-                            </a>
-                        </li>
-                        {{-- Akses halaman bank untuk import CSV lama (tombol import
-                             asli hanya dirender bagi role programmer di halaman ini) --}}
-                        <li class="nav-item">
-                            <a href="{{ route('bank-masuk.index') }}"
-                                class="nav-link {{ request()->routeIs('bank-masuk.index') ? 'active' : '' }}">
-                                <i class="nav-icon fas fa-arrow-circle-down"></i>
-                                <p>Bank Masuk</p>
+                                class="nav-link {{ request()->routeIs('programmer.index', 'programmer.dataManagement') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-database"></i>
+                                <p>Data Management</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="{{ route('bank-keluar.index') }}"
-                                class="nav-link {{ request()->routeIs('bank-keluar.index') ? 'active' : '' }}">
-                                <i class="nav-icon fas fa-arrow-circle-up"></i>
-                                <p>Bank Keluar</p>
+                            <a href="{{ route('programmer.toolsSap') }}"
+                                class="nav-link {{ request()->routeIs('programmer.toolsSap') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-tools"></i>
+                                <p>Tools SAP & Mapper</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('programmer.userTraffic') }}"
+                                class="nav-link {{ request()->routeIs('programmer.userTraffic*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-users-cog"></i>
+                                <p>User & Traffic</p>
                             </a>
                         </li>
                         @else

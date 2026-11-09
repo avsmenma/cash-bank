@@ -281,6 +281,23 @@ class ProgrammerController extends Controller
     }
 
     /**
+     * AJAX endpoint: Reset 2FA Google Authenticator untuk user tertentu.
+     */
+    public function reset2Fa(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        $user->two_factor_secret = null;
+        $user->two_factor_confirmed_at = null;
+        $user->two_factor_recovery_codes = null;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "2FA Google Authenticator untuk user '{$user->username}' berhasil di-reset!",
+        ]);
+    }
+
+    /**
      * AJAX endpoint: load data per tabel untuk DataTables.
      */
     public function getData(Request $request, $table)

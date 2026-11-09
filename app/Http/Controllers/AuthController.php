@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\BankTujuan;
+use App\Models\UserLoginLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -26,6 +28,7 @@ class AuthController extends Controller
 
         // 1. Try standard login with the input as username (works for admin, vendor, and VA bank number)
         if (Auth::attempt(['username' => $inputUsername, 'password' => $password], $request->remember)) {
+            $this->recordLogin($request, Auth::user());
             return $this->redirectByRole();
         }
 
@@ -44,11 +47,32 @@ class AuthController extends Controller
                 ->first();
 
             if ($vaUser && Auth::attempt(['username' => $vaUser->username, 'password' => $password], $request->remember)) {
+                $this->recordLogin($request, Auth::user());
                 return $this->redirectByRole();
             }
         }
 
         return back()->with('failed', 'Username atau password salah');
+    }
+
+    /**
+     * Catat histori login user untuk pemantauan traffic harian.
+     */
+    private function recordLogin(Request $request, User $user): void
+    {
+        try {
+            UserLoginLog::create([
+                'user_id' => $user->id,
+                'username' => $user->username,
+                'role' => $user->role,
+                'ip_address' => $request->ip(),
+                'user_agent' => substr((string) $request->userAgent(), 0, 500),
+                'login_at' => now(),
+                'login_date' => now()->toDateString(),
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Gagal mencatat login log: ' . $e->getMessage());
+        }
     }
 
     /**

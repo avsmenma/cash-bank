@@ -128,16 +128,15 @@
         <small class="text-muted">Masukkan 6 digit kode dari aplikasi <strong>Google Authenticator</strong> Anda.</small>
       </div>
 
-      <form action="{{ route('2fa.challenge.verify') }}" method="POST">
+      <form action="{{ route('2fa.challenge.verify') }}" method="POST" id="challenge2faForm">
         @csrf
-        <div class="form-group mb-3">
+        <div class="form-group mb-2">
           <input type="text" name="code" id="otpCodeInput" class="form-control otp-input"
                  placeholder="000000" maxlength="6" pattern="\d{6}" inputmode="numeric" autocomplete="one-time-code" autofocus required>
         </div>
-
-        <button type="submit" class="btn btn-primary btn-block btn-verify">
-          <i class="fas fa-sign-in-alt mr-2"></i> Verifikasi & Masuk
-        </button>
+        <div id="challengeSubmittingStatus" class="text-center text-primary font-weight-bold small py-1" style="display: none;">
+          <i class="fas fa-circle-notch fa-spin mr-1"></i> Memverifikasi kode...
+        </div>
       </form>
 
       <div class="text-center mt-3 pt-3 border-top">
@@ -151,11 +150,16 @@
 
 <script src="{{ asset('adminLTE/plugins/jquery/jquery.min.js') }}"></script>
 <script>
-  // Auto submit when 6 digits are typed
-  document.getElementById('otpCodeInput').addEventListener('input', function(e) {
+  const challengeForm = document.getElementById('challenge2faForm');
+  const challengeInput = document.getElementById('otpCodeInput');
+  const challengeStatus = document.getElementById('challengeSubmittingStatus');
+
+  challengeInput.addEventListener('input', function(e) {
     this.value = this.value.replace(/\D/g, '').slice(0, 6);
     if (this.value.length === 6) {
-      this.form.submit();
+      if (challengeStatus) challengeStatus.style.display = 'block';
+      this.readOnly = true;
+      challengeForm.submit();
     }
   });
 </script>

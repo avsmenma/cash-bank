@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ExportExcelDetailCashflow;
 use App\Models\BankTujuan;
 use App\Models\Cashflow;
 use App\Models\CashflowReference;
 use App\Support\CashflowReportBuilder;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 /**
  * Laporan Arus Kas versi admin: susunannya sama dengan halaman unit/kebun,
@@ -252,9 +254,9 @@ class BankCashflowController extends Controller
     }
 
     /**
-     * Mengambil rincian transaksi pembentuk angka arus kas (drilldown).
+     * Membangun query data transaksi arus kas beserta metadatanya (dipakai bersama detail JSON & export).
      */
-    public function detail(Request $request)
+    private function buildDetailQuery(Request $request): array
     {
         $scope = (array) $request->get('scope', []);
         $series = (string) $request->get('series', 'global');
@@ -317,12 +319,20 @@ class BankCashflowController extends Controller
             }
         }
 
-        // Filter seri/unit
+        // Tentukan nama unit / profit center
+        $seriesTitle = 'Global (Seluruh Unit)';
         if ($series === CashflowReportBuilder::SERI_REGIONAL_OFFICE) {
             $query->where('profit_center', '5R00000001');
+            $seriesTitle = 'Regional Office (5R00000001)';
         } elseif (str_starts_with($series, 'u')) {
             $unitId = (int) substr($series, 1);
             $query->where('id_bank_tujuan', $unitId);
+            $unitObj = BankTujuan::find($unitId);
+            $seriesTitle = $unitObj ? (preg_replace('/^(?:VA\s*)?\d+\s*[-–—]\s*/i', '', $unitObj->nama_tujuan) ?: $unitObj->nama_tujuan) : 'Unit #' . $unitId;
+        }
+
+        if ($request->filled('unit_title')) {
+            $seriesTitle = $request->get('unit_title');
         }
 
         // Filter scope reference keys / prefixes
@@ -343,29 +353,94 @@ class BankCashflowController extends Controller
             ->orderBy('document_number')
             ->get();
 
-        $totalAmount = (float) $items->sum('amount');
+        $bulanList = [
+            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
+            '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
+            '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+        ];
+
+        // Format keterangan periode
+        if (!empty($tglDari) && !empty($tglSampai)) {
+            $periodeStr = \Carbon\Carbon::parse($tglDari)->format('d/m/Y') . ' s/d ' . \Carbon\Carbon::parse($tglSampai)->format('d/m/Y');
+        } elseif (!empty($tglSampai)) {
+            $periodeStr = 's/d ' . \Carbon\Carbon::parse($tglSampai)->format('d/m/Y');
+        } elseif (!empty($tglDari)) {
+            $periodeStr = 'Mulai ' . \Carbon\Carbon::parse($tglDari)->format('d/m/Y');
+        } elseif ($bulan !== null && $bulan !== '' && is_numeric($bulan)) {
+            $mKey = str_pad((string)$bulan, 2, '0', STR_PAD_LEFT);
+            $periodeStr = ($bulanList[$mKey] ?? $bulan) . ' ' . $tahun;
+        } else {
+            $periodeStr = 'Tahun ' . $tahun;
+        }
+
+        $meta = [
+            'uraian'    => $request->get('uraian', '-'),
+            'kode'      => $request->get('kode', '-'),
+            'reference' => $request->get('reference', '-'),
+            'unit'      => $seriesTitle,
+            'periode'   => $periodeStr,
+            'total'     => (float) $items->sum('amount'),
+            'count'     => $items->count(),
+        ];
+
+        return [$items, $meta];
+    }
+
+    /**
+     * Mengambil rincian transaksi pembentuk angka arus kas (drilldown JSON).
+     */
+    public function detail(Request $request)
+    {
+        [$items, $meta] = $this->buildDetailQuery($request);
 
         return response()->json([
             'success' => true,
-            'total' => $totalAmount,
-            'count' => $items->count(),
-            'data' => $items->map(function ($item) {
+            'total'   => $meta['total'],
+            'count'   => $meta['count'],
+            'meta'    => $meta,
+            'data'    => $items->map(function ($item) {
                 return [
-                    'id' => $item->id,
-                    'posting_date' => $item->posting_date ? \Carbon\Carbon::parse($item->posting_date)->format('d-m-Y') : '-',
-                    'document_number' => $item->document_number ?? '-',
-                    'unit' => $item->bankTujuan?->nama_tujuan ?? $item->nama_profit_center ?? $item->profit_center ?? '-',
-                    'profit_center' => $item->profit_center ?? '-',
-                    'account' => $item->account ?? '-',
-                    'gl_account_desc' => $item->gl_account_desc ?? '-',
-                    'offsetting_account' => $item->offsetting_account ?? '-',
+                    'id'                         => $item->id,
+                    'posting_date'               => $item->posting_date ? \Carbon\Carbon::parse($item->posting_date)->format('d-m-Y') : '-',
+                    'document_number'            => $item->document_number ?? '-',
+                    'unit'                       => $item->bankTujuan?->nama_tujuan ?? $item->nama_profit_center ?? $item->profit_center ?? '-',
+                    'profit_center'              => $item->profit_center ?? '-',
+                    'account'                    => $item->account ?? '-',
+                    'gl_account_desc'            => $item->gl_account_desc ?? '-',
+                    'offsetting_account'         => $item->offsetting_account ?? '-',
                     'name_of_offsetting_account' => $item->name_of_offsetting_account ?? '-',
-                    'text' => $item->text ?? '-',
-                    'uraian' => $item->uraian ?? '-',
-                    'reference_key_1' => $item->reference_key_1 ?? '-',
-                    'amount' => (float) $item->amount,
+                    'text'                       => $item->text ?? '-',
+                    'uraian'                     => $item->uraian ?? '-',
+                    'reference_key_1'            => $item->reference_key_1 ?? '-',
+                    'amount'                     => (float) $item->amount,
                 ];
             }),
         ]);
+    }
+
+    /**
+     * Export Rincian Transaksi Arus Kas ke format Excel.
+     */
+    public function exportDetailExcel(Request $request)
+    {
+        [$items, $meta] = $this->buildDetailQuery($request);
+
+        $cleanUraian = preg_replace('/[^A-Za-z0-9_-]/', '_', $meta['uraian']);
+        $filename = 'Rincian-Arus-Kas-' . ($cleanUraian ?: 'Detail') . '-' . date('Ymd_His') . '.xlsx';
+
+        return Excel::download(
+            new ExportExcelDetailCashflow($items, $meta),
+            $filename
+        );
+    }
+
+    /**
+     * Export Rincian Transaksi Arus Kas ke format PDF (cetak).
+     */
+    public function exportDetailPdf(Request $request)
+    {
+        [$items, $meta] = $this->buildDetailQuery($request);
+
+        return view('cash_bank.exportPDF.pdfDetailCashflow', compact('items', 'meta'));
     }
 }

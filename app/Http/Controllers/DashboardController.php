@@ -1354,7 +1354,10 @@ class dashboardController extends Controller
                 $jabatan,
                 $data['sumberDanaList'],
                 $data['totalSaldoBank'],
-                $data['labelFilter']
+                $data['labelFilter'],
+                $data['bankVAList'],
+                $data['totalSaldoVA'],
+                $data['totalSaldoSap']
             ),
             'Saldo-Kas-Bank.xlsx'
         );

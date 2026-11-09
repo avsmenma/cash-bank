@@ -43,6 +43,10 @@ Route::get('/2fa/cancel', [TwoFactorController::class, 'cancel'])->name('2fa.can
 
 Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
     // Laporan Arus Kas seluruh unit (submenu Transaksi Bank)
+    Route::get('/bank-cashflow/export-detail-excel', [BankCashflowController::class, 'exportDetailExcel'])
+        ->name('bank-cashflow.export-detail-excel');
+    Route::get('/bank-cashflow/export-detail-pdf', [BankCashflowController::class, 'exportDetailPdf'])
+        ->name('bank-cashflow.export-detail-pdf');
     Route::get('/bank-cashflow/detail', [BankCashflowController::class, 'detail'])
         ->name('bank-cashflow.detail');
     Route::get('/bank-cashflow', [BankCashflowController::class, 'index'])

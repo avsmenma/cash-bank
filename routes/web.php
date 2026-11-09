@@ -109,16 +109,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/report/data', [BankKeluarController::class, 'reportData'])
             ->name('report.data');
 
-        // Import CSV lama (fuzzy-match) — khusus role programmer
-        Route::post('/importExcel', [BankKeluarController::class, 'importExcel'])
-            ->name('importExcel')->middleware('check_role:programmer');
-
-        Route::post('/preview-import', [BankKeluarController::class, 'previewImport'])
-            ->name('previewImport')->middleware('check_role:programmer');
-
-        Route::post('/confirm-import', [BankKeluarController::class, 'confirmImport'])
-            ->name('confirmImport')->middleware('check_role:programmer');
-
         // Import mandiri berbasis template (semua user halaman ini):
         // preview dulu (tanpa simpan), lalu konfirmasi untuk menyimpan
         Route::get('/template-import', [BankKeluarController::class, 'downloadTemplateImport'])
@@ -181,16 +171,6 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/report', [BankMasukController::class, 'report'])
             ->name('report');
-
-        // Import CSV lama (fuzzy-match) — khusus role programmer
-        Route::post('/importExcel', [BankMasukController::class, 'importExcel'])
-            ->name('importExcel')->middleware('check_role:programmer');
-
-        Route::post('/preview-import', [BankMasukController::class, 'previewImport'])
-            ->name('previewImport')->middleware('check_role:programmer');
-
-        Route::post('/confirm-import', [BankMasukController::class, 'confirmImport'])
-            ->name('confirmImport')->middleware('check_role:programmer');
 
         // Import mandiri berbasis template (semua user halaman ini):
         // preview dulu (tanpa simpan), lalu konfirmasi untuk menyimpan
@@ -419,17 +399,28 @@ Route::middleware(['auth'])->prefix('ringkasan-pembayaran')->name('ringkasan.')-
     Route::get('/detail', [RingkasanPembayaranController::class, 'detail'])->name('detail');
 });
 
-// PROGRAMMER PANEL — Data Management
+// PROGRAMMER PANEL — Multi-Menu System
 Route::group(['middleware' => ['auth', 'check_role:programmer'], 'prefix' => 'programmer'], function () {
+    // 1. Data Management
     Route::get('/', [ProgrammerController::class, 'index'])->name('programmer.index');
-    Route::get('/cashflow-locks', [ProgrammerController::class, 'getCashflowLocks'])->name('programmer.cashflowLocks.get');
-    Route::post('/cashflow-locks/toggle', [ProgrammerController::class, 'toggleCashflowLock'])->name('programmer.cashflowLocks.toggle');
-    Route::post('/cashflow-locks/batch', [ProgrammerController::class, 'batchUpdateCashflowLocks'])->name('programmer.cashflowLocks.batch');
+    Route::get('/data-management', [ProgrammerController::class, 'index'])->name('programmer.dataManagement');
     Route::get('/data/{table}', [ProgrammerController::class, 'getData'])->name('programmer.data');
-    Route::post('/keyword-preview', [ProgrammerController::class, 'keywordPreview'])->name('programmer.keywordPreview');
-    Route::post('/keyword-update', [ProgrammerController::class, 'keywordUpdate'])->name('programmer.keywordUpdate');
     Route::delete('/delete/{table}/{id}', [ProgrammerController::class, 'deleteRecord'])->name('programmer.delete')->whereNumber('id');
     Route::delete('/bulk-delete/{table}', [ProgrammerController::class, 'bulkDelete'])->name('programmer.bulkDelete');
     Route::delete('/truncate/{table}', [ProgrammerController::class, 'truncateTable'])->name('programmer.truncate');
+
+    // 2. Tools SAP & Mapper
+    Route::get('/tools-sap', [ProgrammerController::class, 'toolsSap'])->name('programmer.toolsSap');
+    Route::get('/cashflow-locks', [ProgrammerController::class, 'getCashflowLocks'])->name('programmer.cashflowLocks.get');
+    Route::post('/cashflow-locks/toggle', [ProgrammerController::class, 'toggleCashflowLock'])->name('programmer.cashflowLocks.toggle');
+    Route::post('/cashflow-locks/batch', [ProgrammerController::class, 'batchUpdateCashflowLocks'])->name('programmer.cashflowLocks.batch');
+    Route::post('/keyword-preview', [ProgrammerController::class, 'keywordPreview'])->name('programmer.keywordPreview');
+    Route::post('/keyword-update', [ProgrammerController::class, 'keywordUpdate'])->name('programmer.keywordUpdate');
     Route::post('/import-cashflow', [ProgrammerController::class, 'importCashflow'])->name('programmer.importCashflow');
+
+    // 3. User & Traffic
+    Route::get('/user-traffic', [ProgrammerController::class, 'userTraffic'])->name('programmer.userTraffic');
+    Route::get('/user-traffic/traffic-data', [ProgrammerController::class, 'getTrafficData'])->name('programmer.trafficData');
+    Route::get('/user-traffic/session-detail/{id}', [ProgrammerController::class, 'getSessionDetail'])->name('programmer.sessionDetail')->whereNumber('id');
+    Route::post('/user-traffic/reset-password/{id}', [ProgrammerController::class, 'resetPassword'])->name('programmer.resetPassword')->whereNumber('id');
 });

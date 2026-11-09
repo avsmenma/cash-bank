@@ -241,6 +241,14 @@
                     <h5 class="modal-title font-weight-bold mb-0" id="modalDetailCashflowLabel" style="font-size: 15px;">
                         <i class="fas fa-file-invoice-dollar mr-2 text-warning"></i> Rincian Transaksi Arus Kas
                     </h5>
+                    <div class="d-flex align-items-center ml-auto mr-3" style="gap: 8px;">
+                        <button type="button" class="btn btn-sm btn-success font-weight-bold shadow-sm" id="btnExportDetailExcel" onclick="exportDetailCashflow('excel')" title="Export Rincian Transaksi ke Excel" style="border-radius: 6px; font-size: 12px; padding: 4px 10px;">
+                            <i class="fas fa-file-excel mr-1"></i> Export Excel
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger font-weight-bold shadow-sm" id="btnExportDetailPdf" onclick="exportDetailCashflow('pdf')" title="Export Rincian Transaksi ke PDF" style="border-radius: 6px; font-size: 12px; padding: 4px 10px;">
+                            <i class="fas fa-file-pdf mr-1"></i> Export PDF
+                        </button>
+                    </div>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; outline: none;">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -300,20 +308,10 @@
                     </div>
                 </div>
                 <div class="modal-footer py-2 px-3 bg-light d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center" style="gap: 10px;">
-                        <span class="small text-muted font-weight-bold" id="mdlRowCount">0 transaksi ditemukan</span>
-                    </div>
-                    <div class="d-flex align-items-center" style="gap: 8px;">
-                        <button type="button" class="btn btn-sm btn-success font-weight-bold shadow-sm" id="btnExportDetailExcel" onclick="exportDetailCashflow('excel')" title="Export Rincian Transaksi ke Excel">
-                            <i class="fas fa-file-excel mr-1"></i> Export Excel
-                        </button>
-                        <button type="button" class="btn btn-sm btn-danger font-weight-bold shadow-sm" id="btnExportDetailPdf" onclick="exportDetailCashflow('pdf')" title="Export Rincian Transaksi ke PDF">
-                            <i class="fas fa-file-pdf mr-1"></i> Export PDF
-                        </button>
-                        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
-                            <i class="fas fa-times mr-1"></i> Tutup
-                        </button>
-                    </div>
+                    <span class="small text-muted font-weight-bold" id="mdlRowCount">0 transaksi ditemukan</span>
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i> Tutup
+                    </button>
                 </div>
             </div>
         </div>

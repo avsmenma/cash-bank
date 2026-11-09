@@ -19,6 +19,9 @@ class ExportExcelDashboardBank implements WithEvents, ShouldAutoSize
     protected $sumberDanaList;
     protected $totalSaldoBank;
     protected $labelFilter;
+    protected $bankVAList;
+    protected $totalSaldoVA;
+    protected $totalSaldoSap;
 
     public function __construct(
         $tanggal,
@@ -26,12 +29,18 @@ class ExportExcelDashboardBank implements WithEvents, ShouldAutoSize
         $jabatan,
         $sumberDanaList = null,
         $totalSaldoBank = null,
-        $labelFilter = null
+        $labelFilter = null,
+        $bankVAList = null,
+        $totalSaldoVA = null,
+        $totalSaldoSap = null
     ) {
         $this->tanggal = $tanggal;
         $this->nama    = $nama;
         $this->jabatan = $jabatan;
         $this->labelFilter = $labelFilter;
+        $this->bankVAList = $bankVAList;
+        $this->totalSaldoVA = $totalSaldoVA;
+        $this->totalSaldoSap = $totalSaldoSap;
 
         if ($sumberDanaList !== null) {
             $this->sumberDanaList = $sumberDanaList;
@@ -63,6 +72,7 @@ class ExportExcelDashboardBank implements WithEvents, ShouldAutoSize
                 $sheet->getColumnDimension('B')->setWidth(52);
                 $sheet->getColumnDimension('C')->setWidth(22);
                 $sheet->getColumnDimension('D')->setWidth(22);
+                $sheet->getColumnDimension('E')->setWidth(22);
 
                 // ===================== ROW 1: HEADER UTAMA =====================
                 $sheet->mergeCells('A1:B1');
@@ -139,6 +149,13 @@ class ExportExcelDashboardBank implements WithEvents, ShouldAutoSize
                         $namaBersih = trim(preg_replace('/\s*\*\s*[\d\-\/]+\s*$/', '', $sd->nama_sumber_dana));
                     }
 
+                    // Ganti nama rekening untuk ekspor
+                    if (stripos($namaBersih, 'OPEX') !== false) {
+                        $namaBersih = 'PT. Bank Mandiri Operasional';
+                    } elseif (stripos($namaBersih, 'Cadangan MTN') !== false || stripos($namaBersih, 'MTN') !== false) {
+                        $namaBersih = 'PT. Bank Mandiri TBS';
+                    }
+
                     // Format nilai
                     $saldo = $sd->saldo_va;
                     if ($saldo < 0) {
@@ -204,6 +221,101 @@ class ExportExcelDashboardBank implements WithEvents, ShouldAutoSize
                 $sheet->mergeCells('C' . $row . ':D' . $row);
                 $sheet->setCellValue('C' . $row, $this->jabatan);
                 $sheet->getStyle('C' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+                // ===================== TABEL SALDO VA & SALDO SAP =====================
+                if (!empty($this->bankVAList) && count($this->bankVAList) > 0) {
+                    $row += 3; // 3 baris kosong pemisah antar tabel
+
+                    // Judul Tabel VA & SAP
+                    $sheet->mergeCells('A' . $row . ':E' . $row);
+                    $sheet->setCellValue('A' . $row, 'Saldo Bank Virtual Account (VA) & Saldo SAP');
+                    $vaHeaderStyle = [
+                        'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                        'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1A5276']],
+                        'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '0E3A56']]],
+                    ];
+                    $sheet->getStyle('A' . $row . ':E' . $row)->applyFromArray($vaHeaderStyle);
+                    $sheet->getRowDimension($row)->setRowHeight(24);
+
+                    $row++;
+                    // Sub Header Kolom
+                    $sheet->setCellValue('A' . $row, 'No.');
+                    $sheet->setCellValue('B' . $row, 'Nama Bank / VA');
+                    $sheet->setCellValue('C' . $row, 'Saldo Akhir (Rp)');
+                    $sheet->setCellValue('D' . $row, 'SALDO SAP');
+                    $sheet->setCellValue('E' . $row, 'SELISIH');
+
+                    $sheet->getStyle('A' . $row . ':E' . $row)->applyFromArray($subHeaderStyle);
+                    $sheet->getRowDimension($row)->setRowHeight(20);
+
+                    // Baris Data VA & SAP
+                    $vaIndex = 1;
+                    foreach ($this->bankVAList as $va) {
+                        $row++;
+                        $saldoVaVal   = (float) ($va->saldo ?? 0);
+                        $sapVal       = (float) ($va->sap_nilai ?? 0);
+                        $selisihVal   = (float) ($va->selisih ?? ($saldoVaVal - $sapVal));
+
+                        $saldoVaStr   = $saldoVaVal < 0 ? '(' . number_format(abs($saldoVaVal), 0, ',', '.') . ')' : ($saldoVaVal > 0 ? number_format($saldoVaVal, 0, ',', '.') : '-');
+                        $sapStr       = $sapVal == 0 ? '-' : number_format($sapVal, 0, ',', '.');
+                        $selisihStr   = $selisihVal < 0 ? '(' . number_format(abs($selisihVal), 0, ',', '.') . ')' : ($selisihVal > 0 ? number_format($selisihVal, 0, ',', '.') : '-');
+
+                        $sheet->setCellValue('A' . $row, $vaIndex . '.');
+                        $sheet->setCellValue('B' . $row, $va->nama_tujuan ?? '');
+                        $sheet->setCellValue('C' . $row, $saldoVaStr);
+                        $sheet->setCellValue('D' . $row, $sapStr);
+                        $sheet->setCellValue('E' . $row, $selisihStr);
+
+                        $sheet->getStyle('A' . $row . ':E' . $row)->applyFromArray($normalStyle);
+                        $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        $sheet->getStyle('B' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                        $sheet->getStyle('C' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                        $sheet->getStyle('D' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                        $sheet->getStyle('E' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+
+                        if ($saldoVaVal != 0) {
+                            $sheet->getStyle('C' . $row)->getFont()->setBold(true);
+                        }
+                        if ($sapVal != 0) {
+                            $sheet->getStyle('D' . $row)->getFont()->setBold(true);
+                        }
+                        if ($selisihVal != 0) {
+                            $sheet->getStyle('E' . $row)->getFont()->setBold(true);
+                        }
+
+                        $vaIndex++;
+                    }
+
+                    // Baris Total VA
+                    $row++;
+                    $sheet->mergeCells('A' . $row . ':B' . $row);
+                    $sheet->setCellValue('A' . $row, 'Total Saldo VA');
+
+                    $totVaVal      = (float) ($this->totalSaldoVA ?? 0);
+                    $totSapVal     = (float) ($this->totalSaldoSap ?? 0);
+                    $totSelisihVal = $totVaVal - $totSapVal;
+
+                    $totVaStr      = $totVaVal < 0 ? '(' . number_format(abs($totVaVal), 0, ',', '.') . ')' : number_format($totVaVal, 0, ',', '.');
+                    $totSapStr     = $totSapVal == 0 ? '-' : number_format($totSapVal, 0, ',', '.');
+                    $totSelisihStr = $totSelisihVal < 0 ? '(' . number_format(abs($totSelisihVal), 0, ',', '.') . ')' : ($totSelisihVal > 0 ? number_format($totSelisihVal, 0, ',', '.') : '-');
+
+                    $sheet->setCellValue('C' . $row, $totVaStr);
+                    $sheet->setCellValue('D' . $row, $totSapStr);
+                    $sheet->setCellValue('E' . $row, $totSelisihStr);
+
+                    $vaTotalStyle = [
+                        'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                        'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1A5276']],
+                        'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '0E3A56']]],
+                    ];
+                    $sheet->getStyle('A' . $row . ':E' . $row)->applyFromArray($vaTotalStyle);
+                    $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle('C' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                    $sheet->getStyle('D' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                    $sheet->getStyle('E' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                    $sheet->getRowDimension($row)->setRowHeight(20);
+                }
 
                 // Row heights
                 $sheet->getDefaultRowDimension()->setRowHeight(16);

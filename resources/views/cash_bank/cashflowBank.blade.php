@@ -299,11 +299,21 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer py-2 px-3 bg-light d-flex justify-content-between">
-                    <span class="small text-muted font-weight-bold" id="mdlRowCount">0 transaksi ditemukan</span>
-                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
-                        <i class="fas fa-times mr-1"></i> Tutup
-                    </button>
+                <div class="modal-footer py-2 px-3 bg-light d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center" style="gap: 10px;">
+                        <span class="small text-muted font-weight-bold" id="mdlRowCount">0 transaksi ditemukan</span>
+                    </div>
+                    <div class="d-flex align-items-center" style="gap: 8px;">
+                        <button type="button" class="btn btn-sm btn-success font-weight-bold shadow-sm" id="btnExportDetailExcel" onclick="exportDetailCashflow('excel')" title="Export Rincian Transaksi ke Excel">
+                            <i class="fas fa-file-excel mr-1"></i> Export Excel
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger font-weight-bold shadow-sm" id="btnExportDetailPdf" onclick="exportDetailCashflow('pdf')" title="Export Rincian Transaksi ke PDF">
+                            <i class="fas fa-file-pdf mr-1"></i> Export PDF
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i> Tutup
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -683,6 +693,7 @@
 
                 // ── Inisialisasi & Pengambilan Data Modal Detail Transaksi Arus Kas ──
                 var dtDetail = null;
+                var currentDetailParams = null;
 
                 function formatRupiah(num) {
                     var n = Number(num);
@@ -691,7 +702,35 @@
                     return (n < 0 ? 'Rp -' : 'Rp ') + abs;
                 }
 
+                window.exportDetailCashflow = function(type) {
+                    if (!currentDetailParams) return;
+
+                    var p = new URLSearchParams();
+                    p.set('series', currentDetailParams.seriesKey || 'global');
+                    p.set('tahun', currentDetailParams.year || '');
+                    p.set('selected_year', currentDetailParams.selectedYear || '');
+                    if (currentDetailParams.month) p.set('bulan', currentDetailParams.month);
+                    if (currentDetailParams.tglDari) p.set('tgl_dari', currentDetailParams.tglDari);
+                    if (currentDetailParams.tglSampai) p.set('tgl_sampai', currentDetailParams.tglSampai);
+                    if (currentDetailParams.scope && Array.isArray(currentDetailParams.scope)) {
+                        currentDetailParams.scope.forEach(function(s) { p.append('scope[]', s); });
+                    }
+                    p.set('uraian', currentDetailParams.uraian || '');
+                    p.set('kode', currentDetailParams.kode || '');
+                    p.set('reference', currentDetailParams.reference || '');
+                    p.set('unit_title', currentDetailParams.seriesTitle || '');
+
+                    if (type === 'excel') {
+                        window.location.href = "{{ route('bank-cashflow.export-detail-excel') }}?" + p.toString();
+                    } else {
+                        window.open("{{ route('bank-cashflow.export-detail-pdf') }}?" + p.toString(), '_blank');
+                    }
+                };
+
                 function openDetailModal(params) {
+                    currentDetailParams = params;
+                    $('#btnExportDetailExcel, #btnExportDetailPdf').prop('disabled', true);
+
                     $('#mdlUraian').text(params.uraian || '-');
                     var kodeRef = '';
                     if (params.kode && params.kode !== '-') kodeRef += 'Kode: ' + params.kode;
@@ -751,6 +790,7 @@
                             $('#mdlTableWrapper').show();
 
                             if (res.success && res.data && res.data.length > 0) {
+                                $('#btnExportDetailExcel, #btnExportDetailPdf').prop('disabled', false);
                                 var rowsHtml = '';
                                 var totalSum = 0;
                                 res.data.forEach(function (item, idx) {

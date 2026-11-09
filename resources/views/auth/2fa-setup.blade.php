@@ -160,18 +160,17 @@
         <h6 class="font-weight-bold text-dark mb-1">
           <span class="badge badge-success mr-1">3</span> Masukkan Kode Verifikasi 6 Digit
         </h6>
-        <p class="small text-muted mb-2">Ketikkan 6 digit angka yang muncul pada aplikasi authenticator Anda untuk mengonfirmasi:</p>
+        <p class="small text-muted mb-2">Ketikkan 6 digit angka dari aplikasi authenticator Anda (otomatis terverifikasi saat 6 digit terisi):</p>
 
-        <form action="{{ route('2fa.setup.confirm') }}" method="POST">
+        <form action="{{ route('2fa.setup.confirm') }}" method="POST" id="setup2faForm">
           @csrf
-          <div class="form-group mb-3">
+          <div class="form-group mb-2">
             <input type="text" name="code" id="setupCodeInput" class="form-control otp-input"
                    placeholder="000000" maxlength="6" pattern="\d{6}" inputmode="numeric" autocomplete="one-time-code" required autofocus>
           </div>
-
-          <button type="submit" class="btn btn-success btn-block font-weight-bold py-2 shadow-sm" style="font-size: 1rem; border-radius: 10px;">
-            <i class="fas fa-check-circle mr-1"></i> Aktifkan 2FA & Lanjutkan
-          </button>
+          <div id="submittingStatus" class="text-center text-success font-weight-bold small py-1" style="display: none;">
+            <i class="fas fa-circle-notch fa-spin mr-1"></i> Memverifikasi kode & mengaktifkan 2FA...
+          </div>
         </form>
       </div>
 
@@ -245,10 +244,16 @@
     document.body.removeChild(temp);
   }
 
-  document.getElementById('setupCodeInput').addEventListener('input', function(e) {
+  const setupForm = document.getElementById('setup2faForm');
+  const setupInput = document.getElementById('setupCodeInput');
+  const setupStatus = document.getElementById('submittingStatus');
+
+  setupInput.addEventListener('input', function(e) {
     this.value = this.value.replace(/\D/g, '').slice(0, 6);
     if (this.value.length === 6) {
-      this.form.submit();
+      if (setupStatus) setupStatus.style.display = 'block';
+      this.readOnly = true;
+      setupForm.submit();
     }
   });
 </script>

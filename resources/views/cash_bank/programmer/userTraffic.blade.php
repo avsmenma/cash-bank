@@ -349,7 +349,7 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text bg-light border-right-0"><i class="fas fa-search text-muted"></i></span>
                             </div>
-                            <input type="text" id="userSearchInput" class="form-control border-left-0" placeholder="Cari user / bank..." onkeyup="filterUserTable()">
+                            <input type="text" id="userSearchInput" class="form-control border-left-0" placeholder="Cari user / bank..." oninput="filterUserTable()">
                         </div>
                     </div>
                 </div>
@@ -656,9 +656,9 @@
     function filterUserTable() {
         let term = $('#userSearchInput').val().toLowerCase().trim();
         $('.user-row').each(function() {
-            let username = $(this).data('username') || '';
-            let bank = $(this).data('bank') || '';
-            let role = $(this).data('role') || '';
+            let username = String($(this).data('username') ?? '').toLowerCase();
+            let bank = String($(this).data('bank') ?? '').toLowerCase();
+            let role = String($(this).data('role') ?? '').toLowerCase();
             if (username.includes(term) || bank.includes(term) || role.includes(term)) {
                 $(this).show();
             } else {

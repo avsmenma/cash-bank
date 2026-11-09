@@ -49,8 +49,10 @@
 
         /* Tabel Saldo VA di halaman berikutnya */
         .page-break { page-break-before: always; }
-        .va-table thead th { background-color: #1a5276; color: #fff; }
-        .va-table .va-total-row td { background-color: #1a5276; color: #fff; font-weight: bold; }
+        .va-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+        .va-table th, .va-table td { border: 1px solid #aaa; padding: 4.5px 7px; }
+        .va-table thead th { background-color: #1a5276 !important; color: #fff !important; text-align: center; font-weight: bold; }
+        .va-table .va-total-row td { background-color: #1a5276 !important; color: #fff !important; font-weight: bold; }
 
         /* Hapus header & footer browser saat print (tanggal, judul, URL) */
         @page {
@@ -123,6 +125,13 @@
             if (preg_match('/\*\s*([\d\-\/]+)\s*$/', $sd->nama_sumber_dana, $m)) {
                 $noRek = trim($m[1]);
                 $namaBersih = trim(preg_replace('/\s*\*\s*[\d\-\/]+\s*$/', '', $sd->nama_sumber_dana));
+            }
+
+            // Ganti nama rekening untuk ekspor
+            if (stripos($namaBersih, 'OPEX') !== false) {
+                $namaBersih = 'PT. Bank Mandiri Operasional';
+            } elseif (stripos($namaBersih, 'Cadangan MTN') !== false || stripos($namaBersih, 'MTN') !== false) {
+                $namaBersih = 'PT. Bank Mandiri TBS';
             }
         @endphp
         <tr>
@@ -210,19 +219,24 @@
     </div>
 </div>
 
-{{-- HALAMAN 2 DST: SALDO BANK VIRTUAL ACCOUNT --}}
+{{-- HALAMAN 2 DST: SALDO BANK VIRTUAL ACCOUNT & SALDO SAP --}}
 <div class="page-break">
-    <h2>Saldo Bank Virtual Account (VA)</h2>
+    <h2>Saldo Bank Virtual Account (VA) &amp; Saldo SAP</h2>
     <table class="va-table">
         <thead>
             <tr>
-                <th class="text-center" style="width:40px;">No.</th>
+                <th class="text-center" style="width:35px;">No.</th>
                 <th>Nama Bank / VA</th>
-                <th class="text-center" style="min-width:150px;">Saldo Akhir (Rp)</th>
+                <th class="text-center" style="width:130px;">Saldo Akhir (Rp)</th>
+                <th class="text-center" style="width:130px;">SALDO SAP</th>
+                <th class="text-center" style="width:130px;">SELISIH</th>
             </tr>
         </thead>
         <tbody>
             @forelse($bankVAList as $index => $va)
+            @php
+                $selisih = $va->selisih ?? ($va->saldo - ($va->sap_nilai ?? 0));
+            @endphp
             <tr>
                 <td class="text-center">{{ $index + 1 }}.</td>
                 <td>{{ $va->nama_tujuan }}</td>
@@ -235,12 +249,32 @@
                         -
                     @endif
                 </td>
+                <td class="text-right {{ ($va->sap_nilai ?? 0) != 0 ? 'font-bold' : '' }}" style="color:{{ ($va->sap_nilai ?? 0) != 0 ? '#222' : '#888' }};">
+                    @if(($va->sap_nilai ?? 0) == 0)
+                        -
+                    @else
+                        {{ number_format($va->sap_nilai, 0, ',', '.') }}
+                    @endif
+                </td>
+                <td class="text-right {{ $selisih != 0 ? 'font-bold' : '' }}" style="color:{{ $selisih < 0 ? '#c0392b' : ($selisih > 0 ? '#222' : '#888') }};">
+                    @if($selisih < 0)
+                        <span class="neg">({{ number_format(abs($selisih), 0, ',', '.') }})</span>
+                    @elseif($selisih > 0)
+                        {{ number_format($selisih, 0, ',', '.') }}
+                    @else
+                        -
+                    @endif
+                </td>
             </tr>
             @empty
             <tr>
-                <td colspan="3" class="text-center" style="color:#888; padding:10px 0;">Tidak ada data Bank Virtual Account</td>
+                <td colspan="5" class="text-center" style="color:#888; padding:10px 0;">Tidak ada data Bank Virtual Account</td>
             </tr>
             @endforelse
+
+            @php
+                $totalSelisih = $totalSaldoVA - ($totalSaldoSap ?? 0);
+            @endphp
             {{-- Total sebagai baris tbody biasa (bukan tfoot) agar saat print
                  tidak diulang di setiap halaman --}}
             <tr class="va-total-row">
@@ -252,13 +286,33 @@
                         {{ number_format($totalSaldoVA, 0, ',', '.') }}
                     @endif
                 </td>
+                <td class="text-right">
+                    @if(($totalSaldoSap ?? 0) == 0)
+                        -
+                    @else
+                        {{ number_format($totalSaldoSap, 0, ',', '.') }}
+                    @endif
+                </td>
+                <td class="text-right">
+                    @if($totalSelisih < 0)
+                        ({{ number_format(abs($totalSelisih), 0, ',', '.') }})
+                    @elseif($totalSelisih > 0)
+                        {{ number_format($totalSelisih, 0, ',', '.') }}
+                    @else
+                        -
+                    @endif
+                </td>
             </tr>
         </tbody>
     </table>
 </div>
 
 <script type="text/javascript">
-    window.onload = function() { window.print(); };
+    window.onload = function() {
+        if (!navigator.webdriver && !window.location.search.includes('no_print=1')) {
+            window.print();
+        }
+    };
 </script>
 </body>
 </html>

@@ -28,8 +28,7 @@ class AuthController extends Controller
 
         // 1. Try standard login with the input as username (works for admin, vendor, and VA bank number)
         if (Auth::attempt(['username' => $inputUsername, 'password' => $password], $request->remember)) {
-            $this->recordLogin($request, Auth::user());
-            return $this->redirectByRole();
+            return $this->handleAuthenticatedUser($request, Auth::user());
         }
 
         // 2. Fallback: Try login by VA name (e.g. "GUMAS")
@@ -47,12 +46,39 @@ class AuthController extends Controller
                 ->first();
 
             if ($vaUser && Auth::attempt(['username' => $vaUser->username, 'password' => $password], $request->remember)) {
-                $this->recordLogin($request, Auth::user());
-                return $this->redirectByRole();
+                return $this->handleAuthenticatedUser($request, Auth::user());
             }
         }
 
         return back()->with('failed', 'Username atau password salah');
+    }
+
+    /**
+     * Tangani flow autentikasi, mengarahkan ke 2FA jika akun programmer atau 2FA aktif.
+     */
+    private function handleAuthenticatedUser(Request $request, User $user)
+    {
+        $requires2Fa = ($user->role === 'programmer') || $user->hasTwoFactorEnabled();
+
+        if ($requires2Fa) {
+            // Jika 2FA sudah aktif, arahkan ke challenge input kode 6 digit
+            if ($user->hasTwoFactorEnabled()) {
+                Auth::logout();
+                $request->session()->put('2fa_user_id', $user->id);
+                $request->session()->put('2fa_remember', $request->boolean('remember'));
+                return redirect()->route('2fa.challenge');
+            }
+
+            // Jika akun programmer belum setup 2FA, wajibkan setup pertama kali
+            if ($user->role === 'programmer') {
+                Auth::logout();
+                $request->session()->put('2fa_setup_user_id', $user->id);
+                return redirect()->route('2fa.setup');
+            }
+        }
+
+        $this->recordLogin($request, $user);
+        return $this->redirectByRole();
     }
 
     /**

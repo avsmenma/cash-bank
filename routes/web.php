@@ -25,6 +25,7 @@ use App\Http\Controllers\RingkasanPembayaranController;
 use App\Http\Controllers\ProgrammerController;
 use App\Http\Controllers\SapModalKerjaController;
 use App\Http\Controllers\GoogleSheetsSyncController;
+use App\Http\Controllers\TwoFactorController;
 
 Route::get('/', fn() => view('auth.login'));
 Route::get('/login', fn() => view('auth.login'))->name('login');
@@ -32,6 +33,13 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])
     ->name('logout')
     ->middleware('auth');
+
+// 2FA Routes
+Route::get('/2fa/challenge', [TwoFactorController::class, 'showChallenge'])->name('2fa.challenge');
+Route::post('/2fa/challenge', [TwoFactorController::class, 'verifyChallenge'])->name('2fa.challenge.verify');
+Route::get('/2fa/setup', [TwoFactorController::class, 'showSetup'])->name('2fa.setup');
+Route::post('/2fa/setup', [TwoFactorController::class, 'confirmSetup'])->name('2fa.setup.confirm');
+Route::get('/2fa/cancel', [TwoFactorController::class, 'cancel'])->name('2fa.cancel');
 
 Route::group(['middleware' => ['auth', 'check_role:admin']], function () {
     // Laporan Arus Kas seluruh unit (submenu Transaksi Bank)
@@ -423,4 +431,5 @@ Route::group(['middleware' => ['auth', 'check_role:programmer'], 'prefix' => 'pr
     Route::get('/user-traffic/traffic-data', [ProgrammerController::class, 'getTrafficData'])->name('programmer.trafficData');
     Route::get('/user-traffic/session-detail/{id}', [ProgrammerController::class, 'getSessionDetail'])->name('programmer.sessionDetail')->whereNumber('id');
     Route::post('/user-traffic/reset-password/{id}', [ProgrammerController::class, 'resetPassword'])->name('programmer.resetPassword')->whereNumber('id');
+    Route::post('/user-traffic/reset-2fa/{id}', [ProgrammerController::class, 'reset2Fa'])->name('programmer.reset2Fa')->whereNumber('id');
 });

@@ -20,8 +20,19 @@ class User extends Authenticatable
     protected $fillable = [
         'username',
         'password',
+        'role',
         'id_bank_tujuan'
     ];
+
+    public function bankTujuan()
+    {
+        return $this->belongsTo(BankTujuan::class, 'id_bank_tujuan', 'id_bank_tujuan');
+    }
+
+    public function loginLogs()
+    {
+        return $this->hasMany(UserLoginLog::class, 'user_id', 'id');
+    }
 
     /**
      * The attributes that should be hidden for serialization.

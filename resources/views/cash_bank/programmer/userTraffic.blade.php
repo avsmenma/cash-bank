@@ -156,17 +156,20 @@
         margin-bottom: 0;
     }
 
-    .user-table thead th, .traffic-table thead th {
-        background: #0d3b6e;
-        color: #ffffff;
-        font-size: 0.78rem;
-        font-weight: 600;
+    .table.user-table thead th,
+    .table.traffic-table thead th,
+    .user-table thead th,
+    .traffic-table thead th {
+        background: #0d3b6e !important;
+        color: #ffffff !important;
+        font-size: 0.82rem !important;
+        font-weight: 700 !important;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border: none;
-        padding: 0.75rem 0.65rem;
+        border: none !important;
+        padding: 0.85rem 0.65rem !important;
         white-space: nowrap;
-        vertical-align: middle;
+        vertical-align: middle !important;
     }
 
     .user-table tbody td, .traffic-table tbody td {
@@ -382,6 +385,16 @@
                                             @else
                                                 <span class="badge-role-vendor"><i class="fas fa-user mr-1"></i>{{ strtoupper($u->role) }}</span>
                                             @endif
+
+                                            @if($u->hasTwoFactorEnabled())
+                                                <span class="badge badge-success font-weight-bold ml-1" style="font-size: 0.7rem;" title="2FA Google Authenticator Aktif">
+                                                    <i class="fas fa-shield-alt mr-1"></i>2FA ON
+                                                </span>
+                                            @elseif($u->role === 'programmer')
+                                                <span class="badge badge-warning text-dark font-weight-bold ml-1" style="font-size: 0.7rem;" title="2FA Diwajibkan untuk Akun Programmer">
+                                                    <i class="fas fa-shield-alt mr-1"></i>2FA WAJIB
+                                                </span>
+                                            @endif
                                         </div>
                                     </td>
                                     <td>
@@ -404,11 +417,20 @@
                                         </div>
                                     </td>
                                     <td class="text-center">
-                                        <button type="button" class="btn btn-sm btn-outline-warning" 
-                                                onclick="openResetPasswordModal({{ $u->id }}, '{{ $u->username }}')"
-                                                title="Reset / Ubah Password">
-                                            <i class="fas fa-key"></i>
-                                        </button>
+                                        <div class="d-flex align-items-center justify-content-center" style="gap: 0.35rem;">
+                                            <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                    onclick="openResetPasswordModal({{ $u->id }}, '{{ $u->username }}')"
+                                                    title="Reset / Ubah Password">
+                                                <i class="fas fa-key"></i>
+                                            </button>
+                                            @if($u->hasTwoFactorEnabled())
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="confirmReset2Fa({{ $u->id }}, '{{ $u->username }}')"
+                                                    title="Reset 2FA Google Authenticator">
+                                                <i class="fas fa-shield-alt"></i>
+                                            </button>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty
@@ -701,6 +723,25 @@
             },
             complete: function() {
                 btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Simpan Password');
+            }
+        });
+    }
+
+    // ===== RESET 2FA =====
+    function confirmReset2Fa(id, username) {
+        if (!confirm(`Reset 2FA Google Authenticator untuk user '${username}'? User akan diminta scan QR Code ulang saat login.`)) {
+            return;
+        }
+
+        $.ajax({
+            url: `/programmer/user-traffic/reset-2fa/${id}`,
+            type: 'POST',
+            success: function(res) {
+                showToast('success', res.message || '2FA berhasil di-reset!');
+                setTimeout(() => location.reload(), 900);
+            },
+            error: function(xhr) {
+                showToast('error', xhr.responseJSON?.message || 'Gagal mereset 2FA');
             }
         });
     }

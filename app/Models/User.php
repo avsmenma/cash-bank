@@ -21,7 +21,10 @@ class User extends Authenticatable
         'username',
         'password',
         'role',
-        'id_bank_tujuan'
+        'id_bank_tujuan',
+        'two_factor_secret',
+        'two_factor_confirmed_at',
+        'two_factor_recovery_codes'
     ];
 
     public function bankTujuan()
@@ -32,6 +35,11 @@ class User extends Authenticatable
     public function loginLogs()
     {
         return $this->hasMany(UserLoginLog::class, 'user_id', 'id');
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return !is_null($this->two_factor_secret) && !is_null($this->two_factor_confirmed_at);
     }
 
     /**
@@ -53,6 +61,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'two_factor_confirmed_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

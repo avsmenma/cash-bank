@@ -146,9 +146,12 @@
         <p class="small text-muted mb-2">Jika kamera tidak dapat memindai, pilih <em>"Enter a setup key"</em> pada aplikasi dan masukkan kode ini:</p>
         <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 0.5rem;">
           <span class="secret-badge" id="secretText">{{ $secret }}</span>
-          <button type="button" class="btn btn-sm btn-outline-primary font-weight-bold" onclick="copySecret()">
+          <button type="button" id="copySecretBtn" class="btn btn-sm btn-outline-primary font-weight-bold" onclick="copySecret()">
             <i class="fas fa-copy mr-1"></i> Salin Kunci
           </button>
+        </div>
+        <div id="copyFeedback" class="text-success small font-weight-bold mt-2" style="display: none; transition: opacity 0.3s ease;">
+          <i class="fas fa-check-circle mr-1"></i> Kunci berhasil disalin ke clipboard!
         </div>
       </div>
 
@@ -183,11 +186,63 @@
 
 <script src="{{ asset('adminLTE/plugins/jquery/jquery.min.js') }}"></script>
 <script>
+  let copyTimer = null;
   function copySecret() {
-    let text = document.getElementById('secretText').innerText;
-    navigator.clipboard.writeText(text).then(() => {
-      alert('Secret key berhasil disalin: ' + text);
-    });
+    let text = document.getElementById('secretText').innerText.trim();
+    let btn = document.getElementById('copySecretBtn');
+    let feedback = document.getElementById('copyFeedback');
+
+    function notifySuccess() {
+      if (btn) {
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-success');
+        btn.innerHTML = '<i class="fas fa-check mr-1"></i> Berhasil Disalin!';
+      }
+      if (feedback) {
+        feedback.style.display = 'block';
+        feedback.style.opacity = '1';
+      }
+
+      if (copyTimer) clearTimeout(copyTimer);
+      copyTimer = setTimeout(function() {
+        if (btn) {
+          btn.classList.remove('btn-success');
+          btn.classList.add('btn-outline-primary');
+          btn.innerHTML = '<i class="fas fa-copy mr-1"></i> Salin Kunci';
+        }
+        if (feedback) {
+          feedback.style.opacity = '0';
+          setTimeout(function() {
+            feedback.style.display = 'none';
+          }, 300);
+        }
+      }, 2500);
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(notifySuccess).catch(function() {
+        fallbackCopy(text, notifySuccess);
+      });
+    } else {
+      fallbackCopy(text, notifySuccess);
+    }
+  }
+
+  function fallbackCopy(text, callback) {
+    let temp = document.createElement('textarea');
+    temp.value = text;
+    temp.style.position = 'fixed';
+    temp.style.left = '-9999px';
+    document.body.appendChild(temp);
+    temp.focus();
+    temp.select();
+    try {
+      document.execCommand('copy');
+      if (callback) callback();
+    } catch (e) {
+      console.error('Copy failed', e);
+    }
+    document.body.removeChild(temp);
   }
 
   document.getElementById('setupCodeInput').addEventListener('input', function(e) {

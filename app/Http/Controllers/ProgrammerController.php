@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+use App\Models\UserLoginLog;
 use App\Models\BankKeluar;
 use App\Models\BankMasuk;
 use App\Models\GabunganMasukKeluar;
@@ -124,13 +127,12 @@ class ProgrammerController extends Controller
     }
 
     /**
-     * Dashboard utama programmer — statistik jumlah data per tabel.
+     * Menu 1: Data Management Console — statistik & manajemen data tabel.
      */
     public function index()
     {
         $tableMap = $this->getTableMap();
         $stats = [];
-        $keywordReferences = $this->getKeywordReferences();
 
         foreach ($tableMap as $key => $info) {
             try {
@@ -145,6 +147,19 @@ class ProgrammerController extends Controller
                 'count' => $count,
             ];
         }
+
+        return view('cash_bank.programmer.dataManagement', compact(
+            'stats',
+            'tableMap'
+        ));
+    }
+
+    /**
+     * Menu 2: Tools SAP & Mapper — Pengaturan Lock Bulan SAP, Import Cashflow, dan Keyword Mapper.
+     */
+    public function toolsSap()
+    {
+        $keywordReferences = $this->getKeywordReferences();
 
         $currentYear = (int) date('Y');
         $availableYears = Cashflow::whereNotNull('tahun')
@@ -164,14 +179,105 @@ class ProgrammerController extends Controller
         $selectedLockYear = (int) request('lock_tahun', $availableYears[0]);
         $cashflowLocks = CashflowLock::getStatusForYear($selectedLockYear);
 
-        return view('cash_bank.programmer', compact(
-            'stats',
-            'tableMap',
+        return view('cash_bank.programmer.toolsSap', compact(
             'keywordReferences',
             'availableYears',
             'selectedLockYear',
             'cashflowLocks'
         ));
+    }
+
+    /**
+     * Menu 3: User & Traffic — Pemantauan User & Traffic Login Harian.
+     */
+    public function userTraffic(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+        $users = User::with('bankTujuan')->orderBy('role')->orderBy('username')->get();
+
+        $trafficSummary = UserLoginLog::whereDate('login_date', $date)
+            ->select('user_id', 'username', 'role', DB::raw('COUNT(*) as total_login'), DB::raw('MAX(login_at) as last_login_at'))
+            ->groupBy('user_id', 'username', 'role')
+            ->orderByDesc('total_login')
+            ->get();
+
+        $totalLoginsToday = UserLoginLog::whereDate('login_date', $date)->count();
+        $uniqueUsersToday = $trafficSummary->count();
+        $totalUsersCount = $users->count();
+
+        return view('cash_bank.programmer.userTraffic', compact(
+            'users',
+            'trafficSummary',
+            'date',
+            'totalLoginsToday',
+            'uniqueUsersToday',
+            'totalUsersCount'
+        ));
+    }
+
+    /**
+     * AJAX endpoint: Mengambil data traffic login per tanggal.
+     */
+    public function getTrafficData(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+
+        $traffic = UserLoginLog::whereDate('login_date', $date)
+            ->select('user_id', 'username', 'role', DB::raw('COUNT(*) as total_login'), DB::raw('MAX(login_at) as last_login_at'))
+            ->groupBy('user_id', 'username', 'role')
+            ->orderByDesc('total_login')
+            ->get();
+
+        $totalLogins = UserLoginLog::whereDate('login_date', $date)->count();
+        $uniqueUsers = $traffic->count();
+
+        return response()->json([
+            'success' => true,
+            'date' => $date,
+            'total_logins' => $totalLogins,
+            'unique_users' => $uniqueUsers,
+            'traffic' => $traffic,
+        ]);
+    }
+
+    /**
+     * AJAX endpoint: Rincian sesi login user pada tanggal tertentu.
+     */
+    public function getSessionDetail(Request $request, $id)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+        $user = User::find($id);
+
+        $logs = UserLoginLog::where('user_id', $id)
+            ->whereDate('login_date', $date)
+            ->orderBy('login_at', 'desc')
+            ->get(['id', 'login_at', 'ip_address', 'user_agent']);
+
+        return response()->json([
+            'success' => true,
+            'user' => $user ? ['id' => $user->id, 'username' => $user->username, 'role' => $user->role] : null,
+            'date' => $date,
+            'logs' => $logs,
+        ]);
+    }
+
+    /**
+     * AJAX endpoint: Reset / ganti password user oleh programmer.
+     */
+    public function resetPassword(Request $request, $id)
+    {
+        $request->validate([
+            'password' => 'required|string|min:4',
+        ]);
+
+        $user = User::findOrFail($id);
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Password untuk user '{$user->username}' berhasil diubah!",
+        ]);
     }
 
     /**

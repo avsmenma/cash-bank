@@ -15,12 +15,10 @@ class AuthController extends Controller
     {
         $request->validate([
             'username' => 'required',
-            'password' => 'required|min:6|max:8',
+            'password' => 'required',
         ], [
             'username.required' => 'Username wajib diisi.',
             'password.required' => 'Password wajib diisi.',
-            'password.min'      => 'Password minimal 6 karakter.',
-            'password.max'      => 'Password maksimal 8 karakter.',
         ]);
 
         $inputUsername = $request->username;
